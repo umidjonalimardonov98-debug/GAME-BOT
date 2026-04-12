@@ -18,6 +18,29 @@ const waitingForCheck = new Map<number, number>();       // userId -> depositReq
 const waitingForAmount = new Set<number>();              // userId waiting to type deposit amount
 const pendingWithdraw = new Map<number, { amount: number }>(); // userId -> withdraw info
 
+export async function notifyAdminWithdraw(opts: {
+  reqId: number; telegramId: string; firstName: string; username: string | null;
+  amount: number; cardNumber: string; cardHolder: string;
+}) {
+  if (!bot || !ADMIN_ID) return;
+  try {
+    await bot.sendMessage(ADMIN_ID,
+      `💸 <b>PUL YECHISH SO'ROVI (WEB)</b>\n\n` +
+      `👤 ${opts.firstName} (@${opts.username ?? "—"})\n` +
+      `🆔 <code>${opts.telegramId}</code>\n` +
+      `💵 Miqdor: <b>${fmt(opts.amount)} UZS</b>\n` +
+      `💳 Karta: <code>${opts.cardNumber}</code>\n` +
+      `👤 Egasi: ${opts.cardHolder}`,
+      { parse_mode: "HTML", reply_markup: { inline_keyboard: [[
+        { text: "✅ To'landi", callback_data: `wd_ok_${opts.reqId}` },
+        { text: "❌ Rad", callback_data: `wd_no_${opts.reqId}` },
+      ]]}}
+    );
+  } catch (err) {
+    logger.error({ err }, "notifyAdminWithdraw xato");
+  }
+}
+
 function fmt(n: number) { return n.toLocaleString("uz-UZ"); }
 
 async function checkSub(userId: number): Promise<boolean> {

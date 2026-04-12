@@ -24,12 +24,12 @@ export default function Withdraw() {
   const submit = async () => {
     if (!amount || amount < 1000) { setErr("Minimal miqdor 1000 UZS"); return; }
     if (amount > balance) { setErr("Balans yetarli emas!"); return; }
-    if (!card || card.length < 16) { setErr("Karta raqamini to'liq kiriting"); return; }
+    if (!card || card.length < 4) { setErr("Karta raqamini kiriting"); return; }
     if (!holder) { setErr("Karta egasini kiriting"); return; }
     if (!player) return;
     setLoading(true); setErr("");
     try {
-      await withdraw(player.telegramId, amount);
+      await withdraw(player.telegramId, amount, card, holder);
       await refresh();
       setDone(true);
     } catch (e: any) {
@@ -132,8 +132,7 @@ export default function Withdraw() {
             <p className="text-white/40 text-xs uppercase tracking-widest font-semibold mb-2">Karta Ma'lumotlari</p>
             <div className="space-y-2 mb-4">
               <input value={card} onChange={(e) => setCard(e.target.value.replace(/\D/g, ""))}
-                placeholder="Karta raqami (16 ta raqam)"
-                maxLength={16}
+                placeholder="Karta raqami"
                 className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-white placeholder-white/30 font-mono text-base focus:outline-none focus:border-yellow-400/50" />
               <input value={holder} onChange={(e) => setHolder(e.target.value)}
                 placeholder="Karta egasi (Ism Familiya)"

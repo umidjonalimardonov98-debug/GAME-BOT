@@ -1,6 +1,6 @@
 import { Router, type IRouter } from "express";
 import { eq, desc, sql } from "drizzle-orm";
-import { db, playersTable, transactionsTable } from "@workspace/db";
+import { db, playersTable, transactionsTable, withdrawRequestsTable } from "@workspace/db";
 import {
   SyncPlayerBody,
   GetPlayerParams,
@@ -12,6 +12,7 @@ import {
   PlaceBetBody,
   GetTransactionsParams,
 } from "@workspace/api-zod";
+import { notifyAdminWithdraw } from "../bot";
 
 const router: IRouter = Router();
 
@@ -82,15 +83,17 @@ router.post("/players/:telegramId/withdraw", async (req, res): Promise<void> => 
   const body = WithdrawBody.safeParse(req.body);
   if (!body.success) { res.status(400).json({ error: body.error.message }); return; }
 
+  const { amount, cardNumber, cardHolder } = body.data as { amount: number; cardNumber?: string; cardHolder?: string };
+
   const [player] = await db.select().from(playersTable).where(eq(playersTable.telegramId, params.data.telegramId));
   if (!player) { res.status(404).json({ error: "Player not found" }); return; }
 
-  if (player.balance < body.data.amount) {
+  if (player.balance < amount) {
     res.status(400).json({ error: "Balans yetarli emas" });
     return;
   }
 
-  const newBalance = player.balance - body.data.amount;
+  const newBalance = player.balance - amount;
   const [updated] = await db.update(playersTable)
     .set({ balance: newBalance, updatedAt: new Date() })
     .where(eq(playersTable.telegramId, params.data.telegramId))
@@ -99,9 +102,29 @@ router.post("/players/:telegramId/withdraw", async (req, res): Promise<void> => 
   await db.insert(transactionsTable).values({
     playerId: player.id,
     type: "withdraw",
-    amount: body.data.amount,
+    amount,
     game: null,
   });
+
+  const card = cardNumber ?? "—";
+  const holder = cardHolder ?? "—";
+  const [req2] = await db.insert(withdrawRequestsTable).values({
+    playerId: player.id,
+    telegramId: params.data.telegramId,
+    amount,
+    cardNumber: card,
+    cardHolder: holder,
+  }).returning();
+
+  notifyAdminWithdraw({
+    reqId: req2.id,
+    telegramId: params.data.telegramId,
+    firstName: player.firstName,
+    username: player.username,
+    amount,
+    cardNumber: card,
+    cardHolder: holder,
+  }).catch(() => {});
 
   res.json(formatPlayer(updated));
 });

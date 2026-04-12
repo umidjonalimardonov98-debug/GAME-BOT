@@ -32,11 +32,11 @@ export async function deposit(telegramId: string, amount: number) {
   return res.json();
 }
 
-export async function withdraw(telegramId: string, amount: number) {
+export async function withdraw(telegramId: string, amount: number, cardNumber: string, cardHolder: string) {
   const res = await fetch(`${BASE}/players/${telegramId}/withdraw`, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ amount }),
+    body: JSON.stringify({ amount, cardNumber, cardHolder }),
   });
   if (!res.ok) {
     const err = await res.json();
