@@ -2,7 +2,7 @@ import { createContext, useContext, useEffect, useState, useCallback, type React
 import { getTelegramUser, initTelegramApp } from "./telegram";
 import { syncPlayer, getPlayer } from "./api";
 
-interface Player {
+export interface Player {
   id: number;
   telegramId: string;
   username?: string | null;
@@ -13,6 +13,9 @@ interface Player {
   totalWon: number;
   totalLost: number;
   gamesPlayed: number;
+  totalDeposited: number;
+  wagerRequirement: number;
+  totalWagered: number;
 }
 
 interface PlayerContextType {
@@ -48,7 +51,6 @@ export function PlayerProvider({ children }: { children: ReactNode }) {
         return;
       } catch {}
     }
-    // Fallback: demo player
     const demoId = "demo_user";
     try {
       let p = await getPlayer(demoId);
@@ -58,13 +60,9 @@ export function PlayerProvider({ children }: { children: ReactNode }) {
       setPlayer(p);
     } catch {
       setPlayer({
-        id: 0,
-        telegramId: "demo",
-        firstName: "Demo O'yinchi",
-        balance: 10000,
-        totalWon: 0,
-        totalLost: 0,
-        gamesPlayed: 0,
+        id: 0, telegramId: "demo", firstName: "Demo O'yinchi",
+        balance: 10000, totalWon: 0, totalLost: 0, gamesPlayed: 0,
+        totalDeposited: 0, wagerRequirement: 0, totalWagered: 0,
       });
     }
   }, []);

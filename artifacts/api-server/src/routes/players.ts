@@ -137,6 +137,7 @@ router.post("/players/:telegramId/bet", async (req, res): Promise<void> => {
       totalWon: won ? player.totalWon + winAmount : player.totalWon,
       totalLost: !won ? player.totalLost + amount : player.totalLost,
       gamesPlayed: player.gamesPlayed + 1,
+      totalWagered: player.totalWagered + amount,
       updatedAt: new Date(),
     })
     .where(eq(playersTable.telegramId, params.data.telegramId))
@@ -185,6 +186,9 @@ function formatPlayer(p: typeof playersTable.$inferSelect) {
     totalWon: p.totalWon,
     totalLost: p.totalLost,
     gamesPlayed: p.gamesPlayed,
+    totalDeposited: p.totalDeposited,
+    wagerRequirement: p.wagerRequirement,
+    totalWagered: p.totalWagered,
     createdAt: p.createdAt.toISOString(),
     updatedAt: p.updatedAt.toISOString(),
   };

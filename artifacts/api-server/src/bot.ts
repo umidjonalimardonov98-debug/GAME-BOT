@@ -1,163 +1,351 @@
 import TelegramBot from "node-telegram-bot-api";
 import { eq } from "drizzle-orm";
-import { db, playersTable } from "@workspace/db";
+import { db, playersTable, depositRequestsTable, withdrawRequestsTable } from "@workspace/db";
 import { logger } from "./lib/logger";
 
-const TOKEN = process.env.TELEGRAM_BOT_TOKEN;
-const CHANNEL_INVITE = process.env.CHANNEL_INVITE || "https://t.me/+BIxGcXiUhIc5MWJi";
+const TOKEN = process.env.TELEGRAM_BOT_TOKEN!;
+const CHANNEL_INVITE = process.env.CHANNEL_INVITE || "";
 const CHANNEL_ID = process.env.CHANNEL_ID || "";
+const ADMIN_ID = Number(process.env.ADMIN_TELEGRAM_ID || "0");
+const CARD_NUMBER = process.env.CARD_NUMBER || "";
+const CARD_HOLDER = process.env.CARD_HOLDER || "";
 const DOMAINS = process.env.REPLIT_DOMAINS || "";
 const APP_URL = DOMAINS ? `https://${DOMAINS.split(",")[0]}` : "";
+const BONUS_PERCENT = 20;
 
 let bot: TelegramBot | null = null;
+const waitingForCheck = new Map<number, number>(); // userId -> depositRequestId
 
-async function checkSubscription(userId: number): Promise<boolean> {
+async function checkSub(userId: number): Promise<boolean> {
   if (!bot || !CHANNEL_ID) return true;
   try {
-    const member = await bot.getChatMember(CHANNEL_ID, userId);
-    return ["member", "administrator", "creator"].includes(member.status);
-  } catch {
-    return true;
-  }
+    const m = await bot.getChatMember(CHANNEL_ID, userId);
+    return ["member","administrator","creator"].includes(m.status);
+  } catch { return true; }
 }
 
-async function syncPlayer(tgUser: TelegramBot.User) {
-  try {
-    const existing = await db.select().from(playersTable).where(eq(playersTable.telegramId, String(tgUser.id)));
-    if (existing.length === 0) {
-      await db.insert(playersTable).values({
-        telegramId: String(tgUser.id),
-        username: tgUser.username ?? null,
-        firstName: tgUser.first_name,
-        lastName: tgUser.last_name ?? null,
-        balance: 10000,
-      });
-    } else {
-      await db.update(playersTable)
-        .set({ username: tgUser.username ?? null, firstName: tgUser.first_name, updatedAt: new Date() })
-        .where(eq(playersTable.telegramId, String(tgUser.id)));
-    }
-  } catch (e) {
-    logger.error({ err: e }, "Failed to sync player");
+async function getOrCreatePlayer(tgUser: TelegramBot.User) {
+  const rows = await db.select().from(playersTable).where(eq(playersTable.telegramId, String(tgUser.id)));
+  if (rows.length) {
+    await db.update(playersTable).set({ username: tgUser.username ?? null, firstName: tgUser.first_name, updatedAt: new Date() }).where(eq(playersTable.telegramId, String(tgUser.id)));
+    return rows[0];
   }
+  const [p] = await db.insert(playersTable).values({ telegramId: String(tgUser.id), username: tgUser.username ?? null, firstName: tgUser.first_name, lastName: tgUser.last_name ?? null, balance: 10000 }).returning();
+  return p;
+}
+
+function fmt(n: number) { return n.toLocaleString("uz-UZ"); }
+
+async function mainMenu(chatId: number, name: string, balance: number) {
+  await bot!.sendMessage(chatId,
+    `🎮 <b>Salom, ${name}!</b>\n\n` +
+    `💰 Balansingiz: <b>${fmt(balance)} UZS</b>\n\n` +
+    `🎰 O'yinlar: 🍄 Apple of Fortune • 🎲 Dice • ✈️ Aviator\n\n` +
+    `👇 O'yinni boshlash uchun tugmani bosing:`,
+    { parse_mode: "HTML", reply_markup: { inline_keyboard: [
+      [{ text: "🎮 O'YINNI BOSHLASH", web_app: { url: APP_URL } }],
+      [{ text: "💰 Balansim", callback_data: "balance" }, { text: "📖 Qoidalar", callback_data: "howto" }],
+      [{ text: "➕ Hisob To'ldirish", callback_data: "deposit_menu" }, { text: "💸 Pul Yechish", callback_data: "withdraw_menu" }],
+    ]}}
+  );
 }
 
 export function startBot() {
-  if (!TOKEN) {
-    logger.warn("TELEGRAM_BOT_TOKEN not set, bot disabled");
-    return;
-  }
-
+  if (!TOKEN) { logger.warn("No BOT TOKEN"); return; }
   bot = new TelegramBot(TOKEN, { polling: true });
-  logger.info("Telegram bot started");
+  logger.info("Bot started");
 
   bot.onText(/\/start/, async (msg) => {
+    const user = msg.from; if (!user) return;
     const chatId = msg.chat.id;
-    const user = msg.from;
-    if (!user) return;
-
-    await syncPlayer(user);
-
-    const isSubscribed = await checkSubscription(user.id);
-
-    if (!isSubscribed) {
+    const player = await getOrCreatePlayer(user);
+    const subOk = await checkSub(user.id);
+    if (!subOk) {
       await bot!.sendMessage(chatId,
-        `🎮 <b>Game Botga Xush Kelibsiz!</b>\n\n` +
-        `⚡️ O'yin o'ynash uchun avval kanalga obuna bo'ling!\n\n` +
-        `📢 Kanalga obuna bo'lgach, <b>/start</b> bosing`,
-        {
-          parse_mode: "HTML",
-          reply_markup: {
-            inline_keyboard: [
-              [{ text: "📢 Kanalga Obuna Bo'lish", url: CHANNEL_INVITE }],
-              [{ text: "✅ Obuna Bo'ldim", callback_data: "check_sub" }],
-            ]
-          }
-        }
+        `🎮 <b>Game Botga Xush Kelibsiz!</b>\n\n⚡️ O'yin o'ynash uchun avval kanalga obuna bo'ling!`,
+        { parse_mode: "HTML", reply_markup: { inline_keyboard: [
+          [{ text: "📢 Kanalga Obuna Bo'lish", url: CHANNEL_INVITE }],
+          [{ text: "✅ Obuna Bo'ldim", callback_data: "check_sub" }],
+        ]}}
       );
       return;
     }
-
-    await sendMainMenu(chatId, user.first_name);
+    await mainMenu(chatId, user.first_name, player.balance);
   });
 
-  bot.on("callback_query", async (query) => {
-    if (!query.message || !query.from) return;
-    const chatId = query.message.chat.id;
+  bot.on("photo", async (msg) => {
+    const userId = msg.from?.id; if (!userId) return;
+    const reqId = waitingForCheck.get(userId);
+    if (!reqId) return;
 
-    if (query.data === "check_sub") {
-      const isSubscribed = await checkSubscription(query.from.id);
-      if (!isSubscribed) {
-        await bot!.answerCallbackQuery(query.id, { text: "❌ Hali obuna bo'lmadingiz!", show_alert: true });
-        return;
-      }
-      await bot!.answerCallbackQuery(query.id, { text: "✅ Obuna tasdiqlandi!" });
-      await syncPlayer(query.from);
-      await sendMainMenu(chatId, query.from.first_name);
+    const fileId = msg.photo![msg.photo!.length - 1].file_id;
+    await db.update(depositRequestsTable).set({ telegramFileId: fileId }).where(eq(depositRequestsTable.id, reqId));
+    waitingForCheck.delete(userId);
+
+    const [req] = await db.select().from(depositRequestsTable).where(eq(depositRequestsTable.id, reqId));
+    const [player] = await db.select().from(playersTable).where(eq(playersTable.id, req.playerId));
+
+    await bot!.sendMessage(msg.chat.id, `✅ <b>Chekingiz qabul qilindi!</b>\n\n⏳ Admin tekshirib, ${BONUS_PERCENT}% bonus bilan balansingizni to'ldiradi.\n\n📞 Kutib turing...`, { parse_mode: "HTML" });
+
+    if (ADMIN_ID) {
+      await bot!.sendPhoto(ADMIN_ID, fileId, {
+        caption:
+          `💳 <b>YANGI DEPOZIT SO'ROVI</b>\n\n` +
+          `👤 Foydalanuvchi: <b>${player.firstName}</b> (@${player.username ?? "—"})\n` +
+          `🆔 TG ID: <code>${player.telegramId}</code>\n` +
+          `💵 Miqdor: <b>${fmt(req.amount)} UZS</b>\n` +
+          `🎁 Bonus (+${BONUS_PERCENT}%): <b>${fmt(req.bonusAmount)} UZS</b>\n` +
+          `💰 Jami: <b>${fmt(req.amount + req.bonusAmount)} UZS</b>\n\n` +
+          `✅ Tasdiqlash uchun tugmani bosing:`,
+        parse_mode: "HTML",
+        reply_markup: { inline_keyboard: [[
+          { text: "✅ Tasdiqlash", callback_data: `dep_ok_${reqId}` },
+          { text: "❌ Rad etish", callback_data: `dep_no_${reqId}` },
+        ]]}
+      });
+    }
+  });
+
+  bot.on("callback_query", async (q) => {
+    if (!q.message || !q.from) return;
+    const chatId = q.message.chat.id;
+    const data = q.data || "";
+
+    if (data === "check_sub") {
+      const ok = await checkSub(q.from.id);
+      if (!ok) { await bot!.answerCallbackQuery(q.id, { text: "❌ Hali obuna bo'lmadingiz!", show_alert: true }); return; }
+      await bot!.answerCallbackQuery(q.id, { text: "✅ Tasdiqlandi!" });
+      const p = await getOrCreatePlayer(q.from);
+      await mainMenu(chatId, q.from.first_name, p.balance);
     }
 
-    if (query.data === "menu_balance") {
-      const [player] = await db.select().from(playersTable).where(eq(playersTable.telegramId, String(query.from.id)));
-      const balance = player?.balance ?? 0;
-      await bot!.answerCallbackQuery(query.id);
+    if (data === "balance") {
+      const [p] = await db.select().from(playersTable).where(eq(playersTable.telegramId, String(q.from.id)));
+      await bot!.answerCallbackQuery(q.id);
+      const wagerLeft = Math.max(0, (p?.wagerRequirement ?? 0) - (p?.totalWagered ?? 0));
       await bot!.sendMessage(chatId,
-        `💰 <b>Sizning Hisobingiz</b>\n\n` +
-        `💵 Balans: <b>${balance.toLocaleString()} UZS</b>\n` +
-        `🎮 O'yinlar: <b>${player?.gamesPlayed ?? 0}</b>\n` +
-        `🏆 Jami Yutgan: <b>${(player?.totalWon ?? 0).toLocaleString()} UZS</b>\n\n` +
-        `👇 O'yin ilovasini oching:`,
-        {
-          parse_mode: "HTML",
-          reply_markup: {
-            inline_keyboard: [[{ text: "🎮 O'yin Ochish", web_app: { url: APP_URL } }]]
-          }
-        }
-      );
-    }
-
-    if (query.data === "menu_howtoplay") {
-      await bot!.answerCallbackQuery(query.id);
-      await bot!.sendMessage(chatId,
-        `📖 <b>Qanday O'ynaladi?</b>\n\n` +
-        `🍄 <b>Apple of Fortune</b>\n` +
-        `Yashirin katakchalardan mushroom toping! Har bir mushroom topilganda koeffitsiyent oshadi. O'z vaqtida to'xta!\n\n` +
-        `🎲 <b>Dice</b>\n` +
-        `2 zar uloqtiriladi. Ularning yig'indisi 7 dan ko'p, teng yoki kam bo'lishini taxmin qiling:\n` +
-        `• Ko'proq 7 → x2.3\n• Teng 7 → x5.8\n• Ozroq 7 → x2.3\n\n` +
-        `✈️ <b>Aviator</b>\n` +
-        `Samolyot uchib ko'tarilganda koeffitsiyent oshib boradi. Samolyot tushishidan <b>OLDIN</b> "Cash Out" bosing!\n\n` +
-        `💡 <b>Maslahat:</b> Kichik tikishdan boshlang va strategiyangizni rivojlantiring!`,
+        `💰 <b>Hisobingiz</b>\n\n` +
+        `💵 Balans: <b>${fmt(p?.balance ?? 0)} UZS</b>\n` +
+        `🎮 O'yinlar: <b>${p?.gamesPlayed ?? 0}</b>\n` +
+        `🏆 Jami Yutgan: <b>${fmt(p?.totalWon ?? 0)} UZS</b>\n` +
+        `📈 Jami Tikkan: <b>${fmt(p?.totalWagered ?? 0)} UZS</b>\n` +
+        (wagerLeft > 0 ? `⚠️ Chiqarish uchun yana <b>${fmt(wagerLeft)} UZS</b> o'ynash kerak` : `✅ Chiqarishga ruxsat bor`),
         { parse_mode: "HTML" }
       );
     }
-  });
 
-  bot.on("polling_error", (err) => {
-    logger.error({ err }, "Bot polling error");
-  });
-}
-
-async function sendMainMenu(chatId: number, name: string) {
-  const [player] = await db.select().from(playersTable).where(eq(playersTable.telegramId, String(chatId)));
-  const balance = player?.balance ?? 10000;
-
-  await bot!.sendMessage(chatId,
-    `🎮 <b>Assalomu Alaykum, ${name}!</b>\n\n` +
-    `💰 Balansingiz: <b>${balance.toLocaleString()} UZS</b>\n\n` +
-    `🎰 Uch xil qiziqarli o'yin sizni kutmoqda!\n` +
-    `🍄 Apple of Fortune • 🎲 Dice • ✈️ Aviator\n\n` +
-    `👇 O'yin ochish uchun tugmani bosing:`,
-    {
-      parse_mode: "HTML",
-      reply_markup: {
-        inline_keyboard: [
-          [{ text: "🎮 O'YINNI BOSHLASH", web_app: { url: APP_URL } }],
-          [
-            { text: "💰 Balansim", callback_data: "menu_balance" },
-            { text: "📖 Qanday O'ynaladi", callback_data: "menu_howtoplay" },
-          ],
-        ]
-      }
+    if (data === "howto") {
+      await bot!.answerCallbackQuery(q.id);
+      await bot!.sendMessage(chatId,
+        `📖 <b>Qanday O'ynaladi?</b>\n\n` +
+        `🍄 <b>Apple of Fortune</b> — Katakchalardan mushroom toping, ko'proq topsangiz ko'proq yutasiz!\n\n` +
+        `🎲 <b>Dice</b> — 2 zar yig'indisi 7 dan KO'P (x2.3), TENG (x5.8) yoki KAM (x2.3) bo'lishini taxmin qiling\n\n` +
+        `✈️ <b>Aviator</b> — Koeffitsiyent oshganda "Cash Out" bosing, samolyot tushishidan oldin!`,
+        { parse_mode: "HTML" }
+      );
     }
-  );
+
+    if (data === "deposit_menu") {
+      await bot!.answerCallbackQuery(q.id);
+      await bot!.sendMessage(chatId,
+        `➕ <b>Hisob To'ldirish</b>\n\n` +
+        `🎁 Har qanday miqdorga <b>+${BONUS_PERCENT}% bonus</b> beriladi!\n\n` +
+        `💳 Quyidagi kartaga pul o'tkaring:\n\n` +
+        `<code>${CARD_NUMBER}</code>\n` +
+        `👤 ${CARD_HOLDER}\n\n` +
+        `Miqdorni tanlang:`,
+        { parse_mode: "HTML", reply_markup: { inline_keyboard: [
+          [{ text: "💵 10,000 UZS", callback_data: "dep_10000" }, { text: "💵 25,000 UZS", callback_data: "dep_25000" }],
+          [{ text: "💵 50,000 UZS", callback_data: "dep_50000" }, { text: "💵 100,000 UZS", callback_data: "dep_100000" }],
+          [{ text: "💵 250,000 UZS", callback_data: "dep_250000" }, { text: "💵 500,000 UZS", callback_data: "dep_500000" }],
+        ]}}
+      );
+    }
+
+    if (data.startsWith("dep_") && !data.startsWith("dep_ok") && !data.startsWith("dep_no")) {
+      const amount = Number(data.split("_")[1]);
+      if (!amount) return;
+      await bot!.answerCallbackQuery(q.id);
+      const [p] = await db.select().from(playersTable).where(eq(playersTable.telegramId, String(q.from.id)));
+      if (!p) return;
+      const bonus = Math.floor(amount * BONUS_PERCENT / 100);
+      const [req] = await db.insert(depositRequestsTable).values({
+        playerId: p.id, telegramId: String(q.from.id), amount, bonusAmount: bonus,
+      }).returning();
+      waitingForCheck.set(q.from.id, req.id);
+      await bot!.sendMessage(chatId,
+        `💳 <b>To'lov Ma'lumotlari</b>\n\n` +
+        `💵 To'lash miqdori: <b>${fmt(amount)} UZS</b>\n` +
+        `🎁 Bonus: <b>+${fmt(bonus)} UZS</b>\n` +
+        `💰 Jami hisobga tushadi: <b>${fmt(amount + bonus)} UZS</b>\n\n` +
+        `━━━━━━━━━━━━━━━\n` +
+        `💳 Karta: <code>${CARD_NUMBER}</code>\n` +
+        `👤 ${CARD_HOLDER}\n` +
+        `━━━━━━━━━━━━━━━\n\n` +
+        `✅ Pul o'tkazganingizdan so'ng, <b>chek rasmini</b> shu yerga yuboring!`,
+        { parse_mode: "HTML" }
+      );
+    }
+
+    if (data.startsWith("dep_ok_")) {
+      if (q.from.id !== ADMIN_ID) { await bot!.answerCallbackQuery(q.id, { text: "❌ Ruxsat yo'q" }); return; }
+      const reqId = Number(data.split("_")[2]);
+      const [req] = await db.select().from(depositRequestsTable).where(eq(depositRequestsTable.id, reqId));
+      if (!req || req.status !== "pending") { await bot!.answerCallbackQuery(q.id, { text: "Allaqachon qayta ishlangan" }); return; }
+      await db.update(depositRequestsTable).set({ status: "approved" }).where(eq(depositRequestsTable.id, reqId));
+      const [p] = await db.select().from(playersTable).where(eq(playersTable.id, req.playerId));
+      const total = req.amount + req.bonusAmount;
+      await db.update(playersTable).set({
+        balance: p.balance + total,
+        totalDeposited: p.totalDeposited + req.amount,
+        wagerRequirement: p.wagerRequirement + req.amount,
+        updatedAt: new Date(),
+      }).where(eq(playersTable.id, req.playerId));
+      await bot!.answerCallbackQuery(q.id, { text: "✅ Tasdiqlandi!" });
+      await bot!.editMessageCaption(`✅ TASDIQLANDI — ${fmt(req.amount)} UZS + ${fmt(req.bonusAmount)} bonus`, { chat_id: q.message.chat.id, message_id: q.message.message_id });
+      await bot!.sendMessage(Number(req.telegramId),
+        `🎉 <b>Depozitingiz tasdiqlandi!</b>\n\n` +
+        `💵 Miqdor: <b>${fmt(req.amount)} UZS</b>\n` +
+        `🎁 Bonus: <b>+${fmt(req.bonusAmount)} UZS</b>\n` +
+        `💰 Jami qo'shildi: <b>${fmt(total)} UZS</b>\n\n` +
+        `O'yiningiz omadli bo'lsin! 🎮`,
+        { parse_mode: "HTML" }
+      );
+    }
+
+    if (data.startsWith("dep_no_")) {
+      if (q.from.id !== ADMIN_ID) { await bot!.answerCallbackQuery(q.id, { text: "❌ Ruxsat yo'q" }); return; }
+      const reqId = Number(data.split("_")[2]);
+      const [req] = await db.select().from(depositRequestsTable).where(eq(depositRequestsTable.id, reqId));
+      if (!req) return;
+      await db.update(depositRequestsTable).set({ status: "rejected" }).where(eq(depositRequestsTable.id, reqId));
+      await bot!.answerCallbackQuery(q.id, { text: "❌ Rad etildi" });
+      await bot!.editMessageCaption(`❌ RAD ETILDI`, { chat_id: q.message.chat.id, message_id: q.message.message_id });
+      await bot!.sendMessage(Number(req.telegramId), `❌ <b>Depozitingiz rad etildi.</b>\n\nMuammo bo'lsa admin bilan bog'laning.`, { parse_mode: "HTML" });
+    }
+
+    if (data === "withdraw_menu") {
+      await bot!.answerCallbackQuery(q.id);
+      const [p] = await db.select().from(playersTable).where(eq(playersTable.telegramId, String(q.from.id)));
+      if (!p) return;
+      const wagerLeft = Math.max(0, p.wagerRequirement - p.totalWagered);
+      if (wagerLeft > 0) {
+        await bot!.sendMessage(chatId,
+          `💸 <b>Pul Yechish</b>\n\n` +
+          `⚠️ <b>Chiqarish uchun shart bajarilmagan!</b>\n\n` +
+          `📊 Sizning holatingiz:\n` +
+          `• Depozit: ${fmt(p.totalDeposited)} UZS\n` +
+          `• O'ynalgan: ${fmt(p.totalWagered)} UZS\n` +
+          `• Qolgan: <b>${fmt(wagerLeft)} UZS</b> o'ynash kerak\n\n` +
+          `💡 Depozit miqdorini 100% o'ynasangiz pul yechi olasiz!`,
+          { parse_mode: "HTML" }
+        );
+        return;
+      }
+      await bot!.sendMessage(chatId,
+        `💸 <b>Pul Yechish</b>\n\n` +
+        `💰 Mavjud balans: <b>${fmt(p.balance)} UZS</b>\n\n` +
+        `Miqdorni tanlang:`,
+        { parse_mode: "HTML", reply_markup: { inline_keyboard: [
+          [{ text: `${fmt(Math.min(10000, p.balance))} UZS`, callback_data: `wd_10000` }, { text: `${fmt(Math.min(50000, p.balance))} UZS`, callback_data: `wd_50000` }],
+          [{ text: `${fmt(Math.min(100000, p.balance))} UZS`, callback_data: `wd_100000` }, { text: `Hammasi (${fmt(p.balance)})`, callback_data: `wd_${p.balance}` }],
+        ]}}
+      );
+    }
+
+    if (data.startsWith("wd_") && !data.startsWith("wd_ok") && !data.startsWith("wd_no")) {
+      const amount = Number(data.split("_")[1]);
+      if (!amount) return;
+      await bot!.answerCallbackQuery(q.id);
+      const [p] = await db.select().from(playersTable).where(eq(playersTable.telegramId, String(q.from.id)));
+      if (!p || p.balance < amount) { await bot!.sendMessage(chatId, "❌ Balans yetarli emas!"); return; }
+      await bot!.sendMessage(chatId,
+        `💸 <b>Karta ma'lumotlarini kiriting</b>\n\n` +
+        `Quyidagi formatda yuboring:\n` +
+        `<code>KARTA: 8600123456789012\nEGASI: Ismingiz Familiyangiz</code>`,
+        { parse_mode: "HTML" }
+      );
+      // Store pending withdrawal in a simple map
+      pendingWithdraw.set(q.from.id, { amount, step: "card" });
+    }
+
+    if (data.startsWith("wd_ok_")) {
+      if (q.from.id !== ADMIN_ID) { await bot!.answerCallbackQuery(q.id, { text: "❌ Ruxsat yo'q" }); return; }
+      const reqId = Number(data.split("_")[2]);
+      const [req] = await db.select().from(withdrawRequestsTable).where(eq(withdrawRequestsTable.id, reqId));
+      if (!req || req.status !== "pending") { await bot!.answerCallbackQuery(q.id, { text: "Allaqachon qayta ishlangan" }); return; }
+      await db.update(withdrawRequestsTable).set({ status: "approved" }).where(eq(withdrawRequestsTable.id, reqId));
+      await bot!.answerCallbackQuery(q.id, { text: "✅ Tasdiqlandi!" });
+      await bot!.editMessageText(
+        `✅ TASDIQLANDI — ${fmt(req.amount)} UZS`,
+        { chat_id: q.message.chat.id, message_id: q.message.message_id }
+      );
+      await bot!.sendMessage(Number(req.telegramId),
+        `✅ <b>Pul yechish tasdiqlandi!</b>\n\n💵 <b>${fmt(req.amount)} UZS</b> kartangizga o'tkazildi.\n\n🏦 Karta: <code>${req.cardNumber}</code>`,
+        { parse_mode: "HTML" }
+      );
+    }
+
+    if (data.startsWith("wd_no_")) {
+      if (q.from.id !== ADMIN_ID) { await bot!.answerCallbackQuery(q.id, { text: "❌ Ruxsat yo'q" }); return; }
+      const reqId = Number(data.split("_")[2]);
+      const [req] = await db.select().from(withdrawRequestsTable).where(eq(withdrawRequestsTable.id, reqId));
+      if (!req) return;
+      await db.update(withdrawRequestsTable).set({ status: "rejected" }).where(eq(withdrawRequestsTable.id, reqId));
+      const [p] = await db.select().from(playersTable).where(eq(playersTable.id, req.playerId));
+      await db.update(playersTable).set({ balance: p.balance + req.amount, updatedAt: new Date() }).where(eq(playersTable.id, req.playerId));
+      await bot!.answerCallbackQuery(q.id, { text: "❌ Rad etildi" });
+      await bot!.editMessageText(`❌ RAD ETILDI`, { chat_id: q.message.chat.id, message_id: q.message.message_id });
+      await bot!.sendMessage(Number(req.telegramId), `❌ <b>Pul yechish rad etildi.</b>\nBalansingiz qaytarildi.`, { parse_mode: "HTML" });
+    }
+  });
+
+  const pendingWithdraw = new Map<number, { amount: number; step: string }>();
+
+  bot.on("message", async (msg) => {
+    if (!msg.text || !msg.from) return;
+    const userId = msg.from.id;
+    const pw = pendingWithdraw.get(userId);
+    if (!pw) return;
+
+    const text = msg.text;
+    const cardMatch = text.match(/KARTA:\s*(\d[\d\s]+\d)/i);
+    const holderMatch = text.match(/EGASI:\s*(.+)/i);
+
+    if (!cardMatch || !holderMatch) {
+      await bot!.sendMessage(msg.chat.id, "❌ Format noto'g'ri. Qaytadan:\n<code>KARTA: 8600123456789012\nEGASI: Ismingiz Familiyangiz</code>", { parse_mode: "HTML" });
+      return;
+    }
+
+    const cardNumber = cardMatch[1].replace(/\s+/g, "");
+    const cardHolder = holderMatch[1].trim();
+    pendingWithdraw.delete(userId);
+
+    const [p] = await db.select().from(playersTable).where(eq(playersTable.telegramId, String(userId)));
+    if (!p || p.balance < pw.amount) { await bot!.sendMessage(msg.chat.id, "❌ Balans yetarli emas!"); return; }
+
+    await db.update(playersTable).set({ balance: p.balance - pw.amount, updatedAt: new Date() }).where(eq(playersTable.telegramId, String(userId)));
+    const [req] = await db.insert(withdrawRequestsTable).values({
+      playerId: p.id, telegramId: String(userId), amount: pw.amount, cardNumber, cardHolder,
+    }).returning();
+
+    await bot!.sendMessage(msg.chat.id, `⏳ <b>So'rovingiz adminga yuborildi!</b>\n\nTez orada ko'rib chiqiladi.`, { parse_mode: "HTML" });
+
+    if (ADMIN_ID) {
+      await bot!.sendMessage(ADMIN_ID,
+        `💸 <b>PUL YECHISH SO'ROVI</b>\n\n` +
+        `👤 ${p.firstName} (@${p.username ?? "—"})\n` +
+        `🆔 <code>${p.telegramId}</code>\n` +
+        `💵 Miqdor: <b>${fmt(pw.amount)} UZS</b>\n` +
+        `💳 Karta: <code>${cardNumber}</code>\n` +
+        `👤 Egasi: ${cardHolder}`,
+        { parse_mode: "HTML", reply_markup: { inline_keyboard: [[
+          { text: "✅ To'landi", callback_data: `wd_ok_${req.id}` },
+          { text: "❌ Rad", callback_data: `wd_no_${req.id}` },
+        ]]}}
+      );
+    }
+  });
+
+  bot.on("polling_error", (e) => logger.error({ err: e }, "Bot polling error"));
 }
