@@ -1,5 +1,5 @@
 import TelegramBot from "node-telegram-bot-api";
-import { eq, and, isNull } from "drizzle-orm";
+import { eq, and, isNull, sql, desc } from "drizzle-orm";
 import { db, playersTable, depositRequestsTable, withdrawRequestsTable } from "@workspace/db";
 import { logger } from "./lib/logger";
 
@@ -21,6 +21,7 @@ const waitingForWithdrawAmount = new Set<number>();            // userId waiting
 const pendingWithdraw = new Map<number, { amount: number }>(); // userId -> withdraw info
 const waitingForHelp = new Set<number>();                      // userId waiting to type help question
 const adminReplyTarget = new Map<number, number>();            // adminId -> targetUserId (for admin replies)
+const waitingForBroadcast = new Set<number>();                  // adminId waiting to type broadcast message
 
 export async function notifyAdminWithdraw(opts: {
   reqId: number; telegramId: string; firstName: string; username: string | null;
@@ -75,6 +76,7 @@ async function mainMenu(chatId: number, name: string, balance: number) {
       [{ text: "💰 Balansim", callback_data: "balance" }, { text: "📖 Qoidalar", callback_data: "howto" }],
       [{ text: "➕ Hisob To'ldirish", web_app: { url: DEPOSIT_URL } }, { text: "💸 Pul Yechish", callback_data: "withdraw_menu" }],
       [{ text: "🏆 Reyting", callback_data: "reyting" }, { text: "❓ Yordam", callback_data: "help_menu" }],
+      [{ text: "🎰 Kunlik Spin", callback_data: "spin_wheel" }, { text: "👥 Referal", callback_data: "referral_menu" }],
     ]}}
   );
 }
@@ -141,10 +143,31 @@ export async function startBot() {
     return;
   }
 
-  // /start command
-  bot.onText(/\/start/, async (msg) => {
+  // /start command (with referral support)
+  bot.onText(/\/start(.*)/, async (msg, match) => {
     const user = msg.from; if (!user) return;
+    const isNew = !(await db.select().from(playersTable).where(eq(playersTable.telegramId, String(user.id)))).length;
     const player = await getOrCreatePlayer(user);
+
+    // Handle referral code
+    const param = (match?.[1] || "").trim();
+    if (isNew && param.startsWith("ref_")) {
+      const referrerId = param.replace("ref_", "");
+      if (referrerId !== String(user.id)) {
+        const [referrer] = await db.select().from(playersTable).where(eq(playersTable.telegramId, referrerId));
+        if (referrer) {
+          await db.update(playersTable).set({ referredBy: referrerId, updatedAt: new Date() }).where(eq(playersTable.telegramId, String(user.id)));
+          await db.update(playersTable).set({ balance: referrer.balance + 1000, referralCount: referrer.referralCount + 1, updatedAt: new Date() }).where(eq(playersTable.telegramId, referrerId));
+          try {
+            await bot!.sendMessage(Number(referrerId),
+              `🎉 <b>Referal bonus!</b>\n\n👤 ${user.first_name} siz orqali ro'yxatdan o'tdi!\n💰 <b>+1 000 UZS</b> balansingizga qo'shildi!`,
+              { parse_mode: "HTML" }
+            );
+          } catch {}
+        }
+      }
+    }
+
     const subOk = await checkSub(user.id);
     if (!subOk) {
       await bot!.sendMessage(msg.chat.id,
@@ -156,7 +179,48 @@ export async function startBot() {
       );
       return;
     }
-    await mainMenu(msg.chat.id, user.first_name, player.balance);
+    const updated = await db.select().from(playersTable).where(eq(playersTable.telegramId, String(user.id)));
+    await mainMenu(msg.chat.id, user.first_name, updated[0]?.balance ?? player.balance);
+  });
+
+  // /broadcast command — admin only
+  bot.onText(/\/broadcast/, async (msg) => {
+    if (msg.from?.id !== ADMIN_ID) return;
+    waitingForBroadcast.add(ADMIN_ID);
+    await bot!.sendMessage(msg.chat.id,
+      `📢 <b>Xabar Yuborish</b>\n\nBarcha o'yinchilarga yuboriladigan xabarni yozing:\n\n<i>Bekor qilish uchun /cancel yozing</i>`,
+      { parse_mode: "HTML" }
+    );
+  });
+
+  // /stat command — admin only
+  bot.onText(/\/stat/, async (msg) => {
+    if (msg.from?.id !== ADMIN_ID) return;
+    const chatId = msg.chat.id;
+    try {
+      const today = new Date(); today.setHours(0, 0, 0, 0);
+      const [totalPlayers] = await db.select({ count: sql<number>`count(*)::int` }).from(playersTable);
+      const [newToday] = await db.select({ count: sql<number>`count(*)::int` }).from(playersTable).where(sql`created_at >= ${today}`);
+      const [depToday] = await db.select({ total: sql<number>`coalesce(sum(amount),0)::int`, cnt: sql<number>`count(*)::int` }).from(depositRequestsTable).where(sql`created_at >= ${today} and status = 'approved'`);
+      const [wdToday] = await db.select({ total: sql<number>`coalesce(sum(amount),0)::int`, cnt: sql<number>`count(*)::int` }).from(withdrawRequestsTable).where(sql`created_at >= ${today} and status = 'approved'`);
+      const [totalBal] = await db.select({ total: sql<number>`coalesce(sum(balance),0)::int` }).from(playersTable);
+      const pendingDeps = await db.select().from(depositRequestsTable).where(eq(depositRequestsTable.status, "pending"));
+      const pendingWds = await db.select().from(withdrawRequestsTable).where(eq(withdrawRequestsTable.status, "pending"));
+
+      await bot!.sendMessage(chatId,
+        `📊 <b>KUNLIK STATISTIKA</b>\n\n` +
+        `👥 Jami o'yinchilar: <b>${totalPlayers.count}</b>\n` +
+        `🆕 Bugun yangi: <b>${newToday.count}</b>\n\n` +
+        `💰 Bugun depozit: <b>${fmt(depToday.total)} UZS</b> (${depToday.cnt} ta)\n` +
+        `💸 Bugun yechim: <b>${fmt(wdToday.total)} UZS</b> (${wdToday.cnt} ta)\n\n` +
+        `🏦 Jami balanslar: <b>${fmt(totalBal.total)} UZS</b>\n\n` +
+        `⏳ Kutilayotgan:\n• Depozit: <b>${pendingDeps.length} ta</b>\n• Yechim: <b>${pendingWds.length} ta</b>`,
+        { parse_mode: "HTML" }
+      );
+    } catch (err) {
+      logger.error({ err }, "stat xato");
+      await bot!.sendMessage(chatId, "❌ Statistika yuklanmadi.");
+    }
   });
 
   // Photo handler — deposit receipt
@@ -215,6 +279,38 @@ export async function startBot() {
     const userId = msg.from.id;
     const chatId = msg.chat.id;
     const text = msg.text.trim();
+
+    // /cancel
+    if (text === "/cancel") {
+      waitingForBroadcast.delete(userId);
+      waitingForHelp.delete(userId);
+      adminReplyTarget.delete(userId);
+      await bot!.sendMessage(chatId, "❌ Bekor qilindi.", { parse_mode: "HTML" });
+      return;
+    }
+
+    // Admin broadcast message
+    if (userId === ADMIN_ID && waitingForBroadcast.has(ADMIN_ID)) {
+      waitingForBroadcast.delete(ADMIN_ID);
+      const allPlayers = await db.select({ telegramId: playersTable.telegramId }).from(playersTable);
+      await bot!.sendMessage(chatId, `📢 <b>${allPlayers.length} ta foydalanuvchiga yuborilmoqda...</b>`, { parse_mode: "HTML" });
+      let sent = 0, failed = 0;
+      for (const pl of allPlayers) {
+        try {
+          await bot!.sendMessage(Number(pl.telegramId),
+            `📢 <b>Admin xabari:</b>\n\n${text}`,
+            { parse_mode: "HTML" }
+          );
+          sent++;
+          await new Promise(r => setTimeout(r, 50)); // rate limit
+        } catch { failed++; }
+      }
+      await bot!.sendMessage(chatId,
+        `✅ <b>Yuborildi!</b>\n✅ Muvaffaqiyatli: <b>${sent} ta</b>\n❌ Yuborilmadi: <b>${failed} ta</b>`,
+        { parse_mode: "HTML" }
+      );
+      return;
+    }
 
     // Admin reply to user help question
     if (userId === ADMIN_ID && adminReplyTarget.has(ADMIN_ID)) {
@@ -525,6 +621,96 @@ export async function startBot() {
       await bot!.answerCallbackQuery(q.id, { text: "❌ Rad etildi" });
       try { await bot!.editMessageText(`❌ RAD ETILDI`, { chat_id: chatId, message_id: q.message.message_id }); } catch {}
       await bot!.sendMessage(Number(req.telegramId), `❌ <b>Pul yechish rad etildi.</b>\nBalansingiz qaytarildi.`, { parse_mode: "HTML" });
+      return;
+    }
+
+    // Spin wheel
+    if (data === "spin_wheel") {
+      await bot!.answerCallbackQuery(q.id);
+      const [p] = await db.select().from(playersTable).where(eq(playersTable.telegramId, String(q.from.id)));
+      if (!p) return;
+
+      const now = new Date();
+      if (p.lastSpinAt) {
+        const diffMs = now.getTime() - new Date(p.lastSpinAt).getTime();
+        const diffH = diffMs / (1000 * 60 * 60);
+        if (diffH < 24) {
+          const nextSpin = new Date(new Date(p.lastSpinAt).getTime() + 24 * 60 * 60 * 1000);
+          const hLeft = Math.ceil((nextSpin.getTime() - now.getTime()) / (1000 * 60 * 60));
+          const mLeft = Math.ceil(((nextSpin.getTime() - now.getTime()) % (1000 * 60 * 60)) / (1000 * 60));
+          await bot!.sendMessage(chatId,
+            `⏰ <b>Hali Spin vaqti kelmadi!</b>\n\n⏳ Keyingi spin: <b>${hLeft}s ${mLeft}m</b> da\n\nHar 24 soatda 1 marta bepul!`,
+            { parse_mode: "HTML" }
+          );
+          return;
+        }
+      }
+
+      // Spin prizes: [prize, weight]
+      const prizes = [0, 0, 0, 0, 500, 500, 1000, 1000, 2000, 3000, 5000];
+      const prize = prizes[Math.floor(Math.random() * prizes.length)];
+
+      const slots = ["🍎","🍋","🍇","🍒","💎","⭐","🎰","🍊","🍉","🎯","💰"];
+      const spin1 = slots[Math.floor(Math.random() * slots.length)];
+      const spin2 = slots[Math.floor(Math.random() * slots.length)];
+      const spin3 = prize > 0 ? spin1 : slots[Math.floor(Math.random() * slots.length)];
+
+      await db.update(playersTable).set({
+        lastSpinAt: now,
+        balance: p.balance + prize,
+        totalWon: prize > 0 ? p.totalWon + prize : p.totalWon,
+        updatedAt: now,
+      }).where(eq(playersTable.telegramId, String(q.from.id)));
+
+      if (prize > 0) {
+        await bot!.sendMessage(chatId,
+          `🎰 <b>[ ${spin1} | ${spin2} | ${spin1} ]</b>\n\n` +
+          `🎉 <b>TABRIKLAYMIZ!</b>\n💰 Bonus: <b>+${fmt(prize)} UZS</b> balansingizga qo'shildi!\n\n` +
+          `⏰ Keyingi spin ertaga mavjud bo'ladi`,
+          { parse_mode: "HTML" }
+        );
+      } else {
+        await bot!.sendMessage(chatId,
+          `🎰 <b>[ ${spin1} | ${spin2} | ${spin3} ]</b>\n\n` +
+          `😔 <b>Yutqazdingiz!</b>\nOmad yo'q, ertaga qaytib keling!\n\n` +
+          `💡 Maksimal bonus: <b>5 000 UZS</b>\n` +
+          `⏰ Keyingi spin ertaga mavjud bo'ladi`,
+          { parse_mode: "HTML" }
+        );
+      }
+      return;
+    }
+
+    // Referral menu
+    if (data === "referral_menu") {
+      await bot!.answerCallbackQuery(q.id);
+      const [p] = await db.select().from(playersTable).where(eq(playersTable.telegramId, String(q.from.id)));
+      const botInfo = await bot!.getMe();
+      const refLink = `https://t.me/${botInfo.username}?start=ref_${q.from.id}`;
+      const count = p?.referralCount ?? 0;
+      const earned = count * 1000;
+      await bot!.sendMessage(chatId,
+        `👥 <b>REFERAL DASTURI</b>\n\n` +
+        `🎁 Har bir do'stingiz uchun: <b>+1 000 UZS</b>\n\n` +
+        `📊 Sizning natijangiz:\n` +
+        `👤 Taklif qilganlar: <b>${count} ta</b>\n` +
+        `💰 Jami topganingiz: <b>${fmt(earned)} UZS</b>\n\n` +
+        `🔗 <b>Sizning havola:</b>\n<code>${refLink}</code>\n\n` +
+        `📲 Havolani do'stingizga yuboring. U ro'yxatdan o'tgach, sizga <b>1 000 UZS</b> tushadi!`,
+        { parse_mode: "HTML" }
+      );
+      return;
+    }
+
+    // Admin: broadcast menu
+    if (data === "broadcast_menu") {
+      if (q.from.id !== ADMIN_ID) { await bot!.answerCallbackQuery(q.id, { text: "❌ Ruxsat yo'q" }); return; }
+      await bot!.answerCallbackQuery(q.id);
+      waitingForBroadcast.add(ADMIN_ID);
+      await bot!.sendMessage(chatId,
+        `📢 <b>Xabar Yuborish</b>\n\nBarcha o'yinchilarga yuboriladigan xabarni yozing:\n\n<i>Bekor qilish uchun /cancel yozing</i>`,
+        { parse_mode: "HTML" }
+      );
       return;
     }
 
