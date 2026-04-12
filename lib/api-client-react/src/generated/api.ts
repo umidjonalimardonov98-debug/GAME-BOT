@@ -17,12 +17,16 @@ import type {
 } from "@tanstack/react-query";
 
 import type {
+  BetBody,
+  BetResult,
   ErrorResponse,
   GameStats,
   HealthStatus,
   LeaderboardEntry,
-  PlayerScore,
-  SaveScoreBody,
+  Player,
+  SyncPlayerBody,
+  Transaction,
+  TransactionBody,
 } from "./api.schemas";
 
 import { customFetch } from "../custom-fetch";
@@ -35,7 +39,6 @@ type Awaited<O> = O extends AwaitedInput<infer T> ? T : never;
 type SecondParameter<T extends (...args: never) => unknown> = Parameters<T>[1];
 
 /**
- * Returns server health status
  * @summary Health check
  */
 export const getHealthCheckUrl = () => {
@@ -111,43 +114,42 @@ export function useHealthCheck<
 }
 
 /**
- * Save or update a player's score
- * @summary Save player score
+ * @summary Sync player from Telegram
  */
-export const getSaveScoreUrl = () => {
-  return `/api/game/score`;
+export const getSyncPlayerUrl = () => {
+  return `/api/players/sync`;
 };
 
-export const saveScore = async (
-  saveScoreBody: SaveScoreBody,
+export const syncPlayer = async (
+  syncPlayerBody: SyncPlayerBody,
   options?: RequestInit,
-): Promise<PlayerScore> => {
-  return customFetch<PlayerScore>(getSaveScoreUrl(), {
+): Promise<Player> => {
+  return customFetch<Player>(getSyncPlayerUrl(), {
     ...options,
     method: "POST",
     headers: { "Content-Type": "application/json", ...options?.headers },
-    body: JSON.stringify(saveScoreBody),
+    body: JSON.stringify(syncPlayerBody),
   });
 };
 
-export const getSaveScoreMutationOptions = <
+export const getSyncPlayerMutationOptions = <
   TError = ErrorType<unknown>,
   TContext = unknown,
 >(options?: {
   mutation?: UseMutationOptions<
-    Awaited<ReturnType<typeof saveScore>>,
+    Awaited<ReturnType<typeof syncPlayer>>,
     TError,
-    { data: BodyType<SaveScoreBody> },
+    { data: BodyType<SyncPlayerBody> },
     TContext
   >;
   request?: SecondParameter<typeof customFetch>;
 }): UseMutationOptions<
-  Awaited<ReturnType<typeof saveScore>>,
+  Awaited<ReturnType<typeof syncPlayer>>,
   TError,
-  { data: BodyType<SaveScoreBody> },
+  { data: BodyType<SyncPlayerBody> },
   TContext
 > => {
-  const mutationKey = ["saveScore"];
+  const mutationKey = ["syncPlayer"];
   const { mutation: mutationOptions, request: requestOptions } = options
     ? options.mutation &&
       "mutationKey" in options.mutation &&
@@ -157,48 +159,481 @@ export const getSaveScoreMutationOptions = <
     : { mutation: { mutationKey }, request: undefined };
 
   const mutationFn: MutationFunction<
-    Awaited<ReturnType<typeof saveScore>>,
-    { data: BodyType<SaveScoreBody> }
+    Awaited<ReturnType<typeof syncPlayer>>,
+    { data: BodyType<SyncPlayerBody> }
   > = (props) => {
     const { data } = props ?? {};
 
-    return saveScore(data, requestOptions);
+    return syncPlayer(data, requestOptions);
   };
 
   return { mutationFn, ...mutationOptions };
 };
 
-export type SaveScoreMutationResult = NonNullable<
-  Awaited<ReturnType<typeof saveScore>>
+export type SyncPlayerMutationResult = NonNullable<
+  Awaited<ReturnType<typeof syncPlayer>>
 >;
-export type SaveScoreMutationBody = BodyType<SaveScoreBody>;
-export type SaveScoreMutationError = ErrorType<unknown>;
+export type SyncPlayerMutationBody = BodyType<SyncPlayerBody>;
+export type SyncPlayerMutationError = ErrorType<unknown>;
 
 /**
- * @summary Save player score
+ * @summary Sync player from Telegram
  */
-export const useSaveScore = <
+export const useSyncPlayer = <
   TError = ErrorType<unknown>,
   TContext = unknown,
 >(options?: {
   mutation?: UseMutationOptions<
-    Awaited<ReturnType<typeof saveScore>>,
+    Awaited<ReturnType<typeof syncPlayer>>,
     TError,
-    { data: BodyType<SaveScoreBody> },
+    { data: BodyType<SyncPlayerBody> },
     TContext
   >;
   request?: SecondParameter<typeof customFetch>;
 }): UseMutationResult<
-  Awaited<ReturnType<typeof saveScore>>,
+  Awaited<ReturnType<typeof syncPlayer>>,
   TError,
-  { data: BodyType<SaveScoreBody> },
+  { data: BodyType<SyncPlayerBody> },
   TContext
 > => {
-  return useMutation(getSaveScoreMutationOptions(options));
+  return useMutation(getSyncPlayerMutationOptions(options));
 };
 
 /**
- * Returns top 50 players by score
+ * @summary Get player profile
+ */
+export const getGetPlayerUrl = (telegramId: string) => {
+  return `/api/players/${telegramId}`;
+};
+
+export const getPlayer = async (
+  telegramId: string,
+  options?: RequestInit,
+): Promise<Player> => {
+  return customFetch<Player>(getGetPlayerUrl(telegramId), {
+    ...options,
+    method: "GET",
+  });
+};
+
+export const getGetPlayerQueryKey = (telegramId: string) => {
+  return [`/api/players/${telegramId}`] as const;
+};
+
+export const getGetPlayerQueryOptions = <
+  TData = Awaited<ReturnType<typeof getPlayer>>,
+  TError = ErrorType<ErrorResponse>,
+>(
+  telegramId: string,
+  options?: {
+    query?: UseQueryOptions<
+      Awaited<ReturnType<typeof getPlayer>>,
+      TError,
+      TData
+    >;
+    request?: SecondParameter<typeof customFetch>;
+  },
+) => {
+  const { query: queryOptions, request: requestOptions } = options ?? {};
+
+  const queryKey = queryOptions?.queryKey ?? getGetPlayerQueryKey(telegramId);
+
+  const queryFn: QueryFunction<Awaited<ReturnType<typeof getPlayer>>> = ({
+    signal,
+  }) => getPlayer(telegramId, { signal, ...requestOptions });
+
+  return {
+    queryKey,
+    queryFn,
+    enabled: !!telegramId,
+    ...queryOptions,
+  } as UseQueryOptions<Awaited<ReturnType<typeof getPlayer>>, TError, TData> & {
+    queryKey: QueryKey;
+  };
+};
+
+export type GetPlayerQueryResult = NonNullable<
+  Awaited<ReturnType<typeof getPlayer>>
+>;
+export type GetPlayerQueryError = ErrorType<ErrorResponse>;
+
+/**
+ * @summary Get player profile
+ */
+
+export function useGetPlayer<
+  TData = Awaited<ReturnType<typeof getPlayer>>,
+  TError = ErrorType<ErrorResponse>,
+>(
+  telegramId: string,
+  options?: {
+    query?: UseQueryOptions<
+      Awaited<ReturnType<typeof getPlayer>>,
+      TError,
+      TData
+    >;
+    request?: SecondParameter<typeof customFetch>;
+  },
+): UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+  const queryOptions = getGetPlayerQueryOptions(telegramId, options);
+
+  const query = useQuery(queryOptions) as UseQueryResult<TData, TError> & {
+    queryKey: QueryKey;
+  };
+
+  return { ...query, queryKey: queryOptions.queryKey };
+}
+
+/**
+ * @summary Deposit balance
+ */
+export const getDepositUrl = (telegramId: string) => {
+  return `/api/players/${telegramId}/deposit`;
+};
+
+export const deposit = async (
+  telegramId: string,
+  transactionBody: TransactionBody,
+  options?: RequestInit,
+): Promise<Player> => {
+  return customFetch<Player>(getDepositUrl(telegramId), {
+    ...options,
+    method: "POST",
+    headers: { "Content-Type": "application/json", ...options?.headers },
+    body: JSON.stringify(transactionBody),
+  });
+};
+
+export const getDepositMutationOptions = <
+  TError = ErrorType<unknown>,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof deposit>>,
+    TError,
+    { telegramId: string; data: BodyType<TransactionBody> },
+    TContext
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseMutationOptions<
+  Awaited<ReturnType<typeof deposit>>,
+  TError,
+  { telegramId: string; data: BodyType<TransactionBody> },
+  TContext
+> => {
+  const mutationKey = ["deposit"];
+  const { mutation: mutationOptions, request: requestOptions } = options
+    ? options.mutation &&
+      "mutationKey" in options.mutation &&
+      options.mutation.mutationKey
+      ? options
+      : { ...options, mutation: { ...options.mutation, mutationKey } }
+    : { mutation: { mutationKey }, request: undefined };
+
+  const mutationFn: MutationFunction<
+    Awaited<ReturnType<typeof deposit>>,
+    { telegramId: string; data: BodyType<TransactionBody> }
+  > = (props) => {
+    const { telegramId, data } = props ?? {};
+
+    return deposit(telegramId, data, requestOptions);
+  };
+
+  return { mutationFn, ...mutationOptions };
+};
+
+export type DepositMutationResult = NonNullable<
+  Awaited<ReturnType<typeof deposit>>
+>;
+export type DepositMutationBody = BodyType<TransactionBody>;
+export type DepositMutationError = ErrorType<unknown>;
+
+/**
+ * @summary Deposit balance
+ */
+export const useDeposit = <
+  TError = ErrorType<unknown>,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof deposit>>,
+    TError,
+    { telegramId: string; data: BodyType<TransactionBody> },
+    TContext
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseMutationResult<
+  Awaited<ReturnType<typeof deposit>>,
+  TError,
+  { telegramId: string; data: BodyType<TransactionBody> },
+  TContext
+> => {
+  return useMutation(getDepositMutationOptions(options));
+};
+
+/**
+ * @summary Withdraw balance
+ */
+export const getWithdrawUrl = (telegramId: string) => {
+  return `/api/players/${telegramId}/withdraw`;
+};
+
+export const withdraw = async (
+  telegramId: string,
+  transactionBody: TransactionBody,
+  options?: RequestInit,
+): Promise<Player> => {
+  return customFetch<Player>(getWithdrawUrl(telegramId), {
+    ...options,
+    method: "POST",
+    headers: { "Content-Type": "application/json", ...options?.headers },
+    body: JSON.stringify(transactionBody),
+  });
+};
+
+export const getWithdrawMutationOptions = <
+  TError = ErrorType<ErrorResponse>,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof withdraw>>,
+    TError,
+    { telegramId: string; data: BodyType<TransactionBody> },
+    TContext
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseMutationOptions<
+  Awaited<ReturnType<typeof withdraw>>,
+  TError,
+  { telegramId: string; data: BodyType<TransactionBody> },
+  TContext
+> => {
+  const mutationKey = ["withdraw"];
+  const { mutation: mutationOptions, request: requestOptions } = options
+    ? options.mutation &&
+      "mutationKey" in options.mutation &&
+      options.mutation.mutationKey
+      ? options
+      : { ...options, mutation: { ...options.mutation, mutationKey } }
+    : { mutation: { mutationKey }, request: undefined };
+
+  const mutationFn: MutationFunction<
+    Awaited<ReturnType<typeof withdraw>>,
+    { telegramId: string; data: BodyType<TransactionBody> }
+  > = (props) => {
+    const { telegramId, data } = props ?? {};
+
+    return withdraw(telegramId, data, requestOptions);
+  };
+
+  return { mutationFn, ...mutationOptions };
+};
+
+export type WithdrawMutationResult = NonNullable<
+  Awaited<ReturnType<typeof withdraw>>
+>;
+export type WithdrawMutationBody = BodyType<TransactionBody>;
+export type WithdrawMutationError = ErrorType<ErrorResponse>;
+
+/**
+ * @summary Withdraw balance
+ */
+export const useWithdraw = <
+  TError = ErrorType<ErrorResponse>,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof withdraw>>,
+    TError,
+    { telegramId: string; data: BodyType<TransactionBody> },
+    TContext
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseMutationResult<
+  Awaited<ReturnType<typeof withdraw>>,
+  TError,
+  { telegramId: string; data: BodyType<TransactionBody> },
+  TContext
+> => {
+  return useMutation(getWithdrawMutationOptions(options));
+};
+
+/**
+ * @summary Place a bet and update balance
+ */
+export const getPlaceBetUrl = (telegramId: string) => {
+  return `/api/players/${telegramId}/bet`;
+};
+
+export const placeBet = async (
+  telegramId: string,
+  betBody: BetBody,
+  options?: RequestInit,
+): Promise<BetResult> => {
+  return customFetch<BetResult>(getPlaceBetUrl(telegramId), {
+    ...options,
+    method: "POST",
+    headers: { "Content-Type": "application/json", ...options?.headers },
+    body: JSON.stringify(betBody),
+  });
+};
+
+export const getPlaceBetMutationOptions = <
+  TError = ErrorType<ErrorResponse>,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof placeBet>>,
+    TError,
+    { telegramId: string; data: BodyType<BetBody> },
+    TContext
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseMutationOptions<
+  Awaited<ReturnType<typeof placeBet>>,
+  TError,
+  { telegramId: string; data: BodyType<BetBody> },
+  TContext
+> => {
+  const mutationKey = ["placeBet"];
+  const { mutation: mutationOptions, request: requestOptions } = options
+    ? options.mutation &&
+      "mutationKey" in options.mutation &&
+      options.mutation.mutationKey
+      ? options
+      : { ...options, mutation: { ...options.mutation, mutationKey } }
+    : { mutation: { mutationKey }, request: undefined };
+
+  const mutationFn: MutationFunction<
+    Awaited<ReturnType<typeof placeBet>>,
+    { telegramId: string; data: BodyType<BetBody> }
+  > = (props) => {
+    const { telegramId, data } = props ?? {};
+
+    return placeBet(telegramId, data, requestOptions);
+  };
+
+  return { mutationFn, ...mutationOptions };
+};
+
+export type PlaceBetMutationResult = NonNullable<
+  Awaited<ReturnType<typeof placeBet>>
+>;
+export type PlaceBetMutationBody = BodyType<BetBody>;
+export type PlaceBetMutationError = ErrorType<ErrorResponse>;
+
+/**
+ * @summary Place a bet and update balance
+ */
+export const usePlaceBet = <
+  TError = ErrorType<ErrorResponse>,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof placeBet>>,
+    TError,
+    { telegramId: string; data: BodyType<BetBody> },
+    TContext
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseMutationResult<
+  Awaited<ReturnType<typeof placeBet>>,
+  TError,
+  { telegramId: string; data: BodyType<BetBody> },
+  TContext
+> => {
+  return useMutation(getPlaceBetMutationOptions(options));
+};
+
+/**
+ * @summary Get transaction history
+ */
+export const getGetTransactionsUrl = (telegramId: string) => {
+  return `/api/players/${telegramId}/transactions`;
+};
+
+export const getTransactions = async (
+  telegramId: string,
+  options?: RequestInit,
+): Promise<Transaction[]> => {
+  return customFetch<Transaction[]>(getGetTransactionsUrl(telegramId), {
+    ...options,
+    method: "GET",
+  });
+};
+
+export const getGetTransactionsQueryKey = (telegramId: string) => {
+  return [`/api/players/${telegramId}/transactions`] as const;
+};
+
+export const getGetTransactionsQueryOptions = <
+  TData = Awaited<ReturnType<typeof getTransactions>>,
+  TError = ErrorType<unknown>,
+>(
+  telegramId: string,
+  options?: {
+    query?: UseQueryOptions<
+      Awaited<ReturnType<typeof getTransactions>>,
+      TError,
+      TData
+    >;
+    request?: SecondParameter<typeof customFetch>;
+  },
+) => {
+  const { query: queryOptions, request: requestOptions } = options ?? {};
+
+  const queryKey =
+    queryOptions?.queryKey ?? getGetTransactionsQueryKey(telegramId);
+
+  const queryFn: QueryFunction<Awaited<ReturnType<typeof getTransactions>>> = ({
+    signal,
+  }) => getTransactions(telegramId, { signal, ...requestOptions });
+
+  return {
+    queryKey,
+    queryFn,
+    enabled: !!telegramId,
+    ...queryOptions,
+  } as UseQueryOptions<
+    Awaited<ReturnType<typeof getTransactions>>,
+    TError,
+    TData
+  > & { queryKey: QueryKey };
+};
+
+export type GetTransactionsQueryResult = NonNullable<
+  Awaited<ReturnType<typeof getTransactions>>
+>;
+export type GetTransactionsQueryError = ErrorType<unknown>;
+
+/**
+ * @summary Get transaction history
+ */
+
+export function useGetTransactions<
+  TData = Awaited<ReturnType<typeof getTransactions>>,
+  TError = ErrorType<unknown>,
+>(
+  telegramId: string,
+  options?: {
+    query?: UseQueryOptions<
+      Awaited<ReturnType<typeof getTransactions>>,
+      TError,
+      TData
+    >;
+    request?: SecondParameter<typeof customFetch>;
+  },
+): UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+  const queryOptions = getGetTransactionsQueryOptions(telegramId, options);
+
+  const query = useQuery(queryOptions) as UseQueryResult<TData, TError> & {
+    queryKey: QueryKey;
+  };
+
+  return { ...query, queryKey: queryOptions.queryKey };
+}
+
+/**
  * @summary Get top leaderboard
  */
 export const getGetLeaderboardUrl = () => {
@@ -274,94 +709,7 @@ export function useGetLeaderboard<
 }
 
 /**
- * Get a specific player's score and rank
- * @summary Get player info
- */
-export const getGetPlayerUrl = (telegramId: string) => {
-  return `/api/game/player/${telegramId}`;
-};
-
-export const getPlayer = async (
-  telegramId: string,
-  options?: RequestInit,
-): Promise<PlayerScore> => {
-  return customFetch<PlayerScore>(getGetPlayerUrl(telegramId), {
-    ...options,
-    method: "GET",
-  });
-};
-
-export const getGetPlayerQueryKey = (telegramId: string) => {
-  return [`/api/game/player/${telegramId}`] as const;
-};
-
-export const getGetPlayerQueryOptions = <
-  TData = Awaited<ReturnType<typeof getPlayer>>,
-  TError = ErrorType<ErrorResponse>,
->(
-  telegramId: string,
-  options?: {
-    query?: UseQueryOptions<
-      Awaited<ReturnType<typeof getPlayer>>,
-      TError,
-      TData
-    >;
-    request?: SecondParameter<typeof customFetch>;
-  },
-) => {
-  const { query: queryOptions, request: requestOptions } = options ?? {};
-
-  const queryKey = queryOptions?.queryKey ?? getGetPlayerQueryKey(telegramId);
-
-  const queryFn: QueryFunction<Awaited<ReturnType<typeof getPlayer>>> = ({
-    signal,
-  }) => getPlayer(telegramId, { signal, ...requestOptions });
-
-  return {
-    queryKey,
-    queryFn,
-    enabled: !!telegramId,
-    ...queryOptions,
-  } as UseQueryOptions<Awaited<ReturnType<typeof getPlayer>>, TError, TData> & {
-    queryKey: QueryKey;
-  };
-};
-
-export type GetPlayerQueryResult = NonNullable<
-  Awaited<ReturnType<typeof getPlayer>>
->;
-export type GetPlayerQueryError = ErrorType<ErrorResponse>;
-
-/**
- * @summary Get player info
- */
-
-export function useGetPlayer<
-  TData = Awaited<ReturnType<typeof getPlayer>>,
-  TError = ErrorType<ErrorResponse>,
->(
-  telegramId: string,
-  options?: {
-    query?: UseQueryOptions<
-      Awaited<ReturnType<typeof getPlayer>>,
-      TError,
-      TData
-    >;
-    request?: SecondParameter<typeof customFetch>;
-  },
-): UseQueryResult<TData, TError> & { queryKey: QueryKey } {
-  const queryOptions = getGetPlayerQueryOptions(telegramId, options);
-
-  const query = useQuery(queryOptions) as UseQueryResult<TData, TError> & {
-    queryKey: QueryKey;
-  };
-
-  return { ...query, queryKey: queryOptions.queryKey };
-}
-
-/**
- * Returns total players, total clicks, and top score
- * @summary Get global game stats
+ * @summary Get global stats
  */
 export const getGetGameStatsUrl = () => {
   return `/api/game/stats`;
@@ -412,7 +760,7 @@ export type GetGameStatsQueryResult = NonNullable<
 export type GetGameStatsQueryError = ErrorType<unknown>;
 
 /**
- * @summary Get global game stats
+ * @summary Get global stats
  */
 
 export function useGetGameStats<

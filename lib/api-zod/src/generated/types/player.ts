@@ -6,18 +6,20 @@
  * OpenAPI spec version: 0.1.0
  */
 
-export interface PlayerScore {
+export interface Player {
   id: number;
   telegramId: string;
-  username: string;
+  /** @nullable */
+  username?: string | null;
   firstName: string;
   /** @nullable */
   lastName?: string | null;
   /** @nullable */
   photoUrl?: string | null;
-  score: number;
-  /** @nullable */
-  rank?: number | null;
+  balance: number;
+  totalWon: number;
+  totalLost: number;
+  gamesPlayed: number;
   createdAt: string;
   updatedAt: string;
 }

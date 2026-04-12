@@ -6,9 +6,13 @@
  * OpenAPI spec version: 0.1.0
  */
 
+export * from "./betBody";
+export * from "./betResult";
 export * from "./errorResponse";
 export * from "./gameStats";
 export * from "./healthStatus";
 export * from "./leaderboardEntry";
-export * from "./playerScore";
-export * from "./saveScoreBody";
+export * from "./player";
+export * from "./syncPlayerBody";
+export * from "./transaction";
+export * from "./transactionBody";

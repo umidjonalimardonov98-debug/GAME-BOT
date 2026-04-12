@@ -9,49 +9,76 @@ export interface HealthStatus {
   status: string;
 }
 
-export interface SaveScoreBody {
+export interface SyncPlayerBody {
   telegramId: string;
-  username: string;
+  username?: string;
   firstName: string;
   /** @nullable */
   lastName?: string | null;
   /** @nullable */
   photoUrl?: string | null;
-  score: number;
 }
 
-export interface PlayerScore {
+export interface Player {
   id: number;
   telegramId: string;
-  username: string;
+  /** @nullable */
+  username?: string | null;
   firstName: string;
   /** @nullable */
   lastName?: string | null;
   /** @nullable */
   photoUrl?: string | null;
-  score: number;
-  /** @nullable */
-  rank?: number | null;
+  balance: number;
+  totalWon: number;
+  totalLost: number;
+  gamesPlayed: number;
   createdAt: string;
   updatedAt: string;
+}
+
+export interface TransactionBody {
+  amount: number;
+}
+
+export interface BetBody {
+  amount: number;
+  game: string;
+  won: boolean;
+  winAmount: number;
+}
+
+export interface BetResult {
+  balance: number;
+  won: boolean;
+  winAmount: number;
+  netChange: number;
+}
+
+export interface Transaction {
+  id: number;
+  type: string;
+  amount: number;
+  /** @nullable */
+  game?: string | null;
+  createdAt: string;
 }
 
 export interface LeaderboardEntry {
   rank: number;
   telegramId: string;
-  username: string;
+  /** @nullable */
+  username?: string | null;
   firstName: string;
-  /** @nullable */
-  lastName?: string | null;
-  /** @nullable */
-  photoUrl?: string | null;
-  score: number;
+  balance: number;
+  gamesPlayed: number;
+  totalWon: number;
 }
 
 export interface GameStats {
   totalPlayers: number;
-  totalClicks: number;
-  topScore: number;
+  totalGamesPlayed: number;
+  biggestWin: number;
   /** @nullable */
   topPlayer?: string | null;
 }

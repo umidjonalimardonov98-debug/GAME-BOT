@@ -6,10 +6,11 @@
  * OpenAPI spec version: 0.1.0
  */
 
-export interface GameStats {
-  totalPlayers: number;
-  totalGamesPlayed: number;
-  biggestWin: number;
+export interface Transaction {
+  id: number;
+  type: string;
+  amount: number;
   /** @nullable */
-  topPlayer?: string | null;
+  game?: string | null;
+  createdAt: string;
 }

@@ -1,6 +1,5 @@
 openapi: 3.1.0
 info:
-  # Do not change the title, if the title changes, the import paths will be broken
   title: Api
   version: 0.1.0
   description: API specification
@@ -9,16 +8,14 @@ servers:
     description: Base API path
 tags:
   - name: health
-    description: Health operations
+  - name: players
   - name: game
-    description: Game operations
 paths:
   /healthz:
     get:
       operationId: healthCheck
       tags: [health]
       summary: Health check
-      description: Returns server health status
       responses:
         "200":
           description: Healthy
@@ -27,48 +24,30 @@ paths:
               schema:
                 $ref: "#/components/schemas/HealthStatus"
 
-  /game/score:
+  /players/sync:
     post:
-      operationId: saveScore
-      tags: [game]
-      summary: Save player score
-      description: Save or update a player's score
+      operationId: syncPlayer
+      tags: [players]
+      summary: Sync player from Telegram
       requestBody:
         required: true
         content:
           application/json:
             schema:
-              $ref: "#/components/schemas/SaveScoreBody"
+              $ref: "#/components/schemas/SyncPlayerBody"
       responses:
         "200":
-          description: Score saved
+          description: Player synced
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/PlayerScore"
+                $ref: "#/components/schemas/Player"
 
-  /game/leaderboard:
-    get:
-      operationId: getLeaderboard
-      tags: [game]
-      summary: Get top leaderboard
-      description: Returns top 50 players by score
-      responses:
-        "200":
-          description: Leaderboard list
-          content:
-            application/json:
-              schema:
-                type: array
-                items:
-                  $ref: "#/components/schemas/LeaderboardEntry"
-
-  /game/player/{telegramId}:
+  /players/{telegramId}:
     get:
       operationId: getPlayer
-      tags: [game]
-      summary: Get player info
-      description: Get a specific player's score and rank
+      tags: [players]
+      summary: Get player profile
       parameters:
         - name: telegramId
           in: path
@@ -77,27 +56,149 @@ paths:
             type: string
       responses:
         "200":
-          description: Player info
+          description: Player profile
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/PlayerScore"
+                $ref: "#/components/schemas/Player"
         "404":
-          description: Player not found
+          description: Not found
           content:
             application/json:
               schema:
                 $ref: "#/components/schemas/ErrorResponse"
 
+  /players/{telegramId}/deposit:
+    post:
+      operationId: deposit
+      tags: [players]
+      summary: Deposit balance
+      parameters:
+        - name: telegramId
+          in: path
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/TransactionBody"
+      responses:
+        "200":
+          description: Balance updated
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Player"
+
+  /players/{telegramId}/withdraw:
+    post:
+      operationId: withdraw
+      tags: [players]
+      summary: Withdraw balance
+      parameters:
+        - name: telegramId
+          in: path
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/TransactionBody"
+      responses:
+        "200":
+          description: Balance updated
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Player"
+        "400":
+          description: Insufficient balance
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+
+  /players/{telegramId}/bet:
+    post:
+      operationId: placeBet
+      tags: [players]
+      summary: Place a bet and update balance
+      parameters:
+        - name: telegramId
+          in: path
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/BetBody"
+      responses:
+        "200":
+          description: Bet result
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/BetResult"
+        "400":
+          description: Insufficient balance
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+
+  /players/{telegramId}/transactions:
+    get:
+      operationId: getTransactions
+      tags: [players]
+      summary: Get transaction history
+      parameters:
+        - name: telegramId
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          description: Transaction list
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Transaction"
+
+  /game/leaderboard:
+    get:
+      operationId: getLeaderboard
+      tags: [game]
+      summary: Get top leaderboard
+      responses:
+        "200":
+          description: Leaderboard
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/LeaderboardEntry"
+
   /game/stats:
     get:
       operationId: getGameStats
       tags: [game]
-      summary: Get global game stats
-      description: Returns total players, total clicks, and top score
+      summary: Get global stats
       responses:
         "200":
-          description: Game statistics
+          description: Stats
           content:
             application/json:
               schema:
@@ -110,10 +211,9 @@ components:
       properties:
         status:
           type: string
-      required:
-        - status
+      required: [status]
 
-    SaveScoreBody:
+    SyncPlayerBody:
       type: object
       properties:
         telegramId:
@@ -126,15 +226,9 @@ components:
           type: ["string", "null"]
         photoUrl:
           type: ["string", "null"]
-        score:
-          type: integer
-      required:
-        - telegramId
-        - username
-        - firstName
-        - score
+      required: [telegramId, firstName]
 
-    PlayerScore:
+    Player:
       type: object
       properties:
         id:
@@ -142,29 +236,74 @@ components:
         telegramId:
           type: string
         username:
-          type: string
+          type: ["string", "null"]
         firstName:
           type: string
         lastName:
           type: ["string", "null"]
         photoUrl:
           type: ["string", "null"]
-        score:
+        balance:
           type: integer
-        rank:
-          type: ["integer", "null"]
+        totalWon:
+          type: integer
+        totalLost:
+          type: integer
+        gamesPlayed:
+          type: integer
         createdAt:
           type: string
         updatedAt:
           type: string
-      required:
-        - id
-        - telegramId
-        - username
-        - firstName
-        - score
-        - createdAt
-        - updatedAt
+      required: [id, telegramId, firstName, balance, totalWon, totalLost, gamesPlayed, createdAt, updatedAt]
+
+    TransactionBody:
+      type: object
+      properties:
+        amount:
+          type: integer
+      required: [amount]
+
+    BetBody:
+      type: object
+      properties:
+        amount:
+          type: integer
+        game:
+          type: string
+        won:
+          type: boolean
+        winAmount:
+          type: integer
+      required: [amount, game, won, winAmount]
+
+    BetResult:
+      type: object
+      properties:
+        balance:
+          type: integer
+        won:
+          type: boolean
+        winAmount:
+          type: integer
+        netChange:
+          type: integer
+      required: [balance, won, winAmount, netChange]
+
+    Transaction:
+      type: object
+      properties:
+        id:
+          type: integer
+        type:
+          type: string
+        amount:
+          type: integer
+        game:
+          type: ["string", "null"]
+        createdAt:
+          type: string
+      required: [id, type, amount, createdAt]
 
     LeaderboardEntry:
       type: object
@@ -174,42 +313,33 @@ components:
         telegramId:
           type: string
         username:
-          type: string
+          type: ["string", "null"]
         firstName:
           type: string
-        lastName:
-          type: ["string", "null"]
-        photoUrl:
-          type: ["string", "null"]
-        score:
+        balance:
           type: integer
-      required:
-        - rank
-        - telegramId
-        - username
-        - firstName
-        - score
+        gamesPlayed:
+          type: integer
+        totalWon:
+          type: integer
+      required: [rank, telegramId, firstName, balance, gamesPlayed, totalWon]
 
     GameStats:
       type: object
       properties:
         totalPlayers:
           type: integer
-        totalClicks:
+        totalGamesPlayed:
           type: integer
-        topScore:
+        biggestWin:
           type: integer
         topPlayer:
           type: ["string", "null"]
-      required:
-        - totalPlayers
-        - totalClicks
-        - topScore
+      required: [totalPlayers, totalGamesPlayed, biggestWin]
 
     ErrorResponse:
       type: object
       properties:
         error:
           type: string
-      required:
-        - error
+      required: [error]

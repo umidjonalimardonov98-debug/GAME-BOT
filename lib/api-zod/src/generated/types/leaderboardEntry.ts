@@ -9,11 +9,10 @@
 export interface LeaderboardEntry {
   rank: number;
   telegramId: string;
-  username: string;
+  /** @nullable */
+  username?: string | null;
   firstName: string;
-  /** @nullable */
-  lastName?: string | null;
-  /** @nullable */
-  photoUrl?: string | null;
-  score: number;
+  balance: number;
+  gamesPlayed: number;
+  totalWon: number;
 }

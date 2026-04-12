@@ -6,13 +6,12 @@
  * OpenAPI spec version: 0.1.0
  */
 
-export interface SaveScoreBody {
+export interface SyncPlayerBody {
   telegramId: string;
-  username: string;
+  username?: string;
   firstName: string;
   /** @nullable */
   lastName?: string | null;
   /** @nullable */
   photoUrl?: string | null;
-  score: number;
 }
