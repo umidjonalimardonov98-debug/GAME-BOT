@@ -200,12 +200,14 @@ export default function AppleOfFortune() {
               <div className="grid grid-cols-4 gap-1.5 mb-2">
                 {["MIN","X2","X/2","MAX"].map((a) => (
                   <button key={a} onClick={() => {
-                    setCustomBet("");
                     const bal = player?.balance ?? 0;
-                    if (a==="MIN") setBet(2000);
-                    else if (a==="MAX") setBet(Math.min(bal, 500000));
-                    else if (a==="X2") setBet(Math.min(activeBet*2, bal, 500000));
-                    else setBet(Math.max(Math.floor(activeBet/2), 2000));
+                    let v = activeBet;
+                    if (a==="MIN") v = 2000;
+                    else if (a==="MAX") v = Math.min(bal, 500000);
+                    else if (a==="X2") v = Math.min(activeBet*2, bal, 500000);
+                    else v = Math.max(Math.floor(activeBet/2), 2000);
+                    setCustomBet(String(v));
+                    setBet(v);
                   }} className="py-2 rounded-xl text-xs font-bold text-white/70 border border-white/10 bg-white/5 active:scale-95">{a}</button>
                 ))}
               </div>
