@@ -1,104 +1,156 @@
-import { useState, useEffect, useRef, useCallback } from "react";
+import { useState, useEffect, useRef } from "react";
 import { useLocation } from "wouter";
 import { ArrowLeft, Coins } from "lucide-react";
 import { usePlayer } from "@/lib/player-context";
 import { placeBet } from "@/lib/api";
 
-type Phase = "waiting" | "countdown" | "flying" | "crashed" | "cashedout";
+type Phase = "idle" | "countdown" | "flying" | "done";
 
 function randomCrash(): number {
   const r = Math.random();
-  if (r < 0.10) return 1.0;
-  if (r < 0.45) return 1.0 + Math.random() * 0.9;
-  if (r < 0.70) return 1.9 + Math.random() * 1.5;
-  if (r < 0.88) return 3.4 + Math.random() * 4;
-  return 7.5 + Math.random() * 15;
+  if (r < 0.10) return 1.00;
+  if (r < 0.45) return parseFloat((1.0 + Math.random() * 0.9).toFixed(2));
+  if (r < 0.70) return parseFloat((1.9 + Math.random() * 1.5).toFixed(2));
+  if (r < 0.88) return parseFloat((3.4 + Math.random() * 4.0).toFixed(2));
+  return parseFloat((7.5 + Math.random() * 15).toFixed(2));
 }
 
 export default function Aviator() {
   const [, nav] = useLocation();
   const { player, refresh } = usePlayer();
-  const [bet, setBet] = useState(2000);
-  const [betInput, setBetInput] = useState("2000");
-  const [phase, setPhase] = useState<Phase>("waiting");
-  const [multiplier, setMultiplier] = useState(1.0);
-  const [crashAt, setCrashAt] = useState(1.0);
-  const [betPlaced, setBetPlaced] = useState(false);
-  const [cashOutMult, setCashOutMult] = useState(0);
-  const [winAmount, setWinAmount] = useState(0);
-  const [saving, setSaving] = useState(false);
-  const [history, setHistory] = useState<number[]>([5.32, 1.24, 12.5, 2.01, 1.08, 8.9]);
+
+  // Display states
+  const [phase, setPhase] = useState<Phase>("idle");
+  const [multiplier, setMultiplier] = useState(1.00);
   const [countdown, setCountdown] = useState(3);
+  const [betAmt, setBetAmt] = useState(2000);
+  const [betInput, setBetInput] = useState("2000");
+  const [result, setResult] = useState<{ won: boolean; mult: number; amount: number } | null>(null);
+  const [history, setHistory] = useState<{ val: number; won: boolean }[]>([
+    { val: 5.32, won: true }, { val: 1.24, won: false }, { val: 12.5, won: true },
+    { val: 2.01, won: true }, { val: 1.08, won: false }, { val: 8.9, won: true },
+  ]);
 
   // Auto features
   const [autoBet, setAutoBet] = useState(false);
   const [autoCashOut, setAutoCashOut] = useState(false);
-  const [autoCashOutAt, setAutoCashOutAt] = useState(2.0);
-  const [autoCashOutInput, setAutoCashOutInput] = useState("2.00");
+  const [autoCashOutAt, setAutoCashOutAt] = useState("2.00");
 
-  const intervalRef = useRef<ReturnType<typeof setInterval>>();
-  const countdownRef = useRef<ReturnType<typeof setInterval>>();
-  const multRef = useRef(1.0);
-  const betPlacedRef = useRef(false);
+  // Refs for game loop (no stale closures)
+  const multRef = useRef(1.00);
+  const crashRef = useRef(1.00);
+  const flyingRef = useRef(false);
+  const betRef = useRef(2000);
+  const playerRef = useRef(player);
+  const autoBetRef = useRef(false);
   const autoCashOutRef = useRef(false);
-  const autoCashOutAtRef = useRef(2.0);
-  const autoRestarting = useRef(false);
+  const autoCashOutAtRef = useRef(2.00);
+  const loopRef = useRef<ReturnType<typeof setInterval>>();
+  const countdownRef = useRef<ReturnType<typeof setInterval>>();
+  const autoRef = useRef<ReturnType<typeof setTimeout>>();
+  const savingRef = useRef(false);
+  const phaseRef = useRef<Phase>("idle");
 
   // Keep refs in sync
-  useEffect(() => { betPlacedRef.current = betPlaced; }, [betPlaced]);
+  useEffect(() => { playerRef.current = player; }, [player]);
+  useEffect(() => { betRef.current = betAmt; }, [betAmt]);
+  useEffect(() => { autoBetRef.current = autoBet; }, [autoBet]);
   useEffect(() => { autoCashOutRef.current = autoCashOut; }, [autoCashOut]);
-  useEffect(() => { autoCashOutAtRef.current = autoCashOutAt; }, [autoCashOut, autoCashOutAt]);
+  useEffect(() => {
+    const v = parseFloat(autoCashOutAt) || 2.0;
+    autoCashOutAtRef.current = v;
+  }, [autoCashOutAt]);
 
-  const doFlying = useCallback((crash: number, placed: boolean, currentBet: number, currentPlayer: typeof player) => {
-    setPhase("flying");
-    intervalRef.current = setInterval(async () => {
-      multRef.current = multRef.current + 0.006 + multRef.current * 0.0008;
-      const cur = Math.round(multRef.current * 100) / 100;
+  // Cleanup on unmount
+  useEffect(() => () => {
+    clearInterval(loopRef.current);
+    clearInterval(countdownRef.current);
+    clearTimeout(autoRef.current);
+  }, []);
+
+  function setPhaseSync(p: Phase) {
+    phaseRef.current = p;
+    setPhase(p);
+  }
+
+  async function doCashOut() {
+    if (phaseRef.current !== "flying" || savingRef.current) return;
+    clearInterval(loopRef.current);
+    flyingRef.current = false;
+    const m = multRef.current;
+    const prize = Math.floor(betRef.current * m);
+    setResult({ won: true, mult: m, amount: prize });
+    setHistory(h => [{ val: m, won: true }, ...h].slice(0, 10));
+    setPhaseSync("done");
+
+    if (playerRef.current && !savingRef.current) {
+      savingRef.current = true;
+      await placeBet(playerRef.current.telegramId, {
+        amount: betRef.current, game: "aviator", won: true, winAmount: prize
+      }).catch(() => {});
+      await refresh();
+      savingRef.current = false;
+    }
+
+    if (autoBetRef.current) {
+      autoRef.current = setTimeout(startRound, 2500);
+    }
+  }
+
+  function startFlying() {
+    const crash = crashRef.current;
+    multRef.current = 1.00;
+    flyingRef.current = true;
+    setPhaseSync("flying");
+    setMultiplier(1.00);
+
+    loopRef.current = setInterval(async () => {
+      if (!flyingRef.current) return;
+      multRef.current = parseFloat((multRef.current + 0.006 + multRef.current * 0.0008).toFixed(2));
+      const cur = multRef.current;
       setMultiplier(cur);
 
-      // Auto cash out check
-      if (placed && autoCashOutRef.current && cur >= autoCashOutAtRef.current) {
-        clearInterval(intervalRef.current);
-        const prize = Math.floor(currentBet * cur);
-        setCashOutMult(cur);
-        setWinAmount(prize);
-        setPhase("cashedout");
-        setHistory((h) => [cur, ...h].slice(0, 10));
-        if (currentPlayer) {
-          setSaving(true);
-          await placeBet(currentPlayer.telegramId, { amount: currentBet, game: "aviator", won: true, winAmount: prize }).catch(() => {});
-          await refresh();
-          setSaving(false);
-        }
+      // Auto cash out
+      if (autoCashOutRef.current && cur >= autoCashOutAtRef.current && !savingRef.current) {
+        await doCashOut();
         return;
       }
 
+      // Crashed
       if (cur >= crash) {
-        clearInterval(intervalRef.current);
+        clearInterval(loopRef.current);
+        flyingRef.current = false;
         setMultiplier(crash);
-        setPhase("crashed");
-        setHistory((h) => [crash, ...h].slice(0, 10));
-        if (placed && currentPlayer) {
-          placeBet(currentPlayer.telegramId, { amount: currentBet, game: "aviator", won: false, winAmount: 0 }).then(() => refresh()).catch(() => {});
+        setResult({ won: false, mult: crash, amount: 0 });
+        setHistory(h => [{ val: crash, won: false }, ...h].slice(0, 10));
+        setPhaseSync("done");
+
+        if (playerRef.current) {
+          placeBet(playerRef.current.telegramId, {
+            amount: betRef.current, game: "aviator", won: false, winAmount: 0
+          }).then(() => refresh()).catch(() => {});
+        }
+
+        if (autoBetRef.current) {
+          autoRef.current = setTimeout(startRound, 2500);
         }
       }
     }, 80);
-  }, [refresh]);
+  }
 
-  const startRound = useCallback((placed?: boolean, currentBet?: number) => {
-    clearInterval(intervalRef.current);
+  function startRound() {
+    clearInterval(loopRef.current);
     clearInterval(countdownRef.current);
-    autoRestarting.current = false;
-    const crash = randomCrash();
-    const useBet = currentBet ?? bet;
-    const usePlaced = placed ?? betPlaced;
-    setCrashAt(crash);
-    setMultiplier(1.0);
-    multRef.current = 1.0;
-    setCashOutMult(0);
-    setWinAmount(0);
+    clearTimeout(autoRef.current);
+    flyingRef.current = false;
+    savingRef.current = false;
+
+    crashRef.current = randomCrash();
+    multRef.current = 1.00;
+    setMultiplier(1.00);
+    setResult(null);
     setCountdown(3);
-    setPhase("countdown");
+    setPhaseSync("countdown");
 
     let cnt = 3;
     countdownRef.current = setInterval(() => {
@@ -106,69 +158,36 @@ export default function Aviator() {
       setCountdown(cnt);
       if (cnt <= 0) {
         clearInterval(countdownRef.current);
-        doFlying(crash, usePlaced, useBet, player);
+        startFlying();
       }
     }, 1000);
-  }, [bet, betPlaced, player, doFlying]);
+  }
 
-  // Auto restart after round ends
-  useEffect(() => {
-    if ((phase === "crashed" || phase === "cashedout") && autoBet && !autoRestarting.current) {
-      autoRestarting.current = true;
-      const newBet = bet;
-      setTimeout(() => {
-        setBetPlaced(true);
-        betPlacedRef.current = true;
-        startRound(true, newBet);
-      }, 2000);
-    }
-  }, [phase, autoBet, bet, startRound]);
+  function handleStart() {
+    if (!player || player.balance < betAmt || betAmt < 2000) return;
+    startRound();
+  }
 
-  useEffect(() => () => { clearInterval(intervalRef.current); clearInterval(countdownRef.current); }, []);
-
-  const placeBetAction = () => {
-    if (!player || player.balance < bet || bet < 2000) return;
-    setBetPlaced(true);
-    betPlacedRef.current = true;
-  };
-
-  const cashOut = useCallback(async () => {
-    if (phase !== "flying" || !betPlaced) return;
-    clearInterval(intervalRef.current);
-    const m = multRef.current;
-    const prize = Math.floor(bet * m);
-    setCashOutMult(m);
-    setWinAmount(prize);
-    setPhase("cashedout");
-    setHistory((h) => [m, ...h].slice(0, 10));
-    if (player) {
-      setSaving(true);
-      await placeBet(player.telegramId, { amount: bet, game: "aviator", won: true, winAmount: prize }).catch(() => {});
-      await refresh();
-      setSaving(false);
-    }
-  }, [phase, betPlaced, bet, player, refresh]);
-
-  const reset = () => {
-    clearInterval(intervalRef.current);
+  function handleReset() {
+    clearInterval(loopRef.current);
     clearInterval(countdownRef.current);
-    autoRestarting.current = false;
-    setPhase("waiting");
-    setBetPlaced(false);
-    betPlacedRef.current = false;
-    setMultiplier(1.0);
-    multRef.current = 1.0;
-    setCashOutMult(0);
-    setWinAmount(0);
+    clearTimeout(autoRef.current);
+    flyingRef.current = false;
+    savingRef.current = false;
+    autoBetRef.current = false;
     setAutoBet(false);
-  };
+    setPhaseSync("idle");
+    setMultiplier(1.00);
+    setResult(null);
+  }
 
   const multColor = multiplier < 2 ? "#f87171" : multiplier < 5 ? "#fbbf24" : "#34d399";
-
-  const isIdle = phase === "waiting" || phase === "crashed" || phase === "cashedout";
+  const isWon = result?.won === true;
+  const isCrashed = result?.won === false;
 
   return (
     <div className="min-h-screen flex flex-col" style={{ background: "linear-gradient(180deg, #06080f 0%, #0a0d18 100%)" }}>
+      {/* Header */}
       <div className="flex items-center justify-between px-4 pt-5 pb-3">
         <button onClick={() => nav("/")} className="w-9 h-9 flex items-center justify-center rounded-xl bg-white/5 border border-white/10">
           <ArrowLeft className="w-4 h-4 text-white" />
@@ -184,13 +203,17 @@ export default function Aviator() {
       <div className="px-4 mb-3 flex gap-1.5 overflow-x-auto no-scrollbar">
         {history.map((h, i) => (
           <span key={i} className="shrink-0 text-xs font-bold px-2 py-1 rounded-lg"
-            style={{ background: h >= 2 ? "rgba(34,197,94,0.15)" : "rgba(239,68,68,0.15)", color: h >= 2 ? "#4ade80" : "#f87171", border: `1px solid ${h >= 2 ? "rgba(34,197,94,0.2)" : "rgba(239,68,68,0.2)"}` }}>
-            {h.toFixed(2)}x
+            style={{
+              background: h.won ? "rgba(34,197,94,0.15)" : "rgba(239,68,68,0.15)",
+              color: h.won ? "#4ade80" : "#f87171",
+              border: `1px solid ${h.won ? "rgba(34,197,94,0.2)" : "rgba(239,68,68,0.2)"}`
+            }}>
+            {h.val.toFixed(2)}x
           </span>
         ))}
       </div>
 
-      {/* Main display */}
+      {/* Sky */}
       <div className="mx-4 mb-4 rounded-2xl overflow-hidden relative" style={{ height: 200, background: "linear-gradient(180deg, #0a0d18, #050710)", border: "1px solid rgba(99,102,241,0.2)" }}>
         {[...Array(20)].map((_, i) => (
           <div key={i} className="absolute w-0.5 h-0.5 bg-white rounded-full opacity-40"
@@ -198,31 +221,35 @@ export default function Aviator() {
         ))}
 
         <div className="absolute inset-0 flex flex-col items-center justify-center">
-          {phase === "countdown" ? (
-            <div className="text-center">
-              <p className="text-white/40 text-sm mb-2">Tayyorlanmoqda...</p>
-              <p className="font-black text-6xl text-white">{countdown}</p>
-            </div>
-          ) : phase === "crashed" ? (
-            <div className="text-center">
-              <p className="text-red-400 text-sm font-bold mb-1">💥 QULAB TUSHDI!</p>
-              <p className="font-black text-5xl" style={{ color: "#f87171" }}>{multiplier.toFixed(2)}x</p>
-            </div>
-          ) : phase === "cashedout" ? (
-            <div className="text-center">
-              <p className="text-green-400 text-sm font-bold mb-1">✅ OLIB OLDINGIZ!</p>
-              <p className="font-black text-5xl" style={{ color: "#4ade80" }}>{cashOutMult.toFixed(2)}x</p>
-              <p className="text-green-300 font-bold mt-1">+{winAmount.toLocaleString()} UZS</p>
-            </div>
-          ) : phase === "waiting" ? (
+          {phase === "idle" && (
             <div className="text-center">
               <p className="text-5xl mb-2">✈️</p>
-              <p className="text-white/40 text-sm">Tikish qo'ying va boshlang</p>
+              <p className="text-white/40 text-sm">Tikish kiriting va boshlang</p>
             </div>
-          ) : (
+          )}
+          {phase === "countdown" && (
+            <div className="text-center">
+              <p className="text-white/50 text-sm mb-2">Uchishga tayyorlanmoqda...</p>
+              <p className="font-black text-7xl text-white">{countdown}</p>
+            </div>
+          )}
+          {phase === "flying" && (
             <div className="text-center">
               <span className="text-5xl float-anim inline-block">✈️</span>
               <p className="font-black text-5xl mt-2" style={{ color: multColor }}>{multiplier.toFixed(2)}x</p>
+            </div>
+          )}
+          {phase === "done" && isWon && (
+            <div className="text-center">
+              <p className="text-green-400 text-sm font-bold mb-1">✅ OLIB OLDINGIZ!</p>
+              <p className="font-black text-5xl" style={{ color: "#4ade80" }}>{result.mult.toFixed(2)}x</p>
+              <p className="text-green-300 font-bold mt-1">+{result.amount.toLocaleString()} UZS</p>
+            </div>
+          )}
+          {phase === "done" && isCrashed && (
+            <div className="text-center">
+              <p className="text-red-400 text-sm font-bold mb-1">💥 QULAB TUSHDI!</p>
+              <p className="font-black text-5xl" style={{ color: "#f87171" }}>{result.mult.toFixed(2)}x</p>
             </div>
           )}
         </div>
@@ -230,44 +257,43 @@ export default function Aviator() {
         {phase === "flying" && (
           <svg className="absolute inset-0 w-full h-full" viewBox="0 0 300 200" preserveAspectRatio="none">
             <defs>
-              <linearGradient id="lineGrad" x1="0%" y1="0%" x2="100%" y2="0%">
+              <linearGradient id="lg" x1="0%" y1="0%" x2="100%" y2="0%">
                 <stop offset="0%" stopColor="transparent" />
                 <stop offset="100%" stopColor={multColor} />
               </linearGradient>
             </defs>
-            <path d={`M 20 180 Q 100 160 ${Math.min(280, 20 + multiplier * 28)} ${Math.max(20, 180 - multiplier * 14)}`}
-              fill="none" stroke="url(#lineGrad)" strokeWidth="2" opacity="0.6" />
+            <path d={`M 20 180 Q 100 ${180 - multiplier * 10} ${Math.min(280, 20 + multiplier * 26)} ${Math.max(20, 180 - multiplier * 14)}`}
+              fill="none" stroke="url(#lg)" strokeWidth="2" opacity="0.7" />
           </svg>
         )}
       </div>
 
-      {/* Cash out button during flight */}
+      {/* CASH OUT button — only during flight */}
       {phase === "flying" && (
         <div className="mx-4 mb-3">
-          <button onClick={cashOut} disabled={!betPlaced || saving}
-            className="w-full py-5 rounded-2xl font-black text-xl active:scale-95 transition-all disabled:opacity-40"
-            style={{ background: betPlaced ? "linear-gradient(135deg, #22c55e, #16a34a)" : "rgba(255,255,255,0.08)", boxShadow: betPlaced ? "0 8px 32px rgba(34,197,94,0.4)" : "none" }}>
-            {betPlaced ? `💰 CASH OUT — ${Math.floor(bet * multiplier).toLocaleString()} UZS` : "⏳ Tikish yo'q"}
+          <button onClick={doCashOut}
+            className="w-full py-5 rounded-2xl font-black text-xl active:scale-95 transition-transform"
+            style={{ background: "linear-gradient(135deg, #22c55e, #16a34a)", boxShadow: "0 8px 32px rgba(34,197,94,0.4)" }}>
+            💰 CASH OUT — {Math.floor(betAmt * multiplier).toLocaleString()} UZS
           </button>
         </div>
       )}
 
       {/* Controls */}
-      <div className="px-4 pb-4 space-y-2">
-        {isIdle && (
+      <div className="px-4 pb-6 space-y-2">
+        {/* Bet controls — only idle or done */}
+        {(phase === "idle" || phase === "done") && (
           <>
-            {/* Bet amount */}
             <div className="grid grid-cols-4 gap-1.5">
-              {["MIN","X2","X/2","MAX"].map((a) => (
+              {(["MIN", "X2", "X/2", "MAX"] as const).map((a) => (
                 <button key={a} onClick={() => {
                   const bal = player?.balance ?? 0;
-                  let v = bet;
-                  if (a==="MIN") v = 2000;
-                  else if (a==="MAX") v = Math.min(bal, 500000);
-                  else if (a==="X2") v = Math.min(bet*2, bal, 500000);
-                  else v = Math.max(Math.floor(bet/2), 2000);
-                  setBet(v);
-                  setBetInput(String(v));
+                  let v = betAmt;
+                  if (a === "MIN") v = 2000;
+                  else if (a === "MAX") v = Math.min(bal, 500000);
+                  else if (a === "X2") v = Math.min(betAmt * 2, bal, 500000);
+                  else v = Math.max(Math.floor(betAmt / 2), 2000);
+                  setBetAmt(v); setBetInput(String(v)); betRef.current = v;
                 }} className="py-2 rounded-xl text-xs font-bold text-white/70 border border-white/10 bg-white/5 active:scale-95">{a}</button>
               ))}
             </div>
@@ -275,74 +301,61 @@ export default function Aviator() {
               type="number"
               placeholder="Tikish miqdori (min 2 000)"
               value={betInput}
-              onChange={(e) => { setBetInput(e.target.value); setBet(Number(e.target.value) || 2000); }}
+              onChange={(e) => {
+                setBetInput(e.target.value);
+                const v = Number(e.target.value) || 2000;
+                setBetAmt(v); betRef.current = v;
+              }}
               className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-yellow-400 font-black text-lg placeholder-white/20 focus:outline-none focus:border-yellow-400/50"
             />
 
             {/* Auto cash out */}
-            <div className="flex items-center gap-2 p-3 rounded-xl" style={{ background: "rgba(255,255,255,0.04)", border: "1px solid rgba(255,255,255,0.08)" }}>
+            <div className="flex items-center gap-3 px-3 py-2.5 rounded-xl" style={{ background: "rgba(255,255,255,0.04)", border: "1px solid rgba(255,255,255,0.08)" }}>
               <button onClick={() => setAutoCashOut(v => !v)}
-                className={`w-10 h-5 rounded-full transition-all flex items-center px-0.5 ${autoCashOut ? "bg-green-500" : "bg-white/20"}`}>
-                <div className={`w-4 h-4 rounded-full bg-white transition-all ${autoCashOut ? "translate-x-5" : "translate-x-0"}`} />
+                className={`w-10 h-5 rounded-full transition-all flex items-center px-0.5 shrink-0 ${autoCashOut ? "bg-green-500" : "bg-white/20"}`}>
+                <div className={`w-4 h-4 rounded-full bg-white shadow transition-transform ${autoCashOut ? "translate-x-5" : "translate-x-0"}`} />
               </button>
               <span className="text-white/60 text-sm flex-1">Avto olish (x)</span>
               <input
-                type="number"
-                step="0.1"
-                min="1.1"
-                value={autoCashOutInput}
-                onChange={(e) => { setAutoCashOutInput(e.target.value); setAutoCashOutAt(Number(e.target.value) || 2); }}
+                type="number" step="0.1" min="1.1"
+                value={autoCashOutAt}
+                onChange={(e) => setAutoCashOutAt(e.target.value)}
                 disabled={!autoCashOut}
-                className="w-20 bg-white/5 border border-white/10 rounded-lg px-2 py-1.5 text-yellow-400 font-bold text-sm text-center focus:outline-none disabled:opacity-40"
+                className="w-20 bg-white/5 border border-white/10 rounded-lg px-2 py-1 text-yellow-400 font-bold text-sm text-center focus:outline-none disabled:opacity-40"
               />
             </div>
 
             {/* Auto bet */}
-            <div className="flex items-center gap-2 p-3 rounded-xl" style={{ background: "rgba(255,255,255,0.04)", border: "1px solid rgba(255,255,255,0.08)" }}>
-              <button onClick={() => setAutoBet(v => !v)}
-                className={`w-10 h-5 rounded-full transition-all flex items-center px-0.5 ${autoBet ? "bg-blue-500" : "bg-white/20"}`}>
-                <div className={`w-4 h-4 rounded-full bg-white transition-all ${autoBet ? "translate-x-5" : "translate-x-0"}`} />
+            <div className="flex items-center gap-3 px-3 py-2.5 rounded-xl" style={{ background: "rgba(255,255,255,0.04)", border: "1px solid rgba(255,255,255,0.08)" }}>
+              <button onClick={() => { const nv = !autoBet; setAutoBet(nv); autoBetRef.current = nv; }}
+                className={`w-10 h-5 rounded-full transition-all flex items-center px-0.5 shrink-0 ${autoBet ? "bg-blue-500" : "bg-white/20"}`}>
+                <div className={`w-4 h-4 rounded-full bg-white shadow transition-transform ${autoBet ? "translate-x-5" : "translate-x-0"}`} />
               </button>
-              <span className="text-white/60 text-sm flex-1">Avto tikish (har raund)</span>
+              <span className="text-white/60 text-sm flex-1">Avto tikish</span>
               {autoBet && <span className="text-blue-400 text-xs font-bold">YOQILGAN</span>}
             </div>
 
-            {/* Action buttons */}
-            {phase === "waiting" ? (
-              <div className="grid grid-cols-2 gap-2">
-                <button onClick={placeBetAction} disabled={betPlaced || !player || player.balance < bet || bet < 2000}
-                  className="py-4 rounded-2xl font-black text-sm active:scale-95 transition-all disabled:opacity-40"
-                  style={{ background: betPlaced ? "rgba(34,197,94,0.3)" : "linear-gradient(135deg, #2563eb, #1d4ed8)" }}>
-                  {betPlaced ? "✅ Tikish qo'yildi" : "🎯 Tikish Qo'yish"}
-                </button>
-                <button onClick={() => startRound()}
-                  className="py-4 rounded-2xl font-black text-sm active:scale-95 transition-all"
-                  style={{ background: "linear-gradient(135deg, #7c3aed, #5b21b6)", boxShadow: "0 8px 24px rgba(124,58,237,0.3)" }}>
-                  🚀 BOSHLASH
-                </button>
-              </div>
+            {phase === "idle" ? (
+              <button onClick={handleStart}
+                disabled={!player || player.balance < betAmt || betAmt < 2000}
+                className="w-full py-4 rounded-2xl font-black text-base active:scale-95 transition-all disabled:opacity-40"
+                style={{ background: "linear-gradient(135deg, #7c3aed, #5b21b6)", boxShadow: "0 8px 24px rgba(124,58,237,0.3)" }}>
+                🚀 BOSHLASH — {betAmt.toLocaleString()} UZS
+              </button>
             ) : (
-              <button onClick={reset}
+              <button onClick={handleReset}
                 className="w-full py-4 rounded-2xl font-black text-base active:scale-95 transition-all"
-                style={{ background: "linear-gradient(135deg, #2563eb, #1d4ed8)", boxShadow: "0 8px 24px rgba(37,99,235,0.3)" }}>
+                style={{ background: "linear-gradient(135deg, #2563eb, #1d4ed8)" }}>
                 🔄 QAYTA O'YNASH
               </button>
             )}
           </>
         )}
 
-        {/* During countdown show bet button */}
-        {phase === "countdown" && !betPlaced && (
-          <button onClick={placeBetAction} disabled={!player || player.balance < bet || bet < 2000}
-            className="w-full py-4 rounded-2xl font-black text-base active:scale-95 transition-all disabled:opacity-40"
-            style={{ background: "linear-gradient(135deg, #2563eb, #1d4ed8)" }}>
-            🎯 Tikish Qo'yish — {bet.toLocaleString()} UZS
-          </button>
-        )}
-        {phase === "countdown" && betPlaced && (
-          <div className="w-full py-4 rounded-2xl text-center font-black text-base text-green-400"
-            style={{ background: "rgba(34,197,94,0.1)", border: "1px solid rgba(34,197,94,0.3)" }}>
-            ✅ Tikish qo'yildi — {bet.toLocaleString()} UZS
+        {phase === "countdown" && (
+          <div className="w-full py-4 rounded-2xl text-center font-bold text-yellow-400"
+            style={{ background: "rgba(234,179,8,0.1)", border: "1px solid rgba(234,179,8,0.3)" }}>
+            ✈️ Tikish: {betAmt.toLocaleString()} UZS • Tayyor bo'ling!
           </div>
         )}
       </div>
