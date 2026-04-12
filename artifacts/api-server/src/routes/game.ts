@@ -5,21 +5,23 @@ import { db, playersTable } from "@workspace/db";
 const router: IRouter = Router();
 
 router.get("/game/leaderboard", async (_req, res): Promise<void> => {
-  const players = await db.select().from(playersTable)
-    .orderBy(desc(playersTable.totalWon))
-    .limit(50);
+  const [topWinners, topDepositors] = await Promise.all([
+    db.select().from(playersTable).orderBy(desc(playersTable.totalWon)).limit(10),
+    db.select().from(playersTable).orderBy(desc(playersTable.totalDeposited)).limit(10),
+  ]);
 
-  const result = players.map((p, i) => ({
+  const fmt = (p: typeof playersTable.$inferSelect, i: number, field: "totalWon" | "totalDeposited") => ({
     rank: i + 1,
-    telegramId: p.telegramId,
-    username: p.username,
     firstName: p.firstName,
-    balance: p.balance,
+    username: p.username,
+    amount: p[field],
     gamesPlayed: p.gamesPlayed,
-    totalWon: p.totalWon,
-  }));
+  });
 
-  res.json(result);
+  res.json({
+    topWinners: topWinners.map((p, i) => fmt(p, i, "totalWon")),
+    topDepositors: topDepositors.map((p, i) => fmt(p, i, "totalDeposited")),
+  });
 });
 
 router.get("/game/stats", async (_req, res): Promise<void> => {

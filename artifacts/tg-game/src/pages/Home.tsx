@@ -1,6 +1,6 @@
 import { useLocation } from "wouter";
 import { usePlayer } from "@/lib/player-context";
-import { Coins, TrendingUp, Trophy, Zap } from "lucide-react";
+import { TrendingUp, Trophy, Zap } from "lucide-react";
 
 export default function Home() {
   const [, nav] = useLocation();
@@ -64,11 +64,11 @@ export default function Home() {
 
         {/* Action buttons */}
         <div className="grid grid-cols-2 gap-2 mt-3">
-          <button onClick={() => nav("/deposit")}
+          <button onClick={() => nav("/leaderboard")}
             className="py-3 rounded-xl font-bold text-sm flex items-center justify-center gap-2 active:scale-95 transition-transform"
-            style={{ background: "linear-gradient(135deg, #1a6b2a, #145220)", border: "1px solid rgba(34,197,94,0.3)" }}>
-            <Coins className="w-4 h-4 text-green-400" />
-            <span className="text-green-300">➕ To'ldirish</span>
+            style={{ background: "linear-gradient(135deg, #2d1f00, #1a1200)", border: "1px solid rgba(250,204,21,0.3)" }}>
+            <Trophy className="w-4 h-4 text-yellow-400" />
+            <span className="text-yellow-300">🏆 Reyting</span>
           </button>
           <button onClick={() => nav("/withdraw")}
             className="py-3 rounded-xl font-bold text-sm flex items-center justify-center gap-2 active:scale-95 transition-transform"

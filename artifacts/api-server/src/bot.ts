@@ -70,6 +70,7 @@ async function mainMenu(chatId: number, name: string, balance: number) {
       [{ text: "🎮 O'YINNI BOSHLASH", web_app: { url: APP_URL } }],
       [{ text: "💰 Balansim", callback_data: "balance" }, { text: "📖 Qoidalar", callback_data: "howto" }],
       [{ text: "➕ Hisob To'ldirish", callback_data: "deposit_menu" }, { text: "💸 Pul Yechish", callback_data: "withdraw_menu" }],
+      [{ text: "🏆 Reyting", callback_data: "reyting" }],
     ]}}
   );
 }
@@ -462,6 +463,35 @@ export async function startBot() {
       await bot!.answerCallbackQuery(q.id, { text: "❌ Rad etildi" });
       try { await bot!.editMessageText(`❌ RAD ETILDI`, { chat_id: chatId, message_id: q.message.message_id }); } catch {}
       await bot!.sendMessage(Number(req.telegramId), `❌ <b>Pul yechish rad etildi.</b>\nBalansingiz qaytarildi.`, { parse_mode: "HTML" });
+      return;
+    }
+
+    // Reyting
+    if (data === "reyting") {
+      await bot!.answerCallbackQuery(q.id);
+      try {
+        const resp = await fetch(`http://localhost:${process.env.PORT || 8080}/api/game/leaderboard`);
+        const lb = await resp.json() as { topWinners: any[]; topDepositors: any[] };
+
+        const fmtEntry = (e: any, i: number, field: "totalWon" | "totalDeposited") => {
+          const medals = ["🥇","🥈","🥉"];
+          const medal = i < 3 ? medals[i] : `${i+1}.`;
+          const name = e.username ? `@${e.username}` : e.firstName;
+          return `${medal} ${name} — <b>${fmt(e.amount)} UZS</b>`;
+        };
+
+        const winners = lb.topWinners.slice(0, 5).map((e: any, i: number) => fmtEntry(e, i, "totalWon")).join("\n") || "Hali ma'lumot yo'q";
+        const depositors = lb.topDepositors.slice(0, 5).map((e: any, i: number) => fmtEntry(e, i, "totalDeposited")).join("\n") || "Hali ma'lumot yo'q";
+
+        await bot!.sendMessage(chatId,
+          `🏆 <b>REYTING</b>\n\n` +
+          `💰 <b>Ko'p Yutganlar:</b>\n${winners}\n\n` +
+          `💵 <b>Ko'p Tashlaganlar:</b>\n${depositors}`,
+          { parse_mode: "HTML" }
+        );
+      } catch {
+        await bot!.sendMessage(chatId, "❌ Reyting yuklanmadi. Keyinroq urinib ko'ring.", { parse_mode: "HTML" });
+      }
       return;
     }
 

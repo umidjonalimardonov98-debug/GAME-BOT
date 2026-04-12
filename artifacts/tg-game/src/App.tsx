@@ -9,6 +9,7 @@ import Aviator from "@/pages/Aviator";
 import Deposit from "@/pages/Deposit";
 import Withdraw from "@/pages/Withdraw";
 import HowToPlay from "@/pages/HowToPlay";
+import Leaderboard from "@/pages/Leaderboard";
 import NotFound from "@/pages/not-found";
 
 const queryClient = new QueryClient({
@@ -25,6 +26,7 @@ function Router() {
       <Route path="/deposit" component={Deposit} />
       <Route path="/withdraw" component={Withdraw} />
       <Route path="/howtoplay" component={HowToPlay} />
+      <Route path="/leaderboard" component={Leaderboard} />
       <Route component={NotFound} />
     </Switch>
   );
