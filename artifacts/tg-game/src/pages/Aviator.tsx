@@ -8,11 +8,12 @@ type Phase = "idle" | "countdown" | "flying" | "done";
 
 function randomCrash(): number {
   const r = Math.random();
-  if (r < 0.10) return 1.00;
-  if (r < 0.45) return parseFloat((1.0 + Math.random() * 0.9).toFixed(2));
-  if (r < 0.70) return parseFloat((1.9 + Math.random() * 1.5).toFixed(2));
-  if (r < 0.88) return parseFloat((3.4 + Math.random() * 4.0).toFixed(2));
-  return parseFloat((7.5 + Math.random() * 15).toFixed(2));
+  if (r < 0.20) return 1.00;
+  if (r < 0.60) return parseFloat((1.0 + Math.random() * 0.6).toFixed(2));
+  if (r < 0.78) return parseFloat((1.6 + Math.random() * 1.0).toFixed(2));
+  if (r < 0.90) return parseFloat((2.6 + Math.random() * 2.5).toFixed(2));
+  if (r < 0.97) return parseFloat((5.0 + Math.random() * 5.0).toFixed(2));
+  return parseFloat((10.0 + Math.random() * 10).toFixed(2));
 }
 
 export default function Aviator() {
