@@ -110,20 +110,24 @@ export function startBot() {
     await bot!.sendMessage(msg.chat.id, `✅ <b>Chekingiz qabul qilindi!</b>\n\n⏳ Admin tekshirib, ${BONUS_PERCENT}% bonus bilan balansingizni to'ldiradi.`, { parse_mode: "HTML" });
 
     if (ADMIN_ID) {
-      await bot!.sendPhoto(ADMIN_ID, fileId, {
-        caption:
-          `💳 <b>YANGI DEPOZIT SO'ROVI</b>\n\n` +
-          `👤 ${player.firstName} (@${player.username ?? "—"})\n` +
-          `🆔 <code>${player.telegramId}</code>\n` +
-          `💵 Miqdor: <b>${fmt(req.amount)} UZS</b>\n` +
-          `🎁 Bonus (+${BONUS_PERCENT}%): <b>${fmt(req.bonusAmount)} UZS</b>\n` +
-          `💰 Jami: <b>${fmt(req.amount + req.bonusAmount)} UZS</b>`,
-        parse_mode: "HTML",
-        reply_markup: { inline_keyboard: [[
-          { text: "✅ Tasdiqlash", callback_data: `dep_ok_${reqId}` },
-          { text: "❌ Rad etish", callback_data: `dep_no_${reqId}` },
-        ]]}
-      });
+      try {
+        await bot!.sendPhoto(ADMIN_ID, fileId, {
+          caption:
+            `💳 <b>YANGI DEPOZIT SO'ROVI</b>\n\n` +
+            `👤 ${player.firstName} (@${player.username ?? "—"})\n` +
+            `🆔 <code>${player.telegramId}</code>\n` +
+            `💵 Miqdor: <b>${fmt(req.amount)} UZS</b>\n` +
+            `🎁 Bonus (+${BONUS_PERCENT}%): <b>${fmt(req.bonusAmount)} UZS</b>\n` +
+            `💰 Jami: <b>${fmt(req.amount + req.bonusAmount)} UZS</b>`,
+          parse_mode: "HTML",
+          reply_markup: { inline_keyboard: [[
+            { text: "✅ Tasdiqlash", callback_data: `dep_ok_${reqId}` },
+            { text: "❌ Rad etish", callback_data: `dep_no_${reqId}` },
+          ]]}
+        });
+      } catch (err) {
+        logger.error({ err, adminId: ADMIN_ID }, "Admin ga xabar yuborishda xato — ADMIN_TELEGRAM_ID ni tekshiring");
+      }
     }
   });
 
@@ -174,13 +178,17 @@ export function startBot() {
       await bot!.sendMessage(chatId, `⏳ <b>So'rovingiz adminga yuborildi!</b>`, { parse_mode: "HTML" });
 
       if (ADMIN_ID) {
-        await bot!.sendMessage(ADMIN_ID,
-          `💸 <b>PUL YECHISH SO'ROVI</b>\n\n👤 ${p.firstName} (@${p.username ?? "—"})\n🆔 <code>${p.telegramId}</code>\n💵 Miqdor: <b>${fmt(pw.amount)} UZS</b>\n💳 Karta: <code>${cardNumber}</code>\n👤 Egasi: ${cardHolder}`,
-          { parse_mode: "HTML", reply_markup: { inline_keyboard: [[
-            { text: "✅ To'landi", callback_data: `wd_ok_${req.id}` },
-            { text: "❌ Rad", callback_data: `wd_no_${req.id}` },
-          ]]}}
-        );
+        try {
+          await bot!.sendMessage(ADMIN_ID,
+            `💸 <b>PUL YECHISH SO'ROVI</b>\n\n👤 ${p.firstName} (@${p.username ?? "—"})\n🆔 <code>${p.telegramId}</code>\n💵 Miqdor: <b>${fmt(pw.amount)} UZS</b>\n💳 Karta: <code>${cardNumber}</code>\n👤 Egasi: ${cardHolder}`,
+            { parse_mode: "HTML", reply_markup: { inline_keyboard: [[
+              { text: "✅ To'landi", callback_data: `wd_ok_${req.id}` },
+              { text: "❌ Rad", callback_data: `wd_no_${req.id}` },
+            ]]}}
+          );
+        } catch (err) {
+          logger.error({ err, adminId: ADMIN_ID }, "Admin ga yechish so'rovi yuborishda xato");
+        }
       }
     }
   });
