@@ -10,7 +10,8 @@ const ADMIN_ID = Number(process.env.ADMIN_TELEGRAM_ID || "0");
 const CARD_NUMBER = process.env.CARD_NUMBER || "";
 const CARD_HOLDER = process.env.CARD_HOLDER || "";
 const DOMAINS = process.env.REPLIT_DOMAINS || "";
-const APP_URL = DOMAINS ? `https://${DOMAINS.split(",")[0]}` : "";
+const RENDER_URL = process.env.RENDER_EXTERNAL_URL || "";
+const APP_URL = RENDER_URL || (DOMAINS ? `https://${DOMAINS.split(",")[0]}` : "");
 const BONUS_PERCENT = 20;
 
 let bot: TelegramBot | null = null;
@@ -107,9 +108,8 @@ export async function startBot() {
 
   const isProduction = process.env.NODE_ENV === "production";
 
-  if (isProduction && DOMAINS) {
-    const domain = DOMAINS.split(",")[0];
-    const webhookUrl = `https://${domain}/api/bot-webhook`;
+  if (isProduction && APP_URL) {
+    const webhookUrl = `${APP_URL}/api/bot-webhook`;
     bot = new TelegramBot(TOKEN, { webHook: false });
     await bot.setWebHook(webhookUrl);
     logger.info({ webhookUrl }, "Bot started (webhook mode)");
