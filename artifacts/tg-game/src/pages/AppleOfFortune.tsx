@@ -1,100 +1,114 @@
-import { useState, useCallback } from "react";
+import { useState, type ReactNode } from "react";
 import { useLocation } from "wouter";
 import { ArrowLeft, Coins } from "lucide-react";
 import { usePlayer } from "@/lib/player-context";
 import { placeBet } from "@/lib/api";
 
-const COLS = 6;
-const ROWS = 6;
-const TOTAL = COLS * ROWS;
-const APPLES_COUNT = 18;
-const MULTIPLIERS = [
-  1.0, 1.5, 2.0, 2.5, 3.0, 3.5,
-  4.0, 4.5, 5.0, 5.5, 6.0, 6.5,
-  7.0, 7.5, 8.0, 8.5, 9.0, 9.5,
-];
+const ROWS = 10;
+const COLS = 3;
+const MULTIPLIERS = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10];
 
-type CellState = "apple" | "empty";
+type Cell = "apple" | "bomb";
 type GameState = "idle" | "playing" | "won" | "lost";
 
-function generateGrid(): CellState[] {
-  const grid: CellState[] = Array(TOTAL).fill("empty");
-  const positions = new Set<number>();
-  while (positions.size < APPLES_COUNT) positions.add(Math.floor(Math.random() * TOTAL));
-  positions.forEach((i) => { grid[i] = "apple"; });
-  return grid;
+function generateGrid(): Cell[][] {
+  return Array.from({ length: ROWS }, () => {
+    const bombIdx = Math.floor(Math.random() * COLS);
+    return Array.from({ length: COLS }, (_, c) => (c === bombIdx ? "bomb" : "apple")) as Cell[];
+  });
 }
 
 export default function AppleOfFortune() {
   const [, nav] = useLocation();
   const { player, refresh } = usePlayer();
+
   const [bet, setBet] = useState(2000);
   const [customBet, setCustomBet] = useState("");
   const [gameState, setGameState] = useState<GameState>("idle");
-  const [grid, setGrid] = useState<CellState[]>([]);
-  const [revealed, setRevealed] = useState<boolean[]>(Array(TOTAL).fill(false));
-  const [found, setFound] = useState(0);
+  const [grid, setGrid] = useState<Cell[][]>([]);
+  const [revealed, setRevealed] = useState<boolean[][]>([]);
+  const [activeRow, setActiveRow] = useState(0);
   const [cashOutAmount, setCashOutAmount] = useState(0);
   const [saving, setSaving] = useState(false);
 
-  const activeBet = customBet ? Number(customBet) : bet;
-  const currentMult = found > 0 ? MULTIPLIERS[Math.min(found - 1, MULTIPLIERS.length - 1)] : 1;
-  const potential = Math.floor(activeBet * currentMult);
+  const activeBet = customBet ? Math.max(2000, Number(customBet)) : bet;
+  const currentMult = activeRow > 0 ? MULTIPLIERS[activeRow - 1] : null;
+  const nextMult = MULTIPLIERS[activeRow];
+  const potential = Math.floor(activeBet * (currentMult ?? 1));
 
-  const start = useCallback(() => {
+  const start = () => {
     if (!player || player.balance < activeBet || activeBet < 2000) return;
-    setGrid(generateGrid());
-    setRevealed(Array(TOTAL).fill(false));
-    setFound(0);
+    const g = generateGrid();
+    setGrid(g);
+    setRevealed(Array.from({ length: ROWS }, () => Array(COLS).fill(false)));
+    setActiveRow(0);
     setCashOutAmount(0);
     setGameState("playing");
-  }, [player, activeBet]);
+  };
 
-  const handleCashOut = useCallback(async (foundCount: number) => {
-    if (!player) return;
-    const prize = Math.floor(activeBet * (MULTIPLIERS[Math.min(foundCount - 1, MULTIPLIERS.length - 1)] ?? 1));
-    setCashOutAmount(prize);
-    setGameState("won");
-    setSaving(true);
-    await placeBet(player.telegramId, { amount: activeBet, game: "apple", won: true, winAmount: prize }).catch(() => {});
-    await refresh();
-    setSaving(false);
-  }, [activeBet, player, refresh]);
+  const pickCell = async (row: number, col: number) => {
+    if (gameState !== "playing" || row !== activeRow || revealed[row][col]) return;
 
-  const revealCell = useCallback(async (idx: number) => {
-    if (gameState !== "playing" || revealed[idx]) return;
-    const newRevealed = [...revealed];
-    newRevealed[idx] = true;
+    const newRevealed = revealed.map((r) => [...r]);
+    newRevealed[row][col] = true;
     setRevealed(newRevealed);
 
-    if (grid[idx] === "apple") {
-      const newFound = found + 1;
-      setFound(newFound);
-      if (newFound === APPLES_COUNT) {
-        await handleCashOut(newFound);
-      }
-    } else {
+    if (grid[row][col] === "bomb") {
+      const allRevealed = newRevealed.map((r, ri) =>
+        ri <= row ? Array(COLS).fill(true) : r
+      );
+      setRevealed(allRevealed);
       setGameState("lost");
+      setSaving(true);
       if (player) {
-        setSaving(true);
         await placeBet(player.telegramId, { amount: activeBet, game: "apple", won: false, winAmount: 0 }).catch(() => {});
         await refresh();
-        setSaving(false);
       }
+      setSaving(false);
+      return;
     }
-  }, [gameState, revealed, grid, found, activeBet, player, refresh, handleCashOut]);
 
-  const doCashOut = useCallback(async () => {
-    if (found === 0 || gameState !== "playing") return;
-    await handleCashOut(found);
-  }, [found, gameState, handleCashOut]);
+    const newActive = row + 1;
+    setActiveRow(newActive);
+
+    if (newActive === ROWS) {
+      const prize = Math.floor(activeBet * MULTIPLIERS[ROWS - 1]);
+      setCashOutAmount(prize);
+      setGameState("won");
+      setSaving(true);
+      if (player) {
+        await placeBet(player.telegramId, { amount: activeBet, game: "apple", won: true, winAmount: prize }).catch(() => {});
+        await refresh();
+      }
+      setSaving(false);
+    }
+  };
+
+  const doCashOut = async () => {
+    if (activeRow === 0 || gameState !== "playing") return;
+    const prize = Math.floor(activeBet * MULTIPLIERS[activeRow - 1]);
+    setCashOutAmount(prize);
+    const allRevealed = grid.map((row, ri) =>
+      ri < activeRow ? Array(COLS).fill(true) : Array(COLS).fill(false)
+    );
+    setRevealed(allRevealed);
+    setGameState("won");
+    setSaving(true);
+    if (player) {
+      await placeBet(player.telegramId, { amount: activeBet, game: "apple", won: true, winAmount: prize }).catch(() => {});
+      await refresh();
+    }
+    setSaving(false);
+  };
 
   const reset = () => {
     setGameState("idle");
     setGrid([]);
-    setRevealed(Array(TOTAL).fill(false));
-    setFound(0);
+    setRevealed([]);
+    setActiveRow(0);
   };
+
+  const rows = Array.from({ length: ROWS }, (_, i) => ROWS - 1 - i);
 
   return (
     <div className="min-h-screen flex flex-col" style={{ background: "linear-gradient(180deg, #060e08 0%, #0a150c 100%)" }}>
@@ -109,124 +123,151 @@ export default function AppleOfFortune() {
         </div>
       </div>
 
-      {/* Grid */}
-      <div className="px-2 mb-3">
+      <div className="px-3 flex-1 flex flex-col">
         {gameState === "idle" ? (
-          <div className="rounded-2xl flex items-center justify-center py-10" style={{ background: "rgba(255,255,255,0.02)", border: "1px solid rgba(255,255,255,0.05)" }}>
+          <div className="flex-1 flex items-center justify-center">
             <div className="text-center">
-              <span className="text-6xl float-anim inline-block">🍎</span>
-              <p className="text-white/40 text-sm mt-3">O'yinni boshlang!</p>
+              <span className="text-6xl inline-block mb-3">🍎</span>
+              <p className="text-white/40 text-sm">O'yinni boshlang!</p>
+              <p className="text-white/30 text-xs mt-1">Har bir qatorda 1 bomba, 2 olma</p>
             </div>
           </div>
         ) : (
-          <div className="grid gap-1" style={{ gridTemplateColumns: `repeat(${COLS}, 1fr)` }}>
-            {Array(TOTAL).fill(0).map((_, i) => {
-              const isRevealed = revealed[i];
-              const isApple = grid[i] === "apple";
-              const showHint = (gameState === "lost" || gameState === "won") && !isRevealed;
+          <div className="flex flex-col gap-1 mb-3">
+            {rows.map((rowIdx) => {
+              const isActive = rowIdx === activeRow && gameState === "playing";
+              const isPast = rowIdx < activeRow;
+              const mult = MULTIPLIERS[rowIdx];
+
               return (
-                <button key={i} onClick={() => revealCell(i)}
-                  disabled={isRevealed || gameState !== "playing"}
-                  className="aspect-square rounded-xl flex items-center justify-center transition-all active:scale-90 border text-base"
-                  style={{
-                    border: isRevealed && isApple
-                      ? "1px solid rgba(34,197,94,0.5)"
-                      : isRevealed && !isApple
-                      ? "1px solid rgba(239,68,68,0.3)"
-                      : "1px solid rgba(34,197,94,0.2)",
-                    background: isRevealed
-                      ? isApple ? "rgba(34,197,94,0.2)" : "rgba(239,68,68,0.1)"
-                      : showHint ? "rgba(0,0,0,0.2)"
-                      : "linear-gradient(135deg, #1a4d20, #0d2b11)"
-                  }}>
-                  {isRevealed
-                    ? (isApple ? "🍎" : "🍏")
-                    : showHint
-                    ? <span className="opacity-30 text-xs">{isApple ? "🍎" : "🍏"}</span>
-                    : <span className="text-emerald-700 text-xl">▪</span>}
-                </button>
+                <div key={rowIdx} className="flex items-center gap-2">
+                  <div className="w-10 text-right shrink-0">
+                    <span className={`text-xs font-black ${rowIdx === activeRow - 1 ? "text-green-400" : rowIdx < activeRow ? "text-green-400/40" : "text-white/30"}`}>
+                      {mult}x
+                    </span>
+                  </div>
+                  <div className="flex-1 grid grid-cols-3 gap-1">
+                    {Array.from({ length: COLS }, (_, c) => {
+                      const isRev = revealed[rowIdx]?.[c];
+                      const cell = grid[rowIdx]?.[c];
+                      const isApple = cell === "apple";
+                      const isBomb = cell === "bomb";
+
+                      let bg = "rgba(255,255,255,0.04)";
+                      let border = "1px solid rgba(255,255,255,0.08)";
+                      let content: ReactNode = <span className="text-white/20">▪</span>;
+
+                      if (isActive) {
+                        bg = "linear-gradient(135deg, #1a4d20, #0d2b11)";
+                        border = "1px solid rgba(34,197,94,0.4)";
+                        content = <span className="text-emerald-600 text-lg">●</span>;
+                      }
+
+                      if (isRev && isApple) {
+                        bg = "rgba(34,197,94,0.2)";
+                        border = "1px solid rgba(34,197,94,0.5)";
+                        content = <span>🍎</span>;
+                      }
+                      if (isRev && isBomb) {
+                        bg = "rgba(239,68,68,0.2)";
+                        border = "1px solid rgba(239,68,68,0.5)";
+                        content = <span>💣</span>;
+                      }
+                      if (!isRev && isPast && isApple) {
+                        bg = "rgba(34,197,94,0.08)";
+                        content = <span className="opacity-40">🍎</span>;
+                      }
+
+                      return (
+                        <button
+                          key={c}
+                          onClick={() => pickCell(rowIdx, c)}
+                          disabled={!isActive}
+                          className="aspect-[2/1] rounded-xl flex items-center justify-center transition-all active:scale-90 text-base"
+                          style={{ background: bg, border }}
+                        >
+                          {content}
+                        </button>
+                      );
+                    })}
+                  </div>
+                </div>
               );
             })}
           </div>
         )}
-      </div>
 
-      {/* Multiplier progress bar */}
-      {gameState === "playing" && (
-        <div className="mx-2 mb-2 px-3 py-2 rounded-xl" style={{ background: "rgba(34,197,94,0.06)", border: "1px solid rgba(34,197,94,0.15)" }}>
-          <div className="flex justify-between items-center mb-1">
-            <span className="text-white/50 text-xs">Topildi: <b className="text-white">{found}/{APPLES_COUNT}</b></span>
-            <span className="text-green-400 text-xs font-bold">x{currentMult.toFixed(1)} → {potential.toLocaleString()} UZS</span>
-          </div>
-          <div className="w-full h-1.5 rounded-full" style={{ background: "rgba(255,255,255,0.08)" }}>
-            <div className="h-1.5 rounded-full transition-all" style={{ width: `${(found / APPLES_COUNT) * 100}%`, background: "linear-gradient(90deg, #22c55e, #86efac)" }} />
-          </div>
-        </div>
-      )}
-
-      {/* Status bar + cashout */}
-      {gameState === "playing" && found > 0 && (
-        <div className="mx-2 mb-2">
+        {gameState === "playing" && activeRow > 0 && (
           <button onClick={doCashOut} disabled={saving}
-            className="w-full py-3 rounded-xl font-black text-sm text-black active:scale-95 transition-transform"
+            className="w-full py-3 rounded-xl font-black text-sm text-black mb-2 active:scale-95 transition-transform"
             style={{ background: "linear-gradient(135deg, #22c55e, #16a34a)", boxShadow: "0 4px 16px rgba(34,197,94,0.4)" }}>
-            💰 OLISH — {potential.toLocaleString()} UZS
+            💰 OLISH — {potential.toLocaleString()} UZS ({currentMult}x)
           </button>
-        </div>
-      )}
-
-      {/* Result */}
-      {(gameState === "won" || gameState === "lost") && (
-        <div className="mx-2 mb-2 rounded-xl px-4 py-4 text-center"
-          style={{
-            background: gameState === "won" ? "rgba(34,197,94,0.15)" : "rgba(239,68,68,0.15)",
-            border: `1px solid ${gameState === "won" ? "rgba(34,197,94,0.4)" : "rgba(239,68,68,0.4)"}`
-          }}>
-          <p className="text-2xl mb-1">{gameState === "won" ? "🎉" : "💥"}</p>
-          <p className="text-white font-black text-lg">
-            {gameState === "won" ? `+${cashOutAmount.toLocaleString()} UZS!` : "Yutqazdingiz!"}
-          </p>
-          <p className="text-white/50 text-xs mt-1">
-            {gameState === "won" ? `${found} ta olma topildi` : "Tishlangan olma chiqdi!"}
-          </p>
-        </div>
-      )}
-
-      {/* Controls */}
-      <div className="px-2 pb-4 mt-auto">
-        {(gameState === "idle" || gameState === "won" || gameState === "lost") && (
-          <>
-            <div className="mb-2">
-              <div className="grid grid-cols-4 gap-1.5 mb-2">
-                {["MIN","X2","X/2","MAX"].map((a) => (
-                  <button key={a} onClick={() => {
-                    const bal = player?.balance ?? 0;
-                    let v = activeBet;
-                    if (a==="MIN") v = 2000;
-                    else if (a==="MAX") v = Math.min(bal, 500000);
-                    else if (a==="X2") v = Math.min(activeBet*2, bal, 500000);
-                    else v = Math.max(Math.floor(activeBet/2), 2000);
-                    setCustomBet(String(v));
-                    setBet(v);
-                  }} className="py-2 rounded-xl text-xs font-bold text-white/70 border border-white/10 bg-white/5 active:scale-95">{a}</button>
-                ))}
-              </div>
-              <input
-                type="number"
-                placeholder="Miqdor kiriting (min 2 000)"
-                value={customBet}
-                onChange={(e) => setCustomBet(e.target.value)}
-                className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-yellow-400 font-black text-lg placeholder-white/20 focus:outline-none focus:border-yellow-400/50"
-              />
-            </div>
-            <button onClick={gameState === "idle" ? start : reset}
-              disabled={!player || player.balance < activeBet || activeBet < 2000}
-              className="w-full py-4 rounded-2xl font-black text-base active:scale-95 transition-all disabled:opacity-40"
-              style={{ background: "linear-gradient(135deg, #22c55e, #16a34a)", boxShadow: "0 8px 24px rgba(34,197,94,0.3)" }}>
-              {gameState === "idle" ? "🍎 O'YINNI BOSHLASH" : "🔄 QAYTA O'YNASH"}
-            </button>
-          </>
         )}
+
+        {gameState === "playing" && activeRow === 0 && (
+          <div className="text-center py-2 mb-2">
+            <span className="text-white/40 text-xs">Keyingi: <b className="text-green-400">{nextMult}x</b></span>
+          </div>
+        )}
+
+        {gameState === "playing" && activeRow > 0 && activeRow < ROWS && (
+          <div className="text-center py-1 mb-2">
+            <span className="text-white/30 text-xs">Keyingi qator: <b className="text-white/60">{MULTIPLIERS[activeRow]}x</b></span>
+          </div>
+        )}
+
+        {(gameState === "won" || gameState === "lost") && (
+          <div className="rounded-xl px-4 py-4 text-center mb-3"
+            style={{
+              background: gameState === "won" ? "rgba(34,197,94,0.15)" : "rgba(239,68,68,0.15)",
+              border: `1px solid ${gameState === "won" ? "rgba(34,197,94,0.4)" : "rgba(239,68,68,0.4)"}`
+            }}>
+            <p className="text-2xl mb-1">{gameState === "won" ? "🎉" : "💥"}</p>
+            <p className="text-white font-black text-lg">
+              {gameState === "won" ? `+${cashOutAmount.toLocaleString()} UZS!` : "Yutqazdingiz!"}
+            </p>
+            <p className="text-white/50 text-xs mt-1">
+              {gameState === "won" ? `${activeRow} qator — ${MULTIPLIERS[activeRow - 1]}x` : "Bomba chiqdi!"}
+            </p>
+          </div>
+        )}
+
+        <div className="mt-auto pb-4">
+          {(gameState === "idle" || gameState === "won" || gameState === "lost") && (
+            <>
+              <div className="mb-2">
+                <div className="grid grid-cols-4 gap-1.5 mb-2">
+                  {["MIN","X2","X/2","MAX"].map((a) => (
+                    <button key={a} onClick={() => {
+                      const bal = player?.balance ?? 0;
+                      let v = activeBet;
+                      if (a === "MIN") v = 2000;
+                      else if (a === "MAX") v = Math.min(bal, 500000);
+                      else if (a === "X2") v = Math.min(activeBet * 2, bal, 500000);
+                      else v = Math.max(Math.floor(activeBet / 2), 2000);
+                      setCustomBet(String(v));
+                      setBet(v);
+                    }} className="py-2 rounded-xl text-xs font-bold text-white/70 border border-white/10 bg-white/5 active:scale-95">{a}</button>
+                  ))}
+                </div>
+                <input
+                  type="number"
+                  placeholder="Miqdor kiriting (min 2 000)"
+                  value={customBet}
+                  onChange={(e) => setCustomBet(e.target.value)}
+                  className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-yellow-400 font-black text-lg placeholder-white/20 focus:outline-none focus:border-yellow-400/50"
+                />
+              </div>
+              <button onClick={gameState === "idle" ? start : reset}
+                disabled={!player || player.balance < activeBet || activeBet < 2000}
+                className="w-full py-4 rounded-2xl font-black text-base active:scale-95 transition-all disabled:opacity-40"
+                style={{ background: "linear-gradient(135deg, #22c55e, #16a34a)", boxShadow: "0 8px 24px rgba(34,197,94,0.3)" }}>
+                {gameState === "idle" ? "🍎 O'YINNI BOSHLASH" : "🔄 QAYTA O'YNASH"}
+              </button>
+            </>
+          )}
+        </div>
       </div>
     </div>
   );
