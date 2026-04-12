@@ -10,6 +10,8 @@ servers:
 tags:
   - name: health
     description: Health operations
+  - name: game
+    description: Game operations
 paths:
   /healthz:
     get:
@@ -24,6 +26,83 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/HealthStatus"
+
+  /game/score:
+    post:
+      operationId: saveScore
+      tags: [game]
+      summary: Save player score
+      description: Save or update a player's score
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/SaveScoreBody"
+      responses:
+        "200":
+          description: Score saved
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/PlayerScore"
+
+  /game/leaderboard:
+    get:
+      operationId: getLeaderboard
+      tags: [game]
+      summary: Get top leaderboard
+      description: Returns top 50 players by score
+      responses:
+        "200":
+          description: Leaderboard list
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/LeaderboardEntry"
+
+  /game/player/{telegramId}:
+    get:
+      operationId: getPlayer
+      tags: [game]
+      summary: Get player info
+      description: Get a specific player's score and rank
+      parameters:
+        - name: telegramId
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          description: Player info
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/PlayerScore"
+        "404":
+          description: Player not found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+
+  /game/stats:
+    get:
+      operationId: getGameStats
+      tags: [game]
+      summary: Get global game stats
+      description: Returns total players, total clicks, and top score
+      responses:
+        "200":
+          description: Game statistics
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/GameStats"
+
 components:
   schemas:
     HealthStatus:
@@ -34,3 +113,103 @@ components:
       required:
         - status
 
+    SaveScoreBody:
+      type: object
+      properties:
+        telegramId:
+          type: string
+        username:
+          type: string
+        firstName:
+          type: string
+        lastName:
+          type: ["string", "null"]
+        photoUrl:
+          type: ["string", "null"]
+        score:
+          type: integer
+      required:
+        - telegramId
+        - username
+        - firstName
+        - score
+
+    PlayerScore:
+      type: object
+      properties:
+        id:
+          type: integer
+        telegramId:
+          type: string
+        username:
+          type: string
+        firstName:
+          type: string
+        lastName:
+          type: ["string", "null"]
+        photoUrl:
+          type: ["string", "null"]
+        score:
+          type: integer
+        rank:
+          type: ["integer", "null"]
+        createdAt:
+          type: string
+        updatedAt:
+          type: string
+      required:
+        - id
+        - telegramId
+        - username
+        - firstName
+        - score
+        - createdAt
+        - updatedAt
+
+    LeaderboardEntry:
+      type: object
+      properties:
+        rank:
+          type: integer
+        telegramId:
+          type: string
+        username:
+          type: string
+        firstName:
+          type: string
+        lastName:
+          type: ["string", "null"]
+        photoUrl:
+          type: ["string", "null"]
+        score:
+          type: integer
+      required:
+        - rank
+        - telegramId
+        - username
+        - firstName
+        - score
+
+    GameStats:
+      type: object
+      properties:
+        totalPlayers:
+          type: integer
+        totalClicks:
+          type: integer
+        topScore:
+          type: integer
+        topPlayer:
+          type: ["string", "null"]
+      required:
+        - totalPlayers
+        - totalClicks
+        - topScore
+
+    ErrorResponse:
+      type: object
+      properties:
+        error:
+          type: string
+      required:
+        - error

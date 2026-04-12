@@ -8,3 +8,54 @@
 export interface HealthStatus {
   status: string;
 }
+
+export interface SaveScoreBody {
+  telegramId: string;
+  username: string;
+  firstName: string;
+  /** @nullable */
+  lastName?: string | null;
+  /** @nullable */
+  photoUrl?: string | null;
+  score: number;
+}
+
+export interface PlayerScore {
+  id: number;
+  telegramId: string;
+  username: string;
+  firstName: string;
+  /** @nullable */
+  lastName?: string | null;
+  /** @nullable */
+  photoUrl?: string | null;
+  score: number;
+  /** @nullable */
+  rank?: number | null;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface LeaderboardEntry {
+  rank: number;
+  telegramId: string;
+  username: string;
+  firstName: string;
+  /** @nullable */
+  lastName?: string | null;
+  /** @nullable */
+  photoUrl?: string | null;
+  score: number;
+}
+
+export interface GameStats {
+  totalPlayers: number;
+  totalClicks: number;
+  topScore: number;
+  /** @nullable */
+  topPlayer?: string | null;
+}
+
+export interface ErrorResponse {
+  error: string;
+}

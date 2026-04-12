@@ -5,18 +5,28 @@
  * API specification
  * OpenAPI spec version: 0.1.0
  */
-import { useQuery } from "@tanstack/react-query";
+import { useMutation, useQuery } from "@tanstack/react-query";
 import type {
+  MutationFunction,
   QueryFunction,
   QueryKey,
+  UseMutationOptions,
+  UseMutationResult,
   UseQueryOptions,
   UseQueryResult,
 } from "@tanstack/react-query";
 
-import type { HealthStatus } from "./api.schemas";
+import type {
+  ErrorResponse,
+  GameStats,
+  HealthStatus,
+  LeaderboardEntry,
+  PlayerScore,
+  SaveScoreBody,
+} from "./api.schemas";
 
 import { customFetch } from "../custom-fetch";
-import type { ErrorType } from "../custom-fetch";
+import type { ErrorType, BodyType } from "../custom-fetch";
 
 type AwaitedInput<T> = PromiseLike<T> | T;
 
@@ -92,6 +102,331 @@ export function useHealthCheck<
   request?: SecondParameter<typeof customFetch>;
 }): UseQueryResult<TData, TError> & { queryKey: QueryKey } {
   const queryOptions = getHealthCheckQueryOptions(options);
+
+  const query = useQuery(queryOptions) as UseQueryResult<TData, TError> & {
+    queryKey: QueryKey;
+  };
+
+  return { ...query, queryKey: queryOptions.queryKey };
+}
+
+/**
+ * Save or update a player's score
+ * @summary Save player score
+ */
+export const getSaveScoreUrl = () => {
+  return `/api/game/score`;
+};
+
+export const saveScore = async (
+  saveScoreBody: SaveScoreBody,
+  options?: RequestInit,
+): Promise<PlayerScore> => {
+  return customFetch<PlayerScore>(getSaveScoreUrl(), {
+    ...options,
+    method: "POST",
+    headers: { "Content-Type": "application/json", ...options?.headers },
+    body: JSON.stringify(saveScoreBody),
+  });
+};
+
+export const getSaveScoreMutationOptions = <
+  TError = ErrorType<unknown>,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof saveScore>>,
+    TError,
+    { data: BodyType<SaveScoreBody> },
+    TContext
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseMutationOptions<
+  Awaited<ReturnType<typeof saveScore>>,
+  TError,
+  { data: BodyType<SaveScoreBody> },
+  TContext
+> => {
+  const mutationKey = ["saveScore"];
+  const { mutation: mutationOptions, request: requestOptions } = options
+    ? options.mutation &&
+      "mutationKey" in options.mutation &&
+      options.mutation.mutationKey
+      ? options
+      : { ...options, mutation: { ...options.mutation, mutationKey } }
+    : { mutation: { mutationKey }, request: undefined };
+
+  const mutationFn: MutationFunction<
+    Awaited<ReturnType<typeof saveScore>>,
+    { data: BodyType<SaveScoreBody> }
+  > = (props) => {
+    const { data } = props ?? {};
+
+    return saveScore(data, requestOptions);
+  };
+
+  return { mutationFn, ...mutationOptions };
+};
+
+export type SaveScoreMutationResult = NonNullable<
+  Awaited<ReturnType<typeof saveScore>>
+>;
+export type SaveScoreMutationBody = BodyType<SaveScoreBody>;
+export type SaveScoreMutationError = ErrorType<unknown>;
+
+/**
+ * @summary Save player score
+ */
+export const useSaveScore = <
+  TError = ErrorType<unknown>,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof saveScore>>,
+    TError,
+    { data: BodyType<SaveScoreBody> },
+    TContext
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseMutationResult<
+  Awaited<ReturnType<typeof saveScore>>,
+  TError,
+  { data: BodyType<SaveScoreBody> },
+  TContext
+> => {
+  return useMutation(getSaveScoreMutationOptions(options));
+};
+
+/**
+ * Returns top 50 players by score
+ * @summary Get top leaderboard
+ */
+export const getGetLeaderboardUrl = () => {
+  return `/api/game/leaderboard`;
+};
+
+export const getLeaderboard = async (
+  options?: RequestInit,
+): Promise<LeaderboardEntry[]> => {
+  return customFetch<LeaderboardEntry[]>(getGetLeaderboardUrl(), {
+    ...options,
+    method: "GET",
+  });
+};
+
+export const getGetLeaderboardQueryKey = () => {
+  return [`/api/game/leaderboard`] as const;
+};
+
+export const getGetLeaderboardQueryOptions = <
+  TData = Awaited<ReturnType<typeof getLeaderboard>>,
+  TError = ErrorType<unknown>,
+>(options?: {
+  query?: UseQueryOptions<
+    Awaited<ReturnType<typeof getLeaderboard>>,
+    TError,
+    TData
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}) => {
+  const { query: queryOptions, request: requestOptions } = options ?? {};
+
+  const queryKey = queryOptions?.queryKey ?? getGetLeaderboardQueryKey();
+
+  const queryFn: QueryFunction<Awaited<ReturnType<typeof getLeaderboard>>> = ({
+    signal,
+  }) => getLeaderboard({ signal, ...requestOptions });
+
+  return { queryKey, queryFn, ...queryOptions } as UseQueryOptions<
+    Awaited<ReturnType<typeof getLeaderboard>>,
+    TError,
+    TData
+  > & { queryKey: QueryKey };
+};
+
+export type GetLeaderboardQueryResult = NonNullable<
+  Awaited<ReturnType<typeof getLeaderboard>>
+>;
+export type GetLeaderboardQueryError = ErrorType<unknown>;
+
+/**
+ * @summary Get top leaderboard
+ */
+
+export function useGetLeaderboard<
+  TData = Awaited<ReturnType<typeof getLeaderboard>>,
+  TError = ErrorType<unknown>,
+>(options?: {
+  query?: UseQueryOptions<
+    Awaited<ReturnType<typeof getLeaderboard>>,
+    TError,
+    TData
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+  const queryOptions = getGetLeaderboardQueryOptions(options);
+
+  const query = useQuery(queryOptions) as UseQueryResult<TData, TError> & {
+    queryKey: QueryKey;
+  };
+
+  return { ...query, queryKey: queryOptions.queryKey };
+}
+
+/**
+ * Get a specific player's score and rank
+ * @summary Get player info
+ */
+export const getGetPlayerUrl = (telegramId: string) => {
+  return `/api/game/player/${telegramId}`;
+};
+
+export const getPlayer = async (
+  telegramId: string,
+  options?: RequestInit,
+): Promise<PlayerScore> => {
+  return customFetch<PlayerScore>(getGetPlayerUrl(telegramId), {
+    ...options,
+    method: "GET",
+  });
+};
+
+export const getGetPlayerQueryKey = (telegramId: string) => {
+  return [`/api/game/player/${telegramId}`] as const;
+};
+
+export const getGetPlayerQueryOptions = <
+  TData = Awaited<ReturnType<typeof getPlayer>>,
+  TError = ErrorType<ErrorResponse>,
+>(
+  telegramId: string,
+  options?: {
+    query?: UseQueryOptions<
+      Awaited<ReturnType<typeof getPlayer>>,
+      TError,
+      TData
+    >;
+    request?: SecondParameter<typeof customFetch>;
+  },
+) => {
+  const { query: queryOptions, request: requestOptions } = options ?? {};
+
+  const queryKey = queryOptions?.queryKey ?? getGetPlayerQueryKey(telegramId);
+
+  const queryFn: QueryFunction<Awaited<ReturnType<typeof getPlayer>>> = ({
+    signal,
+  }) => getPlayer(telegramId, { signal, ...requestOptions });
+
+  return {
+    queryKey,
+    queryFn,
+    enabled: !!telegramId,
+    ...queryOptions,
+  } as UseQueryOptions<Awaited<ReturnType<typeof getPlayer>>, TError, TData> & {
+    queryKey: QueryKey;
+  };
+};
+
+export type GetPlayerQueryResult = NonNullable<
+  Awaited<ReturnType<typeof getPlayer>>
+>;
+export type GetPlayerQueryError = ErrorType<ErrorResponse>;
+
+/**
+ * @summary Get player info
+ */
+
+export function useGetPlayer<
+  TData = Awaited<ReturnType<typeof getPlayer>>,
+  TError = ErrorType<ErrorResponse>,
+>(
+  telegramId: string,
+  options?: {
+    query?: UseQueryOptions<
+      Awaited<ReturnType<typeof getPlayer>>,
+      TError,
+      TData
+    >;
+    request?: SecondParameter<typeof customFetch>;
+  },
+): UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+  const queryOptions = getGetPlayerQueryOptions(telegramId, options);
+
+  const query = useQuery(queryOptions) as UseQueryResult<TData, TError> & {
+    queryKey: QueryKey;
+  };
+
+  return { ...query, queryKey: queryOptions.queryKey };
+}
+
+/**
+ * Returns total players, total clicks, and top score
+ * @summary Get global game stats
+ */
+export const getGetGameStatsUrl = () => {
+  return `/api/game/stats`;
+};
+
+export const getGameStats = async (
+  options?: RequestInit,
+): Promise<GameStats> => {
+  return customFetch<GameStats>(getGetGameStatsUrl(), {
+    ...options,
+    method: "GET",
+  });
+};
+
+export const getGetGameStatsQueryKey = () => {
+  return [`/api/game/stats`] as const;
+};
+
+export const getGetGameStatsQueryOptions = <
+  TData = Awaited<ReturnType<typeof getGameStats>>,
+  TError = ErrorType<unknown>,
+>(options?: {
+  query?: UseQueryOptions<
+    Awaited<ReturnType<typeof getGameStats>>,
+    TError,
+    TData
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}) => {
+  const { query: queryOptions, request: requestOptions } = options ?? {};
+
+  const queryKey = queryOptions?.queryKey ?? getGetGameStatsQueryKey();
+
+  const queryFn: QueryFunction<Awaited<ReturnType<typeof getGameStats>>> = ({
+    signal,
+  }) => getGameStats({ signal, ...requestOptions });
+
+  return { queryKey, queryFn, ...queryOptions } as UseQueryOptions<
+    Awaited<ReturnType<typeof getGameStats>>,
+    TError,
+    TData
+  > & { queryKey: QueryKey };
+};
+
+export type GetGameStatsQueryResult = NonNullable<
+  Awaited<ReturnType<typeof getGameStats>>
+>;
+export type GetGameStatsQueryError = ErrorType<unknown>;
+
+/**
+ * @summary Get global game stats
+ */
+
+export function useGetGameStats<
+  TData = Awaited<ReturnType<typeof getGameStats>>,
+  TError = ErrorType<unknown>,
+>(options?: {
+  query?: UseQueryOptions<
+    Awaited<ReturnType<typeof getGameStats>>,
+    TError,
+    TData
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+  const queryOptions = getGetGameStatsQueryOptions(options);
 
   const query = useQuery(queryOptions) as UseQueryResult<TData, TError> & {
     queryKey: QueryKey;

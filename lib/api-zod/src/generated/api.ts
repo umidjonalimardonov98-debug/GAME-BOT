@@ -14,3 +14,76 @@ import * as zod from "zod";
 export const HealthCheckResponse = zod.object({
   status: zod.string(),
 });
+
+/**
+ * Save or update a player's score
+ * @summary Save player score
+ */
+export const SaveScoreBody = zod.object({
+  telegramId: zod.string(),
+  username: zod.string(),
+  firstName: zod.string(),
+  lastName: zod.string().nullish(),
+  photoUrl: zod.string().nullish(),
+  score: zod.number(),
+});
+
+export const SaveScoreResponse = zod.object({
+  id: zod.number(),
+  telegramId: zod.string(),
+  username: zod.string(),
+  firstName: zod.string(),
+  lastName: zod.string().nullish(),
+  photoUrl: zod.string().nullish(),
+  score: zod.number(),
+  rank: zod.number().nullish(),
+  createdAt: zod.string(),
+  updatedAt: zod.string(),
+});
+
+/**
+ * Returns top 50 players by score
+ * @summary Get top leaderboard
+ */
+export const GetLeaderboardResponseItem = zod.object({
+  rank: zod.number(),
+  telegramId: zod.string(),
+  username: zod.string(),
+  firstName: zod.string(),
+  lastName: zod.string().nullish(),
+  photoUrl: zod.string().nullish(),
+  score: zod.number(),
+});
+export const GetLeaderboardResponse = zod.array(GetLeaderboardResponseItem);
+
+/**
+ * Get a specific player's score and rank
+ * @summary Get player info
+ */
+export const GetPlayerParams = zod.object({
+  telegramId: zod.coerce.string(),
+});
+
+export const GetPlayerResponse = zod.object({
+  id: zod.number(),
+  telegramId: zod.string(),
+  username: zod.string(),
+  firstName: zod.string(),
+  lastName: zod.string().nullish(),
+  photoUrl: zod.string().nullish(),
+  score: zod.number(),
+  rank: zod.number().nullish(),
+  createdAt: zod.string(),
+  updatedAt: zod.string(),
+});
+
+/**
+ * Returns total players, total clicks, and top score
+ * @summary Get global game stats
+ */
+export const GetGameStatsResponse = zod.object({
+  totalPlayers: zod.number(),
+  totalClicks: zod.number(),
+  topScore: zod.number(),
+  topPlayer: zod.string().nullish(),
+});
