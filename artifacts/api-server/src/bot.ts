@@ -63,16 +63,35 @@ async function getOrCreatePlayer(tgUser: TelegramBot.User) {
   return p;
 }
 
+const DEPOSIT_URL = APP_URL.endsWith("/") ? `${APP_URL}deposit` : `${APP_URL}/deposit`;
+
 async function mainMenu(chatId: number, name: string, balance: number) {
   await bot!.sendMessage(chatId,
     `🎮 <b>Salom, ${name}!</b>\n\n💰 Balansingiz: <b>${fmt(balance)} UZS</b>\n\n👇 O'yinni boshlash uchun tugmani bosing:`,
     { parse_mode: "HTML", reply_markup: { inline_keyboard: [
       [{ text: "🎮 O'YINNI BOSHLASH", web_app: { url: APP_URL } }],
       [{ text: "💰 Balansim", callback_data: "balance" }, { text: "📖 Qoidalar", callback_data: "howto" }],
-      [{ text: "➕ Hisob To'ldirish", callback_data: "deposit_menu" }, { text: "💸 Pul Yechish", callback_data: "withdraw_menu" }],
+      [{ text: "➕ Hisob To'ldirish", web_app: { url: DEPOSIT_URL } }, { text: "💸 Pul Yechish", callback_data: "withdraw_menu" }],
       [{ text: "🏆 Reyting", callback_data: "reyting" }],
     ]}}
   );
+}
+
+export async function notifyUserDepositCreated(telegramId: string, amount: number, bonus: number) {
+  if (!bot) return;
+  try {
+    await bot.sendMessage(Number(telegramId),
+      `✅ <b>Depozit so'rovi qabul qilindi!</b>\n\n` +
+      `💵 Miqdor: <b>${fmt(amount)} UZS</b>\n` +
+      `🎁 Bonus: <b>+${fmt(bonus)} UZS</b>\n` +
+      `💰 Jami: <b>${fmt(amount + bonus)} UZS</b>\n\n` +
+      `📸 <b>Endi to'lov cheki (screenshot) rasmini shu yerga yuboring.</b>\n` +
+      `Admin tasdiqlashini kuting.`,
+      { parse_mode: "HTML" }
+    );
+  } catch (err) {
+    logger.error({ err }, "notifyUserDepositCreated xato");
+  }
 }
 
 async function sendDepositCard(chatId: number, amount: number, userId: number) {

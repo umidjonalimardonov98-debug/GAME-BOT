@@ -94,6 +94,12 @@ router.post("/players/:telegramId/deposit-request", async (req, res): Promise<vo
     bonusAmount: bonus,
   }).returning();
 
+  // Notify user via bot to send receipt
+  try {
+    const { notifyUserDepositCreated } = await import("../bot");
+    await notifyUserDepositCreated(params.data.telegramId, body.data.amount, bonus);
+  } catch { /* bot not available in dev */ }
+
   res.json({ ok: true, requestId: req2.id, amount: body.data.amount, bonus });
 });
 
