@@ -7,7 +7,7 @@ export default function Home() {
   const { player, loading } = usePlayer();
 
   const games = [
-    { path: "/apple", emoji: "🍄", title: "Apple of Fortune", desc: "Mushroom toping, yuting!", color: "from-emerald-900/80 to-green-950", border: "border-emerald-500/40", glow: "hover:shadow-emerald-900/60" },
+    { path: "/apple", emoji: "🍎", title: "Apple of Fortune", desc: "Olma toping, ko'proq yuting!", color: "from-emerald-900/80 to-green-950", border: "border-emerald-500/40", glow: "hover:shadow-emerald-900/60" },
     { path: "/dice", emoji: "🎲", title: "Dice", desc: "Zar uloqtiring!", color: "from-amber-900/80 to-yellow-950", border: "border-amber-400/40", glow: "hover:shadow-amber-900/60" },
     { path: "/aviator", emoji: "✈️", title: "Aviator", desc: "Samolyot tushishidan oldin!", color: "from-blue-900/80 to-indigo-950", border: "border-blue-400/40", glow: "hover:shadow-blue-900/60" },
   ];

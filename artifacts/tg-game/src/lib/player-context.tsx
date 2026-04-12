@@ -70,6 +70,10 @@ export function PlayerProvider({ children }: { children: ReactNode }) {
   useEffect(() => {
     initTelegramApp();
     refresh().finally(() => setLoading(false));
+    const interval = setInterval(() => {
+      refresh().catch(() => {});
+    }, 15000);
+    return () => clearInterval(interval);
   }, [refresh]);
 
   return (
