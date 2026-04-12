@@ -36,6 +36,7 @@ export default function Dice() {
   const [, nav] = useLocation();
   const { player, refresh } = usePlayer();
   const [bet, setBet] = useState(1000);
+  const [customBet, setCustomBet] = useState("");
   const [betType, setBetType] = useState<BetType | null>(null);
   const [dice, setDice] = useState<[number,number]>([1,1]);
   const [gameState, setGameState] = useState<GameState>("idle");
@@ -43,8 +44,10 @@ export default function Dice() {
   const [won, setWon] = useState(false);
   const [saving, setSaving] = useState(false);
 
+  const activeBet = customBet ? Number(customBet) : bet;
+
   const roll = useCallback(async () => {
-    if (!betType || !player || player.balance < bet) return;
+    if (!betType || !player || player.balance < activeBet) return;
     setGameState("rolling");
     setMessage("");
 
@@ -59,17 +62,17 @@ export default function Dice() {
         const sum = d1 + d2;
         setDice([d1, d2]);
         const win = (betType==="more" && sum>7) || (betType==="equal" && sum===7) || (betType==="less" && sum<7);
-        const prize = win ? Math.floor(bet * ODDS[betType].mult) : 0;
+        const prize = win ? Math.floor(activeBet * ODDS[betType].mult) : 0;
         setWon(win);
         setMessage(win ? `🎉 G'alaba! +${prize.toLocaleString()} UZS (${d1}+${d2}=${sum})` : `😔 Yutqazdingiz (${d1}+${d2}=${sum})`);
         setGameState("result");
         setSaving(true);
-        await placeBet(player.telegramId, { amount: bet, game: "dice", won: win, winAmount: prize }).catch(() => {});
+        await placeBet(player.telegramId, { amount: activeBet, game: "dice", won: win, winAmount: prize }).catch(() => {});
         await refresh();
         setSaving(false);
       }
     }, 75);
-  }, [betType, bet, player, refresh]);
+  }, [betType, activeBet, player, refresh]);
 
   return (
     <div className="min-h-screen flex flex-col" style={{ background: "linear-gradient(180deg, #0d0a00 0%, #1a1200 100%)" }}>
@@ -125,31 +128,42 @@ export default function Dice() {
 
         {/* Bet amount */}
         <p className="text-white/40 text-xs uppercase tracking-widest font-semibold mb-2">Tikish miqdori</p>
+        <input
+          type="number"
+          placeholder="Miqdor kiriting..."
+          value={customBet}
+          disabled={gameState==="rolling"}
+          onChange={(e) => { setCustomBet(e.target.value); }}
+          className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-yellow-400 font-black text-lg placeholder-white/20 focus:outline-none focus:border-yellow-400/50 mb-2"
+        />
         <div className="grid grid-cols-4 gap-1.5 mb-2">
           {["MIN","X2","X/2","MAX"].map((a) => (
             <button key={a} disabled={gameState==="rolling"} onClick={() => {
+              setCustomBet("");
               const bal = player?.balance ?? 0;
               if (a==="MIN") setBet(500);
-              else if (a==="MAX") setBet(Math.min(bal,100000));
-              else if (a==="X2") setBet(Math.min(bet*2,bal,100000));
-              else setBet(Math.max(Math.floor(bet/2),500));
+              else if (a==="MAX") setBet(Math.min(bal, 500000));
+              else if (a==="X2") setBet(Math.min(activeBet*2, bal, 500000));
+              else setBet(Math.max(Math.floor(activeBet/2), 500));
             }} className="py-2 rounded-xl text-xs font-bold text-white/70 border border-white/10 bg-white/5 active:scale-95">{a}</button>
           ))}
         </div>
-        <div className="bg-white/5 border border-white/10 rounded-xl px-4 py-3 mb-2 flex justify-between items-center">
-          <span className="text-yellow-400 font-black text-lg">{bet.toLocaleString()} UZS</span>
-          {betType && <span className="text-green-400 text-sm">→ {Math.floor(bet*ODDS[betType].mult).toLocaleString()} UZS</span>}
+        <div className="bg-white/5 border border-white/10 rounded-xl px-4 py-2.5 mb-2 flex justify-between items-center">
+          <span className="text-yellow-400 font-black text-base">{activeBet.toLocaleString()} UZS</span>
+          {betType && <span className="text-green-400 text-sm font-bold">→ {Math.floor(activeBet*ODDS[betType].mult).toLocaleString()} UZS</span>}
         </div>
-        <input type="range" min={500} max={Math.min(player?.balance??10000,100000)} step={500} value={bet}
-          onChange={(e) => setBet(Number(e.target.value))} disabled={gameState==="rolling"} className="w-full mb-4 accent-yellow-400" />
+        {!customBet && (
+          <input type="range" min={500} max={Math.min(player?.balance??10000, 500000)} step={500} value={bet}
+            onChange={(e) => setBet(Number(e.target.value))} disabled={gameState==="rolling"} className="w-full mb-2 accent-yellow-400" />
+        )}
 
         {/* Buttons */}
-        <div className="grid grid-cols-3 gap-2 pb-6">
+        <div className="grid grid-cols-3 gap-2 pb-6 mt-2">
           <button onClick={() => { setGameState("idle"); setMessage(""); }} disabled={gameState==="rolling"}
             className="py-4 rounded-2xl bg-white/5 border border-white/10 flex items-center justify-center active:scale-95">
             <RotateCcw className="w-5 h-5 text-blue-400" />
           </button>
-          <button onClick={roll} disabled={gameState==="rolling" || !betType || !player || player.balance < bet || saving}
+          <button onClick={roll} disabled={gameState==="rolling" || !betType || !player || player.balance < activeBet || activeBet < 100 || saving}
             className="col-span-2 py-4 rounded-2xl font-black text-base flex items-center justify-center gap-2 active:scale-95 transition-all disabled:opacity-40"
             style={{ background: "linear-gradient(135deg, #22c55e, #16a34a)", boxShadow: "0 8px 24px rgba(34,197,94,0.3)" }}>
             <Play className="w-5 h-5" />

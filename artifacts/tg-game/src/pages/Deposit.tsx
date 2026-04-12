@@ -6,12 +6,23 @@ const CARD = "5614683518277611";
 const HOLDER = "ALIMARDONOV UMIDJON";
 const BONUS = 20;
 
-const AMOUNTS = [10000, 25000, 50000, 100000, 250000, 500000];
+function goToBot() {
+  try {
+    // Close mini app → user returns to bot chat to send receipt photo
+    const tg = (window as any).Telegram?.WebApp;
+    if (tg) { tg.close(); } else { window.history.back(); }
+  } catch { window.history.back(); }
+}
+
+const PRESET_AMOUNTS = [10000, 25000, 50000, 100000, 250000, 500000];
 
 export default function Deposit() {
   const [, nav] = useLocation();
   const [copied, setCopied] = useState(false);
   const [selected, setSelected] = useState<number | null>(null);
+  const [customAmount, setCustomAmount] = useState("");
+
+  const activeAmount = customAmount ? Number(customAmount) : selected;
 
   const copy = () => {
     navigator.clipboard.writeText(CARD).then(() => {
@@ -21,6 +32,9 @@ export default function Deposit() {
   };
 
   const formatCard = (c: string) => c.replace(/(\d{4})/g, "$1 ").trim();
+
+  const bonus = activeAmount ? Math.floor(activeAmount * BONUS / 100) : 0;
+  const total = activeAmount ? activeAmount + bonus : 0;
 
   return (
     <div className="min-h-screen flex flex-col" style={{ background: "linear-gradient(180deg, #090b14 0%, #0d1020 100%)" }}>
@@ -38,73 +52,80 @@ export default function Deposit() {
           <p className="text-green-300/70 text-sm mt-1">Har qanday to'ldirish uchun!</p>
         </div>
 
-        {/* Card */}
+        {/* Card - tap to copy */}
         <div className="rounded-2xl p-5 mb-4" style={{ background: "linear-gradient(135deg, #1a1200, #2d1f00)", border: "1px solid rgba(245,200,66,0.3)" }}>
           <p className="text-yellow-400/60 text-xs uppercase tracking-widest mb-3">💳 To'lov Kartasi</p>
-
-          {/* Card number - tap to copy */}
           <button onClick={copy} className="w-full flex items-center justify-between bg-white/5 rounded-xl px-4 py-3 mb-3 active:scale-95 transition-transform border border-yellow-400/20">
             <span className="text-white font-mono text-lg font-bold tracking-wider">{formatCard(CARD)}</span>
-            <div className={`ml-3 w-8 h-8 rounded-lg flex items-center justify-center transition-all ${copied ? "bg-green-500" : "bg-yellow-400/20"}`}>
+            <div className={`ml-3 w-9 h-9 rounded-lg flex items-center justify-center transition-all shrink-0 ${copied ? "bg-green-500" : "bg-yellow-400/20"}`}>
               {copied ? <Check className="w-4 h-4 text-white" /> : <Copy className="w-4 h-4 text-yellow-400" />}
             </div>
           </button>
-
-          {copied && (
-            <p className="text-green-400 text-xs text-center mb-2 font-semibold">✅ Nusxa olindi!</p>
-          )}
-
+          {copied && <p className="text-green-400 text-xs text-center mb-2 font-semibold">✅ Karta raqami nusxa olindi!</p>}
           <p className="text-white/60 text-sm">👤 {HOLDER}</p>
         </div>
 
-        {/* Amount selection */}
-        <p className="text-white/40 text-xs uppercase tracking-widest font-semibold mb-3">Miqdor Tanlang</p>
-        <div className="grid grid-cols-2 gap-2 mb-4">
-          {AMOUNTS.map((a) => {
-            const bonus = Math.floor(a * BONUS / 100);
-            const isSelected = selected === a;
+        {/* Custom amount input */}
+        <p className="text-white/40 text-xs uppercase tracking-widest font-semibold mb-2">Miqdor Kiriting</p>
+        <input
+          type="number"
+          placeholder="Miqdorni o'zing kiriting..."
+          value={customAmount}
+          onChange={(e) => { setCustomAmount(e.target.value); setSelected(null); }}
+          className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-yellow-400 font-black text-lg placeholder-white/20 focus:outline-none focus:border-yellow-400/50 mb-3"
+        />
+
+        {/* Preset amounts */}
+        <p className="text-white/30 text-xs mb-2">yoki tanlang:</p>
+        <div className="grid grid-cols-3 gap-2 mb-4">
+          {PRESET_AMOUNTS.map((a) => {
+            const b = Math.floor(a * BONUS / 100);
+            const isSel = !customAmount && selected === a;
             return (
-              <button key={a} onClick={() => setSelected(a)}
-                className={`rounded-xl p-3 text-left transition-all active:scale-95 ${isSelected ? "border-yellow-400 bg-yellow-400/10" : "border-white/10 bg-white/5"} border`}>
-                <p className={`font-black text-base ${isSelected ? "text-yellow-300" : "text-white"}`}>{a.toLocaleString()} UZS</p>
-                <p className="text-green-400 text-xs mt-0.5">+{bonus.toLocaleString()} bonus</p>
+              <button key={a} onClick={() => { setSelected(a); setCustomAmount(""); }}
+                className={`rounded-xl p-2.5 text-left transition-all active:scale-95 border ${isSel ? "border-yellow-400 bg-yellow-400/10" : "border-white/10 bg-white/5"}`}>
+                <p className={`font-black text-sm ${isSel ? "text-yellow-300" : "text-white"}`}>{(a/1000).toFixed(0)}K</p>
+                <p className="text-green-400 text-xs">+{(b/1000).toFixed(0)}K</p>
               </button>
             );
           })}
         </div>
 
-        {selected && (
+        {/* Summary */}
+        {activeAmount && activeAmount > 0 && (
           <div className="rounded-xl p-4 mb-4" style={{ background: "rgba(34,197,94,0.08)", border: "1px solid rgba(34,197,94,0.2)" }}>
             <div className="flex justify-between mb-1">
               <span className="text-white/60 text-sm">To'lov:</span>
-              <span className="text-white font-bold">{selected.toLocaleString()} UZS</span>
+              <span className="text-white font-bold">{activeAmount.toLocaleString()} UZS</span>
             </div>
             <div className="flex justify-between mb-1">
               <span className="text-white/60 text-sm">Bonus (+{BONUS}%):</span>
-              <span className="text-green-400 font-bold">+{Math.floor(selected * BONUS / 100).toLocaleString()} UZS</span>
+              <span className="text-green-400 font-bold">+{bonus.toLocaleString()} UZS</span>
             </div>
             <div className="flex justify-between pt-2 border-t border-white/10">
               <span className="text-white/60 text-sm">Jami:</span>
-              <span className="text-yellow-400 font-black">{(selected + Math.floor(selected * BONUS / 100)).toLocaleString()} UZS</span>
+              <span className="text-yellow-400 font-black">{total.toLocaleString()} UZS</span>
             </div>
           </div>
         )}
 
+        {/* Instructions */}
         <div className="rounded-2xl p-4 mb-4" style={{ background: "rgba(99,102,241,0.08)", border: "1px solid rgba(99,102,241,0.2)" }}>
           <p className="text-indigo-300 font-bold text-sm mb-2">📋 Qanday qilish kerak?</p>
           <ol className="text-white/60 text-sm space-y-1.5">
             <li>1️⃣ Yuqoridagi kartaga pul o'tkaring</li>
-            <li>2️⃣ Chek (screenshot) oling</li>
-            <li>3️⃣ Bot orqali chekni yuboring</li>
+            <li>2️⃣ To'lov cheki (screenshot) oling</li>
+            <li>3️⃣ Botga borib chekni yuboring</li>
             <li>4️⃣ Admin tasdiqlagach balans to'ldiriladi</li>
           </ol>
         </div>
 
-        <a href="https://t.me/+BIxGcXiUhIc5MWJi"
-          className="w-full py-4 rounded-2xl font-black text-base flex items-center justify-center gap-2 active:scale-95 transition-transform mb-6"
+        {/* Go to bot button */}
+        <button onClick={goToBot}
+          className="w-full py-4 rounded-2xl font-black text-base flex items-center justify-center gap-2 active:scale-95 transition-transform mb-6 text-white"
           style={{ background: "linear-gradient(135deg, #2563eb, #1d4ed8)", boxShadow: "0 8px 24px rgba(37,99,235,0.3)" }}>
-          📨 Botga Chek Yuborish
-        </a>
+          🤖 Botga O'tish va Chek Yuborish
+        </button>
       </div>
     </div>
   );
