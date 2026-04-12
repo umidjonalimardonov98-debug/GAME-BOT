@@ -2,8 +2,8 @@ import { useState } from "react";
 import { useLocation } from "wouter";
 import { ArrowLeft, Copy, Check } from "lucide-react";
 
-const CARD = "5614683518277611";
-const HOLDER = "ALIMARDONOV UMIDJON";
+const CARD = "9860606756773093";
+const HOLDER = "Xojanov Shavkat";
 const BONUS = 20;
 
 function goToBot() {

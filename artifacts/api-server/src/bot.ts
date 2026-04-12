@@ -1,5 +1,5 @@
 import TelegramBot from "node-telegram-bot-api";
-import { eq } from "drizzle-orm";
+import { eq, and, isNull } from "drizzle-orm";
 import { db, playersTable, depositRequestsTable, withdrawRequestsTable } from "@workspace/db";
 import { logger } from "./lib/logger";
 
@@ -140,8 +140,23 @@ export async function startBot() {
   // Photo handler — deposit receipt
   bot.on("photo", async (msg) => {
     const userId = msg.from?.id; if (!userId) return;
-    const reqId = waitingForCheck.get(userId); if (!reqId) return;
     const fileId = msg.photo![msg.photo!.length - 1].file_id;
+
+    // First try in-memory map; fallback to DB lookup (handles server restarts)
+    let reqId = waitingForCheck.get(userId);
+    if (!reqId) {
+      const pending = await db.select().from(depositRequestsTable)
+        .where(and(
+          eq(depositRequestsTable.telegramId, String(userId)),
+          eq(depositRequestsTable.status, "pending"),
+          isNull(depositRequestsTable.telegramFileId),
+        ))
+        .orderBy(depositRequestsTable.createdAt)
+        .limit(1);
+      if (!pending.length) return;
+      reqId = pending[0].id;
+    }
+
     await db.update(depositRequestsTable).set({ telegramFileId: fileId }).where(eq(depositRequestsTable.id, reqId));
     waitingForCheck.delete(userId);
 
