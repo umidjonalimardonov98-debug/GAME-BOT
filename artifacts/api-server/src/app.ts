@@ -3,7 +3,7 @@ import cors from "cors";
 import pinoHttp from "pino-http";
 import router from "./routes";
 import { logger } from "./lib/logger";
-import { startBot } from "./bot";
+import { startBot, processWebhookUpdate } from "./bot";
 
 const app: Express = express();
 
@@ -30,8 +30,13 @@ app.use(cors());
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
+app.post("/api/bot-webhook", (req, res) => {
+  processWebhookUpdate(req.body);
+  res.sendStatus(200);
+});
+
 app.use("/api", router);
 
-startBot();
+startBot().catch((err) => logger.error({ err }, "Bot start failed"));
 
 export default app;

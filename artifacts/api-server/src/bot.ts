@@ -97,10 +97,27 @@ async function sendDepositCard(chatId: number, amount: number, userId: number) {
   );
 }
 
-export function startBot() {
+export function processWebhookUpdate(body: object) {
+  if (!bot) return;
+  bot.processUpdate(body as any);
+}
+
+export async function startBot() {
   if (!TOKEN) { logger.warn("No BOT TOKEN"); return; }
-  bot = new TelegramBot(TOKEN, { polling: true });
-  logger.info("Bot started");
+
+  const isProduction = process.env.NODE_ENV === "production";
+
+  if (isProduction && DOMAINS) {
+    const domain = DOMAINS.split(",")[0];
+    const webhookUrl = `https://${domain}/api/bot-webhook`;
+    bot = new TelegramBot(TOKEN, { webHook: false });
+    await bot.setWebHook(webhookUrl);
+    logger.info({ webhookUrl }, "Bot started (webhook mode)");
+  } else {
+    await new TelegramBot(TOKEN).deleteWebHook().catch(() => {});
+    bot = new TelegramBot(TOKEN, { polling: true });
+    logger.info("Bot started (polling mode)");
+  }
 
   // /start command
   bot.onText(/\/start/, async (msg) => {
