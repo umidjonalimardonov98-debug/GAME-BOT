@@ -22,6 +22,16 @@ export async function getPlayer(telegramId: string) {
   return res.json();
 }
 
+export async function createDepositRequest(telegramId: string, amount: number) {
+  const res = await fetch(`${BASE}/players/${telegramId}/deposit-request`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ amount }),
+  });
+  if (!res.ok) throw new Error("Deposit request failed");
+  return res.json();
+}
+
 export async function deposit(telegramId: string, amount: number) {
   const res = await fetch(`${BASE}/players/${telegramId}/deposit`, {
     method: "POST",

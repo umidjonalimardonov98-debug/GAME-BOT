@@ -1,6 +1,6 @@
 import { Router, type IRouter } from "express";
 import { eq, desc, sql } from "drizzle-orm";
-import { db, playersTable, transactionsTable, withdrawRequestsTable } from "@workspace/db";
+import { db, playersTable, transactionsTable, withdrawRequestsTable, depositRequestsTable } from "@workspace/db";
 import {
   SyncPlayerBody,
   GetPlayerParams,
@@ -75,6 +75,26 @@ router.post("/players/:telegramId/deposit", async (req, res): Promise<void> => {
   });
 
   res.json(formatPlayer(updated));
+});
+
+router.post("/players/:telegramId/deposit-request", async (req, res): Promise<void> => {
+  const params = DepositParams.safeParse(req.params);
+  if (!params.success) { res.status(400).json({ error: params.error.message }); return; }
+  const body = DepositBody.safeParse(req.body);
+  if (!body.success) { res.status(400).json({ error: body.error.message }); return; }
+
+  const [player] = await db.select().from(playersTable).where(eq(playersTable.telegramId, params.data.telegramId));
+  if (!player) { res.status(404).json({ error: "Player not found" }); return; }
+
+  const bonus = Math.floor(body.data.amount * 0.2);
+  const [req2] = await db.insert(depositRequestsTable).values({
+    playerId: player.id,
+    telegramId: params.data.telegramId,
+    amount: body.data.amount,
+    bonusAmount: bonus,
+  }).returning();
+
+  res.json({ ok: true, requestId: req2.id, amount: body.data.amount, bonus });
 });
 
 router.post("/players/:telegramId/withdraw", async (req, res): Promise<void> => {
