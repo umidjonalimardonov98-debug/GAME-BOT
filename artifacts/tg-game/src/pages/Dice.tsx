@@ -179,7 +179,9 @@ export default function Dice() {
             {["MIN","X2","X/2","MAX"].map((a) => (
               <button key={a} disabled={gameState === "rolling"} onClick={() => setQuickBet(a)}
                 className="py-2 rounded-xl text-xs font-bold active:scale-95"
-                style={{ background: "rgba(255,255,255,0.06)", border: "1px solid rgba(255,255,255,0.1)", color: "rgba(255,255,255,0.6)" }}>
+                style={a === "MAX"
+                  ? { background: "rgba(217,119,6,0.25)", border: "1px solid rgba(251,191,36,0.55)", color: "#fbbf24" }
+                  : { background: "rgba(255,255,255,0.06)", border: "1px solid rgba(255,255,255,0.1)", color: "rgba(255,255,255,0.6)" }}>
                 {a}
               </button>
             ))}

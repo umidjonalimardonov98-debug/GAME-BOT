@@ -252,7 +252,9 @@ export default function Aviator() {
                     else v = Math.max(Math.floor(betAmt / 2), 2000);
                     setBetAmt(v); setBetInput(String(v)); betRef.current = v;
                   }} className="py-2 rounded-xl text-xs font-bold active:scale-95"
-                    style={{ background: "rgba(255,255,255,0.06)", border: "1px solid rgba(255,255,255,0.1)", color: "rgba(255,255,255,0.6)" }}>
+                    style={a === "MAX"
+                      ? { background: "rgba(99,102,241,0.25)", border: "1px solid rgba(167,139,250,0.55)", color: "#a78bfa" }
+                      : { background: "rgba(255,255,255,0.06)", border: "1px solid rgba(255,255,255,0.1)", color: "rgba(255,255,255,0.6)" }}>
                     {a}
                   </button>
                 ))}
