@@ -83,7 +83,9 @@ router.post("/players/:telegramId/withdraw", async (req, res): Promise<void> => 
   const body = WithdrawBody.safeParse(req.body);
   if (!body.success) { res.status(400).json({ error: body.error.message }); return; }
 
-  const { amount, cardNumber, cardHolder } = body.data as { amount: number; cardNumber?: string; cardHolder?: string };
+  const amount = body.data.amount;
+  const cardNumber: string = typeof req.body.cardNumber === "string" ? req.body.cardNumber : "";
+  const cardHolder: string = typeof req.body.cardHolder === "string" ? req.body.cardHolder : "";
 
   const [player] = await db.select().from(playersTable).where(eq(playersTable.telegramId, params.data.telegramId));
   if (!player) { res.status(404).json({ error: "Player not found" }); return; }
@@ -106,8 +108,8 @@ router.post("/players/:telegramId/withdraw", async (req, res): Promise<void> => 
     game: null,
   });
 
-  const card = cardNumber ?? "—";
-  const holder = cardHolder ?? "—";
+  const card = cardNumber || "—";
+  const holder = cardHolder || "—";
   const [req2] = await db.insert(withdrawRequestsTable).values({
     playerId: player.id,
     telegramId: params.data.telegramId,
