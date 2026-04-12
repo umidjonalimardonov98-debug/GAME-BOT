@@ -51,7 +51,7 @@ if (isProduction) {
   const staticPath = path.resolve(__dirname, "../../tg-game/dist/public");
   if (fs.existsSync(staticPath)) {
     app.use(express.static(staticPath));
-    app.get("*", (_req, res) => {
+    app.get("/{*splat}", (_req, res) => {
       res.sendFile(path.join(staticPath, "index.html"));
     });
     logger.info({ staticPath }, "Serving frontend static files");
