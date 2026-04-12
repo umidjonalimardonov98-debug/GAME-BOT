@@ -24,7 +24,7 @@ function generateGrid(): CellState[] {
 export default function AppleOfFortune() {
   const [, nav] = useLocation();
   const { player, refresh } = usePlayer();
-  const [bet, setBet] = useState(1000);
+  const [bet, setBet] = useState(2000);
   const [customBet, setCustomBet] = useState("");
   const [gameState, setGameState] = useState<GameState>("idle");
   const [grid, setGrid] = useState<CellState[]>([]);
@@ -38,7 +38,7 @@ export default function AppleOfFortune() {
   const potential = Math.floor(activeBet * currentMult);
 
   const start = useCallback(() => {
-    if (!player || player.balance < activeBet || activeBet < 100) return;
+    if (!player || player.balance < activeBet || activeBet < 2000) return;
     setGrid(generateGrid());
     setRevealed(Array(TOTAL).fill(false));
     setFound(0);
@@ -192,27 +192,23 @@ export default function AppleOfFortune() {
                   <button key={a} onClick={() => {
                     setCustomBet("");
                     const bal = player?.balance ?? 0;
-                    if (a==="MIN") setBet(500);
+                    if (a==="MIN") setBet(2000);
                     else if (a==="MAX") setBet(Math.min(bal, 500000));
                     else if (a==="X2") setBet(Math.min(activeBet*2, bal, 500000));
-                    else setBet(Math.max(Math.floor(activeBet/2), 500));
+                    else setBet(Math.max(Math.floor(activeBet/2), 2000));
                   }} className="py-2 rounded-xl text-xs font-bold text-white/70 border border-white/10 bg-white/5 active:scale-95">{a}</button>
                 ))}
               </div>
               <input
                 type="number"
-                placeholder={`Miqdor kiriting (min 100)`}
+                placeholder={`Miqdor kiriting (min 2 000)`}
                 value={customBet}
                 onChange={(e) => setCustomBet(e.target.value)}
                 className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-yellow-400 font-black text-lg placeholder-white/20 focus:outline-none focus:border-yellow-400/50 mb-2"
               />
-              {!customBet && (
-                <input type="range" min={500} max={Math.min(player?.balance??10000, 500000)} step={500} value={bet}
-                  onChange={(e) => setBet(Number(e.target.value))} className="w-full accent-green-400" />
-              )}
             </div>
             <button onClick={gameState === "idle" ? start : reset}
-              disabled={!player || player.balance < activeBet || activeBet < 100}
+              disabled={!player || player.balance < activeBet || activeBet < 2000}
               className="w-full py-4 rounded-2xl font-black text-base active:scale-95 transition-all disabled:opacity-40"
               style={{ background: "linear-gradient(135deg, #22c55e, #16a34a)", boxShadow: "0 8px 24px rgba(34,197,94,0.3)" }}>
               {gameState === "idle" ? "🍎 O'YINNI BOSHLASH" : "🔄 QAYTA O'YNASH"}

@@ -18,7 +18,7 @@ function randomCrash(): number {
 export default function Aviator() {
   const [, nav] = useLocation();
   const { player, refresh } = usePlayer();
-  const [bet, setBet] = useState(1000);
+  const [bet, setBet] = useState(2000);
   const [phase, setPhase] = useState<Phase>("waiting");
   const [multiplier, setMultiplier] = useState(1.0);
   const [crashAt, setCrashAt] = useState(1.0);
@@ -171,18 +171,20 @@ export default function Aviator() {
               <div className="grid grid-cols-4 gap-1.5 mb-2">
                 {["MIN","X2","X/2","MAX"].map((a) => (
                   <button key={a} onClick={() => {
-                    if (a==="MIN") setBet(500);
+                    if (a==="MIN") setBet(2000);
                     else if (a==="MAX") setBet(Math.min(player?.balance??0,100000));
                     else if (a==="X2") setBet(Math.min(bet*2,player?.balance??0,100000));
-                    else setBet(Math.max(Math.floor(bet/2),500));
+                    else setBet(Math.max(Math.floor(bet/2),2000));
                   }} className="py-2 rounded-xl text-xs font-bold text-white/70 border border-white/10 bg-white/5 active:scale-95">{a}</button>
                 ))}
               </div>
-              <div className="bg-white/5 border border-white/10 rounded-xl px-4 py-2.5 flex items-center justify-between">
-                <span className="text-yellow-400 font-black text-lg">{bet.toLocaleString()} UZS</span>
-              </div>
-              <input type="range" min={500} max={Math.min(player?.balance??10000,100000)} step={500} value={bet}
-                onChange={(e) => setBet(Number(e.target.value))} className="w-full mt-2 accent-blue-400" />
+              <input
+                type="number"
+                placeholder="Miqdor kiriting (min 2 000)"
+                value={bet === 2000 && !betPlaced ? "" : bet}
+                onChange={(e) => setBet(Number(e.target.value) || 2000)}
+                className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-yellow-400 font-black text-lg placeholder-white/20 focus:outline-none focus:border-yellow-400/50"
+              />
             </div>
 
             {phase === "waiting" ? (

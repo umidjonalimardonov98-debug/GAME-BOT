@@ -35,7 +35,7 @@ function DiceFace({ value, rolling }: { value: number; rolling: boolean }) {
 export default function Dice() {
   const [, nav] = useLocation();
   const { player, refresh } = usePlayer();
-  const [bet, setBet] = useState(1000);
+  const [bet, setBet] = useState(2000);
   const [customBet, setCustomBet] = useState("");
   const [betType, setBetType] = useState<BetType | null>(null);
   const [dice, setDice] = useState<[number,number]>([1,1]);
@@ -130,7 +130,7 @@ export default function Dice() {
         <p className="text-white/40 text-xs uppercase tracking-widest font-semibold mb-2">Tikish miqdori</p>
         <input
           type="number"
-          placeholder="Miqdor kiriting..."
+          placeholder="Miqdor kiriting (min 2 000)..."
           value={customBet}
           disabled={gameState==="rolling"}
           onChange={(e) => { setCustomBet(e.target.value); }}
@@ -141,10 +141,10 @@ export default function Dice() {
             <button key={a} disabled={gameState==="rolling"} onClick={() => {
               setCustomBet("");
               const bal = player?.balance ?? 0;
-              if (a==="MIN") setBet(500);
+              if (a==="MIN") setBet(2000);
               else if (a==="MAX") setBet(Math.min(bal, 500000));
               else if (a==="X2") setBet(Math.min(activeBet*2, bal, 500000));
-              else setBet(Math.max(Math.floor(activeBet/2), 500));
+              else setBet(Math.max(Math.floor(activeBet/2), 2000));
             }} className="py-2 rounded-xl text-xs font-bold text-white/70 border border-white/10 bg-white/5 active:scale-95">{a}</button>
           ))}
         </div>
@@ -152,10 +152,6 @@ export default function Dice() {
           <span className="text-yellow-400 font-black text-base">{activeBet.toLocaleString()} UZS</span>
           {betType && <span className="text-green-400 text-sm font-bold">→ {Math.floor(activeBet*ODDS[betType].mult).toLocaleString()} UZS</span>}
         </div>
-        {!customBet && (
-          <input type="range" min={500} max={Math.min(player?.balance??10000, 500000)} step={500} value={bet}
-            onChange={(e) => setBet(Number(e.target.value))} disabled={gameState==="rolling"} className="w-full mb-2 accent-yellow-400" />
-        )}
 
         {/* Buttons */}
         <div className="grid grid-cols-3 gap-2 pb-6 mt-2">
@@ -163,7 +159,7 @@ export default function Dice() {
             className="py-4 rounded-2xl bg-white/5 border border-white/10 flex items-center justify-center active:scale-95">
             <RotateCcw className="w-5 h-5 text-blue-400" />
           </button>
-          <button onClick={roll} disabled={gameState==="rolling" || !betType || !player || player.balance < activeBet || activeBet < 100 || saving}
+          <button onClick={roll} disabled={gameState==="rolling" || !betType || !player || player.balance < activeBet || activeBet < 2000 || saving}
             className="col-span-2 py-4 rounded-2xl font-black text-base flex items-center justify-center gap-2 active:scale-95 transition-all disabled:opacity-40"
             style={{ background: "linear-gradient(135deg, #22c55e, #16a34a)", boxShadow: "0 8px 24px rgba(34,197,94,0.3)" }}>
             <Play className="w-5 h-5" />
