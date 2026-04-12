@@ -14,8 +14,9 @@ const APP_URL = DOMAINS ? `https://${DOMAINS.split(",")[0]}` : "";
 const BONUS_PERCENT = 20;
 
 let bot: TelegramBot | null = null;
-const waitingForCheck = new Map<number, number>();       // userId -> depositRequestId
-const waitingForAmount = new Set<number>();              // userId waiting to type deposit amount
+const waitingForCheck = new Map<number, number>();             // userId -> depositRequestId
+const waitingForAmount = new Set<number>();                    // userId waiting to type deposit amount
+const waitingForWithdrawAmount = new Set<number>();            // userId waiting to type withdraw amount
 const pendingWithdraw = new Map<number, { amount: number }>(); // userId -> withdraw info
 
 export async function notifyAdminWithdraw(opts: {
@@ -174,6 +175,28 @@ export function startBot() {
       }
       waitingForAmount.delete(userId);
       await sendDepositCard(chatId, amount, userId);
+      return;
+    }
+
+    // Custom withdraw amount
+    if (waitingForWithdrawAmount.has(userId)) {
+      const amount = Number(text.replace(/\s+/g, "").replace(/,/g, ""));
+      const [p] = await db.select().from(playersTable).where(eq(playersTable.telegramId, String(userId)));
+      if (!p) return;
+      if (isNaN(amount) || amount < 1000) {
+        await bot!.sendMessage(chatId, `❌ Noto'g'ri miqdor. Kamida <b>1,000 UZS</b> kiriting:`, { parse_mode: "HTML" });
+        return;
+      }
+      if (amount > p.balance) {
+        await bot!.sendMessage(chatId, `❌ Balans yetarli emas! Sizda <b>${fmt(p.balance)} UZS</b> bor.`, { parse_mode: "HTML" });
+        return;
+      }
+      waitingForWithdrawAmount.delete(userId);
+      pendingWithdraw.set(userId, { amount });
+      await bot!.sendMessage(chatId,
+        `💸 <b>Karta ma'lumotlarini yuboring:</b>\n\n<code>KARTA: 8600123456789012\nEGASI: Ismingiz Familiyangiz</code>`,
+        { parse_mode: "HTML" }
+      );
       return;
     }
 
@@ -343,9 +366,23 @@ export function startBot() {
       await bot!.sendMessage(chatId,
         `💸 <b>Pul Yechish</b>\n\n💰 Balans: <b>${fmt(p.balance)} UZS</b>\n\nMiqdorni tanlang:`,
         { parse_mode: "HTML", reply_markup: { inline_keyboard: [
-          [{ text: `${fmt(Math.min(10000, p.balance))} UZS`, callback_data: `wd_10000` }, { text: `${fmt(Math.min(50000, p.balance))} UZS`, callback_data: `wd_50000` }],
-          [{ text: `${fmt(Math.min(100000, p.balance))} UZS`, callback_data: `wd_100000` }, { text: `Hammasi — ${fmt(p.balance)} UZS`, callback_data: `wd_${p.balance}` }],
+          [{ text: `💵 25%  — ${fmt(Math.floor(p.balance*0.25))} UZS`, callback_data: `wd_${Math.floor(p.balance*0.25)}` }],
+          [{ text: `💵 50%  — ${fmt(Math.floor(p.balance*0.50))} UZS`, callback_data: `wd_${Math.floor(p.balance*0.50)}` }],
+          [{ text: `💵 75%  — ${fmt(Math.floor(p.balance*0.75))} UZS`, callback_data: `wd_${Math.floor(p.balance*0.75)}` }],
+          [{ text: `💵 100% — ${fmt(p.balance)} UZS`, callback_data: `wd_${p.balance}` }],
+          [{ text: "✍️ O'zim yozaman", callback_data: "wd_custom" }],
         ]}}
+      );
+      return;
+    }
+
+    // Withdraw custom amount input
+    if (data === "wd_custom") {
+      await bot!.answerCallbackQuery(q.id);
+      waitingForWithdrawAmount.add(q.from.id);
+      await bot!.sendMessage(chatId,
+        `✍️ <b>Yechish miqdorini kiriting (UZS):</b>\n\nFaqat raqam yuboring.\nMasalan: <code>15000</code>`,
+        { parse_mode: "HTML" }
       );
       return;
     }
