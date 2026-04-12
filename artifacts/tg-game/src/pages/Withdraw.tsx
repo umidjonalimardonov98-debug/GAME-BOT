@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { useLocation } from "wouter";
-import { ArrowLeft, AlertTriangle, CheckCircle } from "lucide-react";
+import { ArrowLeft, CheckCircle, AlertTriangle, Wallet } from "lucide-react";
 import { usePlayer } from "@/lib/player-context";
 import { withdraw } from "@/lib/api";
 
@@ -18,11 +18,11 @@ export default function Withdraw() {
   const canWithdraw = wagerLeft === 0;
   const amount = customAmount ? Number(customAmount) : 0;
   const balance = player?.balance ?? 0;
-
-  const amountErr = amount > 0 && amount > balance ? "Balans yetarli emas!" : "";
+  const wagerProgress = player?.wagerRequirement
+    ? Math.min(100, (player.totalWagered / player.wagerRequirement) * 100) : 0;
 
   const submit = async () => {
-    if (!amount || amount < 1000) { setErr("Minimal miqdor 1000 UZS"); return; }
+    if (!amount || amount < 1000) { setErr("Minimal miqdor 1 000 UZS"); return; }
     if (amount > balance) { setErr("Balans yetarli emas!"); return; }
     if (!card || card.length < 4) { setErr("Karta raqamini kiriting"); return; }
     if (!holder) { setErr("Karta egasini kiriting"); return; }
@@ -38,20 +38,29 @@ export default function Withdraw() {
   };
 
   if (done) return (
-    <div className="min-h-screen flex flex-col items-center justify-center px-4" style={{ background: "linear-gradient(180deg, #090b14 0%, #0d1020 100%)" }}>
-      <CheckCircle className="w-16 h-16 text-green-400 mb-4" />
-      <h2 className="text-white font-black text-xl mb-2">So'rov Yuborildi!</h2>
-      <p className="text-white/50 text-sm text-center mb-6">Admin tasdiqlashini kuting. Tez orada kartangizga o'tkaziladi.</p>
-      <button onClick={() => nav("/")} className="px-8 py-3 rounded-2xl font-bold text-white" style={{ background: "linear-gradient(135deg, #2563eb, #1d4ed8)" }}>
+    <div className="min-h-screen flex flex-col items-center justify-center px-6"
+      style={{ background: "linear-gradient(160deg, #050816 0%, #0a0a20 100%)" }}>
+      <div className="w-20 h-20 rounded-full flex items-center justify-center mb-6"
+        style={{ background: "rgba(16,185,129,0.15)", border: "2px solid rgba(16,185,129,0.4)", boxShadow: "0 0 40px rgba(16,185,129,0.2)" }}>
+        <CheckCircle className="w-10 h-10" style={{ color: "#10b981" }} />
+      </div>
+      <h2 className="text-white font-black text-2xl mb-2">So'rov Yuborildi!</h2>
+      <p className="text-center text-sm mb-8" style={{ color: "rgba(255,255,255,0.4)" }}>
+        Admin tekshirib, tez orada kartangizga o'tkazadi.
+      </p>
+      <button onClick={() => nav("/")}
+        className="px-10 py-4 rounded-2xl font-black text-white active:scale-95"
+        style={{ background: "linear-gradient(135deg, #7c3aed, #3b82f6)", boxShadow: "0 8px 24px rgba(124,58,237,0.4)" }}>
         🏠 Bosh Sahifa
       </button>
     </div>
   );
 
   return (
-    <div className="min-h-screen flex flex-col" style={{ background: "linear-gradient(180deg, #090b14 0%, #0d1020 100%)" }}>
+    <div className="min-h-screen flex flex-col" style={{ background: "linear-gradient(160deg, #050816 0%, #0a0a20 100%)" }}>
       <div className="flex items-center gap-3 px-4 pt-5 pb-4">
-        <button onClick={() => nav("/")} className="w-9 h-9 flex items-center justify-center rounded-xl bg-white/5 border border-white/10">
+        <button onClick={() => nav("/")} className="w-9 h-9 flex items-center justify-center rounded-xl"
+          style={{ background: "rgba(255,255,255,0.06)", border: "1px solid rgba(255,255,255,0.1)" }}>
           <ArrowLeft className="w-4 h-4 text-white" />
         </button>
         <h1 className="text-white font-black text-lg">💸 Pul Yechish</h1>
@@ -59,92 +68,104 @@ export default function Withdraw() {
 
       <div className="px-4 flex-1">
         {/* Balance */}
-        <div className="rounded-2xl p-4 mb-4" style={{ background: "linear-gradient(135deg, #1a1200, #2d1f00)", border: "1px solid rgba(245,200,66,0.3)" }}>
-          <p className="text-yellow-400/60 text-xs uppercase tracking-widest">💰 Mavjud Balans</p>
-          <p className="text-white font-black text-2xl mt-1">{balance.toLocaleString()} <span className="text-yellow-400 text-lg">UZS</span></p>
+        <div className="rounded-2xl p-4 mb-4 relative overflow-hidden"
+          style={{ background: "linear-gradient(135deg, rgba(124,58,237,0.2), rgba(59,130,246,0.1))", border: "1px solid rgba(124,58,237,0.3)" }}>
+          <div className="absolute -right-6 -top-6 w-24 h-24 rounded-full"
+            style={{ background: "radial-gradient(circle, rgba(124,58,237,0.2), transparent 70%)" }} />
+          <div className="flex items-center gap-2 mb-1">
+            <Wallet className="w-3.5 h-3.5" style={{ color: "rgba(167,139,250,0.6)" }} />
+            <span className="text-xs font-semibold" style={{ color: "rgba(167,139,250,0.6)" }}>BALANS</span>
+          </div>
+          <p className="text-white font-black text-2xl">
+            {balance.toLocaleString()} <span className="text-lg" style={{ color: "#a78bfa" }}>UZS</span>
+          </p>
         </div>
 
-        {/* Wager check */}
         {!canWithdraw ? (
           <>
-            <div className="rounded-2xl p-4 mb-4" style={{ background: "rgba(239,68,68,0.08)", border: "1px solid rgba(239,68,68,0.3)" }}>
-              <div className="flex items-start gap-3 mb-3">
-                <AlertTriangle className="w-5 h-5 text-red-400 shrink-0 mt-0.5" />
-                <div>
-                  <p className="text-red-300 font-bold text-sm">Shart bajarilmagan!</p>
-                  <p className="text-white/50 text-xs mt-1">Pul yechish uchun depozit miqdorini 100% o'ynashingiz kerak.</p>
+            <div className="rounded-2xl p-4 mb-4"
+              style={{ background: "rgba(239,68,68,0.06)", border: "1px solid rgba(239,68,68,0.25)" }}>
+              <div className="flex items-center gap-2 mb-3">
+                <AlertTriangle className="w-4 h-4 shrink-0" style={{ color: "#f87171" }} />
+                <p className="text-sm font-bold" style={{ color: "#f87171" }}>Shart bajarilmagan!</p>
+              </div>
+              <p className="text-xs mb-4" style={{ color: "rgba(255,255,255,0.4)" }}>
+                Pul yechish uchun depozit miqdorini 100% o'ynashingiz kerak.
+              </p>
+              <div className="space-y-2 mb-3">
+                {[
+                  { label: "Kerakli", val: player?.wagerRequirement ?? 0 },
+                  { label: "O'ynaldi", val: player?.totalWagered ?? 0 },
+                ].map(({ label, val }) => (
+                  <div key={label} className="flex justify-between text-sm">
+                    <span style={{ color: "rgba(255,255,255,0.4)" }}>{label}:</span>
+                    <span className="text-white font-bold">{val.toLocaleString()} UZS</span>
+                  </div>
+                ))}
+                <div className="flex justify-between text-sm pt-2" style={{ borderTop: "1px solid rgba(255,255,255,0.08)" }}>
+                  <span style={{ color: "#f87171" }}>Qolgan:</span>
+                  <span className="font-black" style={{ color: "#f87171" }}>{wagerLeft.toLocaleString()} UZS</span>
                 </div>
               </div>
-              <div className="space-y-1.5">
-                <div className="flex justify-between text-sm">
-                  <span className="text-white/50">Kerakli:</span>
-                  <span className="text-white font-bold">{(player?.wagerRequirement ?? 0).toLocaleString()} UZS</span>
-                </div>
-                <div className="flex justify-between text-sm">
-                  <span className="text-white/50">O'ynaldi:</span>
-                  <span className="text-white font-bold">{(player?.totalWagered ?? 0).toLocaleString()} UZS</span>
-                </div>
-                <div className="flex justify-between text-sm pt-2 border-t border-white/10">
-                  <span className="text-red-400">Qolgan:</span>
-                  <span className="text-red-400 font-black">{wagerLeft.toLocaleString()} UZS</span>
-                </div>
+              <div className="h-2 rounded-full overflow-hidden" style={{ background: "rgba(255,255,255,0.08)" }}>
+                <div className="h-2 rounded-full transition-all"
+                  style={{ width: `${wagerProgress}%`, background: "linear-gradient(90deg, #ef4444, #f97316, #eab308)" }} />
               </div>
-              <div className="mt-3 bg-white/10 rounded-full h-2">
-                <div className="bg-gradient-to-r from-red-500 to-yellow-500 h-2 rounded-full transition-all"
-                  style={{ width: `${Math.min(100, ((player?.totalWagered ?? 0) / Math.max(1, player?.wagerRequirement ?? 1)) * 100)}%` }} />
-              </div>
+              <p className="text-xs text-right mt-1" style={{ color: "rgba(255,255,255,0.3)" }}>{wagerProgress.toFixed(0)}%</p>
             </div>
             <button onClick={() => nav("/")}
-              className="w-full py-4 rounded-2xl font-bold text-base mb-6 active:scale-95 transition-all"
-              style={{ background: "linear-gradient(135deg, #1a6b2a, #145220)", border: "1px solid rgba(34,197,94,0.3)" }}>
+              className="w-full py-4 rounded-2xl font-black text-base mb-6 active:scale-95"
+              style={{ background: "linear-gradient(135deg, #10b981, #059669)", boxShadow: "0 8px 24px rgba(16,185,129,0.3)", color: "white" }}>
               🎮 O'ynashni Davom Ettirish
             </button>
           </>
         ) : (
           <>
-            <div className="rounded-2xl p-3 mb-4 flex items-center gap-2" style={{ background: "rgba(34,197,94,0.08)", border: "1px solid rgba(34,197,94,0.2)" }}>
-              <CheckCircle className="w-4 h-4 text-green-400" />
-              <p className="text-green-300 text-sm font-semibold">✅ Shart bajarildi! Pul yechi olasiz.</p>
+            <div className="rounded-xl px-3 py-2.5 flex items-center gap-2 mb-4"
+              style={{ background: "rgba(16,185,129,0.08)", border: "1px solid rgba(16,185,129,0.2)" }}>
+              <CheckCircle className="w-4 h-4 shrink-0" style={{ color: "#10b981" }} />
+              <p className="text-sm font-semibold" style={{ color: "#34d399" }}>Shart bajarildi! Pul yechi olasiz.</p>
             </div>
 
-            {/* Custom amount */}
-            <p className="text-white/40 text-xs uppercase tracking-widest font-semibold mb-2">Miqdor (UZS)</p>
-            <input
-              type="number"
-              placeholder={`Maks: ${balance.toLocaleString()} UZS`}
-              value={customAmount}
+            <p className="text-xs font-bold mb-2 tracking-widest" style={{ color: "rgba(255,255,255,0.3)" }}>MIQDOR (UZS)</p>
+            <input type="number" placeholder={`Maks: ${balance.toLocaleString()} UZS`} value={customAmount}
               onChange={(e) => setCustomAmount(e.target.value)}
-              className={`w-full bg-white/5 rounded-xl px-4 py-3 text-yellow-400 font-black text-lg placeholder-white/20 focus:outline-none mb-1 border ${amountErr ? "border-red-500/50 focus:border-red-400" : "border-white/10 focus:border-yellow-400/50"}`}
-            />
-            {amountErr && <p className="text-red-400 text-xs mb-2">⚠️ {amountErr}</p>}
+              className="w-full rounded-xl px-4 py-3 font-black text-lg focus:outline-none mb-2"
+              style={{ background: "rgba(255,255,255,0.05)", border: `1px solid ${amount > balance && amount > 0 ? "rgba(239,68,68,0.5)" : "rgba(255,255,255,0.1)"}`, color: "#fbbf24" }} />
 
-            {/* Quick buttons */}
             <div className="grid grid-cols-4 gap-1.5 mb-4">
               {[25, 50, 75, 100].map((pct) => (
                 <button key={pct} onClick={() => setCustomAmount(String(Math.floor(balance * pct / 100)))}
-                  className="py-2 rounded-xl text-xs font-bold text-white/60 border border-white/10 bg-white/5 active:scale-95">
+                  className="py-2 rounded-xl text-xs font-bold active:scale-95"
+                  style={{ background: "rgba(255,255,255,0.05)", border: "1px solid rgba(255,255,255,0.1)", color: "rgba(255,255,255,0.6)" }}>
                   {pct}%
                 </button>
               ))}
             </div>
 
-            {/* Card info */}
-            <p className="text-white/40 text-xs uppercase tracking-widest font-semibold mb-2">Karta Ma'lumotlari</p>
+            <p className="text-xs font-bold mb-2 tracking-widest" style={{ color: "rgba(255,255,255,0.3)" }}>KARTA MA'LUMOTLARI</p>
             <div className="space-y-2 mb-4">
               <input value={card} onChange={(e) => setCard(e.target.value.replace(/\D/g, ""))}
                 placeholder="Karta raqami"
-                className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-white placeholder-white/30 font-mono text-base focus:outline-none focus:border-yellow-400/50" />
+                className="w-full rounded-xl px-4 py-3 font-mono text-base focus:outline-none"
+                style={{ background: "rgba(255,255,255,0.05)", border: "1px solid rgba(255,255,255,0.1)", color: "white" }} />
               <input value={holder} onChange={(e) => setHolder(e.target.value)}
                 placeholder="Karta egasi (Ism Familiya)"
-                className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-white placeholder-white/30 text-sm focus:outline-none focus:border-yellow-400/50" />
+                className="w-full rounded-xl px-4 py-3 text-sm focus:outline-none"
+                style={{ background: "rgba(255,255,255,0.05)", border: "1px solid rgba(255,255,255,0.1)", color: "white" }} />
             </div>
 
-            {err && <p className="text-red-400 text-sm text-center mb-3">❌ {err}</p>}
+            {err && (
+              <div className="rounded-xl px-4 py-3 mb-3"
+                style={{ background: "rgba(239,68,68,0.08)", border: "1px solid rgba(239,68,68,0.25)" }}>
+                <p className="text-sm font-semibold" style={{ color: "#f87171" }}>❌ {err}</p>
+              </div>
+            )}
 
             <button onClick={submit}
               disabled={!amount || amount < 1000 || amount > balance || !card || !holder || loading}
               className="w-full py-4 rounded-2xl font-black text-base mb-6 active:scale-95 transition-all disabled:opacity-40"
-              style={{ background: "linear-gradient(135deg, #2563eb, #1d4ed8)", boxShadow: "0 8px 24px rgba(37,99,235,0.3)" }}>
+              style={{ background: "linear-gradient(135deg, #7c3aed, #3b82f6)", boxShadow: "0 8px 24px rgba(124,58,237,0.4)", color: "white" }}>
               {loading ? "Yuborilmoqda..." : "💸 So'rov Yuborish"}
             </button>
           </>

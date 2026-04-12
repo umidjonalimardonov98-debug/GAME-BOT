@@ -1,34 +1,34 @@
 import { useState, useCallback } from "react";
 import { useLocation } from "wouter";
-import { ArrowLeft, Coins, Play, RotateCcw } from "lucide-react";
+import { ArrowLeft, Coins } from "lucide-react";
 import { usePlayer } from "@/lib/player-context";
 import { placeBet } from "@/lib/api";
 
 type BetType = "more" | "equal" | "less";
 type GameState = "idle" | "rolling" | "result";
 
-const ODDS: Record<BetType, { label: string; mult: number; desc: string; emoji: string }> = {
-  less:  { label: "Ozroq 7",   mult: 2.3, desc: "x2.3", emoji: "⬇️" },
-  equal: { label: "Teng 7",    mult: 5.8, desc: "x5.8", emoji: "🎯" },
-  more:  { label: "Ko'proq 7", mult: 2.3, desc: "x2.3", emoji: "⬆️" },
+const ODDS: Record<BetType, { label: string; mult: number; emoji: string; color: string; glow: string }> = {
+  less:  { label: "7 dan Kam",  mult: 2.3, emoji: "⬇️", color: "#60a5fa", glow: "rgba(96,165,250,0.4)" },
+  equal: { label: "Teng 7",     mult: 5.8, emoji: "🎯", color: "#fbbf24", glow: "rgba(251,191,36,0.4)" },
+  more:  { label: "7 dan Ko'p", mult: 2.3, emoji: "⬆️", color: "#34d399", glow: "rgba(52,211,153,0.4)" },
 };
 
 function DiceFace({ value, rolling }: { value: number; rolling: boolean }) {
   const dots: Record<number, [number, number][]> = {
     1: [[50, 50]],
-    2: [[28, 28], [72, 72]],
-    3: [[28, 28], [50, 50], [72, 72]],
-    4: [[28, 28], [72, 28], [28, 72], [72, 72]],
-    5: [[28, 28], [72, 28], [50, 50], [28, 72], [72, 72]],
-    6: [[28, 22], [72, 22], [28, 50], [72, 50], [28, 78], [72, 78]],
+    2: [[30, 30], [70, 70]],
+    3: [[30, 30], [50, 50], [70, 70]],
+    4: [[30, 30], [70, 30], [30, 70], [70, 70]],
+    5: [[30, 30], [70, 30], [50, 50], [30, 70], [70, 70]],
+    6: [[30, 24], [70, 24], [30, 50], [70, 50], [30, 76], [70, 76]],
   };
   const v = Math.max(1, Math.min(6, value));
   return (
-    <div className={`relative w-24 h-24 bg-white rounded-2xl border-4 border-yellow-400 shadow-2xl ${rolling ? "animate-spin" : ""}`}
-      style={{ animationDuration: "0.12s" }}>
+    <div className={`relative rounded-2xl ${rolling ? "animate-spin" : ""}`}
+      style={{ width: 88, height: 88, background: "linear-gradient(145deg, #ffffff, #e8e8e8)", boxShadow: "4px 4px 12px rgba(0,0,0,0.4), -2px -2px 6px rgba(255,255,255,0.1)", animationDuration: "0.1s" }}>
       {dots[v].map(([x, y], i) => (
-        <div key={i} className="absolute w-4 h-4 bg-gray-900 rounded-full"
-          style={{ left: `${x}%`, top: `${y}%`, transform: "translate(-50%,-50%)" }} />
+        <div key={i} className="absolute rounded-full"
+          style={{ width: 14, height: 14, left: `${x}%`, top: `${y}%`, transform: "translate(-50%,-50%)", background: "#1a1a2e" }} />
       ))}
     </div>
   );
@@ -66,7 +66,7 @@ export default function Dice() {
     const interval = setInterval(async () => {
       setDice([Math.ceil(Math.random() * 6), Math.ceil(Math.random() * 6)]);
       frame++;
-      if (frame >= 16) {
+      if (frame >= 18) {
         clearInterval(interval);
         const d1 = Math.ceil(Math.random() * 6);
         const d2 = Math.ceil(Math.random() * 6);
@@ -82,112 +82,126 @@ export default function Dice() {
         await refresh();
         setSaving(false);
       }
-    }, 75);
+    }, 70);
   }, [betType, activeBet, player, refresh]);
 
+  const sum = dice[0] + dice[1];
+
   return (
-    <div className="min-h-screen flex flex-col" style={{ background: "linear-gradient(180deg, #0d0a00 0%, #1a1200 100%)" }}>
+    <div className="min-h-screen flex flex-col" style={{ background: "linear-gradient(160deg, #050816 0%, #0a0a20 100%)" }}>
       {/* Header */}
-      <div className="flex items-center justify-between px-4 pt-5 pb-3">
-        <button onClick={() => nav("/")} className="w-9 h-9 flex items-center justify-center rounded-xl bg-white/5 border border-white/10">
+      <div className="flex items-center justify-between px-4 pt-5 pb-4">
+        <button onClick={() => nav("/")} className="w-9 h-9 flex items-center justify-center rounded-xl"
+          style={{ background: "rgba(255,255,255,0.06)", border: "1px solid rgba(255,255,255,0.1)" }}>
           <ArrowLeft className="w-4 h-4 text-white" />
         </button>
-        <h1 className="text-white font-black text-base">🎲 DICE</h1>
-        <div className="flex items-center gap-1 bg-white/5 border border-yellow-400/20 px-3 py-1.5 rounded-xl">
+        <h1 className="text-white font-black text-base tracking-wider">🎲 DICE</h1>
+        <div className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl"
+          style={{ background: "rgba(251,191,36,0.1)", border: "1px solid rgba(251,191,36,0.25)" }}>
           <Coins className="w-3.5 h-3.5 text-yellow-400" />
-          <span className="text-yellow-400 text-sm font-bold">{(player?.balance ?? 0).toLocaleString()}</span>
+          <span className="text-yellow-400 text-sm font-black">{(player?.balance ?? 0).toLocaleString()}</span>
         </div>
       </div>
 
-      {/* Dice */}
-      <div className="flex justify-center gap-6 my-8">
-        <div className="w-32 h-32 rounded-3xl flex items-center justify-center"
-          style={{ background: "rgba(245,200,66,0.1)", border: "2px solid rgba(245,200,66,0.2)" }}>
-          <DiceFace value={dice[0]} rolling={gameState === "rolling"} />
+      {/* Dice display */}
+      <div className="mx-4 mb-4 rounded-2xl py-8 flex flex-col items-center relative overflow-hidden"
+        style={{ background: "linear-gradient(135deg, rgba(124,58,237,0.15), rgba(59,130,246,0.1))", border: "1px solid rgba(124,58,237,0.25)" }}>
+        <div className="absolute inset-0" style={{ background: "radial-gradient(circle at 50% 50%, rgba(124,58,237,0.1) 0%, transparent 70%)" }} />
+        <div className="relative flex items-center gap-6">
+          <div className="p-3 rounded-2xl" style={{ background: "rgba(0,0,0,0.3)" }}>
+            <DiceFace value={dice[0]} rolling={gameState === "rolling"} />
+          </div>
+          <div className="flex flex-col items-center gap-1">
+            <span className="text-white/20 font-black text-2xl">+</span>
+            {gameState !== "idle" && (
+              <div className="px-3 py-1 rounded-lg" style={{ background: "rgba(255,255,255,0.07)" }}>
+                <span className="text-white font-black text-xl">{sum}</span>
+              </div>
+            )}
+          </div>
+          <div className="p-3 rounded-2xl" style={{ background: "rgba(0,0,0,0.3)" }}>
+            <DiceFace value={dice[1]} rolling={gameState === "rolling"} />
+          </div>
         </div>
-        <div className="flex items-center">
-          <span className="text-white/30 font-black text-3xl">+</span>
-        </div>
-        <div className="w-32 h-32 rounded-3xl flex items-center justify-center"
-          style={{ background: "rgba(245,200,66,0.1)", border: "2px solid rgba(245,200,66,0.2)" }}>
-          <DiceFace value={dice[1]} rolling={gameState === "rolling"} />
-        </div>
+
+        {/* Result */}
+        {gameState === "result" && (
+          <div className="mt-4 text-center">
+            <p className="text-2xl mb-1">{won ? "🎉" : "💔"}</p>
+            <p className="font-black text-xl" style={{ color: won ? "#34d399" : "#f87171" }}>
+              {won ? `+${prize.toLocaleString()} UZS` : "Yutqazdingiz!"}
+            </p>
+            {won && <p className="text-xs mt-0.5" style={{ color: "rgba(52,211,153,0.6)" }}>Yutdingiz!</p>}
+          </div>
+        )}
+        {gameState === "rolling" && (
+          <p className="mt-3 text-sm font-semibold animate-pulse" style={{ color: "rgba(255,255,255,0.4)" }}>Aylanmoqda...</p>
+        )}
       </div>
 
-      {/* Result */}
-      {gameState === "result" && (
-        <div className="mx-4 mb-4 px-4 py-4 rounded-xl text-center"
-          style={{
-            background: won ? "rgba(34,197,94,0.15)" : "rgba(239,68,68,0.15)",
-            border: `1px solid ${won ? "rgba(34,197,94,0.4)" : "rgba(239,68,68,0.4)"}`
-          }}>
-          <p className="text-2xl mb-1">{won ? "🎉" : "😔"}</p>
-          <p className="font-black text-lg" style={{ color: won ? "#4ade80" : "#f87171" }}>
-            {won ? `+${prize.toLocaleString()} UZS` : "Yutqazdingiz!"}
-          </p>
-        </div>
-      )}
-
-      {/* Controls */}
-      <div className="px-4 flex-1">
-        <p className="text-white/40 text-xs uppercase tracking-widest font-semibold mb-2">Koeffitsiyentni tanlang</p>
-        <div className="grid grid-cols-3 gap-2 mb-4">
+      {/* Bet type selector */}
+      <div className="px-4 mb-3">
+        <p className="text-xs font-bold mb-2 tracking-widest" style={{ color: "rgba(255,255,255,0.3)" }}>TAXMIN TANLANG</p>
+        <div className="grid grid-cols-3 gap-2">
           {(["less", "equal", "more"] as BetType[]).map((type) => {
             const o = ODDS[type];
             const sel = betType === type;
             return (
               <button key={type} onClick={() => setBetType(type)} disabled={gameState === "rolling"}
-                className={`flex flex-col items-center py-3 px-2 rounded-xl border-2 transition-all active:scale-95 ${sel ? "border-yellow-400 bg-yellow-400/10" : "border-white/10 bg-white/5"}`}>
-                <span className="text-base mb-0.5">{o.emoji}</span>
-                <span className={`text-xs font-semibold ${sel ? "text-yellow-300" : "text-white/60"}`}>{o.label}</span>
-                <span className={`text-lg font-black ${sel ? "text-yellow-400" : "text-white"}`}>{o.desc}</span>
+                className="flex flex-col items-center py-3 rounded-2xl transition-all active:scale-95"
+                style={{
+                  background: sel ? `${o.glow.replace("0.4", "0.15")}` : "rgba(255,255,255,0.03)",
+                  border: sel ? `1px solid ${o.color}60` : "1px solid rgba(255,255,255,0.08)",
+                  boxShadow: sel ? `0 0 20px ${o.glow}` : "none",
+                }}>
+                <span className="text-xl mb-1">{o.emoji}</span>
+                <span className="text-xs font-semibold mb-0.5" style={{ color: sel ? o.color : "rgba(255,255,255,0.4)" }}>{o.label}</span>
+                <span className="font-black text-lg" style={{ color: sel ? o.color : "white" }}>x{o.mult}</span>
               </button>
             );
           })}
         </div>
+      </div>
 
-        <p className="text-white/40 text-xs uppercase tracking-widest font-semibold mb-2">Tikish miqdori</p>
-
-        {/* Bet input — shows amount + potential win */}
-        <div className="relative mb-2">
+      {/* Controls */}
+      <div className="px-4 pb-6 flex-1">
+        <div className="grid grid-cols-4 gap-1.5 mb-2">
+          {["MIN", "X2", "X/2", "MAX"].map((a) => (
+            <button key={a} disabled={gameState === "rolling"} onClick={() => setQuickBet(a)}
+              className="py-2 rounded-xl text-xs font-bold active:scale-95"
+              style={{ background: "rgba(255,255,255,0.05)", border: "1px solid rgba(255,255,255,0.1)", color: "rgba(255,255,255,0.6)" }}>
+              {a}
+            </button>
+          ))}
+        </div>
+        <div className="relative mb-4">
           <input
             type="number"
-            placeholder="Miqdor kiriting (min 2 000)"
+            placeholder="Tikish miqdori (min 2 000)"
             value={betInput}
             disabled={gameState === "rolling"}
             onChange={(e) => setBetInput(e.target.value)}
-            className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-yellow-400 font-black text-lg placeholder-white/20 focus:outline-none focus:border-yellow-400/50 pr-32"
+            className="w-full rounded-xl px-4 py-3 font-black text-lg focus:outline-none pr-32"
+            style={{ background: "rgba(255,255,255,0.05)", border: "1px solid rgba(255,255,255,0.1)", color: "#fbbf24" }}
           />
           {betType && activeBet >= 2000 && (
-            <span className="absolute right-3 top-1/2 -translate-y-1/2 text-green-400 text-sm font-bold whitespace-nowrap">
+            <span className="absolute right-3 top-1/2 -translate-y-1/2 text-sm font-bold" style={{ color: "#34d399" }}>
               → {potential.toLocaleString()}
             </span>
           )}
         </div>
 
-        {/* Quick bet buttons */}
-        <div className="grid grid-cols-4 gap-1.5 mb-4">
-          {["MIN", "X2", "X/2", "MAX"].map((a) => (
-            <button key={a} disabled={gameState === "rolling"} onClick={() => setQuickBet(a)}
-              className="py-2 rounded-xl text-xs font-bold text-white/70 border border-white/10 bg-white/5 active:scale-95">{a}</button>
-          ))}
-        </div>
-
-        {/* Action buttons */}
-        <div className="grid grid-cols-3 gap-2 pb-6">
-          <button
-            onClick={() => { setGameState("idle"); setPrize(0); }}
-            disabled={gameState === "rolling"}
-            className="py-4 rounded-2xl bg-white/5 border border-white/10 flex items-center justify-center active:scale-95">
-            <RotateCcw className="w-5 h-5 text-blue-400" />
+        <div className="grid grid-cols-4 gap-2">
+          <button onClick={() => { setGameState("idle"); setPrize(0); }} disabled={gameState === "rolling"}
+            className="py-4 rounded-2xl flex items-center justify-center active:scale-95"
+            style={{ background: "rgba(255,255,255,0.05)", border: "1px solid rgba(255,255,255,0.1)" }}>
+            <span className="text-xl">🔄</span>
           </button>
-          <button
-            onClick={roll}
+          <button onClick={roll}
             disabled={gameState === "rolling" || !betType || !player || player.balance < activeBet || activeBet < 2000 || saving}
-            className="col-span-2 py-4 rounded-2xl font-black text-base flex items-center justify-center gap-2 active:scale-95 transition-all disabled:opacity-40"
-            style={{ background: "linear-gradient(135deg, #22c55e, #16a34a)", boxShadow: "0 8px 24px rgba(34,197,94,0.3)" }}>
-            <Play className="w-5 h-5" />
-            {gameState === "rolling" ? "O'ynalmoqda..." : "O'YNASH"}
+            className="col-span-3 py-4 rounded-2xl font-black text-base flex items-center justify-center gap-2 active:scale-95 transition-all disabled:opacity-40"
+            style={{ background: "linear-gradient(135deg, #7c3aed, #3b82f6)", boxShadow: "0 8px 24px rgba(124,58,237,0.4)" }}>
+            {gameState === "rolling" ? "🎲 Aylanmoqda..." : "🎲 TASHLASH"}
           </button>
         </div>
       </div>
