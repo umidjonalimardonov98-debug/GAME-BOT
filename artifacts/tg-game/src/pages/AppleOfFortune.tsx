@@ -1,6 +1,6 @@
 import { useState, type ReactNode } from "react";
 import { useLocation } from "wouter";
-import { ArrowLeft, Coins } from "lucide-react";
+import { ArrowLeft } from "lucide-react";
 import { usePlayer } from "@/lib/player-context";
 import { placeBet } from "@/lib/api";
 
@@ -30,6 +30,7 @@ export default function AppleOfFortune() {
   const [activeRow, setActiveRow] = useState(0);
   const [cashOutAmount, setCashOutAmount] = useState(0);
   const [saving, setSaving] = useState(false);
+  const [shakeRow, setShakeRow] = useState<number | null>(null);
 
   const activeBet = customBet ? Math.max(2000, Number(customBet)) : bet;
   const currentMult = activeRow > 0 ? MULTIPLIERS[activeRow - 1] : null;
@@ -49,8 +50,12 @@ export default function AppleOfFortune() {
     setRevealed(newRev);
 
     if (grid[row][col] === "bomb") {
-      setRevealed(newRev.map((r, ri) => ri <= row ? Array(COLS).fill(true) : r));
-      setGameState("lost");
+      setShakeRow(row);
+      setTimeout(() => {
+        setRevealed(newRev.map((r, ri) => ri <= row ? Array(COLS).fill(true) : r));
+        setGameState("lost");
+        setShakeRow(null);
+      }, 500);
       setSaving(true);
       if (player) { await placeBet(player.telegramId, { amount: activeBet, game: "apple", won: false, winAmount: 0 }).catch(() => {}); await refresh(); }
       setSaving(false);
@@ -84,162 +89,194 @@ export default function AppleOfFortune() {
   const rows = Array.from({ length: ROWS }, (_, i) => ROWS - 1 - i);
 
   return (
-    <div className="min-h-screen flex flex-col" style={{ background: "linear-gradient(160deg, #050816 0%, #0a0a20 100%)" }}>
-      {/* Header */}
-      <div className="flex items-center justify-between px-4 pt-5 pb-3">
-        <button onClick={() => nav("/")} className="w-9 h-9 flex items-center justify-center rounded-xl"
-          style={{ background: "rgba(255,255,255,0.06)", border: "1px solid rgba(255,255,255,0.1)" }}>
-          <ArrowLeft className="w-4 h-4 text-white" />
-        </button>
-        <h1 className="text-white font-black text-base tracking-wider">🍎 APPLE OF FORTUNE</h1>
-        <div className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl"
-          style={{ background: "rgba(251,191,36,0.1)", border: "1px solid rgba(251,191,36,0.25)" }}>
-          <Coins className="w-3.5 h-3.5 text-yellow-400" />
-          <span className="text-yellow-400 text-sm font-black">{(player?.balance ?? 0).toLocaleString()}</span>
-        </div>
-      </div>
+    <div className="min-h-screen flex flex-col relative overflow-hidden"
+      style={{ background: "linear-gradient(160deg, #022c1a 0%, #052e16 50%, #041a0f 100%)" }}>
 
-      <div className="px-3 flex-1 flex flex-col">
-        {/* Grid */}
-        {gameState === "idle" ? (
-          <div className="flex-1 flex items-center justify-center">
-            <div className="text-center py-12 rounded-2xl w-full"
-              style={{ background: "rgba(16,185,129,0.05)", border: "1px solid rgba(16,185,129,0.15)" }}>
-              <div className="text-6xl mb-3">🍎</div>
-              <p className="font-bold text-base text-white mb-1">Apple of Fortune</p>
-              <p className="text-sm" style={{ color: "rgba(255,255,255,0.3)" }}>Har qatorda 2 olma, 1 bomba</p>
-              <p className="text-sm font-black mt-1" style={{ color: "#10b981" }}>1x → 2x → ... → 10x</p>
+      {/* Glowing orbs */}
+      <div className="fixed pointer-events-none" style={{ top: -50, left: -50, width: 220, height: 220, borderRadius: "50%", background: "radial-gradient(circle, #16a34a44 0%, transparent 70%)", filter: "blur(50px)" }} />
+      <div className="fixed pointer-events-none" style={{ bottom: 80, right: -60, width: 200, height: 200, borderRadius: "50%", background: "radial-gradient(circle, #15803d33 0%, transparent 70%)", filter: "blur(40px)" }} />
+
+      <div className="relative z-10 flex flex-col min-h-screen">
+        {/* Header */}
+        <div className="flex items-center justify-between px-4 pt-5 pb-3">
+          <button onClick={() => nav("/")} className="w-9 h-9 flex items-center justify-center rounded-xl"
+            style={{ background: "rgba(255,255,255,0.08)", border: "1px solid rgba(255,255,255,0.12)" }}>
+            <ArrowLeft className="w-4 h-4 text-white" />
+          </button>
+          <h1 className="font-black text-base tracking-wider text-white">🍎 APPLE OF FORTUNE</h1>
+          <div className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl"
+            style={{ background: "rgba(34,197,94,0.15)", border: "1px solid rgba(34,197,94,0.35)" }}>
+            <span className="text-green-400 text-sm font-black">{(player?.balance ?? 0).toLocaleString()} UZS</span>
+          </div>
+        </div>
+
+        {/* Progress bar */}
+        {gameState === "playing" && (
+          <div className="px-4 mb-2">
+            <div className="flex items-center justify-between mb-1.5">
+              <span className="text-xs font-bold" style={{ color: "rgba(255,255,255,0.4)" }}>
+                {activeRow}/{ROWS} qator
+              </span>
+              <span className="text-xs font-black text-green-400">{MULTIPLIERS[Math.min(activeRow, 9)]}x</span>
+            </div>
+            <div className="h-1.5 rounded-full overflow-hidden" style={{ background: "rgba(255,255,255,0.08)" }}>
+              <div className="h-1.5 rounded-full transition-all"
+                style={{ width: `${(activeRow / ROWS) * 100}%`, background: "linear-gradient(90deg, #16a34a, #4ade80)" }} />
             </div>
           </div>
-        ) : (
-          <div className="flex flex-col gap-1.5 mb-3">
-            {rows.map((rowIdx) => {
-              const isActive = rowIdx === activeRow && gameState === "playing";
-              const isPast = rowIdx < activeRow;
-              const mult = MULTIPLIERS[rowIdx];
-              const isJustPassed = rowIdx === activeRow - 1;
-
-              return (
-                <div key={rowIdx} className="flex items-center gap-2">
-                  <div className="w-9 text-right shrink-0">
-                    <span className="text-xs font-black" style={{
-                      color: isJustPassed ? "#10b981" : isPast ? "rgba(16,185,129,0.3)" : isActive ? "#fbbf24" : "rgba(255,255,255,0.2)"
-                    }}>
-                      {mult}x
-                    </span>
-                  </div>
-                  <div className="flex-1 grid grid-cols-3 gap-1.5">
-                    {Array.from({ length: COLS }, (_, c) => {
-                      const isRev = revealed[rowIdx]?.[c];
-                      const cell = grid[rowIdx]?.[c];
-                      const isApple = cell === "apple";
-                      const isBomb = cell === "bomb";
-
-                      let bg = "rgba(255,255,255,0.03)";
-                      let border = "1px solid rgba(255,255,255,0.06)";
-                      let content: ReactNode = null;
-
-                      if (isActive) {
-                        bg = "linear-gradient(135deg, rgba(16,185,129,0.15), rgba(5,150,105,0.1))";
-                        border = "1px solid rgba(16,185,129,0.4)";
-                        content = <div className="w-3 h-3 rounded-full" style={{ background: "rgba(16,185,129,0.6)" }} />;
-                      }
-                      if (isRev && isApple) {
-                        bg = "linear-gradient(135deg, rgba(16,185,129,0.2), rgba(5,150,105,0.1))";
-                        border = "1px solid rgba(16,185,129,0.5)";
-                        content = <span className="text-base">🍎</span>;
-                      }
-                      if (isRev && isBomb) {
-                        bg = "linear-gradient(135deg, rgba(239,68,68,0.2), rgba(220,38,38,0.1))";
-                        border = "1px solid rgba(239,68,68,0.5)";
-                        content = <span className="text-base">💣</span>;
-                      }
-                      if (!isRev && isPast && isApple) {
-                        content = <span className="text-base opacity-25">🍎</span>;
-                      }
-
-                      return (
-                        <button key={c} onClick={() => pickCell(rowIdx, c)} disabled={!isActive}
-                          className="flex items-center justify-center rounded-xl transition-all active:scale-90"
-                          style={{ aspectRatio: "2/1", background: bg, border, boxShadow: isActive ? "0 0 12px rgba(16,185,129,0.15)" : "none" }}>
-                          {content}
-                        </button>
-                      );
-                    })}
-                  </div>
-                </div>
-              );
-            })}
-          </div>
         )}
 
-        {/* Cash out button */}
-        {gameState === "playing" && activeRow > 0 && (
-          <button onClick={doCashOut} disabled={saving}
-            className="w-full py-3 rounded-xl font-black text-sm mb-2 active:scale-95 transition-transform"
-            style={{ background: "linear-gradient(135deg, #10b981, #059669)", boxShadow: "0 4px 20px rgba(16,185,129,0.4)", color: "white" }}>
-            💰 OLISH — {potential.toLocaleString()} UZS ({currentMult}x)
-          </button>
-        )}
-
-        {gameState === "playing" && (
-          <div className="text-center py-1 mb-2">
-            <span className="text-xs" style={{ color: "rgba(255,255,255,0.3)" }}>
-              Keyingi: <b style={{ color: "#fbbf24" }}>{MULTIPLIERS[activeRow]}x</b>
-            </span>
-          </div>
-        )}
-
-        {/* Result */}
-        {(gameState === "won" || gameState === "lost") && (
-          <div className="rounded-2xl px-4 py-4 text-center mb-3"
-            style={{
-              background: gameState === "won" ? "rgba(16,185,129,0.12)" : "rgba(239,68,68,0.12)",
-              border: `1px solid ${gameState === "won" ? "rgba(16,185,129,0.4)" : "rgba(239,68,68,0.4)"}`,
-              boxShadow: gameState === "won" ? "0 0 30px rgba(16,185,129,0.1)" : "0 0 30px rgba(239,68,68,0.1)"
-            }}>
-            <p className="text-3xl mb-1">{gameState === "won" ? "🎉" : "💥"}</p>
-            <p className="text-white font-black text-xl">
-              {gameState === "won" ? `+${cashOutAmount.toLocaleString()} UZS` : "Yutqazdingiz!"}
-            </p>
-            <p className="text-xs mt-1" style={{ color: "rgba(255,255,255,0.4)" }}>
-              {gameState === "won" ? `${activeRow} qator — ${MULTIPLIERS[activeRow - 1]}x` : "Bomba chiqdi!"}
-            </p>
-          </div>
-        )}
-
-        {/* Controls */}
-        <div className="mt-auto pb-4">
-          {(gameState === "idle" || gameState === "won" || gameState === "lost") && (
-            <>
-              <div className="grid grid-cols-4 gap-1.5 mb-2">
-                {["MIN","X2","X/2","MAX"].map((a) => (
-                  <button key={a} onClick={() => {
-                    const bal = player?.balance ?? 0;
-                    let v = activeBet;
-                    if (a === "MIN") v = 2000;
-                    else if (a === "MAX") v = Math.min(bal, 500000);
-                    else if (a === "X2") v = Math.min(activeBet * 2, bal, 500000);
-                    else v = Math.max(Math.floor(activeBet / 2), 2000);
-                    setCustomBet(String(v)); setBet(v);
-                  }} className="py-2 rounded-xl text-xs font-bold active:scale-95"
-                    style={{ background: "rgba(255,255,255,0.05)", border: "1px solid rgba(255,255,255,0.1)", color: "rgba(255,255,255,0.6)" }}>
-                    {a}
-                  </button>
-                ))}
+        {/* Game grid */}
+        <div className="px-3 flex-1 flex flex-col">
+          {gameState === "idle" ? (
+            <div className="flex-1 flex flex-col items-center justify-center">
+              <div className="w-28 h-28 rounded-full flex items-center justify-center mb-4 float-anim"
+                style={{ background: "radial-gradient(circle, #16a34a33, #052e1688)", border: "2px solid #22c55e44", boxShadow: "0 0 40px #22c55e33" }}>
+                <span style={{ fontSize: 56 }}>🍎</span>
               </div>
-              <input type="number" placeholder="Miqdor (min 2 000)" value={customBet}
-                onChange={(e) => setCustomBet(e.target.value)}
-                className="w-full rounded-xl px-4 py-3 font-black text-lg focus:outline-none mb-2"
-                style={{ background: "rgba(255,255,255,0.05)", border: "1px solid rgba(255,255,255,0.1)", color: "#fbbf24" }} />
-              <button onClick={gameState === "idle" ? start : reset}
-                disabled={!player || player.balance < activeBet || activeBet < 2000}
-                className="w-full py-4 rounded-2xl font-black text-base active:scale-95 transition-all disabled:opacity-40"
-                style={{ background: "linear-gradient(135deg, #10b981, #059669)", boxShadow: "0 8px 24px rgba(16,185,129,0.4)", color: "white" }}>
-                {gameState === "idle" ? "🍎 O'YINNI BOSHLASH" : "🔄 QAYTA O'YNASH"}
-              </button>
-            </>
+              <p className="text-white font-black text-xl mb-1">Apple of Fortune</p>
+              <p className="text-sm mb-1" style={{ color: "rgba(255,255,255,0.4)" }}>Har qatorda 2 ta olma, 1 ta bomba</p>
+              <p className="font-black text-lg" style={{ color: "#4ade80" }}>1x → 2x → ... → 10x</p>
+            </div>
+          ) : (
+            <div className="flex flex-col gap-1.5 mb-3 mt-1">
+              {rows.map((rowIdx) => {
+                const isActive = rowIdx === activeRow && gameState === "playing";
+                const isPast = rowIdx < activeRow;
+                const isBomb = gameState === "lost" && rowIdx === activeRow;
+                const mult = MULTIPLIERS[rowIdx];
+                const isShaking = shakeRow === rowIdx;
+
+                return (
+                  <div key={rowIdx} className={`flex items-center gap-2 ${isShaking ? "shake-anim" : ""}`}>
+                    {/* Multiplier label */}
+                    <div className="w-10 text-right shrink-0">
+                      <span className="text-xs font-black"
+                        style={{ color: isPast && rowIdx < activeRow - 1 ? "rgba(74,222,128,0.3)" : rowIdx === activeRow - 1 ? "#4ade80" : isActive ? "#fbbf24" : "rgba(255,255,255,0.2)" }}>
+                        {mult}x
+                      </span>
+                    </div>
+
+                    {/* Cells */}
+                    <div className="flex-1 grid grid-cols-3 gap-2">
+                      {Array.from({ length: COLS }, (_, c) => {
+                        const isRev = revealed[rowIdx]?.[c];
+                        const cell = grid[rowIdx]?.[c];
+
+                        let bg = "rgba(255,255,255,0.03)";
+                        let border = "1px solid rgba(255,255,255,0.07)";
+                        let shadow = "none";
+                        let content: ReactNode = null;
+                        let extraClass = "";
+
+                        if (isActive) {
+                          bg = "linear-gradient(135deg, rgba(21,128,61,0.35), rgba(5,46,22,0.5))";
+                          border = "1px solid rgba(34,197,94,0.5)";
+                          shadow = "0 0 14px rgba(34,197,94,0.2)";
+                          content = (
+                            <div className="w-4 h-4 rounded-full pulse-ring"
+                              style={{ background: "radial-gradient(circle, #4ade80, #16a34a)" }} />
+                          );
+                        }
+
+                        if (isRev && cell === "apple") {
+                          bg = "linear-gradient(135deg, #16a34a, #15803d)";
+                          border = "1px solid #4ade8066";
+                          shadow = "0 0 20px rgba(74,222,128,0.4)";
+                          extraClass = "pop-in";
+                          content = <span style={{ fontSize: 24 }}>🍎</span>;
+                        }
+
+                        if (isRev && cell === "bomb") {
+                          bg = "linear-gradient(135deg, #991b1b, #7f1d1d)";
+                          border = "1px solid #ef444466";
+                          shadow = "0 0 20px rgba(239,68,68,0.6)";
+                          extraClass = "shake-anim";
+                          content = <span style={{ fontSize: 24 }}>💣</span>;
+                        }
+
+                        // Past rows apple (not clicked) — show dimly
+                        if (!isRev && isPast && cell === "apple") {
+                          content = <span style={{ fontSize: 18, opacity: 0.2 }}>🍎</span>;
+                        }
+
+                        return (
+                          <button key={c} onClick={() => pickCell(rowIdx, c)} disabled={!isActive}
+                            className={`flex items-center justify-center rounded-2xl transition-all ${isActive ? "active:scale-90" : ""} ${extraClass}`}
+                            style={{ aspectRatio: "2/1", background: bg, border, boxShadow: shadow }}>
+                            {content}
+                          </button>
+                        );
+                      })}
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
           )}
+
+          {/* Cash out */}
+          {gameState === "playing" && activeRow > 0 && (
+            <button onClick={doCashOut} disabled={saving}
+              className="w-full py-3.5 rounded-2xl font-black text-base mb-2 active:scale-95 transition-transform glow-green"
+              style={{ background: "linear-gradient(135deg, #16a34a, #15803d)", color: "white" }}>
+              💰 OLISH — {potential.toLocaleString()} UZS ({currentMult}x)
+            </button>
+          )}
+
+          {/* Result */}
+          {(gameState === "won" || gameState === "lost") && (
+            <div className="rounded-3xl px-5 py-5 text-center mb-3 slide-up"
+              style={{
+                background: gameState === "won"
+                  ? "linear-gradient(135deg, rgba(22,163,74,0.25), rgba(21,128,61,0.15))"
+                  : "linear-gradient(135deg, rgba(153,27,27,0.25), rgba(127,29,29,0.15))",
+                border: `1px solid ${gameState === "won" ? "rgba(74,222,128,0.4)" : "rgba(239,68,68,0.4)"}`,
+                boxShadow: gameState === "won" ? "0 0 40px rgba(74,222,128,0.15)" : "0 0 40px rgba(239,68,68,0.15)"
+              }}>
+              <div className="text-4xl mb-2">{gameState === "won" ? "🎉" : "💥"}</div>
+              <p className="font-black text-2xl" style={{ color: gameState === "won" ? "#4ade80" : "#f87171" }}>
+                {gameState === "won" ? `+${cashOutAmount.toLocaleString()} UZS` : "Bomba chiqdi!"}
+              </p>
+              <p className="text-sm mt-1" style={{ color: "rgba(255,255,255,0.4)" }}>
+                {gameState === "won" ? `${activeRow} qator — ${MULTIPLIERS[activeRow - 1]}x` : "Yutqazdingiz!"}
+              </p>
+            </div>
+          )}
+
+          {/* Controls */}
+          <div className="mt-auto pb-4">
+            {(gameState === "idle" || gameState === "won" || gameState === "lost") && (
+              <>
+                <div className="grid grid-cols-4 gap-1.5 mb-2">
+                  {["MIN","X2","X/2","MAX"].map((a) => (
+                    <button key={a} onClick={() => {
+                      const bal = player?.balance ?? 0;
+                      let v = activeBet;
+                      if (a === "MIN") v = 2000;
+                      else if (a === "MAX") v = Math.min(bal, 500000);
+                      else if (a === "X2") v = Math.min(activeBet * 2, bal, 500000);
+                      else v = Math.max(Math.floor(activeBet / 2), 2000);
+                      setCustomBet(String(v)); setBet(v);
+                    }} className="py-2 rounded-xl text-xs font-bold active:scale-95"
+                      style={{ background: "rgba(255,255,255,0.06)", border: "1px solid rgba(255,255,255,0.1)", color: "rgba(255,255,255,0.6)" }}>
+                      {a}
+                    </button>
+                  ))}
+                </div>
+                <input type="number" placeholder="Miqdor (min 2 000)" value={customBet}
+                  onChange={(e) => setCustomBet(e.target.value)}
+                  className="w-full rounded-2xl px-4 py-3.5 font-black text-lg focus:outline-none mb-2"
+                  style={{ background: "rgba(255,255,255,0.06)", border: "1px solid rgba(34,197,94,0.25)", color: "#4ade80" }} />
+                <button onClick={gameState === "idle" ? start : reset}
+                  disabled={gameState === "idle" && (!player || player.balance < activeBet || activeBet < 2000)}
+                  className="w-full py-4 rounded-2xl font-black text-base active:scale-95 transition-all disabled:opacity-40"
+                  style={{ background: "linear-gradient(135deg, #16a34a, #15803d)", boxShadow: "0 8px 28px rgba(22,163,74,0.5)", color: "white" }}>
+                  {gameState === "idle" ? "🍎 O'YINNI BOSHLASH" : "🔄 QAYTA O'YNASH"}
+                </button>
+              </>
+            )}
+          </div>
         </div>
       </div>
     </div>
