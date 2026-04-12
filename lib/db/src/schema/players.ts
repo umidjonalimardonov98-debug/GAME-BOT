@@ -9,7 +9,7 @@ export const playersTable = pgTable("players", {
   firstName: text("first_name").notNull(),
   lastName: text("last_name"),
   photoUrl: text("photo_url"),
-  balance: integer("balance").notNull().default(10000),
+  balance: integer("balance").notNull().default(0),
   totalWon: integer("total_won").notNull().default(0),
   totalLost: integer("total_lost").notNull().default(0),
   gamesPlayed: integer("games_played").notNull().default(0),

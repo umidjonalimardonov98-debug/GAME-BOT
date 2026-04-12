@@ -32,7 +32,7 @@ router.post("/players/sync", async (req, res): Promise<void> => {
     return;
   }
   const [created] = await db.insert(playersTable)
-    .values({ telegramId, username: username ?? null, firstName, lastName: lastName ?? null, photoUrl: photoUrl ?? null, balance: 10000 })
+    .values({ telegramId, username: username ?? null, firstName, lastName: lastName ?? null, photoUrl: photoUrl ?? null, balance: 0 })
     .returning();
   res.json(formatPlayer(created));
 });

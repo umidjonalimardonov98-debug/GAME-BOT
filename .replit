@@ -1,4 +1,4 @@
-modules = ["nodejs-24"]
+modules = ["nodejs-24", "postgresql-16"]
 
 [deployment]
 router = "application"
@@ -47,3 +47,6 @@ CHANNEL_ID = ""
 ADMIN_TELEGRAM_ID = "8787603995"
 CARD_NUMBER = "5614683518277611"
 CARD_HOLDER = "ALIMARDONOV UMIDJON"
+
+[nix]
+channel = "stable-25_05"
