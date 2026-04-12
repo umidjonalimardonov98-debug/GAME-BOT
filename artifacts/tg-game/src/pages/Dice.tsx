@@ -125,9 +125,6 @@ export default function Dice() {
           <p className="font-black text-lg" style={{ color: won ? "#4ade80" : "#f87171" }}>
             {won ? `+${prize.toLocaleString()} UZS` : "Yutqazdingiz!"}
           </p>
-          <p className="text-white/40 text-xs mt-1">
-            {dice[0]} + {dice[1]} = {dice[0] + dice[1]}
-          </p>
         </div>
       )}
 
