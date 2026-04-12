@@ -19,6 +19,8 @@ const waitingForCheck = new Map<number, number>();             // userId -> depo
 const waitingForAmount = new Set<number>();                    // userId waiting to type deposit amount
 const waitingForWithdrawAmount = new Set<number>();            // userId waiting to type withdraw amount
 const pendingWithdraw = new Map<number, { amount: number }>(); // userId -> withdraw info
+const waitingForHelp = new Set<number>();                      // userId waiting to type help question
+const adminReplyTarget = new Map<number, number>();            // adminId -> targetUserId (for admin replies)
 
 export async function notifyAdminWithdraw(opts: {
   reqId: number; telegramId: string; firstName: string; username: string | null;
@@ -72,7 +74,7 @@ async function mainMenu(chatId: number, name: string, balance: number) {
       [{ text: "🎮 O'YINNI BOSHLASH", web_app: { url: APP_URL } }],
       [{ text: "💰 Balansim", callback_data: "balance" }, { text: "📖 Qoidalar", callback_data: "howto" }],
       [{ text: "➕ Hisob To'ldirish", web_app: { url: DEPOSIT_URL } }, { text: "💸 Pul Yechish", callback_data: "withdraw_menu" }],
-      [{ text: "🏆 Reyting", callback_data: "reyting" }],
+      [{ text: "🏆 Reyting", callback_data: "reyting" }, { text: "❓ Yordam", callback_data: "help_menu" }],
     ]}}
   );
 }
@@ -213,6 +215,47 @@ export async function startBot() {
     const userId = msg.from.id;
     const chatId = msg.chat.id;
     const text = msg.text.trim();
+
+    // Admin reply to user help question
+    if (userId === ADMIN_ID && adminReplyTarget.has(ADMIN_ID)) {
+      const targetId = adminReplyTarget.get(ADMIN_ID)!;
+      adminReplyTarget.delete(ADMIN_ID);
+      try {
+        await bot!.sendMessage(targetId,
+          `📩 <b>Admin javobi:</b>\n\n${text}`,
+          { parse_mode: "HTML" }
+        );
+        await bot!.sendMessage(chatId, "✅ Javob yuborildi!", { parse_mode: "HTML" });
+      } catch {
+        await bot!.sendMessage(chatId, "❌ Foydalanuvchiga xabar yuborib bo'lmadi.", { parse_mode: "HTML" });
+      }
+      return;
+    }
+
+    // Help question from user
+    if (waitingForHelp.has(userId)) {
+      waitingForHelp.delete(userId);
+      const [p] = await db.select().from(playersTable).where(eq(playersTable.telegramId, String(userId)));
+      const name = p?.firstName ?? "Noma'lum";
+      const username = p?.username ? `@${p.username}` : "—";
+      if (ADMIN_ID) {
+        adminReplyTarget.set(ADMIN_ID, userId);
+        await bot!.sendMessage(ADMIN_ID,
+          `❓ <b>YORDAM SO'ROVI</b>\n\n` +
+          `👤 ${name} (${username})\n` +
+          `🆔 <code>${userId}</code>\n\n` +
+          `💬 <b>Savol:</b>\n${text}`,
+          { parse_mode: "HTML", reply_markup: { inline_keyboard: [[
+            { text: "📩 Javob berish", callback_data: `reply_help_${userId}` },
+          ]]}}
+        );
+      }
+      await bot!.sendMessage(chatId,
+        `✅ <b>Savolingiz adminga yuborildi!</b>\n\n⏳ Tez orada javob beriladi.`,
+        { parse_mode: "HTML" }
+      );
+      return;
+    }
 
     // Custom deposit amount
     if (waitingForAmount.has(userId)) {
@@ -485,6 +528,39 @@ export async function startBot() {
       return;
     }
 
+    // Help menu
+    if (data === "help_menu") {
+      await bot!.answerCallbackQuery(q.id);
+      waitingForHelp.add(q.from.id);
+      await bot!.sendMessage(chatId,
+        `❓ <b>Yordam</b>\n\n✍️ Savolingizni yozing — admin tez orada javob beradi.\n\n💬 <i>Masalan: "Depozit tushmadi", "Pul yechishda muammo" va hokazo</i>`,
+        { parse_mode: "HTML", reply_markup: { inline_keyboard: [[
+          { text: "❌ Bekor qilish", callback_data: "cancel_help" },
+        ]]}}
+      );
+      return;
+    }
+
+    // Cancel help
+    if (data === "cancel_help") {
+      waitingForHelp.delete(q.from.id);
+      await bot!.answerCallbackQuery(q.id, { text: "Bekor qilindi" });
+      return;
+    }
+
+    // Admin: reply to help
+    if (data.startsWith("reply_help_")) {
+      if (q.from.id !== ADMIN_ID) { await bot!.answerCallbackQuery(q.id, { text: "❌ Ruxsat yo'q" }); return; }
+      const targetUserId = Number(data.split("_")[2]);
+      adminReplyTarget.set(ADMIN_ID, targetUserId);
+      await bot!.answerCallbackQuery(q.id, { text: "Javobingizni yozing" });
+      await bot!.sendMessage(chatId,
+        `📩 <b>Javob yozing:</b>\n\nQuyidagi foydalanuvchiga javob yuboriladi: <code>${targetUserId}</code>`,
+        { parse_mode: "HTML" }
+      );
+      return;
+    }
+
     // Reyting
     if (data === "reyting") {
       await bot!.answerCallbackQuery(q.id);
@@ -492,20 +568,28 @@ export async function startBot() {
         const resp = await fetch(`http://localhost:${process.env.PORT || 8080}/api/game/leaderboard`);
         const lb = await resp.json() as { topWinners: any[]; topDepositors: any[] };
 
-        const fmtEntry = (e: any, i: number, field: "totalWon" | "totalDeposited") => {
-          const medals = ["🥇","🥈","🥉"];
-          const medal = i < 3 ? medals[i] : `${i+1}.`;
+        const medals = ["🥇","🥈","🥉","4️⃣","5️⃣"];
+        const fmtEntry = (e: any, i: number) => {
+          const medal = medals[i] ?? `${i+1}.`;
           const name = e.username ? `@${e.username}` : e.firstName;
-          return `${medal} ${name} — <b>${fmt(e.amount)} UZS</b>`;
+          const amt = Number(e.amount) || 0;
+          return `${medal} ${name} — <b>${fmt(amt)} UZS</b>`;
         };
 
-        const winners = lb.topWinners.slice(0, 5).map((e: any, i: number) => fmtEntry(e, i, "totalWon")).join("\n") || "Hali ma'lumot yo'q";
-        const depositors = lb.topDepositors.slice(0, 5).map((e: any, i: number) => fmtEntry(e, i, "totalDeposited")).join("\n") || "Hali ma'lumot yo'q";
+        const winners = lb.topWinners.slice(0, 5).map(fmtEntry).join("\n") || "—";
+        const depositors = lb.topDepositors.slice(0, 5).map(fmtEntry).join("\n") || "—";
+
+        // User's own stats
+        const [me] = await db.select().from(playersTable).where(eq(playersTable.telegramId, String(q.from.id)));
+        const myWon = me?.totalWon ?? 0;
+        const myGames = me?.gamesPlayed ?? 0;
 
         await bot!.sendMessage(chatId,
           `🏆 <b>REYTING</b>\n\n` +
-          `💰 <b>Ko'p Yutganlar:</b>\n${winners}\n\n` +
-          `💵 <b>Ko'p Tashlaganlar:</b>\n${depositors}`,
+          `🎯 <b>Sizning natijangiz:</b>\n` +
+          `🎮 O'yinlar: <b>${myGames}</b>  |  🏆 Yutgan: <b>${fmt(myWon)} UZS</b>\n\n` +
+          `💰 <b>Ko'p Yutganlar (Top 5):</b>\n${winners}\n\n` +
+          `💵 <b>Ko'p Tashlaganlar (Top 5):</b>\n${depositors}`,
           { parse_mode: "HTML" }
         );
       } catch {
