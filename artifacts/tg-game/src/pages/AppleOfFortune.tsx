@@ -4,11 +4,15 @@ import { ArrowLeft, Coins } from "lucide-react";
 import { usePlayer } from "@/lib/player-context";
 import { placeBet } from "@/lib/api";
 
-const COLS = 5;
+const COLS = 6;
 const ROWS = 6;
 const TOTAL = COLS * ROWS;
-const APPLES_COUNT = 8;
-const MULTIPLIERS = [1.2, 1.5, 1.9, 2.5, 3.2, 4.1, 5.5, 7.5];
+const APPLES_COUNT = 18;
+const MULTIPLIERS = [
+  1.0, 1.5, 2.0, 2.5, 3.0, 3.5,
+  4.0, 4.5, 5.0, 5.5, 6.0, 6.5,
+  7.0, 7.5, 8.0, 8.5, 9.0, 9.5,
+];
 
 type CellState = "apple" | "empty";
 type GameState = "idle" | "playing" | "won" | "lost";
@@ -106,16 +110,16 @@ export default function AppleOfFortune() {
       </div>
 
       {/* Grid */}
-      <div className="px-3 mb-3">
+      <div className="px-2 mb-3">
         {gameState === "idle" ? (
-          <div className="rounded-2xl flex items-center justify-center py-14" style={{ background: "rgba(255,255,255,0.02)", border: "1px solid rgba(255,255,255,0.05)" }}>
+          <div className="rounded-2xl flex items-center justify-center py-10" style={{ background: "rgba(255,255,255,0.02)", border: "1px solid rgba(255,255,255,0.05)" }}>
             <div className="text-center">
               <span className="text-6xl float-anim inline-block">🍎</span>
               <p className="text-white/40 text-sm mt-3">O'yinni boshlang!</p>
             </div>
           </div>
         ) : (
-          <div className="grid gap-1.5" style={{ gridTemplateColumns: `repeat(${COLS}, 1fr)` }}>
+          <div className="grid gap-1" style={{ gridTemplateColumns: `repeat(${COLS}, 1fr)` }}>
             {Array(TOTAL).fill(0).map((_, i) => {
               const isRevealed = revealed[i];
               const isApple = grid[i] === "apple";
@@ -123,7 +127,7 @@ export default function AppleOfFortune() {
               return (
                 <button key={i} onClick={() => revealCell(i)}
                   disabled={isRevealed || gameState !== "playing"}
-                  className="aspect-square rounded-xl flex items-center justify-center transition-all active:scale-90 border text-xl"
+                  className="aspect-square rounded-xl flex items-center justify-center transition-all active:scale-90 border text-base"
                   style={{
                     border: isRevealed && isApple
                       ? "1px solid rgba(34,197,94,0.5)"
@@ -138,8 +142,8 @@ export default function AppleOfFortune() {
                   {isRevealed
                     ? (isApple ? "🍎" : "🍏")
                     : showHint
-                    ? <span className="opacity-30 text-sm">{isApple ? "🍎" : "🍏"}</span>
-                    : <span className="text-emerald-700 text-2xl">▪</span>}
+                    ? <span className="opacity-30 text-xs">{isApple ? "🍎" : "🍏"}</span>
+                    : <span className="text-emerald-700 text-xl">▪</span>}
                 </button>
               );
             })}
@@ -147,27 +151,33 @@ export default function AppleOfFortune() {
         )}
       </div>
 
-      {/* Status */}
+      {/* Multiplier progress bar */}
       {gameState === "playing" && (
-        <div className="mx-3 mb-3 rounded-xl px-4 py-3 flex items-center justify-between"
-          style={{ background: "rgba(34,197,94,0.08)", border: "1px solid rgba(34,197,94,0.2)" }}>
-          <div>
-            <p className="text-white/50 text-xs">Topildi: <b className="text-white">{found}/{APPLES_COUNT}</b></p>
-            <p className="text-xs text-green-400">x{currentMult.toFixed(1)} → <b>{potential.toLocaleString()} UZS</b></p>
+        <div className="mx-2 mb-2 px-3 py-2 rounded-xl" style={{ background: "rgba(34,197,94,0.06)", border: "1px solid rgba(34,197,94,0.15)" }}>
+          <div className="flex justify-between items-center mb-1">
+            <span className="text-white/50 text-xs">Topildi: <b className="text-white">{found}/{APPLES_COUNT}</b></span>
+            <span className="text-green-400 text-xs font-bold">x{currentMult.toFixed(1)} → {potential.toLocaleString()} UZS</span>
           </div>
-          {found > 0 && (
-            <button onClick={doCashOut} disabled={saving}
-              className="px-4 py-2 rounded-xl font-black text-sm text-black active:scale-95 transition-transform"
-              style={{ background: "linear-gradient(135deg, #22c55e, #16a34a)", boxShadow: "0 4px 16px rgba(34,197,94,0.4)" }}>
-              💰 OLISH
-            </button>
-          )}
+          <div className="w-full h-1.5 rounded-full" style={{ background: "rgba(255,255,255,0.08)" }}>
+            <div className="h-1.5 rounded-full transition-all" style={{ width: `${(found / APPLES_COUNT) * 100}%`, background: "linear-gradient(90deg, #22c55e, #86efac)" }} />
+          </div>
+        </div>
+      )}
+
+      {/* Status bar + cashout */}
+      {gameState === "playing" && found > 0 && (
+        <div className="mx-2 mb-2">
+          <button onClick={doCashOut} disabled={saving}
+            className="w-full py-3 rounded-xl font-black text-sm text-black active:scale-95 transition-transform"
+            style={{ background: "linear-gradient(135deg, #22c55e, #16a34a)", boxShadow: "0 4px 16px rgba(34,197,94,0.4)" }}>
+            💰 OLISH — {potential.toLocaleString()} UZS
+          </button>
         </div>
       )}
 
       {/* Result */}
       {(gameState === "won" || gameState === "lost") && (
-        <div className="mx-3 mb-3 rounded-xl px-4 py-4 text-center"
+        <div className="mx-2 mb-2 rounded-xl px-4 py-4 text-center"
           style={{
             background: gameState === "won" ? "rgba(34,197,94,0.15)" : "rgba(239,68,68,0.15)",
             border: `1px solid ${gameState === "won" ? "rgba(34,197,94,0.4)" : "rgba(239,68,68,0.4)"}`
@@ -183,10 +193,10 @@ export default function AppleOfFortune() {
       )}
 
       {/* Controls */}
-      <div className="px-3 pb-6 mt-auto">
+      <div className="px-2 pb-4 mt-auto">
         {(gameState === "idle" || gameState === "won" || gameState === "lost") && (
           <>
-            <div className="mb-3">
+            <div className="mb-2">
               <div className="grid grid-cols-4 gap-1.5 mb-2">
                 {["MIN","X2","X/2","MAX"].map((a) => (
                   <button key={a} onClick={() => {
@@ -201,10 +211,10 @@ export default function AppleOfFortune() {
               </div>
               <input
                 type="number"
-                placeholder={`Miqdor kiriting (min 2 000)`}
+                placeholder="Miqdor kiriting (min 2 000)"
                 value={customBet}
                 onChange={(e) => setCustomBet(e.target.value)}
-                className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-yellow-400 font-black text-lg placeholder-white/20 focus:outline-none focus:border-yellow-400/50 mb-2"
+                className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-yellow-400 font-black text-lg placeholder-white/20 focus:outline-none focus:border-yellow-400/50"
               />
             </div>
             <button onClick={gameState === "idle" ? start : reset}
