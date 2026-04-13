@@ -222,6 +222,80 @@ export async function startBot() {
     }
   });
 
+  // /send <telegramId> <message> — admin only
+  bot.onText(/\/send (.+)/, async (msg, match) => {
+    if (msg.from?.id !== ADMIN_ID) return;
+    const parts = (match?.[1] || "").trim().split(" ");
+    const targetId = parts[0];
+    const text = parts.slice(1).join(" ");
+    if (!targetId || !text) {
+      await bot!.sendMessage(msg.chat.id, "❌ Format: /send <telegramId> <xabar matni>");
+      return;
+    }
+    try {
+      await bot!.sendMessage(Number(targetId),
+        `📩 <b>Admin xabari:</b>\n\n${text}`,
+        { parse_mode: "HTML" }
+      );
+      await bot!.sendMessage(msg.chat.id, `✅ Xabar <b>${targetId}</b> ga yuborildi.`, { parse_mode: "HTML" });
+    } catch {
+      await bot!.sendMessage(msg.chat.id, `❌ Xabar yuborib bo'lmadi. ID: <b>${targetId}</b>`, { parse_mode: "HTML" });
+    }
+  });
+
+  // /users — list all players (admin only)
+  bot.onText(/\/users/, async (msg) => {
+    if (msg.from?.id !== ADMIN_ID) return;
+    const all = await db.select({
+      telegramId: playersTable.telegramId,
+      firstName: playersTable.firstName,
+      username: playersTable.username,
+      balance: playersTable.balance,
+    }).from(playersTable).orderBy(playersTable.createdAt);
+
+    const lines = all
+      .filter(p => p.telegramId !== "demo_user")
+      .map(p => {
+        const name = p.username ? `@${p.username}` : p.firstName;
+        return `👤 ${name}\n🆔 <code>${p.telegramId}</code>\n💰 ${fmt(p.balance)} UZS`;
+      }).join("\n\n");
+
+    await bot!.sendMessage(msg.chat.id,
+      `👥 <b>FOYDALANUVCHILAR (${all.length - 1} ta)</b>\n\n${lines || "Hali hech kim yo'q"}`,
+      { parse_mode: "HTML" }
+    );
+  });
+
+  // /addbal <telegramId> <amount> — admin only
+  bot.onText(/\/addbal (.+)/, async (msg, match) => {
+    if (msg.from?.id !== ADMIN_ID) return;
+    const parts = (match?.[1] || "").trim().split(" ");
+    const targetId = parts[0];
+    const amount = Number(parts[1]);
+    if (!targetId || !amount || isNaN(amount) || amount <= 0) {
+      await bot!.sendMessage(msg.chat.id, "❌ Format: /addbal <telegramId> <miqdor>\nMasalan: /addbal 123456789 50000");
+      return;
+    }
+    const [player] = await db.select().from(playersTable).where(eq(playersTable.telegramId, targetId));
+    if (!player) {
+      await bot!.sendMessage(msg.chat.id, `❌ Foydalanuvchi topilmadi: <b>${targetId}</b>`, { parse_mode: "HTML" });
+      return;
+    }
+    const newBal = player.balance + amount;
+    await db.update(playersTable).set({ balance: newBal, updatedAt: new Date() }).where(eq(playersTable.telegramId, targetId));
+    const name = player.username ? `@${player.username}` : player.firstName;
+    await bot!.sendMessage(msg.chat.id,
+      `✅ <b>Balans qo'shildi!</b>\n\n👤 Foydalanuvchi: ${name}\n💰 Qo'shildi: <b>+${fmt(amount)} UZS</b>\n💵 Yangi balans: <b>${fmt(newBal)} UZS</b>`,
+      { parse_mode: "HTML" }
+    );
+    try {
+      await bot!.sendMessage(Number(targetId),
+        `🎁 <b>Balansingizga pul qo'shildi!</b>\n\n💰 <b>+${fmt(amount)} UZS</b>\n💵 Yangi balans: <b>${fmt(newBal)} UZS</b>`,
+        { parse_mode: "HTML" }
+      );
+    } catch {}
+  });
+
   // Photo handler — deposit receipt
   bot.on("photo", async (msg) => {
     const userId = msg.from?.id; if (!userId) return;

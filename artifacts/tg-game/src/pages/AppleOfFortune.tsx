@@ -6,15 +6,25 @@ import { placeBet } from "@/lib/api";
 
 const ROWS = 10;
 const COLS = 5;
-const MULTIPLIERS = [1.2, 1.5, 2, 2.5, 3, 4, 5, 6, 8, 10];
+const MULTIPLIERS = [1.3, 1.6, 2, 2.8, 3.5, 5, 6.5, 8, 9, 10];
+
+// Progressive difficulty: bombs per row (bottom → top)
+// Row 0 (1x) = easiest, Row 9 (10x) = hardest
+const BOMBS_PER_ROW = [1, 1, 2, 2, 2, 3, 3, 3, 4, 4];
+const DIFF_LABELS = ["Oson","Oson","O'rta","O'rta","O'rta","Qiyin","Qiyin","Qiyin","Juda Qiyin","Juda Qiyin"];
+const DIFF_COLORS = ["#4ade80","#4ade80","#fbbf24","#fbbf24","#fbbf24","#f97316","#f97316","#f97316","#f87171","#f87171"];
 
 type Cell = "apple" | "bomb";
 type GameState = "idle" | "playing" | "won" | "lost";
 
 function generateGrid(): Cell[][] {
-  return Array.from({ length: ROWS }, () => {
-    const bombIdx = Math.floor(Math.random() * COLS);
-    return Array.from({ length: COLS }, (_, c) => (c === bombIdx ? "bomb" : "apple")) as Cell[];
+  return Array.from({ length: ROWS }, (_, rowIdx) => {
+    const bombCount = BOMBS_PER_ROW[rowIdx];
+    const cells: Cell[] = Array(COLS).fill("apple") as Cell[];
+    const positions = new Set<number>();
+    while (positions.size < bombCount) positions.add(Math.floor(Math.random() * COLS));
+    positions.forEach(p => { cells[p] = "bomb"; });
+    return cells;
   });
 }
 
