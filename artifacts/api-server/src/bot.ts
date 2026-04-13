@@ -600,6 +600,11 @@ export async function startBot() {
       const [req] = await db.select().from(withdrawRequestsTable).where(eq(withdrawRequestsTable.id, reqId));
       if (!req || req.status !== "pending") { await bot!.answerCallbackQuery(q.id, { text: "Allaqachon qayta ishlangan" }); return; }
       await db.update(withdrawRequestsTable).set({ status: "approved" }).where(eq(withdrawRequestsTable.id, reqId));
+      // Track totalWithdrawn on player
+      const [playerW] = await db.select().from(playersTable).where(eq(playersTable.telegramId, req.telegramId));
+      if (playerW) {
+        await db.update(playersTable).set({ totalWithdrawn: playerW.totalWithdrawn + req.amount, updatedAt: new Date() }).where(eq(playersTable.telegramId, req.telegramId));
+      }
       await bot!.answerCallbackQuery(q.id, { text: "✅ Tasdiqlandi!" });
       try { await bot!.editMessageText(`✅ TASDIQLANDI — ${fmt(req.amount)} UZS`, { chat_id: chatId, message_id: q.message.message_id }); } catch {}
       await bot!.sendMessage(Number(req.telegramId),
@@ -752,7 +757,7 @@ export async function startBot() {
       await bot!.answerCallbackQuery(q.id);
       try {
         const resp = await fetch(`http://localhost:${process.env.PORT || 8080}/api/game/leaderboard`);
-        const lb = await resp.json() as { topWinners: any[]; topDepositors: any[] };
+        const lb = await resp.json() as { topDepositors: any[]; topWithdrawers: any[] };
 
         const medals = ["🥇","🥈","🥉","4️⃣","5️⃣"];
         const fmtEntry = (e: any, i: number) => {
@@ -762,20 +767,21 @@ export async function startBot() {
           return `${medal} ${name} — <b>${fmt(amt)} UZS</b>`;
         };
 
-        const winners = lb.topWinners.slice(0, 5).map(fmtEntry).join("\n") || "—";
-        const depositors = lb.topDepositors.slice(0, 5).map(fmtEntry).join("\n") || "—";
+        const depositors = (lb.topDepositors || []).slice(0, 5).map(fmtEntry).join("\n") || "—";
+        const withdrawers = (lb.topWithdrawers || []).slice(0, 5).map(fmtEntry).join("\n") || "—";
 
         // User's own stats
         const [me] = await db.select().from(playersTable).where(eq(playersTable.telegramId, String(q.from.id)));
-        const myWon = me?.totalWon ?? 0;
+        const myDeposited = me?.totalDeposited ?? 0;
+        const myWithdrawn = me?.totalWithdrawn ?? 0;
         const myGames = me?.gamesPlayed ?? 0;
 
         await bot!.sendMessage(chatId,
           `🏆 <b>REYTING</b>\n\n` +
           `🎯 <b>Sizning natijangiz:</b>\n` +
-          `🎮 O'yinlar: <b>${myGames}</b>  |  🏆 Yutgan: <b>${fmt(myWon)} UZS</b>\n\n` +
-          `💰 <b>Ko'p Yutganlar (Top 5):</b>\n${winners}\n\n` +
-          `💵 <b>Ko'p Tashlaganlar (Top 5):</b>\n${depositors}`,
+          `🎮 O'yinlar: <b>${myGames}</b>  |  💰 Tashlagan: <b>${fmt(myDeposited)} UZS</b>  |  💸 Chiqargan: <b>${fmt(myWithdrawn)} UZS</b>\n\n` +
+          `💰 <b>Ko'p Pul Tashlaganlar (Top 5):</b>\n${depositors}\n\n` +
+          `💸 <b>Ko'p Pul Chiqarganlar (Top 5):</b>\n${withdrawers}`,
           { parse_mode: "HTML" }
         );
       } catch {

@@ -14,6 +14,7 @@ export const playersTable = pgTable("players", {
   totalLost: integer("total_lost").notNull().default(0),
   gamesPlayed: integer("games_played").notNull().default(0),
   totalDeposited: integer("total_deposited").notNull().default(0),
+  totalWithdrawn: integer("total_withdrawn").notNull().default(0),
   wagerRequirement: integer("wager_requirement").notNull().default(0),
   totalWagered: integer("total_wagered").notNull().default(0),
   lastSpinAt: timestamp("last_spin_at"),
