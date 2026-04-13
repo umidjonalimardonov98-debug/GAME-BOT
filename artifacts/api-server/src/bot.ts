@@ -75,8 +75,7 @@ async function mainMenu(chatId: number, name: string, balance: number) {
       [{ text: "🎮 O'YINNI BOSHLASH", web_app: { url: APP_URL } }],
       [{ text: "💰 Balansim", callback_data: "balance" }, { text: "📖 Qoidalar", callback_data: "howto" }],
       [{ text: "➕ Hisob To'ldirish", web_app: { url: DEPOSIT_URL } }, { text: "💸 Pul Yechish", callback_data: "withdraw_menu" }],
-      [{ text: "🎰 Kunlik Spin", callback_data: "spin_wheel" }, { text: "👥 Referal", callback_data: "referral_menu" }],
-      [{ text: "❓ Yordam", callback_data: "help_menu" }],
+      [{ text: "👥 Referal", callback_data: "referral_menu" }, { text: "❓ Yordam", callback_data: "help_menu" }],
     ]}}
   );
 }

@@ -32,6 +32,13 @@ export default function Home() {
       border: "#818cf855", glow: "#818cf833",
       tag: "∞x 🚀", tagBg: "#818cf822", tagColor: "#a5b4fc",
     },
+    {
+      path: "/spin", emoji: "🎰", title: "Kunlik Spin",
+      desc: "Tekin o'yin • 5 000 UZS gacha",
+      bg: "linear-gradient(135deg, #4a1d96, #6d28d9, #7c3aed)",
+      border: "#a78bfa55", glow: "#a78bfa33",
+      tag: "TEKIN 🎁", tagBg: "#a78bfa22", tagColor: "#c4b5fd",
+    },
   ];
 
   return (

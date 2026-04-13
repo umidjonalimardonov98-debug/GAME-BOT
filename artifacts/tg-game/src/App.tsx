@@ -10,6 +10,7 @@ import Deposit from "@/pages/Deposit";
 import Withdraw from "@/pages/Withdraw";
 import HowToPlay from "@/pages/HowToPlay";
 import Leaderboard from "@/pages/Leaderboard";
+import Spin from "@/pages/Spin";
 import NotFound from "@/pages/not-found";
 
 const queryClient = new QueryClient({
@@ -27,6 +28,7 @@ function Router() {
       <Route path="/withdraw" component={Withdraw} />
       <Route path="/howtoplay" component={HowToPlay} />
       <Route path="/leaderboard" component={Leaderboard} />
+      <Route path="/spin" component={Spin} />
       <Route component={NotFound} />
     </Switch>
   );
