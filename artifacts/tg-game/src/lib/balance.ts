@@ -1,7 +1,7 @@
 import { useState, useCallback } from "react";
 
 const STORAGE_KEY = "tg_game_balance";
-const DEFAULT_BALANCE = 10000;
+const DEFAULT_BALANCE = 0;
 
 export function getBalance(): number {
   const stored = localStorage.getItem(STORAGE_KEY);

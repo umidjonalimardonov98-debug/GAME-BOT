@@ -61,7 +61,7 @@ export function PlayerProvider({ children }: { children: ReactNode }) {
     } catch {
       setPlayer({
         id: 0, telegramId: "demo", firstName: "Demo O'yinchi",
-        balance: 10000, totalWon: 0, totalLost: 0, gamesPlayed: 0,
+        balance: 0, totalWon: 0, totalLost: 0, gamesPlayed: 0,
         totalDeposited: 0, wagerRequirement: 0, totalWagered: 0,
       });
     }

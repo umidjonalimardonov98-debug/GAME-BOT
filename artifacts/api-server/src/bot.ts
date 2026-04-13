@@ -62,7 +62,7 @@ async function getOrCreatePlayer(tgUser: TelegramBot.User) {
     await db.update(playersTable).set({ username: tgUser.username ?? null, firstName: tgUser.first_name, updatedAt: new Date() }).where(eq(playersTable.telegramId, String(tgUser.id)));
     return rows[0];
   }
-  const [p] = await db.insert(playersTable).values({ telegramId: String(tgUser.id), username: tgUser.username ?? null, firstName: tgUser.first_name, lastName: tgUser.last_name ?? null, balance: 10000 }).returning();
+  const [p] = await db.insert(playersTable).values({ telegramId: String(tgUser.id), username: tgUser.username ?? null, firstName: tgUser.first_name, lastName: tgUser.last_name ?? null, balance: 0 }).returning();
   return p;
 }
 
