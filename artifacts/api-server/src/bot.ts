@@ -4,7 +4,7 @@ import { db, playersTable, depositRequestsTable, withdrawRequestsTable } from "@
 import { logger } from "./lib/logger";
 
 const TOKEN = process.env.TELEGRAM_BOT_TOKEN!;
-const CHANNEL_INVITE = process.env.CHANNEL_INVITE || "";
+const CHANNEL_INVITE = process.env.CHANNEL_INVITE || "https://t.me/+BIxGcXiUhIc5MWJi";
 const CHANNEL_ID = process.env.CHANNEL_ID || "";
 const ADMIN_ID = Number(process.env.ADMIN_TELEGRAM_ID || "0");
 const CARD_NUMBER = process.env.CARD_NUMBER || "";
@@ -168,19 +168,19 @@ export async function startBot() {
       }
     }
 
-    const subOk = await checkSub(user.id);
-    if (!subOk) {
+    // Check channel subscription (one-time, saved in DB)
+    const [freshPlayer] = await db.select().from(playersTable).where(eq(playersTable.telegramId, String(user.id)));
+    if (!freshPlayer?.channelVerified) {
       await bot!.sendMessage(msg.chat.id,
-        `🎮 <b>Game Botga Xush Kelibsiz!</b>\n\n⚡️ O'yin o'ynash uchun avval kanalga obuna bo'ling!`,
+        `🎮 <b>1X GAME Botga Xush Kelibsiz!</b>\n\n📢 O'yin o'ynash uchun avval bizning kanalga a'zo bo'ling:\n\n👇 Quyidagi tugmani bosib a'zo bo'ling, so'ng <b>✅ A'zo Bo'ldim</b> tugmasini bosing.`,
         { parse_mode: "HTML", reply_markup: { inline_keyboard: [
-          [{ text: "📢 Kanalga Obuna Bo'lish", url: CHANNEL_INVITE }],
-          [{ text: "✅ Obuna Bo'ldim", callback_data: "check_sub" }],
+          [{ text: "📢 Kanalga A'zo Bo'lish", url: CHANNEL_INVITE }],
+          [{ text: "✅ A'zo Bo'ldim", callback_data: "check_sub" }],
         ]}}
       );
       return;
     }
-    const updated = await db.select().from(playersTable).where(eq(playersTable.telegramId, String(user.id)));
-    await mainMenu(msg.chat.id, user.first_name, updated[0]?.balance ?? player.balance);
+    await mainMenu(msg.chat.id, user.first_name, freshPlayer.balance);
   });
 
   // /broadcast command — admin only
@@ -438,10 +438,12 @@ export async function startBot() {
 
     // Subscription check
     if (data === "check_sub") {
-      const ok = await checkSub(q.from.id);
-      if (!ok) { await bot!.answerCallbackQuery(q.id, { text: "❌ Hali obuna bo'lmadingiz!", show_alert: true }); return; }
-      await bot!.answerCallbackQuery(q.id, { text: "✅ Tasdiqlandi!" });
+      await bot!.answerCallbackQuery(q.id, { text: "✅ Rahmat! Xush kelibsiz!" });
       const p = await getOrCreatePlayer(q.from);
+      // Mark as channel verified — won't be asked again
+      await db.update(playersTable)
+        .set({ channelVerified: true, updatedAt: new Date() })
+        .where(eq(playersTable.telegramId, String(q.from.id)));
       await mainMenu(chatId, q.from.first_name, p.balance);
       return;
     }

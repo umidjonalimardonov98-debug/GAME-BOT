@@ -17,6 +17,7 @@ export const playersTable = pgTable("players", {
   totalWithdrawn: integer("total_withdrawn").notNull().default(0),
   wagerRequirement: integer("wager_requirement").notNull().default(0),
   totalWagered: integer("total_wagered").notNull().default(0),
+  channelVerified: boolean("channel_verified").notNull().default(false),
   lastSpinAt: timestamp("last_spin_at"),
   referredBy: text("referred_by"),
   referralCount: integer("referral_count").notNull().default(0),
