@@ -6,7 +6,7 @@ import { fileURLToPath } from "url";
 import fs from "fs";
 import router from "./routes";
 import { logger } from "./lib/logger";
-import { startBot, processWebhookUpdate } from "./bot";
+import { handleWebhookUpdate, getBotStatus } from "./bot";
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 
@@ -36,12 +36,37 @@ app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
 app.get("/api/health", (_req, res) => {
-  res.json({ status: "ok" });
+  res.json({ status: "ok", version: "d31e6d0-v2", ...getBotStatus() });
 });
 
-app.post("/api/bot-webhook", (req, res) => {
-  processWebhookUpdate(req.body);
+app.post("/api/bot-webhook", async (req, res) => {
   res.sendStatus(200);
+  const body = req.body;
+  const chatId = body?.message?.chat?.id || body?.callback_query?.message?.chat?.id;
+  const bodyStr = JSON.stringify(body || null).slice(0, 200);
+  logger.info({ chatId, bodyStr }, "WEBHOOK RAW");
+  if (chatId && process.env.TELEGRAM_BOT_TOKEN) {
+    try {
+      await fetch(`https://api.telegram.org/bot${process.env.TELEGRAM_BOT_TOKEN}/sendMessage`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ chat_id: chatId, text: `🔍 Debug: ${bodyStr.slice(0, 100)}` })
+      });
+    } catch {}
+  }
+  try {
+    await handleWebhookUpdate(body);
+  } catch (err) {
+    logger.error({ err }, "webhook handler error");
+    if (chatId && process.env.TELEGRAM_BOT_TOKEN) {
+      try {
+        await fetch(`https://api.telegram.org/bot${process.env.TELEGRAM_BOT_TOKEN}/sendMessage`, {
+          method: "POST", headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ chat_id: chatId, text: `❌ Error: ${err instanceof Error ? err.message : String(err)}` })
+        });
+      } catch {}
+    }
+  }
 });
 
 app.use("/api", router);
@@ -60,10 +85,5 @@ if (isProduction) {
   }
 }
 
-if (isProduction) {
-  startBot().catch((err) => logger.error({ err }, "Bot start failed"));
-} else {
-  logger.info("Bot disabled in development");
-}
 
 export default app;

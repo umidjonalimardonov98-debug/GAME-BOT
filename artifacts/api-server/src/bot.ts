@@ -23,6 +23,10 @@ const APP_URL =
 const BONUS_PERCENT = 20;
 
 let bot: TelegramBot | null = null;
+type TextHandler = { re: RegExp; fn: (msg: any, match: RegExpExecArray | null) => Promise<void> };
+const _textHandlers: TextHandler[] = [];
+let _cbHandler: ((q: any) => Promise<void>) | null = null;
+let _msgHandler: ((msg: any) => Promise<void>) | null = null;
 const waitingForCheck = new Map<number, number>();             // userId -> depositRequestId
 const waitingForAmount = new Set<number>();                    // userId waiting to type deposit amount
 const waitingForWithdrawAmount = new Set<number>();            // userId waiting to type withdraw amount
@@ -212,26 +216,69 @@ async function sendDepositCard(chatId: number, amount: number, userId: number) {
   );
 }
 
-export function processWebhookUpdate(body: any) {
-  if (!bot) { logger.warn("processWebhookUpdate: bot is null"); return; }
-  logger.info({ updateId: body?.update_id, hasMessage: !!body?.message, hasCallback: !!body?.callback_query }, "Webhook update received");
-  if (body?.message) {
-    try { bot.emit("message", body.message); } catch (e) { logger.error({ err: e }, "emit message error"); }
+export function getBotStatus() {
+  return {
+    botExists: !!bot,
+    textHandlers: _textHandlers.length,
+    hasCbHandler: !!_cbHandler,
+    hasMsgHandler: !!_msgHandler,
+    appUrl: APP_URL,
+  };
+}
+
+export async function handleWebhookUpdate(body: any) {
+  if (!body) return;
+  logger.info({ updateId: body.update_id, hasMsg: !!body.message, hasCb: !!body.callback_query, handlers: _textHandlers.length, hasCbH: !!_cbHandler, hasMsgH: !!_msgHandler }, "webhook update");
+
+  if (body.message) {
+    const msg = body.message;
+    if (msg.photo && _msgHandler) {
+      try { await _msgHandler(msg); } catch (e) { logger.error({ err: e }, "photo handler error"); }
+      return;
+    }
+    if (msg.text) {
+      for (const h of _textHandlers) {
+        const m = h.re.exec(msg.text);
+        if (m) {
+          try {
+            await h.fn(msg, m);
+          } catch (e: any) {
+            logger.error({ err: e }, "text handler error");
+            try {
+              await fetch(`https://api.telegram.org/bot${TOKEN}/sendMessage`, {
+                method: "POST", headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ chat_id: msg.chat.id, text: `❌ Handler xato: ${e?.message || e}` })
+              });
+            } catch {}
+          }
+          return;
+        }
+      }
+      if (_msgHandler) {
+        try { await _msgHandler(msg); } catch (e) { logger.error({ err: e }, "msg handler error"); }
+      }
+    }
   }
-  if (body?.callback_query) {
-    try { bot.emit("callback_query", body.callback_query); } catch (e) { logger.error({ err: e }, "emit callback error"); }
+  if (body.callback_query && _cbHandler) {
+    try { await _cbHandler(body.callback_query); } catch (e) { logger.error({ err: e }, "cb handler error"); }
   }
 }
 
 export async function startBot() {
   if (!TOKEN) { logger.warn("No BOT TOKEN"); return; }
 
-  bot = new TelegramBot(TOKEN, { webHook: false });
+  bot = new TelegramBot(TOKEN, { polling: false });
 
   const isProduction = process.env.NODE_ENV === "production";
   if (isProduction && APP_URL) {
     const webhookUrl = `${APP_URL}/api/bot-webhook`;
-    await bot.setWebHook(webhookUrl);
+    try {
+      await fetch(`https://api.telegram.org/bot${TOKEN}/setWebhook`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ url: webhookUrl })
+      });
+    } catch (e) { logger.error({ err: e }, "setWebhook error"); }
     logger.info({ webhookUrl }, "Bot started (webhook mode)");
   } else {
     try { await bot.deleteWebHook(); } catch {}
@@ -261,13 +308,31 @@ export async function startBot() {
     } catch {}
   }
 
-  // /start command (with referral support)
-  bot.onText(/\/start(.*)/, async (msg, match) => {
+  function regText(re: RegExp, fn: (msg: any, match: RegExpExecArray | null) => Promise<void>) {
+    _textHandlers.push({ re, fn });
+    bot!.onText(re, fn);
+  }
+
+  async function dbg(chatId: number, step: string) {
     try {
-    logger.info({ chatId: msg.chat.id, text: msg.text }, "/start handler fired");
-    const user = msg.from; if (!user) return;
+      await fetch(`https://api.telegram.org/bot${TOKEN}/sendMessage`, {
+        method: "POST", headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ chat_id: chatId, text: `🔧 ${step}` })
+      });
+    } catch {}
+  }
+
+  // /start command (with referral support)
+  regText(/\/start(.*)/, async (msg, match) => {
+    const chatId = msg.chat.id;
+    await dbg(chatId, "1: handler start");
+    try {
+    const user = msg.from; if (!user) { await dbg(chatId, "X: no user"); return; }
+    await dbg(chatId, "2: before DB");
     const isNew = !(await db.select().from(playersTable).where(eq(playersTable.telegramId, String(user.id)))).length;
+    await dbg(chatId, "3: after DB, isNew=" + isNew);
     const player = await getOrCreatePlayer(user);
+    await dbg(chatId, "4: player created");
 
     // Handle referral code
     const param = (match?.[1] || "").trim();
@@ -290,7 +355,9 @@ export async function startBot() {
 
     // Check channel subscription (one-time, saved in DB)
     const [freshPlayer] = await db.select().from(playersTable).where(eq(playersTable.telegramId, String(user.id)));
+    await dbg(chatId, "5: channelVerified=" + freshPlayer?.channelVerified);
     if (!freshPlayer?.channelVerified) {
+      await dbg(chatId, "6: sending channel sub msg");
       await bot!.sendMessage(msg.chat.id,
         `🎮 <b>1X GAME Botga Xush Kelibsiz!</b>\n\n📢 O'yin o'ynash uchun avval bizning kanalga a'zo bo'ling:\n\n👇 Quyidagi tugmani bosib a'zo bo'ling, so'ng <b>✅ A'zo Bo'ldim</b> tugmasini bosing.`,
         { parse_mode: "HTML", reply_markup: { inline_keyboard: [
@@ -298,14 +365,17 @@ export async function startBot() {
           [{ text: "✅ A'zo Bo'ldim", callback_data: "check_sub" }],
         ]}}
       );
+      await dbg(chatId, "7: channel msg sent OK");
       return;
     }
     const isAdminUser = !ADMIN_ID || user.id === ADMIN_ID;
-    // Get old menu message ID from DB (persists across redeploys) or in-memory map
     const oldMsgId = freshPlayer.lastMenuMsgId ?? userMenuMsgId.get(msg.chat.id) ?? undefined;
-    // Delete old menu + send fresh one (edit doesn't work with web_app buttons)
+    await dbg(chatId, "8: sending menu");
     await mainMenu(msg.chat.id, user.first_name, freshPlayer.balance, isAdminUser, String(user.id), oldMsgId);
-    } catch (err) { logger.error({ err, chatId: msg.chat.id }, "/start handler error"); }
+    await dbg(chatId, "9: menu sent OK");
+    } catch (err: any) {
+      await dbg(chatId, `ERR: ${err?.message || err}`);
+    }
   });
 
   // Admin panel helper
@@ -360,7 +430,7 @@ export async function startBot() {
   }
 
   // /menu command — show main menu
-  bot.onText(/\/menu/, async (msg) => {
+  regText(/\/menu/, async (msg) => {
     if (!msg.from) return;
     const [p] = await db.select().from(playersTable).where(eq(playersTable.telegramId, String(msg.from.id)));
     if (!p) { await bot!.sendMessage(msg.chat.id, "Botni ishga tushirish uchun /start yuboring."); return; }
@@ -369,7 +439,7 @@ export async function startBot() {
   });
 
   // /help command
-  bot.onText(/\/help/, async (msg) => {
+  regText(/\/help/, async (msg) => {
     if (!msg.from) return;
     await bot!.sendMessage(msg.chat.id,
       `❓ <b>Yordam</b>\n\nSavolingizni yozing, admin tez orada javob beradi:`,
@@ -378,14 +448,14 @@ export async function startBot() {
   });
 
   // /admin command — admin panel
-  bot.onText(/\/admin/, async (msg) => {
+  regText(/\/admin/, async (msg) => {
     if (!msg.from) return;
     if (ADMIN_ID && msg.from.id !== ADMIN_ID) return;
     await sendAdminMenu(msg.chat.id);
   });
 
   // /broadcast command — admin only
-  bot.onText(/\/broadcast/, async (msg) => {
+  regText(/\/broadcast/, async (msg) => {
     if (msg.from?.id !== ADMIN_ID) return;
     waitingForBroadcast.add(ADMIN_ID);
     await bot!.sendMessage(msg.chat.id,
@@ -395,7 +465,7 @@ export async function startBot() {
   });
 
   // /stat command — admin only
-  bot.onText(/\/stat/, async (msg) => {
+  regText(/\/stat/, async (msg) => {
     if (msg.from?.id !== ADMIN_ID) return;
     const chatId = msg.chat.id;
     try {
@@ -425,7 +495,7 @@ export async function startBot() {
   });
 
   // /send <telegramId> <message> — admin only
-  bot.onText(/\/send (.+)/, async (msg, match) => {
+  regText(/\/send (.+)/, async (msg, match) => {
     if (msg.from?.id !== ADMIN_ID) return;
     const parts = (match?.[1] || "").trim().split(" ");
     const targetId = parts[0];
@@ -446,7 +516,7 @@ export async function startBot() {
   });
 
   // /users — list all players (admin only)
-  bot.onText(/\/users/, async (msg) => {
+  regText(/\/users/, async (msg) => {
     if (msg.from?.id !== ADMIN_ID) return;
     const all = await db.select({
       telegramId: playersTable.telegramId,
@@ -469,7 +539,7 @@ export async function startBot() {
   });
 
   // /addbal <telegramId> <amount> — admin only
-  bot.onText(/\/addbal (.+)/, async (msg, match) => {
+  regText(/\/addbal (.+)/, async (msg, match) => {
     if (msg.from?.id !== ADMIN_ID) return;
     const parts = (match?.[1] || "").trim().split(" ");
     const targetId = parts[0];
@@ -499,7 +569,7 @@ export async function startBot() {
   });
 
   // Photo handler — deposit receipt
-  bot.on("photo", async (msg) => {
+  const photoHandler = async (msg: any) => {
     const userId = msg.from?.id; if (!userId) return;
     const fileId = msg.photo![msg.photo!.length - 1].file_id;
 
@@ -546,10 +616,11 @@ export async function startBot() {
         logger.error({ err, adminId: ADMIN_ID }, "Admin ga xabar yuborishda xato — ADMIN_TELEGRAM_ID ni tekshiring");
       }
     }
-  });
+  };
+  bot.on("photo", photoHandler);
 
   // Text handler
-  bot.on("message", async (msg) => {
+  const textMsgHandler = async (msg: any) => {
     if (!msg.text || !msg.from || msg.text.startsWith("/")) return;
     const userId = msg.from.id;
     const chatId = msg.chat.id;
@@ -891,10 +962,19 @@ export async function startBot() {
         }
       }
     }
-  });
+  };
+  bot.on("message", textMsgHandler);
+
+  _msgHandler = async (msg: any) => {
+    if (msg.photo) {
+      await photoHandler(msg);
+    } else {
+      await textMsgHandler(msg);
+    }
+  };
 
   // Callback handler
-  bot.on("callback_query", async (q) => {
+  const cbQueryHandler = async (q: any) => {
     if (!q.message || !q.from) return;
     const chatId = q.message.chat.id;
     const data = q.data || "";
@@ -1485,7 +1565,9 @@ export async function startBot() {
       logger.error({ err, data, userId: q.from.id }, "Callback query xatosi");
       try { await bot!.answerCallbackQuery(q.id, { text: "❌ Xato yuz berdi, qayta urinib ko'ring" }); } catch {}
     }
-  });
+  };
+  bot.on("callback_query", cbQueryHandler);
+  _cbHandler = cbQueryHandler;
 
   bot.on("polling_error", (e) => logger.error({ err: e }, "Bot polling error"));
 }
