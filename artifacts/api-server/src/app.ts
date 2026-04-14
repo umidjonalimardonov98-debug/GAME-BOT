@@ -36,8 +36,9 @@ app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
 app.get("/api/health", (_req, res) => {
-  res.json({ status: "ok", version: "d31e6d0-v2", ...getBotStatus() });
+  res.json({ status: "ok", version: "clean-v6", ...getBotStatus() });
 });
+
 
 app.post("/api/bot-webhook", async (req, res) => {
   res.sendStatus(200);

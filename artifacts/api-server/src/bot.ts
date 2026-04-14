@@ -23,6 +23,27 @@ const APP_URL =
 const BONUS_PERCENT = 20;
 
 let bot: TelegramBot | null = null;
+
+function patchBotRequest(b: TelegramBot) {
+  (b as any)._request = async function(path: string, options: any = {}) {
+    const token = TOKEN;
+    const url = `https://api.telegram.org/bot${token}/${path}`;
+    const form = options?.form || options?.qs || options?.formData || {};
+    const resp = await fetch(url, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(form),
+    });
+    const data: any = await resp.json();
+    if (!data.ok) {
+      const err: any = new Error(data.description || `Telegram API error: ${path}`);
+      err.code = data.error_code;
+      err.response = { body: data };
+      throw err;
+    }
+    return data.result;
+  };
+}
 type TextHandler = { re: RegExp; fn: (msg: any, match: RegExpExecArray | null) => Promise<void> };
 const _textHandlers: TextHandler[] = [];
 let _cbHandler: ((q: any) => Promise<void>) | null = null;
@@ -131,25 +152,9 @@ async function sendNewMenu(chatId: number, name: string, balance: number, isAdmi
 }
 
 async function mainMenu(chatId: number, name: string, balance: number, isAdmin = false, telegramId?: string, oldMsgId?: number) {
+  // Delete old menu silently, then send fresh — always visible to user
   if (oldMsgId) {
-    try {
-      await bot!.editMessageText(mainMenuText(name, balance), {
-        chat_id: chatId, message_id: oldMsgId,
-        parse_mode: "HTML", reply_markup: { inline_keyboard: mainMenuKeyboard(isAdmin) }
-      });
-      // Edit succeeded — menu stays in the same position
-      userMenuMsgId.set(chatId, oldMsgId);
-      return;
-    } catch (err: any) {
-      const msg = err?.message ?? "";
-      if (msg.includes("message is not modified")) {
-        // Same content, no change needed
-        userMenuMsgId.set(chatId, oldMsgId);
-        return;
-      }
-      // Message deleted or too old — remove it and send fresh
-      try { await bot!.deleteMessage(chatId, oldMsgId); } catch {}
-    }
+    try { await bot!.deleteMessage(chatId, oldMsgId); } catch {}
   }
   await sendNewMenu(chatId, name, balance, isAdmin, telegramId);
 }
@@ -258,10 +263,12 @@ export async function handleWebhookUpdate(body: any) {
   }
 }
 
+
 export async function startBot() {
   if (!TOKEN) { logger.warn("No BOT TOKEN"); return; }
 
   bot = new TelegramBot(TOKEN, { polling: false });
+  patchBotRequest(bot);
 
   const isProduction = process.env.NODE_ENV === "production";
   if (isProduction && APP_URL) {
