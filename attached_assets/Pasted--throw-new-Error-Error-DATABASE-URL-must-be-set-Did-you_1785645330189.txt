@@ -1,0 +1,104 @@
+      throw new Error(
+            ^
+Error: DATABASE_URL must be set. Did you forget to provision a database?
+    at ../../lib/db/src/index.ts (file:///app/artifacts/api-server/dist/index.mjs:53900:13)
+    at __init (file:///app/artifacts/api-server/dist/index.mjs:22:56)
+    at file:///app/artifacts/api-server/dist/index.mjs:112228:1
+    at ModuleJob.run (node:internal/modules/esm/module_job:234:25)
+    at async ModuleLoader.import (node:internal/modules/esm/loader:473:24)
+    at async asyncRunEntryPointWithESMLoader (node:internal/modules/run_main:122:5)
+Node.js v20.18.1
+file:///app/artifacts/api-server/dist/index.mjs:53900
+      throw new Error(
+            ^
+Error: DATABASE_URL must be set. Did you forget to provision a database?
+    at ../../lib/db/src/index.ts (file:///app/artifacts/api-server/dist/index.mjs:53900:13)
+    at __init (file:///app/artifacts/api-server/dist/index.mjs:22:56)
+    at file:///app/artifacts/api-server/dist/index.mjs:112228:1
+    at ModuleJob.run (node:internal/modules/esm/module_job:234:25)
+    at async ModuleLoader.import (node:internal/modules/esm/loader:473:24)
+    at async asyncRunEntryPointWithESMLoader (node:internal/modules/run_main:122:5)
+Node.js v20.18.1
+file:///app/artifacts/api-server/dist/index.mjs:53900
+      throw new Error(
+            ^
+Error: DATABASE_URL must be set. Did you forget to provision a database?
+    at ../../lib/db/src/index.ts (file:///app/artifacts/api-server/dist/index.mjs:53900:13)
+    at __init (file:///app/artifacts/api-server/dist/index.mjs:22:56)
+    at file:///app/artifacts/api-server/dist/index.mjs:112228:1
+    at ModuleJob.run (node:internal/modules/esm/module_job:234:25)
+    at async ModuleLoader.import (node:internal/modules/esm/loader:473:24)
+    at async asyncRunEntryPointWithESMLoader (node:internal/modules/run_main:122:5)
+Node.js v20.18.1
+      throw new Error(
+            ^
+Error: DATABASE_URL must be set. Did you forget to provision a database?
+    at ../../lib/db/src/index.ts (file:///app/artifacts/api-server/dist/index.mjs:53900:13)
+    at __init (file:///app/artifacts/api-server/dist/index.mjs:22:56)
+    at file:///app/artifacts/api-server/dist/index.mjs:112228:1
+    at ModuleJob.run (node:internal/modules/esm/module_job:234:25)
+    at async ModuleLoader.import (node:internal/modules/esm/loader:473:24)
+    at async asyncRunEntryPointWithESMLoader (node:internal/modules/run_main:122:5)
+Node.js v20.18.1
+file:///app/artifacts/api-server/dist/index.mjs:53900
+file:///app/artifacts/api-server/dist/index.mjs:53900
+      throw new Error(
+            ^
+Error: DATABASE_URL must be set. Did you forget to provision a database?
+    at ../../lib/db/src/index.ts (file:///app/artifacts/api-server/dist/index.mjs:53900:13)
+    at __init (file:///app/artifacts/api-server/dist/index.mjs:22:56)
+    at file:///app/artifacts/api-server/dist/index.mjs:112228:1
+    at ModuleJob.run (node:internal/modules/esm/module_job:234:25)
+    at async ModuleLoader.import (node:internal/modules/esm/loader:473:24)
+    at async asyncRunEntryPointWithESMLoader (node:internal/modules/run_main:122:5)
+Node.js v20.18.1
+Node.js v20.18.1
+    at file:///app/artifacts/api-server/dist/index.mjs:112228:1
+    at ModuleJob.run (node:internal/modules/esm/module_job:234:25)
+    at async ModuleLoader.import (node:internal/modules/esm/loader:473:24)
+Error: DATABASE_URL must be set. Did you forget to provision a database?
+    at async asyncRunEntryPointWithESMLoader (node:internal/modules/run_main:122:5)
+    at ../../lib/db/src/index.ts (file:///app/artifacts/api-server/dist/index.mjs:53900:13)
+    at __init (file:///app/artifacts/api-server/dist/index.mjs:22:56)
+file:///app/artifacts/api-server/dist/index.mjs:53900
+      throw new Error(
+            ^
+file:///app/artifacts/api-server/dist/index.mjs:53900
+      throw new Error(
+            ^
+Error: DATABASE_URL must be set. Did you forget to provision a database?
+    at ../../lib/db/src/index.ts (file:///app/artifacts/api-server/dist/index.mjs:53900:13)
+    at __init (file:///app/artifacts/api-server/dist/index.mjs:22:56)
+    at file:///app/artifacts/api-server/dist/index.mjs:112228:1
+    at ModuleJob.run (node:internal/modules/esm/module_job:234:25)
+    at async ModuleLoader.import (node:internal/modules/esm/loader:473:24)
+    at async asyncRunEntryPointWithESMLoader (node:internal/modules/run_main:122:5)
+Node.js v20.18.1
+file:///app/artifacts/api-server/dist/index.mjs:53900
+      throw new Error(
+            ^
+Error: DATABASE_URL must be set. Did you forget to provision a database?
+    at ../../lib/db/src/index.ts (file:///app/artifacts/api-server/dist/index.mjs:53900:13)
+    at __init (file:///app/artifacts/api-server/dist/index.mjs:22:56)
+    at file:///app/artifacts/api-server/dist/index.mjs:112228:1
+    at ModuleJob.run (node:internal/modules/esm/module_job:234:25)
+    at async ModuleLoader.import (node:internal/modules/esm/loader:473:24)
+    at async asyncRunEntryPointWithESMLoader (node:internal/modules/run_main:122:5)
+Node.js v20.18.1
+file:///app/artifacts/api-server/dist/index.mjs:53900
+      throw new Error(
+            ^
+Error: DATABASE_URL must be set. Did you forget to provision a database?
+    at ../../lib/db/src/index.ts (file:///app/artifacts/api-server/dist/index.mjs:53900:13)
+    at __init (file:///app/artifacts/api-server/dist/index.mjs:22:56)
+    at file:///app/artifacts/api-server/dist/index.mjs:112228:1
+    at ModuleJob.run (node:internal/modules/esm/module_job:234:25)
+    at async ModuleLoader.import (node:internal/modules/esm/loader:473:24)
+    at async asyncRunEntryPointWithESMLoader (node:internal/modules/run_main:122:5)
+Node.js v20.18.1
+file:///app/artifacts/api-server/dist/index.mjs:53900
+      throw new Error(
+            ^
+Error: DATABASE_URL must be set. Did you forget to provision a database?
+    at ../../lib/db/src/index.ts (file:///app/artifacts/api-server/dist/index.mjs:53900:13)
+    at __init (file:///app/artifacts/api-server/dist/index.mjs:22:56)
