@@ -1,6 +1,7 @@
 import app from "./app";
 import { logger } from "./lib/logger";
 import { startBot } from "./bot";
+import { execSync } from "child_process";
 
 const rawPort = process.env["PORT"];
 
@@ -16,7 +17,26 @@ if (Number.isNaN(port) || port <= 0) {
   throw new Error(`Invalid PORT value: "${rawPort}"`);
 }
 
+async function runMigrations() {
+  if (!process.env.DATABASE_URL) {
+    logger.warn("DATABASE_URL not set — skipping migrations");
+    return;
+  }
+  try {
+    logger.info("Running database migrations...");
+    execSync("pnpm --filter @workspace/db run push-force", {
+      stdio: "inherit",
+      cwd: "/app",
+    });
+    logger.info("Database migrations complete");
+  } catch (err) {
+    logger.error({ err }, "Migration failed — continuing anyway");
+  }
+}
+
 async function main() {
+  await runMigrations();
+
   const isProduction = process.env.NODE_ENV === "production";
   if (isProduction) {
     try {
