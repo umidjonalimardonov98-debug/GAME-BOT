@@ -3,7 +3,7 @@ import { eq, and, isNull, sql, desc } from "drizzle-orm";
 import { db, playersTable, transactionsTable, depositRequestsTable, withdrawRequestsTable, promoCodesTable } from "@workspace/db";
 import { logger } from "./lib/logger";
 
-const TOKEN = process.env.TELEGRAM_BOT_TOKEN!;
+const TOKEN = process.env.TELEGRAM_BOT_TOKEN || process.env.BOT_TOKEN || "";
 const CHANNEL_INVITE = process.env.CHANNEL_INVITE || "https://t.me/+BIxGcXiUhIc5MWJi";
 const CHANNEL_ID = process.env.CHANNEL_ID || "";
 const ADMIN_ID = Number(process.env.ADMIN_TELEGRAM_ID || process.env.ADMIN_ID || "8787603995");
@@ -12,8 +12,8 @@ const ADMIN_IDS = new Set(
     .map(v => Number(v || 0))
     .filter(v => Number.isFinite(v) && v > 0)
 );
-const CARD_NUMBER = process.env.CARD_NUMBER || "";
-const CARD_HOLDER = process.env.CARD_HOLDER || "";
+const CARD_NUMBER = process.env.CARD_NUMBER || process.env.PAYMENT_CARD || "";
+const CARD_HOLDER = process.env.CARD_HOLDER || process.env.PAYMENT_NAME || "";
 const DOMAINS = process.env.REPLIT_DOMAINS || "";
 const RENDER_URL = process.env.RENDER_EXTERNAL_URL || "";
 const RAILWAY_DOMAIN = process.env.RAILWAY_PUBLIC_DOMAIN || process.env.RAILWAY_STATIC_URL || "";
