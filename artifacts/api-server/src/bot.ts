@@ -12,6 +12,8 @@ const ADMIN_IDS = new Set(
     .map(v => Number(v || 0))
     .filter(v => Number.isFinite(v) && v > 0)
 );
+// Dynamic admins added at runtime via /addadmin command
+const DYNAMIC_ADMIN_IDS = new Set<number>();
 const CARD_NUMBER = process.env.CARD_NUMBER || process.env.PAYMENT_CARD || "";
 const CARD_HOLDER = process.env.CARD_HOLDER || process.env.PAYMENT_NAME || "";
 const DOMAINS = process.env.REPLIT_DOMAINS || "";
@@ -32,7 +34,7 @@ let bot: TelegramBot | null = null;
 let processGuardsInstalled = false;
 
 function isAdminId(id?: number) {
-  return !!id && ADMIN_IDS.has(id);
+  return !!id && (ADMIN_IDS.has(id) || DYNAMIC_ADMIN_IDS.has(id));
 }
 
 function isBlockedByUserError(err: any) {
@@ -473,6 +475,63 @@ export async function startBot() {
     if (!msg.from) return;
     if (!isAdminId(msg.from.id)) return;
     await sendAdminMenu(msg.chat.id);
+  });
+
+  // /addadmin <id> — only main admin can add new admins
+  regText(/\/addadmin(?:\s+(\d+))?/, async (msg, match) => {
+    if (!msg.from) return;
+    if (!ADMIN_IDS.has(msg.from.id)) {
+      await bot!.sendMessage(msg.chat.id, "❌ Bu buyruq faqat bosh admin uchun.");
+      return;
+    }
+    const newId = Number(match?.[1]);
+    if (!newId) {
+      await bot!.sendMessage(msg.chat.id, "❌ Format: /addadmin <telegram_id>\nMisol: /addadmin 123456789");
+      return;
+    }
+    DYNAMIC_ADMIN_IDS.add(newId);
+    await bot!.sendMessage(msg.chat.id,
+      `✅ <b>Admin qo'shildi!</b>\n\nID: <code>${newId}</code>\n\nJami adminlar: ${ADMIN_IDS.size + DYNAMIC_ADMIN_IDS.size} ta\n\n<i>Eslatma: Bot qayta ishga tushganda bu admin o'chib ketadi. Doimiy admin uchun Railway'da ADMIN_ID o'zgaruvchisiga qo'shing.</i>`,
+      { parse_mode: "HTML" }
+    );
+    try {
+      await bot!.sendMessage(newId,
+        `🎉 Siz admin qildingiz!\n\n/admin buyrug'ini bosing — admin panel ochiladi.`,
+        { parse_mode: "HTML" }
+      );
+    } catch { /* user may not have started bot */ }
+  });
+
+  // /removeadmin <id> — remove a dynamic admin
+  regText(/\/removeadmin(?:\s+(\d+))?/, async (msg, match) => {
+    if (!msg.from) return;
+    if (!ADMIN_IDS.has(msg.from.id)) {
+      await bot!.sendMessage(msg.chat.id, "❌ Bu buyruq faqat bosh admin uchun.");
+      return;
+    }
+    const rmId = Number(match?.[1]);
+    if (!rmId) {
+      await bot!.sendMessage(msg.chat.id, "❌ Format: /removeadmin <telegram_id>");
+      return;
+    }
+    if (ADMIN_IDS.has(rmId)) {
+      await bot!.sendMessage(msg.chat.id, "❌ Asosiy adminni o'chirib bo'lmaydi.");
+      return;
+    }
+    DYNAMIC_ADMIN_IDS.delete(rmId);
+    await bot!.sendMessage(msg.chat.id, `✅ Admin o'chirildi: <code>${rmId}</code>`, { parse_mode: "HTML" });
+  });
+
+  // /admins — list all admins
+  regText(/\/admins/, async (msg) => {
+    if (!msg.from) return;
+    if (!ADMIN_IDS.has(msg.from.id)) return;
+    const mainList = [...ADMIN_IDS].join(", ");
+    const dynList = DYNAMIC_ADMIN_IDS.size > 0 ? [...DYNAMIC_ADMIN_IDS].join(", ") : "yo'q";
+    await bot!.sendMessage(msg.chat.id,
+      `👑 <b>Adminlar ro'yxati</b>\n\n🔒 Asosiy: <code>${mainList}</code>\n➕ Qo'shimcha: <code>${dynList}</code>`,
+      { parse_mode: "HTML" }
+    );
   });
 
   // /broadcast command — admin only
