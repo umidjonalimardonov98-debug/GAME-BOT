@@ -9,14 +9,14 @@ const LS_VOL = "sfx_volume";
 type Listener = (enabled: boolean) => void;
 const listeners = new Set<Listener>();
 
-let enabled = (() => {
+let enabled = (() =>{
   try {
     const v = localStorage.getItem(LS_KEY);
     return v === null ? true : v === "1";
   } catch { return true; }
 })();
 
-let volume = (() => {
+let volume = (() =>{
   try {
     const v = Number(localStorage.getItem(LS_VOL));
     return Number.isFinite(v) && v > 0 && v <= 1 ? v : 0.6;
@@ -44,7 +44,7 @@ export function isSoundEnabled() { return enabled; }
 
 export function setSoundEnabled(v: boolean) {
   enabled = v;
-  try { localStorage.setItem(LS_KEY, v ? "1" : "0"); } catch {}
+  try { localStorage.setItem(LS_KEY, v ? "1":"0"); } catch {}
   listeners.forEach((l) => l(enabled));
   if (v) sfx.click();
 }
@@ -60,7 +60,7 @@ export function getVolume() { return volume; }
 
 export function subscribeSound(l: Listener) {
   listeners.add(l);
-  return () => { listeners.delete(l); };
+  return () =>{ listeners.delete(l); };
 }
 
 type ToneOpts = {
@@ -136,7 +136,7 @@ export const sfx = {
   /** G'ildirak/reel tiqillashi */
   tick() {
     if (!enabled) return;
-    tone({ freq: 1400, to: 900, dur: 0.035, type: "square", gain: 0.07 });
+    tone({ freq: 2100, to: 1500, dur: 0.018, type: "sine", gain: 0.028 });
   },
   /** Karta / plitka ochilishi */
   reveal() {
@@ -245,7 +245,7 @@ export const sfx = {
 let installed = false;
 
 const SOUND_RULES: Array<[RegExp, () => void]> = [
-  [/^(←|⬅|back|orqaga)/, () => sfx.back()],
+  [/^(←||back|orqaga)/, () => sfx.back()],
   [/zar|dice|tashla/, () => sfx.dice()],
   [/charx|ruletka|roulette|wheel|aylantir/, () => sfx.wheel()],
   [/blackjack|karta|card|deal|hit|stand/, () => sfx.card()],
@@ -256,7 +256,7 @@ const SOUND_RULES: Array<[RegExp, () => void]> = [
   [/chiqar|withdraw/, () => sfx.withdraw()],
   [/depozit|deposit|to'ldir|toldir|hisob to/, () => sfx.deposit()],
   [/yubor|send|so'rov|sorov|chaqir/, () => sfx.send()],
-  [/yangila|qayta|refresh|🔄/, () => sfx.refresh()],
+  [/yangila|qayta|refresh|/, () => sfx.refresh()],
   [/min\b|max\b|x2|x\/2|1\/2|\+|tikish/, () => sfx.bet()],
   [/boshla|start|play|o'yna|oyna|bet|tik/, () => sfx.spin()],
   [/tanla|select|toggle|til|mode|rejim/, () => sfx.select()],
@@ -267,11 +267,11 @@ export function installGlobalClickSound() {
   installed = true;
   document.addEventListener(
     "pointerdown",
-    (e) => {
+    (e) =>{
       const el = (e.target as HTMLElement | null)?.closest?.("button, [role='button'], a");
       if (!el) return;
       if ((el as HTMLButtonElement).disabled) { sfx.error(); return; }
-      const label = ((el.getAttribute("aria-label") || "") + " " + (el.textContent || "")).toLowerCase().trim();
+      const label = ((el.getAttribute("aria-label") || "") + " "+ (el.textContent ||"")).toLowerCase().trim();
       const href = (el as HTMLAnchorElement).getAttribute?.("href") || "";
       const rule = SOUND_RULES.find(([re]) => re.test(label));
       if (rule) rule[1]();
@@ -287,19 +287,19 @@ export function installGlobalClickSound() {
  * Bosilganda emas — animatsiya davomida ishlaydi.
  * Qaytgan funksiyani chaqirib to'xtatiladi.
  */
-export function startTicker(intervalMs = 110, slowdown = 1): () => void {
-  if (typeof window === "undefined") return () => {};
+export function startTicker(intervalMs = 60, slowdown = 1): () => void {
+  if (typeof window === "undefined") return () =>{};
   let stopped = false;
-  let gap = intervalMs;
+  let gap = Math.max(45, intervalMs * 0.6);
   let timer: ReturnType<typeof setTimeout> | null = null;
-  const step = () => {
+  const step = () =>{
     if (stopped) return;
     sfx.tick();
-    gap = Math.min(gap * slowdown, 420);
+    gap = Math.min(gap * slowdown, 180);
     timer = setTimeout(step, gap);
   };
   step();
-  return () => {
+  return () =>{
     stopped = true;
     if (timer) clearTimeout(timer);
   };

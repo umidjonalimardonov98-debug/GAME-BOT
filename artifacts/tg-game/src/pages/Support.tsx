@@ -4,7 +4,7 @@ import { usePlayer } from "@/lib/player-context";
 import { useTheme, pageBg, GAME_BG, GOLD } from "@/lib/theme-context";
 import { haptic, hapticNotify, openBotChat } from "@/lib/telegram";
 
-type Status = "idle" | "pending" | "active";
+type Status = "idle"|"pending"|"active";
 
 export default function Support() {
   const [, nav] = useLocation();
@@ -15,7 +15,7 @@ export default function Support() {
   const [sending, setSending] = useState(false);
   const [msg, setMsg] = useState("");
   const prev = useRef<Status>("idle");
-  type ChatMsg = { id: number; from: "user" | "admin" | "system"; text: string; at: number };
+  type ChatMsg = { id: number; from: "user"|"admin"|"system"; text: string; at: number };
   const [chat, setChat] = useState<ChatMsg[]>([]);
   const [draft, setDraft] = useState("");
   const [chatSending, setChatSending] = useState(false);
@@ -49,9 +49,9 @@ export default function Support() {
         body: JSON.stringify({ telegramId: player.telegramId, text }),
       });
       const d = await res.json().catch(() => ({}));
-      if (!res.ok) { setMsg("❌ " + (d.error || "Yuborilmadi")); hapticNotify("error"); }
+      if (!res.ok) { setMsg(" "+ (d.error ||"Yuborilmadi")); hapticNotify("error"); }
       else { setDraft(""); await loadMessages(); }
-    } catch { setMsg("❌ Tarmoq xatosi"); }
+    } catch { setMsg(" Tarmoq xatosi"); }
     setChatSending(false);
   }
 
@@ -66,22 +66,22 @@ export default function Support() {
     } catch {}
   }
 
-  useEffect(() => {
+  useEffect(() =>{
     loadStatus();
     loadMessages();
-    const i = setInterval(() => { loadStatus(); loadMessages(); }, 2500);
+    const i = setInterval(() =>{ loadStatus(); loadMessages(); }, 2500);
     return () => clearInterval(i);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [player?.telegramId]);
 
-  useEffect(() => {
+  useEffect(() =>{
     listRef.current?.scrollTo({ top: listRef.current.scrollHeight, behavior: "smooth" });
   }, [chat.length]);
 
-  useEffect(() => {
-    if (prev.current !== "active" && status === "active") {
+  useEffect(() =>{
+    if (prev.current !== "active"&& status ==="active") {
       hapticNotify("success");
-      setMsg("✅ Admin suhbatni qabul qildi! Shu yerda yozishingiz mumkin.");
+      setMsg(" Admin suhbatni qabul qildi! Shu yerda yozishingiz mumkin.");
     }
     prev.current = status;
   }, [status]);
@@ -97,38 +97,38 @@ export default function Support() {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           telegramId: player.telegramId,
-          name: `${player.firstName}${player.lastName ? " " + player.lastName : ""}`,
+          name: `${player.firstName}${player.lastName ? " "+ player.lastName :""}`,
           username: player.username || "",
         }),
       });
       const d = await res.json();
       if (!res.ok) {
-        setMsg("❌ " + (d.error || "So'rov yuborilmadi"));
+        setMsg(" "+ (d.error ||"So'rov yuborilmadi"));
         hapticNotify("error");
       } else {
         setStatus((d.status as Status) || "pending");
-        setMsg("📨 So'rov adminlarga yuborildi. Tasdiqlashi bilan chat ochiladi.");
+        setMsg(" So'rov adminlarga yuborildi. Tasdiqlashi bilan chat ochiladi.");
         hapticNotify("success");
       }
     } catch {
-      setMsg("❌ Tarmoq xatosi");
+      setMsg(" Tarmoq xatosi");
     }
     setSending(false);
   }
 
   const badge =
     status === "active"
-      ? { t: "🟢 SUHBAT FAOL", c: "#4ade80" }
+      ? { t: " SUHBAT FAOL", c: "#4ade80" }
       : status === "pending"
-      ? { t: "🟡 ADMIN TASDIQLASHI KUTILMOQDA", c: "#fbbf24" }
-      : { t: "⚪️ SUHBAT YOPIQ", c: "rgba(255,255,255,0.6)" };
+      ? { t: " ADMIN TASDIQLASHI KUTILMOQDA", c: "#fbbf24" }
+      : { t: " SUHBAT YOPIQ", c: "rgba(255,255,255,0.6)" };
 
   return (
     <div className="min-h-screen" style={{ background: pageBg(theme, GAME_BG.home), color: ts.text }}>
       {/* header */}
       <div className="flex items-center gap-3 px-4 pt-4 pb-3">
         <button
-          onClick={() => { haptic(); nav("/"); }}
+          onClick={() =>{ haptic(); nav("/"); }}
           className="w-9 h-9 rounded-xl flex items-center justify-center active:scale-95 transition"
           style={{ background: ts.btnSecondary, border: `1px solid ${ts.cardBorder}`, color: ts.text }}
         >
@@ -153,7 +153,7 @@ export default function Support() {
               className="w-14 h-14 rounded-2xl flex items-center justify-center"
               style={{ background: GOLD.grad, boxShadow: `0 8px 22px ${GOLD.glow}`, fontSize: 26 }}
             >
-              💬
+              
             </div>
             <div className="flex-1">
               <p className="font-black" style={{ color: ts.text }}>Admin bilan jonli chat</p>
@@ -169,23 +169,23 @@ export default function Support() {
             disabled={sending || status === "active"}
             className="w-full mt-4 py-4 rounded-2xl font-black active:scale-[0.98] transition"
             style={{
-              background: status === "active" ? "rgba(74,222,128,0.18)" : GOLD.grad,
-              color: status === "active" ? "#4ade80" : "#1a1200",
+              background: status === "active"?"rgba(74,222,128,0.18)" : GOLD.grad,
+              color: status === "active"?"#4ade80":"#1a1200",
               border: `1px solid ${GOLD.border}`,
               boxShadow: `0 10px 26px ${GOLD.glow}`,
               opacity: sending ? 0.6 : 1,
             }}
           >
-            {status === "active" ? "SUHBAT FAOL" : sending ? "YUBORILMOQDA..." : "🔔 ADMINNI CHAQIRISH"}
+            {status === "active"?"SUHBAT FAOL": sending ?"YUBORILMOQDA...":" ADMINNI CHAQIRISH"}
           </button>
 
-          {(status === "active" || status === "pending") && (
+          {(status === "active"|| status ==="pending") && (
             <button
-              onClick={() => { haptic(); openBotChat(botUsername); }}
+              onClick={() =>{ haptic(); openBotChat(botUsername); }}
               className="w-full mt-2 py-3.5 rounded-2xl font-black active:scale-[0.98] transition"
               style={{ background: ts.btnSecondary, color: ts.btnSecondaryText, border: `1px solid ${ts.cardBorder}` }}
             >
-              📨 Chatni ochish (bot)
+               Chatni ochish (bot)
             </button>
           )}
 
@@ -208,7 +208,7 @@ export default function Support() {
                 m.from === "system" ? (
                   <p key={m.id} className="text-[11px] text-center py-1" style={{ color: ts.textSub }}>{m.text}</p>
                 ) : (
-                  <div key={m.id} className={`flex ${m.from === "user" ? "justify-end" : "justify-start"}`}>
+                  <div key={m.id} className={`flex ${m.from === "user"?"justify-end":"justify-start"}`}>
                     <div
                       className="max-w-[78%] px-3 py-2 rounded-2xl text-[13px] leading-snug"
                       style={
@@ -218,7 +218,7 @@ export default function Support() {
                       }
                     >
                       <span className="block text-[10px] font-black opacity-70 mb-0.5">
-                        {m.from === "user" ? "Siz" : "Admin"}
+                        {m.from === "user"?"Siz":"Admin"}
                       </span>
                       {m.text}
                     </div>
@@ -231,8 +231,8 @@ export default function Support() {
               <input
                 value={draft}
                 onChange={(e) => setDraft(e.target.value)}
-                onKeyDown={(e) => { if (e.key === "Enter") sendChat(); }}
-                placeholder={status === "active" ? "Xabar yozing..." : "Suhbat faol emas"}
+                onKeyDown={(e) =>{ if (e.key === "Enter") sendChat(); }}
+                placeholder={status === "active"?"Xabar yozing...":"Suhbat faol emas"}
                 disabled={status !== "active"}
                 className="flex-1 px-3 py-3 rounded-2xl text-[13px] outline-none"
                 style={{ background: ts.btnSecondary, color: ts.text, border: `1px solid ${ts.cardBorder}` }}
@@ -244,7 +244,7 @@ export default function Support() {
                 className="px-4 rounded-2xl font-black active:scale-95 transition disabled:opacity-45"
                 style={{ background: GOLD.grad, color: "#1a1200", border: `1px solid ${GOLD.border}` }}
               >
-                ➤
+                
               </button>
             </div>
           </div>
@@ -257,7 +257,7 @@ export default function Support() {
             ["1", "Adminni chaqirasiz", "So'rov barcha adminlarga bildirishnoma bo'lib boradi."],
             ["2", "Admin tasdiqlaydi", "«Chatga kirish» tugmasini bosadi."],
             ["3", "Chat shu yerda ochiladi", "Ilova ichida 2 kishilik jonli suhbat: siz va admin."],
-            ["4", "Ovozli xabar", "🎤 tugmasi orqali jonli ovoz yuborishingiz mumkin."],
+            ["4", "Ovozli xabar", " tugmasi orqali jonli ovoz yuborishingiz mumkin."],
           ].map(([n, title, sub]) => (
             <div key={n} className="flex gap-3 py-2">
               <div

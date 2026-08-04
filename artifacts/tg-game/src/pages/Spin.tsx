@@ -2,21 +2,22 @@ import { useState, useEffect, useRef } from "react";
 import { usePlayer } from "@/lib/player-context";
 import { useTheme, pageBg, GAME_BG, GOLD } from "@/lib/theme-context";
 import GameHeader from "@/components/GameHeader";
+import Sym from "@/components/casino/Sym";
 
 const BASE = "/api";
 const BET = 2000;
 
 const SEGMENTS = [
-  { label: "💣", prize: 0, from: "#7f1d1d", to: "#b91c1c" },
-  { label: "💣", prize: 0, from: "#111827", to: "#374151" },
-  { label: "🍒", prize: 1000, from: "#78350f", to: "#f59e0b" },
-  { label: "💣", prize: 0, from: "#7f1d1d", to: "#b91c1c" },
-  { label: "💣", prize: 0, from: "#111827", to: "#374151" },
-  { label: "⭐", prize: 2000, from: "#064e3b", to: "#10b981" },
-  { label: "💣", prize: 0, from: "#7f1d1d", to: "#b91c1c" },
-  { label: "💣", prize: 0, from: "#111827", to: "#374151" },
-  { label: "💎", prize: 5000, from: "#312e81", to: "#6366f1" },
-  { label: "💣", prize: 0, from: "#7f1d1d", to: "#b91c1c" },
+  { label: "skull", prize: 0, from: "#7f1d1d", to: "#b91c1c" },
+  { label: "skull", prize: 0, from: "#111827", to: "#374151" },
+  { label: "coin", prize: 1000, from: "#78350f", to: "#f59e0b" },
+  { label: "skull", prize: 0, from: "#7f1d1d", to: "#b91c1c" },
+  { label: "skull", prize: 0, from: "#111827", to: "#374151" },
+  { label: "money", prize: 2000, from: "#064e3b", to: "#10b981" },
+  { label: "skull", prize: 0, from: "#7f1d1d", to: "#b91c1c" },
+  { label: "skull", prize: 0, from: "#111827", to: "#374151" },
+  { label: "chest", prize: 5000, from: "#312e81", to: "#6366f1" },
+  { label: "skull", prize: 0, from: "#7f1d1d", to: "#b91c1c" },
 ];
 
 const LOSE_SEGMENTS = [0, 1, 3, 4, 6, 7, 9];
@@ -49,28 +50,28 @@ export default function Spin() {
   const isLight = theme === "light";
   const canPaid = (player?.balance ?? 0) >= BET;
 
-  useEffect(() => {
+  useEffect(() =>{
     if (!player) return;
     fetch(`${BASE}/spin/status/${player.telegramId}`)
       .then(r => r.json())
-      .then(d => { setCanFree(d.canSpin); setNextSpinAt(d.nextSpinAt); setLoading(false); })
+      .then(d =>{ setCanFree(d.canSpin); setNextSpinAt(d.nextSpinAt); setLoading(false); })
       .catch(() => setLoading(false));
   }, [player]);
 
-  useEffect(() => {
+  useEffect(() =>{
     if (timerRef.current) clearInterval(timerRef.current);
     if (!nextSpinAt) return;
-    const tick = () => {
+    const tick = () =>{
       const t = timeLeft(nextSpinAt);
       if (!t) { setCanFree(true); setNextSpinAt(null); setCountdown(""); }
       else setCountdown(t);
     };
     tick();
     timerRef.current = setInterval(tick, 1000);
-    return () => { if (timerRef.current) clearInterval(timerRef.current); };
+    return () =>{ if (timerRef.current) clearInterval(timerRef.current); };
   }, [nextSpinAt]);
 
-  const doSpin = async (free: boolean) => {
+  const doSpin = async (free: boolean) =>{
     if (!player || spinning) return;
     if (!free && player.balance < BET) return;
     setSpinning(true);
@@ -109,7 +110,7 @@ export default function Spin() {
     rotRef.current = total;
     setRotation(total);
 
-    setTimeout(() => {
+    setTimeout(() =>{
       setResult({ prize: prizeFromApi, segIdx, penalty: penaltyFromApi });
       setLastFree(free);
       setSpinning(false);
@@ -135,7 +136,7 @@ export default function Spin() {
 
   return (
     <div className="min-h-screen flex flex-col" style={{ background: pageBg(theme, GAME_BG.spin) }}>
-      <GameHeader title="🎡 OMAD CHARXI" subtitle="Har kuni bepul aylantirish!" />
+      <GameHeader title=" OMAD CHARXI" subtitle="Har kuni bepul aylantirish!" />
 
       <div className="flex-1 flex flex-col items-center px-4 pb-6 gap-5">
 
@@ -151,14 +152,14 @@ export default function Spin() {
               boxShadow: `0 18px 46px rgba(0,0,0,0.6), 0 0 0 3px rgba(255,255,255,0.18) inset, 0 0 60px ${GOLD.glow}`,
             }}
           >
-            {Array.from({ length: 16 }).map((_, i) => {
+            {Array.from({ length: 16 }).map((_, i) =>{
               const a = (i * 360) / 16;
               const rad = ((a - 90) * Math.PI) / 180;
               const rr = (size + 24) / 2 - 7;
               return (
                 <span
                   key={i}
-                  className={spinning ? "bulb-run" : ""}
+                  className={spinning ? "bulb-run":""}
                   style={{
                     position: "absolute",
                     left: `calc(50% + ${Math.cos(rad) * rr}px)`,
@@ -183,7 +184,7 @@ export default function Spin() {
                 height: size,
                 borderRadius: "50%",
                 overflow: "hidden",
-                transition: spinning ? "transform 5.2s cubic-bezier(0.12,0.72,0.02,1)" : "none",
+                transition: spinning ? "transform 5.2s cubic-bezier(0.12,0.72,0.02,1)":"none",
                 transform: `rotate(${rotation}deg)`,
                 boxShadow: "inset 0 0 40px rgba(0,0,0,0.55)",
               }}
@@ -212,7 +213,7 @@ export default function Spin() {
                       stroke="rgba(212,175,55,0.85)"
                       strokeWidth="1.5"
                     />
-                    {(() => {
+                    {(() =>{
                       const ang = i * SEG + SEG / 2;
                       const mid = polarToXY(ang, r * 0.6);
                       const flip = ang > 90 && ang < 270;
@@ -226,7 +227,7 @@ export default function Spin() {
                             y={-7}
                             style={{ fontSize: 22, userSelect: "none" }}
                           >
-                            {seg.label}
+                            <Sym n={seg.label} s={30} />
                           </text>
                           <text
                             textAnchor="middle"
@@ -258,7 +259,7 @@ export default function Spin() {
 
           {/* ko'rsatkich */}
           <div
-            className={spinning ? "pointer-tick" : ""}
+            className={spinning ? "pointer-tick":""}
             style={{
               position: "absolute",
               top: -6,
@@ -278,17 +279,17 @@ export default function Spin() {
         {result && !spinning && (
           <div className="text-center py-3 px-6 rounded-2xl pop-in"
             style={{
-              background: result.prize > 0 ? "linear-gradient(145deg,#064e3b,#059669)" : "linear-gradient(145deg,#7f1d1d,#b91c1c)",
+              background: result.prize > 0 ? "linear-gradient(145deg,#064e3b,#059669)":"linear-gradient(145deg,#7f1d1d,#b91c1c)",
               boxShadow: "0 8px 26px rgba(0,0,0,0.45)",
             }}>
             {result.prize > 0 ? (
               <>
-                <p className="font-black text-2xl text-white">+{result.prize.toLocaleString()} UZS 🎉</p>
+                <p className="font-black text-2xl text-white">+{result.prize.toLocaleString()} UZS </p>
                 <p className="text-sm mt-1 text-white/80">Balansingizga qo'shildi!</p>
               </>
             ) : (
               <>
-                <p className="font-black text-xl text-white">Omad kelmadi 😔</p>
+                <p className="font-black text-xl text-white">Omad kelmadi </p>
                 {result.penalty > 0 ? (
                   <p className="font-black text-lg mt-1 text-white">−{result.penalty.toLocaleString()} UZS</p>
                 ) : null}
@@ -312,17 +313,17 @@ export default function Spin() {
         {/* Mukofotlar */}
         <div className="w-full rounded-2xl p-3 pro-glass"
           style={{ background: "rgba(20,14,4,0.55)", border: `1px solid ${GOLD.border}` }}>
-          <p className="text-xs font-black mb-2 text-center tracking-widest gold-text">🏆 MUKOFOTLAR</p>
+          <p className="text-xs font-black mb-2 text-center tracking-widest gold-text"> MUKOFOTLAR</p>
           <div className="grid grid-cols-4 gap-2 text-center">
             {[
-              { label: "💣 Omadsiz", prize: "—", color: "#f87171" },
-              { label: "🍒 Birinchi", prize: "1 000", color: "#fbbf24" },
-              { label: "⭐ Ikkinchi", prize: "2 000", color: "#34d399" },
-              { label: "💎 Katta", prize: "5 000", color: "#a5b4fc" },
+              { label: " Omadsiz", prize: "—", color: "#f87171" },
+              { label: " Birinchi", prize: "1 000", color: "#fbbf24" },
+              { label: " Ikkinchi", prize: "2 000", color: "#34d399" },
+              { label: " Katta", prize: "5 000", color: "#a5b4fc" },
             ].map(p => (
               <div key={p.label}>
                 <p className="text-xs font-black" style={{ color: p.color }}>{p.prize}</p>
-                <p style={{ fontSize: 10, color: isLight ? "rgba(30,27,75,0.6)" : "rgba(255,255,255,0.6)" }}>{p.label}</p>
+                <p style={{ fontSize: 10, color: isLight ? "rgba(30,27,75,0.6)":"rgba(255,255,255,0.6)" }}>{p.label}</p>
               </div>
             ))}
           </div>
@@ -337,7 +338,7 @@ export default function Spin() {
               background: "linear-gradient(145deg,#7c3aed,#c026d3)",
               boxShadow: "0 7px 0 #4c1d95, 0 12px 28px rgba(192,38,211,0.5)",
             }}>
-            {loading ? "Yuklanmoqda..." : canFree ? "🎁 TEKIN AYLANTIRISH" : `⏳ ${countdown || "Kutilmoqda..."}`}
+            {loading ? "Yuklanmoqda...": canFree ?" TEKIN AYLANTIRISH": `⏳ ${countdown ||"Kutilmoqda..."}`}
           </button>
 
           {result && !spinning && (
@@ -348,7 +349,7 @@ export default function Spin() {
                 background: "linear-gradient(145deg,#0ea5e9,#2563eb)",
                 boxShadow: "0 7px 0 #1e3a8a, 0 12px 28px rgba(37,99,235,0.45)",
               }}>
-              🔁 QAYTA AYLANTIRISH
+               QAYTA AYLANTIRISH
             </button>
           )}
 
@@ -360,7 +361,7 @@ export default function Spin() {
               color: "#2b1e05",
               boxShadow: "0 7px 0 #6b5210, 0 12px 28px rgba(212,175,55,0.45)",
             }}>
-            🎰 {BET.toLocaleString()} UZS GA AYLANTIRISH
+             {BET.toLocaleString()} UZS GA AYLANTIRISH
           </button>
 
           <p className="text-center text-xs" style={{ color: ts.textSub }}>

@@ -13,7 +13,7 @@ interface Props {
   hideTheme?: boolean;
 }
 
-const FLAG: Record<Lang, string> = { uz: "🇺🇿", ru: "🇷🇺", en: "🇬🇧" };
+const FLAG: Record<Lang, string> = { uz: "", ru: "", en: "" };
 
 export default function GameHeader({ title, subtitle, hideTheme }: Props) {
   const [, nav] = useLocation();
@@ -51,7 +51,7 @@ export default function GameHeader({ title, subtitle, hideTheme }: Props) {
 
         {/* Balance */}
         <div className="text-right shrink-0 mr-1">
-          <p className="text-xs" style={{ color: ts.textSub }}>💰</p>
+          <p className="text-xs" style={{ color: ts.textSub }}></p>
           <p className="font-black text-xs" style={{ color: GOLD.light }}>{(player?.balance ?? 0).toLocaleString()}</p>
         </div>
 
@@ -63,12 +63,12 @@ export default function GameHeader({ title, subtitle, hideTheme }: Props) {
                 className="w-7 h-7 rounded-xl flex items-center justify-center text-sm active:scale-90 transition-transform"
                 style={{
                   background: theme === th
-                    ? (th === "light" ? "#f0f4ff" : th === "black" ? "#000" : "#7c3aed")
-                    : (isLight ? "rgba(99,102,241,0.08)" : "rgba(255,255,255,0.07)"),
-                  border: `1px solid ${theme === th ? "rgba(255,255,255,0.4)" : "rgba(255,255,255,0.1)"}`,
+                    ? (th === "light"?"#f0f4ff": th ==="black"?"#000":"#7c3aed")
+                    : (isLight ? "rgba(99,102,241,0.08)":"rgba(255,255,255,0.07)"),
+                  border: `1px solid ${theme === th ? "rgba(255,255,255,0.4)":"rgba(255,255,255,0.1)"}`,
                   fontSize: 12,
                 }}>
-                {th === "light" ? "☀️" : th === "black" ? "⬛" : "🌙"}
+                {th === "light"?"": th ==="black"?"":""}
               </button>
             ))}
           </div>
@@ -82,28 +82,28 @@ export default function GameHeader({ title, subtitle, hideTheme }: Props) {
           <button onClick={() => setShowLang(v => !v)}
             className="w-9 h-9 rounded-xl flex items-center justify-center text-base active:scale-90 transition-transform"
             style={{
-              background: isLight ? "rgba(99,102,241,0.1)" : "rgba(255,255,255,0.08)",
-              border: `1px solid ${isLight ? "rgba(99,102,241,0.2)" : "rgba(255,255,255,0.12)"}`,
+              background: isLight ? "rgba(99,102,241,0.1)":"rgba(255,255,255,0.08)",
+              border: `1px solid ${isLight ? "rgba(99,102,241,0.2)":"rgba(255,255,255,0.12)"}`,
             }}>
             {FLAG[lang]}
           </button>
           {showLang && (
             <div className="absolute right-0 top-10 z-50 rounded-2xl overflow-hidden shadow-2xl"
               style={{
-                background: isLight ? "white" : "#1a0a3a",
-                border: `1px solid ${isLight ? "rgba(99,102,241,0.25)" : "rgba(167,139,250,0.3)"}`,
+                background: isLight ? "white":"#1a0a3a",
+                border: `1px solid ${isLight ? "rgba(99,102,241,0.25)":"rgba(167,139,250,0.3)"}`,
                 minWidth: 90,
                 boxShadow: "0 20px 40px rgba(0,0,0,0.4)",
               }}>
               {(["uz","ru","en"] as const).map(l => (
-                <button key={l} onClick={() => { setLang(l); setShowLang(false); }}
+                <button key={l} onClick={() =>{ setLang(l); setShowLang(false); }}
                   className="w-full flex items-center gap-2 px-3 py-2.5 text-xs font-bold transition-colors"
                   style={{
                     color: lang === l
-                      ? (isLight ? "#4338ca" : "#c4b5fd")
-                      : (isLight ? "#374151" : "rgba(255,255,255,0.6)"),
+                      ? (isLight ? "#4338ca":"#c4b5fd")
+                      : (isLight ? "#374151":"rgba(255,255,255,0.6)"),
                     background: lang === l
-                      ? (isLight ? "rgba(99,102,241,0.08)" : "rgba(124,58,237,0.25)")
+                      ? (isLight ? "rgba(99,102,241,0.08)":"rgba(124,58,237,0.25)")
                       : "transparent",
                   }}>
                   <span style={{ fontSize: 16 }}>{FLAG[l]}</span>

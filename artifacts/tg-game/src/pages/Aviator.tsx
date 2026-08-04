@@ -5,7 +5,7 @@ import { placeBet } from "@/lib/api";
 import { riggedLose } from "@/lib/odds";
 import GameHeader from "@/components/GameHeader";
 
-type Phase = "idle" | "countdown" | "flying" | "done";
+type Phase = "idle"|"countdown"|"flying"|"done";
 
 // 80% small (1.1-1.7), 12% medium (1.7-3.5), 6% big (3.5-10), 2% huge (10-30)
 function randomCrash(): number {
@@ -52,12 +52,12 @@ export default function Aviator() {
 
   const isLight = theme === "light";
 
-  useEffect(() => { playerRef.current = player; }, [player]);
-  useEffect(() => { betRef.current = betAmt; }, [betAmt]);
-  useEffect(() => { autoCashOutRef.current = autoCashOut; }, [autoCashOut]);
-  useEffect(() => { autoCashOutAtRef.current = parseFloat(autoCashOutAt) || 2.0; }, [autoCashOutAt]);
-  useEffect(() => { autoBetRef.current = autoBet; }, [autoBet]);
-  useEffect(() => () => {
+  useEffect(() =>{ playerRef.current = player; }, [player]);
+  useEffect(() =>{ betRef.current = betAmt; }, [betAmt]);
+  useEffect(() =>{ autoCashOutRef.current = autoCashOut; }, [autoCashOut]);
+  useEffect(() =>{ autoCashOutAtRef.current = parseFloat(autoCashOutAt) || 2.0; }, [autoCashOutAt]);
+  useEffect(() =>{ autoBetRef.current = autoBet; }, [autoBet]);
+  useEffect(() => () =>{
     clearInterval(loopRef.current);
     clearInterval(countdownRef.current);
     clearTimeout(autoRef.current);
@@ -76,7 +76,7 @@ export default function Aviator() {
     setPhaseSync("done");
     if (playerRef.current && !savingRef.current) {
       savingRef.current = true;
-      await placeBet(playerRef.current.telegramId, { amount: betRef.current, game: "aviator", won: true, winAmount: prize }).catch(() => {});
+      await placeBet(playerRef.current.telegramId, { amount: betRef.current, game: "aviator", won: true, winAmount: prize }).catch(() =>{});
       await refresh();
       savingRef.current = false;
     }
@@ -90,7 +90,7 @@ export default function Aviator() {
     setPhaseSync("flying");
     setMultiplier(1.00);
 
-    loopRef.current = setInterval(async () => {
+    loopRef.current = setInterval(async () =>{
       if (!flyingRef.current) return;
       // Faster increase: ~0.012 per 80ms = ~0.15/s at 1x
       multRef.current = parseFloat((multRef.current + 0.012 + multRef.current * 0.0012).toFixed(2));
@@ -111,7 +111,7 @@ export default function Aviator() {
         setPhaseSync("done");
         if (playerRef.current) {
           placeBet(playerRef.current.telegramId, { amount: betRef.current, game: "aviator", won: false, winAmount: 0 })
-            .then(() => refresh()).catch(() => {});
+            .then(() => refresh()).catch(() =>{});
         }
         if (autoBetRef.current) autoRef.current = setTimeout(startRound, 2500);
       }
@@ -126,7 +126,7 @@ export default function Aviator() {
     setMultiplier(1.00); setResult(null); setCountdown(3);
     setPhaseSync("countdown");
     let cnt = 3;
-    countdownRef.current = setInterval(() => {
+    countdownRef.current = setInterval(() =>{
       cnt--; setCountdown(cnt);
       if (cnt <= 0) { clearInterval(countdownRef.current); startFlying(); }
     }, 1000);
@@ -139,7 +139,7 @@ export default function Aviator() {
     setPhaseSync("idle"); setMultiplier(1.00); setResult(null);
   }
 
-  const multColor = multiplier >= 10 ? "#c084fc" : multiplier >= 5 ? "#34d399" : multiplier >= 2 ? "#fbbf24" : "#f87171";
+  const multColor = multiplier >= 10 ? "#c084fc": multiplier >= 5 ?"#34d399": multiplier >= 2 ?"#fbbf24":"#f87171";
 
   // Plane position based on multiplier
   const planeX = Math.min(80, (multiplier - 1) * 20);
@@ -152,7 +152,7 @@ export default function Aviator() {
         @keyframes twinkle { 0%,100%{opacity:0.15} 50%{opacity:0.55} }
       `}</style>
 
-      <GameHeader title="✈️ AVIATOR" subtitle="Qulab tushishidan oldin oling!" />
+      <GameHeader title=" AVIATOR" subtitle="Qulab tushishidan oldin oling!" />
 
       <div className="flex-1 px-4 pb-6 flex flex-col gap-3">
 
@@ -161,9 +161,9 @@ export default function Aviator() {
           {history.map((h, i) => (
             <span key={i} className="shrink-0 text-xs font-black px-2.5 py-1 rounded-xl"
               style={{
-                background: h.won ? "rgba(52,211,153,0.15)" : "rgba(248,113,113,0.15)",
-                color: h.won ? "#34d399" : "#f87171",
-                border: `1px solid ${h.won ? "rgba(52,211,153,0.3)" : "rgba(248,113,113,0.3)"}`,
+                background: h.won ? "rgba(52,211,153,0.15)":"rgba(248,113,113,0.15)",
+                color: h.won ? "#34d399":"#f87171",
+                border: `1px solid ${h.won ? "rgba(52,211,153,0.3)":"rgba(248,113,113,0.3)"}`,
               }}>
               {h.val.toFixed(2)}x
             </span>
@@ -179,8 +179,8 @@ export default function Aviator() {
               : theme === "black"
                 ? "linear-gradient(160deg, #000, #0a0820)"
                 : "linear-gradient(160deg, #1e1b4b, #13103a, #0a0818)",
-            border: `1.5px solid ${isLight ? "rgba(99,102,241,0.3)" : "rgba(99,102,241,0.2)"}`,
-            boxShadow: isLight ? "0 6px 24px rgba(99,102,241,0.15)" : "0 6px 24px rgba(79,70,229,0.15)",
+            border: `1.5px solid ${isLight ? "rgba(99,102,241,0.3)":"rgba(99,102,241,0.2)"}`,
+            boxShadow: isLight ? "0 6px 24px rgba(99,102,241,0.15)":"0 6px 24px rgba(79,70,229,0.15)",
           }}>
 
           {/* Stars (dark mode only) */}
@@ -206,21 +206,21 @@ export default function Aviator() {
           <div className="absolute w-full h-full flex items-center justify-center">
             {phase === "idle" && (
               <div className="text-center">
-                <div className="text-5xl mb-2" style={{ animation: "float 2s ease-in-out infinite" }}>✈️</div>
-                <p className="text-sm font-semibold" style={{ color: isLight ? "rgba(30,27,75,0.4)" : "rgba(255,255,255,0.3)" }}>
+                <div className="text-5xl mb-2"style={{ animation:"float 2s ease-in-out infinite" }}></div>
+                <p className="text-sm font-semibold"style={{ color: isLight ?"rgba(30,27,75,0.4)":"rgba(255,255,255,0.3)" }}>
                   Tikish kiriting va boshlang
                 </p>
               </div>
             )}
             {phase === "countdown" && (
               <div className="text-center">
-                <p className="text-sm font-bold mb-2 animate-pulse" style={{ color: "#a78bfa" }}>Tayyorlanmoqda...</p>
-                <p className="font-black" style={{ fontSize: 72, lineHeight: 1, color: isLight ? "#4338ca" : "white" }}>{countdown}</p>
+                <p className="text-sm font-bold mb-2 animate-pulse"style={{ color:"#a78bfa" }}>Tayyorlanmoqda...</p>
+                <p className="font-black"style={{ fontSize: 72, lineHeight: 1, color: isLight ?"#4338ca":"white" }}>{countdown}</p>
               </div>
             )}
             {phase === "flying" && (
               <div className="text-center">
-                <div className="text-4xl mb-1" style={{ animation: "float 1.5s ease-in-out infinite" }}>✈️</div>
+                <div className="text-4xl mb-1"style={{ animation:"float 1.5s ease-in-out infinite" }}></div>
                 <p className="font-black" style={{ fontSize: 52, lineHeight: 1, color: multColor, textShadow: `0 0 30px ${multColor}99` }}>
                   {multiplier.toFixed(2)}x
                 </p>
@@ -228,16 +228,16 @@ export default function Aviator() {
             )}
             {phase === "done" && result?.won && (
               <div className="text-center">
-                <div className="text-3xl mb-1">🎉</div>
-                <p className="font-black text-3xl" style={{ color: "#34d399" }}>{result.mult.toFixed(2)}x</p>
-                <p className="font-bold text-lg" style={{ color: "#4ade80" }}>+{result.amount.toLocaleString()} UZS</p>
+                <div className="text-3xl mb-1"></div>
+                <p className="font-black text-3xl"style={{ color:"#34d399" }}>{result.mult.toFixed(2)}x</p>
+                <p className="font-bold text-lg"style={{ color:"#4ade80" }}>+{result.amount.toLocaleString()} UZS</p>
               </div>
             )}
             {phase === "done" && !result?.won && (
               <div className="text-center">
-                <div className="text-3xl mb-1">💥</div>
-                <p className="font-black text-3xl" style={{ color: "#f87171" }}>{result?.mult.toFixed(2)}x</p>
-                <p className="text-sm" style={{ color: "#f87171aa" }}>Qulab tushdi!</p>
+                <div className="text-3xl mb-1"></div>
+                <p className="font-black text-3xl"style={{ color:"#f87171" }}>{result?.mult.toFixed(2)}x</p>
+                <p className="text-sm"style={{ color:"#f87171aa" }}>Qulab tushdi!</p>
               </div>
             )}
           </div>
@@ -248,16 +248,16 @@ export default function Aviator() {
           <button onClick={doCashOut}
             className="w-full py-4 rounded-2xl font-black text-xl active:scale-95 transition-transform"
             style={{ background: "linear-gradient(135deg, #059669, #16a34a)", boxShadow: "0 6px 0 #064e3b, 0 8px 24px rgba(5,150,105,0.5)", color: "white" }}>
-            💰 OLISH — {Math.floor(betAmt * multiplier).toLocaleString()} UZS
+             OLISH — {Math.floor(betAmt * multiplier).toLocaleString()} UZS
           </button>
         )}
 
         {/* Bet controls */}
-        {(phase === "idle" || phase === "done") && (
+        {(phase === "idle"|| phase ==="done") && (
           <>
             <div className="grid grid-cols-4 gap-1.5">
               {["MIN","X2","X/2","MAX"].map(a => (
-                <button key={a} onClick={() => {
+                <button key={a} onClick={() =>{
                   const bal = player?.balance ?? 0;
                   let v = betAmt;
                   if (a === "MIN") v = 2000;
@@ -274,7 +274,7 @@ export default function Aviator() {
             </div>
 
             <input type="number" placeholder="Tikish miqdori (min 2 000)" value={betInput}
-              onChange={(e) => { setBetInput(e.target.value); const v = Number(e.target.value) || 2000; setBetAmt(v); betRef.current = v; }}
+              onChange={(e) =>{ setBetInput(e.target.value); const v = Number(e.target.value) || 2000; setBetAmt(v); betRef.current = v; }}
               className="w-full rounded-2xl px-4 py-3.5 font-black text-lg focus:outline-none"
               style={{ background: ts.input, border: `1px solid ${ts.inputBorder}`, color: ts.text }} />
 
@@ -283,9 +283,9 @@ export default function Aviator() {
               style={{ background: ts.card, border: `1px solid ${ts.cardBorder}` }}>
               <button onClick={() => setAutoCashOut(v => !v)}
                 className="w-11 h-6 rounded-full flex items-center px-0.5 shrink-0 transition-all"
-                style={{ background: autoCashOut ? "#16a34a" : "rgba(255,255,255,0.15)" }}>
+                style={{ background: autoCashOut ? "#16a34a":"rgba(255,255,255,0.15)" }}>
                 <div className="w-5 h-5 rounded-full bg-white shadow transition-transform"
-                  style={{ transform: autoCashOut ? "translateX(20px)" : "translateX(0)" }} />
+                  style={{ transform: autoCashOut ? "translateX(20px)":"translateX(0)" }} />
               </button>
               <span className="text-sm flex-1" style={{ color: ts.textSub }}>Avto olish</span>
               <input type="number" step="0.1" min="1.1" value={autoCashOutAt}
@@ -297,28 +297,28 @@ export default function Aviator() {
             {/* Auto bet */}
             <div className="flex items-center gap-3 px-3 py-3 rounded-2xl"
               style={{ background: ts.card, border: `1px solid ${ts.cardBorder}` }}>
-              <button onClick={() => { const nv = !autoBet; setAutoBet(nv); autoBetRef.current = nv; }}
+              <button onClick={() =>{ const nv = !autoBet; setAutoBet(nv); autoBetRef.current = nv; }}
                 className="w-11 h-6 rounded-full flex items-center px-0.5 shrink-0 transition-all"
-                style={{ background: autoBet ? "#4338ca" : "rgba(255,255,255,0.15)" }}>
+                style={{ background: autoBet ? "#4338ca":"rgba(255,255,255,0.15)" }}>
                 <div className="w-5 h-5 rounded-full bg-white shadow transition-transform"
-                  style={{ transform: autoBet ? "translateX(20px)" : "translateX(0)" }} />
+                  style={{ transform: autoBet ? "translateX(20px)":"translateX(0)" }} />
               </button>
               <span className="text-sm flex-1" style={{ color: ts.textSub }}>Avto tikish</span>
-              {autoBet && <span className="text-xs font-black" style={{ color: "#818cf8" }}>YOQILGAN</span>}
+              {autoBet && <span className="text-xs font-black"style={{ color:"#818cf8" }}>YOQILGAN</span>}
             </div>
 
             {phase === "idle" ? (
-              <button onClick={() => { if (!player || player.balance < betAmt || betAmt < 2000) return; startRound(); }}
+              <button onClick={() =>{ if (!player || player.balance < betAmt || betAmt < 2000) return; startRound(); }}
                 disabled={!player || player.balance < betAmt || betAmt < 2000}
                 className="w-full py-4 rounded-2xl font-black text-base active:scale-95 transition-all disabled:opacity-40"
                 style={{ background: "linear-gradient(145deg, #4338ca, #7c3aed)", boxShadow: "0 6px 0 #2e1065, 0 8px 24px rgba(124,58,237,0.5)", color: "white" }}>
-                🚀 BOSHLASH — {betAmt.toLocaleString()} UZS
+                 BOSHLASH — {betAmt.toLocaleString()} UZS
               </button>
             ) : (
               <button onClick={handleReset}
                 className="w-full py-4 rounded-2xl font-black text-base active:scale-95"
                 style={{ background: ts.card, border: `1px solid ${ts.cardBorder}`, color: ts.textSub }}>
-                🔄 QAYTA O'YNASH
+                 QAYTA O'YNASH
               </button>
             )}
           </>
@@ -327,7 +327,7 @@ export default function Aviator() {
         {phase === "countdown" && (
           <div className="w-full py-4 rounded-2xl text-center font-bold"
             style={{ background: ts.card, border: `1px solid ${ts.cardBorder}`, color: ts.textSub }}>
-            ✈️ Tikish: {betAmt.toLocaleString()} UZS • Tayyor bo'ling!
+             Tikish: {betAmt.toLocaleString()} UZS • Tayyor bo'ling!
           </div>
         )}
       </div>

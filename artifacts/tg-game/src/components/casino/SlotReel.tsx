@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from "react";
+import Sym from "./Sym";
 
 /** Haqiqiy slot barabani — vertikal lenta aylanadi va belgi ustida to'xtaydi */
 
@@ -60,7 +61,7 @@ export default function SlotReel({ strip, target, spinning, idx, cell = 86 }: Pr
               filter: spinning ? "blur(1.5px)" : "none",
             }}
           >
-            {s}
+            <Sym n={s} s={cell * 0.62} />
           </div>
         ))}
       </div>

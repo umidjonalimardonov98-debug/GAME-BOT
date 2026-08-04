@@ -21,11 +21,11 @@ export default function Limbo() {
   const [amount, setAmount] = useState(0);
   const raf = useRef<number | null>(null);
 
-  useEffect(() => () => { if (raf.current) cancelAnimationFrame(raf.current); }, []);
+  useEffect(() => () =>{ if (raf.current) cancelAnimationFrame(raf.current); }, []);
 
   const tgt = Math.min(Math.max(Number(target) || 2, 1.1), 100);
 
-  const play = () => {
+  const play = () =>{
     if (!canPlay) return;
     setBusy(true); setWon(null); setFinal(null);
     const win = riggedWin();
@@ -36,7 +36,7 @@ export default function Limbo() {
     const stopTick = startTicker(60);
     sfx.fly();
     const t0 = performance.now();
-    const step = (t: number) => {
+    const step = (t: number) =>{
       const p = Math.min(1, (t - t0) / 900);
       setDisplay(+(1 + (res - 1) * (1 - Math.pow(1 - p, 3))).toFixed(2));
       if (p < 1) raf.current = requestAnimationFrame(step);
@@ -45,7 +45,7 @@ export default function Limbo() {
     raf.current = requestAnimationFrame(step);
   };
 
-  const finish = async (res: number, win: boolean, stopTick: () => void) => {
+  const finish = async (res: number, win: boolean, stopTick: () => void) =>{
     stopTick();
     setFinal(res);
     if (win) sfx.win(tgt >= 5); else sfx.lose();
@@ -55,14 +55,14 @@ export default function Limbo() {
 
   return (
     <div className="min-h-screen flex flex-col" style={{ background: pageBg(theme) }}>
-      <GameHeader title={`🚀 ${GAME_NAMES.limbo[lang]}`} subtitle="x100" />
+      <GameHeader title={` ${GAME_NAMES.limbo[lang]}`} subtitle="x100" />
       <div className="flex-1 px-4 pb-8 flex flex-col gap-4 items-center">
 
         <div className="w-full rounded-3xl py-10 flex flex-col items-center justify-center"
           style={{ background: ts.card, border: `1px solid ${ts.cardBorder}` }}>
           <p className="font-black" style={{
             fontSize: 54,
-            color: final === null ? "#a78bfa" : final >= tgt ? "#4ade80" : "#f87171",
+            color: final === null ? "#a78bfa": final >= tgt ?"#4ade80":"#f87171",
             textShadow: "0 0 28px rgba(167,139,250,0.5)",
           }}>
             {(final ?? display).toFixed(2)}x
@@ -71,12 +71,12 @@ export default function Limbo() {
         </div>
 
         <div className="w-full rounded-2xl p-4" style={{ background: ts.card, border: `1px solid ${ts.cardBorder}` }}>
-          <p className="text-xs font-bold mb-2 tracking-widest" style={{ color: ts.textSub }}>🎯 {g("target", lang)}</p>
+          <p className="text-xs font-bold mb-2 tracking-widest" style={{ color: ts.textSub }}>{g("target", lang)}</p>
           <div className="grid grid-cols-4 gap-2 mb-3">
             {["1.50", "2.00", "5.00", "10.00"].map(v => (
-              <button key={v} disabled={busy} onClick={() => { setTarget(v); sfx.select(); }}
+              <button key={v} disabled={busy} onClick={() =>{ setTarget(v); sfx.select(); }}
                 className="py-2 rounded-xl text-xs font-bold active:scale-95 disabled:opacity-40"
-                style={{ background: target === v ? "linear-gradient(135deg,#7c3aed,#4f46e5)" : ts.btnSecondary, color: target === v ? "#fff" : ts.btnSecondaryText }}>
+                style={{ background: target === v ? "linear-gradient(135deg,#7c3aed,#4f46e5)": ts.btnSecondary, color: target === v ?"#fff" : ts.btnSecondaryText }}>
                 x{v}
               </button>
             ))}
@@ -88,7 +88,7 @@ export default function Limbo() {
 
         <ResultBanner win={won} text={won ? g("win", lang) : g("lose", lang)} amount={amount} />
         <BetPanel value={betInput} onChange={setBetInput} onQuick={quick} disabled={busy} />
-        <PlayButton label={`🚀 ${g("play", lang)} · ${bet.toLocaleString()}`} onClick={play} disabled={!canPlay} />
+        <PlayButton label={` ${g("play", lang)} · ${bet.toLocaleString()}`} onClick={play} disabled={!canPlay} />
         {saving && <p className="text-xs" style={{ color: ts.textSub }}>...</p>}
       </div>
     </div>

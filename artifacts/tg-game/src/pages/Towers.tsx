@@ -6,6 +6,7 @@ import { riggedWin } from "@/lib/odds";
 import { sfx } from "@/lib/sound";
 import { g, GAME_NAMES } from "@/lib/game-i18n";
 import GameHeader from "@/components/GameHeader";
+import Sym from "@/components/casino/Sym";
 import BetPanel from "@/components/casino/BetPanel";
 import PlayButton from "@/components/casino/PlayButton";
 import ResultBanner from "@/components/casino/ResultBanner";
@@ -24,13 +25,13 @@ export default function Towers() {
   const [won, setWon] = useState<boolean | null>(null);
   const [amount, setAmount] = useState(0);
 
-  const start = () => {
+  const start = () =>{
     if (!canPlay) return;
     sfx.spin();
     setActive(true); setBusy(true); setLevel(0); setPicked({}); setBoom(null); setWon(null);
   };
 
-  const choose = async (col: number) => {
+  const choose = async (col: number) =>{
     if (!active) return;
     const safe = riggedWin() || level < 1; // birinchi bosqich yengilroq
     setPicked(p => ({ ...p, [level]: col }));
@@ -52,7 +53,7 @@ export default function Towers() {
     setLevel(l => l + 1);
   };
 
-  const cashout = async () => {
+  const cashout = async () =>{
     if (!active || level === 0) return;
     sfx.cash();
     const w = await settle(MULTS[level - 1]);
@@ -61,18 +62,18 @@ export default function Towers() {
 
   return (
     <div className="min-h-screen flex flex-col" style={{ background: pageBg(theme) }}>
-      <GameHeader title={`🏛 ${GAME_NAMES.towers[lang]}`} subtitle="x20" />
+      <GameHeader title={` ${GAME_NAMES.towers[lang]}`} subtitle="x20" />
       <div className="flex-1 px-4 pb-8 flex flex-col gap-4 items-center">
 
         <div className="w-full rounded-3xl p-3 flex flex-col-reverse gap-1.5"
           style={{ background: ts.card, border: `1px solid ${ts.cardBorder}` }}>
           {Array.from({ length: LEVELS }).map((_, lvl) => (
             <div key={lvl} className="flex items-center gap-2">
-              <span className="font-black w-10 text-right" style={{ fontSize: 10, color: lvl === level && active ? "#fbbf24" : ts.textSub }}>
+              <span className="font-black w-10 text-right"style={{ fontSize: 10, color: lvl === level && active ?"#fbbf24" : ts.textSub }}>
                 x{MULTS[lvl]}
               </span>
               <div className="flex-1 grid grid-cols-3 gap-1.5">
-                {[0, 1, 2].map(col => {
+                {[0, 1, 2].map(col =>{
                   const done = picked[lvl] === col;
                   const exploded = boom?.lvl === lvl && boom.col === col;
                   const current = active && lvl === level;
@@ -80,11 +81,11 @@ export default function Towers() {
                     <button key={col} disabled={!current} onClick={() => choose(col)}
                       className="py-2.5 rounded-lg font-black text-sm active:scale-95 transition-all"
                       style={{
-                        background: exploded ? "#dc2626" : done ? "#16a34a" : current ? "linear-gradient(135deg,#7c3aed,#4f46e5)" : "rgba(255,255,255,0.05)",
+                        background: exploded ? "#dc2626": done ?"#16a34a": current ?"linear-gradient(135deg,#7c3aed,#4f46e5)":"rgba(255,255,255,0.05)",
                         color: "#fff",
                         opacity: current || done || exploded ? 1 : 0.45,
                       }}>
-                      {exploded ? "💥" : done ? "⭐" : current ? "?" : ""}
+                      {exploded ? <Sym n="boom" s={26} /> : done ? <Sym n="star" s={24} /> : current ? "?" : ""}
                     </button>
                   );
                 })}
@@ -96,13 +97,13 @@ export default function Towers() {
         <ResultBanner win={won} text={won ? g("win", lang) : g("lose", lang)} amount={amount} />
 
         {active ? (
-          <PlayButton label={`💰 ${g("cashout", lang)} · x${level ? MULTS[level - 1] : 0}`} onClick={cashout}
+          <PlayButton label={` ${g("cashout", lang)} · x${level ? MULTS[level - 1] : 0}`} onClick={cashout}
             disabled={level === 0}
             color="linear-gradient(145deg,#059669,#10b981)" shadow="0 7px 0 #064e3b" />
         ) : (
           <>
             <BetPanel value={betInput} onChange={setBetInput} onQuick={quick} />
-            <PlayButton label={`🏛 ${g("play", lang)} · ${bet.toLocaleString()}`} onClick={start} disabled={!canPlay} />
+            <PlayButton label={` ${g("play", lang)} · ${bet.toLocaleString()}`} onClick={start} disabled={!canPlay} />
           </>
         )}
         {saving && <p className="text-xs" style={{ color: ts.textSub }}>...</p>}

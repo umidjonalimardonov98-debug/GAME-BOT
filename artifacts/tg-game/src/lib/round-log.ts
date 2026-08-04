@@ -12,9 +12,9 @@ export type Round = {
 };
 
 const GAME_LABEL: Record<string, string> = {
-  dice: "🎲 Dice", mines: "💣 Mines", aviator: "✈️ Aviator", slots: "🎰 Slots",
-  roulette: "🎡 Roulette", blackjack: "🃏 Blackjack", apple: "🍎 Apple",
-  parity: "🔢 Parity", spin: "🎯 Spin",
+  dice: " Dice", mines: " Mines", aviator: " Aviator", slots: " Slots",
+  roulette: " Roulette", blackjack: " Blackjack", apple: " Apple",
+  parity: " Parity", spin: " Spin",
 };
 
 export function gameLabel(g: string) { return GAME_LABEL[g] ?? g; }
@@ -26,7 +26,7 @@ const listeners = new Set<(r: Round[]) => void>();
 export function subscribeRounds(l: (r: Round[]) => void) {
   listeners.add(l);
   l(rounds);
-  return () => { listeners.delete(l); };
+  return () =>{ listeners.delete(l); };
 }
 
 export function recordRound(data: { game: string; bet: number; won: boolean; winAmount: number }) {

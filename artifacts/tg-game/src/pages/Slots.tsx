@@ -9,8 +9,8 @@ import GameHeader from "@/components/GameHeader";
 import SlotReel from "@/components/casino/SlotReel";
 
 
-const FRUITS = ["🍒","🍊","🍋","🍇","🍉","🍓"];
-const ALL    = ["🍒","🍊","🍋","🍇","🍉","🍓","⭐","💎","7️⃣"];
+const FRUITS = ["cherry", "lemon", "orange", "grape", "melon", "strawberry"];
+const ALL    = ["cherry", "lemon", "orange", "grape", "melon", "strawberry", "bell", "star", "seven"];
 
 
 // Deterministic outcome first, then generate reels to match
@@ -27,7 +27,7 @@ function spinReels(): { reels: [string,string,string]; outcome: "jackpot"|"three
   const r = Math.random();
   if (r < 0.01) {
     // 1% — Jackpot 777 = x10
-    return { reels: ["7️⃣","7️⃣","7️⃣"], outcome: "jackpot" };
+    return { reels: ["seven", "seven", "seven"], outcome: "jackpot" };
   } else if (r < 0.08) {
     // 7% — 3 of a kind fruit = x3
     const sym = FRUITS[Math.floor(Math.random() * FRUITS.length)];
@@ -52,7 +52,7 @@ function spinReels(): { reels: [string,string,string]; outcome: "jackpot"|"three
   }
 }
 
-const STRIP = ["🍒", "🍊", "7️⃣", "🍋", "💎", "🍇", "⭐", "🍉", "🍓"];
+const STRIP = ["cherry", "lemon", "seven", "orange", "grape", "melon", "strawberry", "bell", "star"];
 
 
 export default function Slots() {
@@ -60,7 +60,7 @@ export default function Slots() {
   const { t } = useLang();
   const { theme, ts } = useTheme();
   const [betInput, setBetInput] = useState("2000");
-  const [reels, setReels] = useState<[string,string,string]>(["🍒","🍒","🍒"]);
+  const [reels, setReels] = useState<[string,string,string]>(["cherry", "lemon", "orange"]);
   const [spinning, setSpinning] = useState(false);
   const [outcome, setOutcome] = useState<"jackpot"|"three"|"two"|"miss"|null>(null);
   const [winAmt, setWinAmt] = useState(0);
@@ -80,7 +80,7 @@ export default function Slots() {
     setBetInput(String(v));
   }
 
-  const spin = useCallback(async () => {
+  const spin = useCallback(async () =>{
     if (!player || player.balance < activeBet || spinning) return;
     setSpinning(true);
     setOutcome(null);
@@ -89,27 +89,27 @@ export default function Slots() {
     // barabanlar oldindan aniqlangan belgida to'xtaydi (haqiqiy slot kabi)
     setReels(finalReels);
 
-    setTimeout(() => {
+    setTimeout(() =>{
       stopTick();
       setSpinning(false);
       setOutcome(finalOutcome);
 
-      const mult = finalOutcome === "jackpot" ? 12 : finalOutcome === "three" ? 3.6 : finalOutcome === "two" ? 1.8 : 0;
+      const mult = finalOutcome === "jackpot"? 12 : finalOutcome ==="three"? 3.6 : finalOutcome ==="two" ? 1.8 : 0;
       const win = mult > 0 ? Math.floor(activeBet * mult) : 0;
       setWinAmt(win);
       if (win > 0) sfx.win(finalOutcome === "jackpot"); else sfx.lose();
 
       setSaving(true);
       placeBet(player.telegramId, { amount: activeBet, game: "slots", won: mult > 0, winAmount: win })
-        .then(() => refresh()).catch(() => {}).finally(() => setSaving(false));
+        .then(() => refresh()).catch(() =>{}).finally(() => setSaving(false));
     }, 780);
   }, [player, activeBet, spinning]);
 
 
   const OUTCOME_STYLE = {
-    jackpot: { color: "#fbbf24", glow: "0 0 30px #fbbf2499", label: "🏆 JACKPOT! x12" },
-    three:   { color: "#4ade80", glow: "0 0 20px #4ade8055", label: `✅ 3x! x3.6` },
-    two:     { color: isLight ? "#6366f1" : "#a5b4fc", glow: "none", label: `✌️ 2x! x1.8` },
+    jackpot: { color: "#fbbf24", glow: "0 0 30px #fbbf2499", label: " JACKPOT! x12" },
+    three:   { color: "#4ade80", glow: "0 0 20px #4ade8055", label: ` 3x! x3.6` },
+    two:     { color: isLight ? "#6366f1":"#a5b4fc", glow: "none", label: ` 2x! x1.8` },
     miss:    { color: "#f87171", glow: "none", label: t.noLuck },
   };
 
@@ -118,7 +118,7 @@ export default function Slots() {
 
   return (
     <div className="min-h-screen flex flex-col" style={{ background: pageBg(theme, GAME_BG.slots) }}>
-      <GameHeader title={`🎰 ${t.slotsTitle}`} subtitle="777 · Mevalar · Kombinatsiyalar" />
+      <GameHeader title={` ${t.slotsTitle}`} subtitle="777 · Mevalar · Kombinatsiyalar" />
 
       <div className="flex-1 px-4 pb-6 flex flex-col gap-4 items-center">
 
@@ -137,7 +137,7 @@ export default function Slots() {
           {/* yuqori lampalar */}
           <div className="relative flex gap-2">
             {Array.from({ length: 7 }).map((_, i) => (
-              <span key={i} className={spinning ? "bulb-run" : ""}
+              <span key={i} className={spinning ? "bulb-run":""}
                 style={{
                   width: 9, height: 9, borderRadius: "50%",
                   background: "radial-gradient(circle at 35% 30%,#fffbe6,#fbbf24 60%,#b45309)",
@@ -164,7 +164,7 @@ export default function Slots() {
 
 
           <div className="w-3/4 h-0.5 rounded-full"
-            style={{ background: `linear-gradient(90deg, transparent, ${isLight ? "#818cf8" : "#7c3aed"}, transparent)` }} />
+            style={{ background: `linear-gradient(90deg, transparent, ${isLight ? "#818cf8":"#7c3aed"}, transparent)` }} />
 
           {/* Result */}
           {outcome ? (
@@ -172,10 +172,10 @@ export default function Slots() {
               <p className="font-black text-2xl" style={{ color: OUTCOME_STYLE[outcome].color, textShadow: OUTCOME_STYLE[outcome].glow }}>
                 {OUTCOME_STYLE[outcome].label}
               </p>
-              {winAmt > 0 && <p className="font-bold text-sm mt-1" style={{ color: isLight ? "#059669" : "#4ade80" }}>+{winAmt.toLocaleString()} UZS</p>}
+              {winAmt > 0 && <p className="font-bold text-sm mt-1"style={{ color: isLight ?"#059669":"#4ade80" }}>+{winAmt.toLocaleString()} UZS</p>}
             </div>
           ) : spinning ? (
-            <p className="font-bold animate-pulse" style={{ color: isLight ? "#4338ca" : "#c4b5fd" }}>{t.spinning}</p>
+            <p className="font-bold animate-pulse"style={{ color: isLight ?"#4338ca":"#c4b5fd" }}>{t.spinning}</p>
           ) : (
             <p className="text-sm" style={{ color: ts.textSub }}>{t.pressToSpin}</p>
           )}
@@ -187,10 +187,10 @@ export default function Slots() {
           <p className="text-xs font-black mb-3 text-center tracking-widest" style={{ color: ts.textSub }}>{t.payoutTable}</p>
           <div className="flex flex-col gap-1.5">
             {[
-              { label: "7️⃣7️⃣7️⃣  JACKPOT", mult: "x10", color: "#fbbf24" },
+              { label: "777  JACKPOT", mult: "x10", color: "#fbbf24" },
               { label: `3x bir xil meva`, mult: "x3", color: "#4ade80" },
-              { label: `2x bir xil`, mult: "x1.5", color: isLight ? "#6366f1" : "#a5b4fc" },
-              { label: "Boshqa kombinatsiya", mult: "❌", color: "#f87171" },
+              { label: `2x bir xil`, mult: "x1.5", color: isLight ? "#6366f1":"#a5b4fc" },
+              { label: "Boshqa kombinatsiya", mult: "", color: "#f87171" },
             ].map(row => (
               <div key={row.label} className="flex items-center justify-between px-3 py-2 rounded-xl"
                 style={{ background: ts.input, border: `1px solid ${ts.inputBorder}` }}>
@@ -204,7 +204,7 @@ export default function Slots() {
         {/* Bet */}
         <div className="w-full rounded-2xl p-4"
           style={{ background: ts.card, border: `1px solid ${ts.cardBorder}` }}>
-          <p className="text-xs font-bold mb-3 tracking-widest" style={{ color: ts.textSub }}>💰 {t.betAmount}</p>
+          <p className="text-xs font-bold mb-3 tracking-widest" style={{ color: ts.textSub }}>{t.betAmount}</p>
           <div className="grid grid-cols-4 gap-2 mb-3">
             {["MIN","1/2","X2","MAX"].map(a => (
               <button key={a} onClick={() => setQuickBet(a)}
@@ -224,11 +224,11 @@ export default function Slots() {
           disabled={!player || player.balance < activeBet || spinning}
           className="w-full py-4 rounded-2xl font-black text-xl active:scale-95 transition-all disabled:opacity-40"
           style={{
-            background: spinning ? "rgba(124,58,237,0.3)" : (isLight ? "linear-gradient(145deg,#4f46e5,#6d28d9)" : "linear-gradient(145deg,#7c3aed,#4f46e5)"),
-            boxShadow: spinning ? "none" : (isLight ? "0 6px 0 #312e81, 0 8px 24px rgba(79,70,229,0.4)" : "0 7px 0 #3b1278, 0 10px 28px #7c3aed55"),
-            color: spinning ? (isLight ? "#6d28d9" : "#c4b5fd") : "white",
+            background: spinning ? "rgba(124,58,237,0.3)": (isLight ?"linear-gradient(145deg,#4f46e5,#6d28d9)":"linear-gradient(145deg,#7c3aed,#4f46e5)"),
+            boxShadow: spinning ? "none": (isLight ?"0 6px 0 #312e81, 0 8px 24px rgba(79,70,229,0.4)":"0 7px 0 #3b1278, 0 10px 28px #7c3aed55"),
+            color: spinning ? (isLight ? "#6d28d9":"#c4b5fd") : "white",
           }}>
-          {spinning ? t.spinning : `🎰 ${t.spinBtn}`}
+          {spinning ? t.spinning : ` ${t.spinBtn}`}
         </button>
 
         {saving && <p className="text-xs text-center" style={{ color: ts.textSub }}>{t.saving}</p>}

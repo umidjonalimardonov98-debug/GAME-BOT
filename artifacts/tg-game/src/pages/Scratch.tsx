@@ -6,11 +6,12 @@ import { riggedWin } from "@/lib/odds";
 import { sfx } from "@/lib/sound";
 import { g, GAME_NAMES } from "@/lib/game-i18n";
 import GameHeader from "@/components/GameHeader";
+import Sym from "@/components/casino/Sym";
 import BetPanel from "@/components/casino/BetPanel";
 import PlayButton from "@/components/casino/PlayButton";
 import ResultBanner from "@/components/casino/ResultBanner";
 
-const SYM = ["🍒", "🔔", "💎", "⭐", "🍀", "7️⃣"];
+const SYM = ["cherry", "bell", "gem", "star", "clover", "seven"];
 
 export default function Scratch() {
   const { lang } = useLang();
@@ -22,7 +23,7 @@ export default function Scratch() {
   const [won, setWon] = useState<boolean | null>(null);
   const [amount, setAmount] = useState(0);
 
-  const start = () => {
+  const start = () =>{
     if (!canPlay) return;
     sfx.spin();
     const win = riggedWin();
@@ -47,7 +48,7 @@ export default function Scratch() {
     setMult(m); setWon(null); setBusy(true);
   };
 
-  const scratch = async (i: number) => {
+  const scratch = async (i: number) =>{
     if (!busy || open[i]) return;
     sfx.reveal();
     const next = [...open]; next[i] = true;
@@ -61,7 +62,7 @@ export default function Scratch() {
 
   return (
     <div className="min-h-screen flex flex-col" style={{ background: pageBg(theme) }}>
-      <GameHeader title={`🎟 ${GAME_NAMES.scratch[lang]}`} subtitle="x10" />
+      <GameHeader title={` ${GAME_NAMES.scratch[lang]}`} subtitle="x10" />
       <div className="flex-1 px-4 pb-8 flex flex-col gap-4 items-center">
 
         <p className="text-xs font-bold" style={{ color: ts.textSub }}>{g("scratchIt", lang)}</p>
@@ -73,17 +74,17 @@ export default function Scratch() {
               className="aspect-square rounded-2xl flex items-center justify-center active:scale-95 transition-all"
               style={{
                 fontSize: 30,
-                background: open[i] ? "rgba(251,191,36,0.16)" : "linear-gradient(145deg,#9ca3af,#6b7280)",
+                background: open[i] ? "rgba(251,191,36,0.16)":"linear-gradient(145deg,#9ca3af,#6b7280)",
                 border: `1px solid ${ts.cardBorder}`,
               }}>
-              {open[i] ? cells[i] : "❔"}
+              {open[i] ? <Sym n={cells[i]} s={40} /> : <Sym n="question" s={30} style={{ opacity: 0.75 }} />}
             </button>
           ))}
         </div>
 
         <ResultBanner win={won} text={won ? `${g("win", lang)} x${mult}` : g("lose", lang)} amount={amount} />
         <BetPanel value={betInput} onChange={setBetInput} onQuick={quick} disabled={busy} />
-        <PlayButton label={`🎟 ${g("play", lang)} · ${bet.toLocaleString()}`} onClick={start} disabled={!canPlay} />
+        <PlayButton label={` ${g("play", lang)} · ${bet.toLocaleString()}`} onClick={start} disabled={!canPlay} />
         {saving && <p className="text-xs" style={{ color: ts.textSub }}>...</p>}
       </div>
     </div>

@@ -4,6 +4,7 @@ import { ArrowLeft } from "lucide-react";
 import { usePlayer } from "@/lib/player-context";
 import { placeBet } from "@/lib/api";
 import { riggedLose } from "@/lib/odds";
+import Sym from "@/components/casino/Sym";
 
 const ROWS = 10;
 const COLS = 5;
@@ -15,16 +16,16 @@ const BOMBS_PER_ROW = [1, 2, 2, 2, 3, 3, 3, 4, 4, 4];
 const DIFF_LABELS = ["Oson","Oson","O'rta","O'rta","O'rta","Qiyin","Qiyin","Qiyin","Juda Qiyin","Juda Qiyin"];
 const DIFF_COLORS = ["#4ade80","#4ade80","#fbbf24","#fbbf24","#fbbf24","#f97316","#f97316","#f97316","#f87171","#f87171"];
 
-type Cell = "apple" | "bomb";
-type GameState = "idle" | "playing" | "won" | "lost";
+type Cell = "apple"|"bomb";
+type GameState = "idle"|"playing"|"won"|"lost";
 
 function generateGrid(): Cell[][] {
-  return Array.from({ length: ROWS }, (_, rowIdx) => {
+  return Array.from({ length: ROWS }, (_, rowIdx) =>{
     const bombCount = BOMBS_PER_ROW[rowIdx];
     const cells: Cell[] = Array(COLS).fill("apple") as Cell[];
     const positions = new Set<number>();
     while (positions.size < bombCount) positions.add(Math.floor(Math.random() * COLS));
-    positions.forEach(p => { cells[p] = "bomb"; });
+    positions.forEach(p =>{ cells[p] = "bomb"; });
     return cells;
   });
 }
@@ -50,8 +51,8 @@ export default function AppleOfFortune() {
   const potential = Math.floor(activeBet * (currentMult ?? MULTIPLIERS[0]));
 
   // Show result overlay after short delay so animation is visible
-  useEffect(() => {
-    if (gameState === "won" || gameState === "lost") {
+  useEffect(() =>{
+    if (gameState === "won"|| gameState ==="lost") {
       const t = setTimeout(() => setShowResult(true), 600);
       return () => clearTimeout(t);
     } else {
@@ -60,7 +61,7 @@ export default function AppleOfFortune() {
     }
   }, [gameState]);
 
-  const start = () => {
+  const start = () =>{
     if (!player || player.balance < activeBet || activeBet < 2000) return;
     setGrid(generateGrid());
     setRevealed(Array.from({ length: ROWS }, () => Array(COLS).fill(false)));
@@ -68,7 +69,7 @@ export default function AppleOfFortune() {
     setActiveRow(0); setCashOutAmount(0); setShowResult(false); setGameState("playing");
   };
 
-  const pickCell = async (row: number, col: number) => {
+  const pickCell = async (row: number, col: number) =>{
     if (gameState !== "playing" || row !== activeRow || revealed[row]?.[col]) return;
     const newRev = revealed.map(r => [...r]);
     newRev[row][col] = true;
@@ -79,12 +80,12 @@ export default function AppleOfFortune() {
       setGrid(g => g.map((r, ri) => ri === row ? r.map((c, ci) => ci === col ? "bomb" : c) : r));
     }
     if (forcedBomb || grid[row][col] === "bomb") {
-      setTimeout(() => {
+      setTimeout(() =>{
         setRevealed(newRev.map((r, ri) => ri <= row ? Array(COLS).fill(true) : r));
         setGameState("lost");
       }, 400);
       setSaving(true);
-      if (player) { await placeBet(player.telegramId, { amount: activeBet, game: "apple", won: false, winAmount: 0 }).catch(() => {}); await refresh(); }
+      if (player) { await placeBet(player.telegramId, { amount: activeBet, game: "apple", won: false, winAmount: 0 }).catch(() =>{}); await refresh(); }
       setSaving(false);
       return;
     }
@@ -95,23 +96,23 @@ export default function AppleOfFortune() {
       const prize = Math.floor(activeBet * MULTIPLIERS[ROWS - 1]);
       setCashOutAmount(prize); setGameState("won");
       setSaving(true);
-      if (player) { await placeBet(player.telegramId, { amount: activeBet, game: "apple", won: true, winAmount: prize }).catch(() => {}); await refresh(); }
+      if (player) { await placeBet(player.telegramId, { amount: activeBet, game: "apple", won: true, winAmount: prize }).catch(() =>{}); await refresh(); }
       setSaving(false);
     }
   };
 
-  const doCashOut = async () => {
+  const doCashOut = async () =>{
     if (activeRow === 0 || gameState !== "playing") return;
     const prize = Math.floor(activeBet * MULTIPLIERS[activeRow - 1]);
     setCashOutAmount(prize);
     setRevealed(grid.map((_, ri) => ri < activeRow ? Array(COLS).fill(true) : Array(COLS).fill(false)));
     setGameState("won");
     setSaving(true);
-    if (player) { await placeBet(player.telegramId, { amount: activeBet, game: "apple", won: true, winAmount: prize }).catch(() => {}); await refresh(); }
+    if (player) { await placeBet(player.telegramId, { amount: activeBet, game: "apple", won: true, winAmount: prize }).catch(() =>{}); await refresh(); }
     setSaving(false);
   };
 
-  const reset = () => { setGameState("idle"); setGrid([]); setRevealed([]); setActiveRow(0); setShowResult(false); };
+  const reset = () =>{ setGameState("idle"); setGrid([]); setRevealed([]); setActiveRow(0); setShowResult(false); };
 
   const rows = Array.from({ length: ROWS }, (_, i) => ROWS - 1 - i);
 
@@ -119,7 +120,7 @@ export default function AppleOfFortune() {
     <div className="h-screen flex flex-col relative overflow-hidden"
       style={{ background: "linear-gradient(180deg, rgba(10,7,2,0.84) 0%, rgba(14,9,3,0.76) 45%, rgba(6,4,1,0.94) 100%), url('/bg/apple.jpg') center / cover no-repeat fixed" }}>
 
-      <div className="fixed pointer-events-none" style={{ top: -50, left: -50, width: 200, height: 200, borderRadius: "50%", background: "radial-gradient(circle, #16a34a33 0%, transparent 70%)", filter: "blur(50px)" }} />
+      <div className="fixed pointer-events-none"style={{ top: -50, left: -50, width: 200, height: 200, borderRadius:"50%", background: "radial-gradient(circle, #16a34a33 0%, transparent 70%)", filter: "blur(50px)" }} />
 
       {/* Header */}
       <div className="flex items-center justify-between px-4 pt-4 pb-2 shrink-0 z-10">
@@ -127,7 +128,7 @@ export default function AppleOfFortune() {
           style={{ background: "rgba(255,255,255,0.08)", border: "1px solid rgba(255,255,255,0.12)" }}>
           <ArrowLeft className="w-4 h-4 text-white" />
         </button>
-        <h1 className="font-black text-sm tracking-wider text-white">🍎 APPLE OF FORTUNE</h1>
+        <h1 className="font-black text-sm tracking-wider text-white"> APPLE OF FORTUNE</h1>
         <div className="flex items-center gap-1 px-3 py-1.5 rounded-xl"
           style={{ background: "rgba(34,197,94,0.15)", border: "1px solid rgba(34,197,94,0.35)" }}>
           <span className="text-green-400 text-sm font-black">{(player?.balance ?? 0).toLocaleString()} UZS</span>
@@ -138,10 +139,10 @@ export default function AppleOfFortune() {
       {gameState === "playing" && (
         <div className="px-4 pb-1 shrink-0">
           <div className="flex items-center justify-between mb-1">
-            <span className="text-xs" style={{ color: "rgba(255,255,255,0.4)" }}>{activeRow}/{ROWS} qator</span>
+            <span className="text-xs"style={{ color:"rgba(255,255,255,0.4)" }}>{activeRow}/{ROWS} qator</span>
             <span className="text-xs font-black text-green-400">{MULTIPLIERS[Math.min(activeRow, ROWS - 1)]}x</span>
           </div>
-          <div className="h-1 rounded-full overflow-hidden" style={{ background: "rgba(255,255,255,0.08)" }}>
+          <div className="h-1 rounded-full overflow-hidden"style={{ background:"rgba(255,255,255,0.08)" }}>
             <div className="h-1 rounded-full transition-all"
               style={{ width: `${(activeRow / ROWS) * 100}%`, background: "linear-gradient(90deg, #16a34a, #4ade80)" }} />
           </div>
@@ -153,19 +154,19 @@ export default function AppleOfFortune() {
         <div className="flex-1 flex flex-col items-center justify-center px-4">
           <div className="w-24 h-24 rounded-full flex items-center justify-center mb-4 float-anim"
             style={{ background: "radial-gradient(circle, #16a34a33, #052e1688)", border: "2px solid #22c55e44", boxShadow: "0 0 40px #22c55e33" }}>
-            <span style={{ fontSize: 48 }}>🍎</span>
+            <Sym n="apple" s={60} />
           </div>
           <p className="text-white font-black text-xl mb-1">Apple of Fortune</p>
-          <p className="text-sm mb-0.5 text-center" style={{ color: "rgba(255,255,255,0.4)" }}>Har qatorda 4 ta olma, 1 ta bomba</p>
-          <p className="font-black text-base" style={{ color: "#4ade80" }}>1.2x → 1.5x → 2x → ... → 10x</p>
+          <p className="text-sm mb-0.5 text-center"style={{ color:"rgba(255,255,255,0.4)" }}>Har qatorda 4 ta olma, 1 ta bomba</p>
+          <p className="font-black text-base"style={{ color:"#4ade80" }}>1.2x → 1.5x → 2x → ... → 10x</p>
         </div>
       )}
 
       {/* GAME GRID */}
-      {(gameState === "playing" || gameState === "won" || gameState === "lost") && (
+      {(gameState === "playing"|| gameState ==="won"|| gameState ==="lost") && (
         <div className="flex-1 overflow-hidden px-2 py-1">
           <div className="h-full flex flex-col gap-1">
-            {rows.map((rowIdx) => {
+            {rows.map((rowIdx) =>{
               const isActive = rowIdx === activeRow && gameState === "playing";
               const isPast = rowIdx < activeRow;
               const mult = MULTIPLIERS[rowIdx];
@@ -176,7 +177,7 @@ export default function AppleOfFortune() {
                   <div className="w-8 text-right shrink-0">
                     <span className="font-black" style={{
                       fontSize: 10,
-                      color: rowIdx === activeRow - 1 ? "#4ade80" : isActive ? "#fbbf24" : isPast ? "rgba(74,222,128,0.25)" : "rgba(255,255,255,0.2)"
+                      color: rowIdx === activeRow - 1 ? "#4ade80": isActive ?"#fbbf24": isPast ?"rgba(74,222,128,0.25)":"rgba(255,255,255,0.2)"
                     }}>
                       {mult}x
                     </span>
@@ -184,7 +185,7 @@ export default function AppleOfFortune() {
 
                   {/* 5 cells */}
                   <div className="flex-1 grid grid-cols-5 gap-1 h-full">
-                    {Array.from({ length: COLS }, (_, c) => {
+                    {Array.from({ length: COLS }, (_, c) =>{
                       const isRev = revealed[rowIdx]?.[c];
                       const cell = grid[rowIdx]?.[c];
 
@@ -198,7 +199,7 @@ export default function AppleOfFortune() {
                         bg = "linear-gradient(135deg, rgba(21,128,61,0.4), rgba(5,46,22,0.6))";
                         border = "1px solid rgba(34,197,94,0.6)";
                         shadow = "0 0 10px rgba(34,197,94,0.25)";
-                        content = <div className="w-3 h-3 rounded-full pulse-ring" style={{ background: "radial-gradient(circle, #4ade80, #16a34a)" }} />;
+                        content = <div className="w-3 h-3 rounded-full pulse-ring"style={{ background:"radial-gradient(circle, #4ade80, #16a34a)" }} />;
                       }
 
                       if (isRev && cell === "apple") {
@@ -206,7 +207,7 @@ export default function AppleOfFortune() {
                         border = "1px solid #4ade8066";
                         shadow = "0 0 12px rgba(74,222,128,0.4)";
                         extraClass = "pop-in";
-                        content = <span style={{ fontSize: 18 }}>🍎</span>;
+                        content = <Sym n="apple" s={26} />;
                       }
 
                       if (isRev && cell === "bomb") {
@@ -214,16 +215,16 @@ export default function AppleOfFortune() {
                         border = "1px solid #ef444466";
                         shadow = "0 0 14px rgba(239,68,68,0.6)";
                         extraClass = "shake-anim";
-                        content = <span style={{ fontSize: 18 }}>💣</span>;
+                        content = <Sym n="apple" s={26} />;
                       }
 
                       if (!isRev && isPast && cell === "apple") {
-                        content = <span style={{ fontSize: 14, opacity: 0.2 }}>🍎</span>;
+                        content = <Sym n="apple" s={20} style={{ opacity: 0.22 }} />;
                       }
 
                       return (
                         <button key={c} onClick={() => pickCell(rowIdx, c)} disabled={!isActive}
-                          className={`flex items-center justify-center rounded-xl transition-all w-full h-full ${isActive ? "active:scale-90" : ""} ${extraClass}`}
+                          className={`flex items-center justify-center rounded-xl transition-all w-full h-full ${isActive ? "active:scale-90":""} ${extraClass}`}
                           style={{ background: bg, border, boxShadow: shadow }}>
                           {content}
                         </button>
@@ -243,7 +244,7 @@ export default function AppleOfFortune() {
           <button onClick={doCashOut} disabled={saving}
             className="w-full py-3 rounded-2xl font-black text-sm active:scale-95 transition-transform glow-green"
             style={{ background: "linear-gradient(135deg, #16a34a, #15803d)", color: "white" }}>
-            💰 OLISH — {potential.toLocaleString()} UZS ({currentMult}x)
+             OLISH — {potential.toLocaleString()} UZS ({currentMult}x)
           </button>
         </div>
       )}
@@ -253,7 +254,7 @@ export default function AppleOfFortune() {
         <div className="px-4 pb-5 shrink-0">
           <div className="grid grid-cols-4 gap-1.5 mb-2">
             {["MIN", "X2", "X/2", "MAX"].map((a) => (
-              <button key={a} onClick={() => {
+              <button key={a} onClick={() =>{
                 const bal = player?.balance ?? 0;
                 let v = activeBet;
                 if (a === "MIN") v = 2000;
@@ -277,13 +278,13 @@ export default function AppleOfFortune() {
             disabled={!player || player.balance < activeBet || activeBet < 2000}
             className="w-full py-3.5 rounded-2xl font-black text-base active:scale-95 transition-all disabled:opacity-40"
             style={{ background: "linear-gradient(135deg, #16a34a, #15803d)", boxShadow: "0 8px 28px rgba(22,163,74,0.5)", color: "white" }}>
-            🍎 O'YINNI BOSHLASH
+             O'YINNI BOSHLASH
           </button>
         </div>
       )}
 
       {/* RESULT OVERLAY — appears over grid when game ends */}
-      {showResult && (gameState === "won" || gameState === "lost") && (
+      {showResult && (gameState === "won"|| gameState ==="lost") && (
         <div className="absolute inset-0 z-50 flex flex-col items-center justify-center px-6"
           style={{ background: "rgba(0,0,0,0.82)", backdropFilter: "blur(6px)" }}>
 
@@ -292,16 +293,16 @@ export default function AppleOfFortune() {
               background: gameState === "won"
                 ? "linear-gradient(135deg, rgba(22,163,74,0.3), rgba(21,128,61,0.2))"
                 : "linear-gradient(135deg, rgba(153,27,27,0.35), rgba(127,29,29,0.2))",
-              border: `1px solid ${gameState === "won" ? "rgba(74,222,128,0.5)" : "rgba(239,68,68,0.5)"}`,
-              boxShadow: gameState === "won" ? "0 0 60px rgba(74,222,128,0.2)" : "0 0 60px rgba(239,68,68,0.2)"
+              border: `1px solid ${gameState === "won"?"rgba(74,222,128,0.5)":"rgba(239,68,68,0.5)"}`,
+              boxShadow: gameState === "won"?"0 0 60px rgba(74,222,128,0.2)":"0 0 60px rgba(239,68,68,0.2)"
             }}>
 
-            <div className="text-6xl mb-3">{gameState === "won" ? "🎉" : "💥"}</div>
+            <div className="mb-3 flex justify-center"><Sym n={gameState === "won" ? "trophy" : "boom"} s={72} /></div>
 
-            <p className="font-black text-3xl mb-1" style={{ color: gameState === "won" ? "#4ade80" : "#f87171" }}>
-              {gameState === "won" ? `+${cashOutAmount.toLocaleString()} UZS` : "Bomba chiqdi!"}
+            <p className="font-black text-3xl mb-1"style={{ color: gameState ==="won"?"#4ade80":"#f87171" }}>
+              {gameState === "won"? `+${cashOutAmount.toLocaleString()} UZS` :"Bomba chiqdi!"}
             </p>
-            <p className="text-sm mb-6" style={{ color: "rgba(255,255,255,0.45)" }}>
+            <p className="text-sm mb-6"style={{ color:"rgba(255,255,255,0.45)" }}>
               {gameState === "won"
                 ? `${activeRow} qator — ${MULTIPLIERS[activeRow - 1]}x`
                 : `${activeRow} qator o'tdingiz`}
@@ -310,7 +311,7 @@ export default function AppleOfFortune() {
             {/* Controls inside overlay */}
             <div className="grid grid-cols-4 gap-1.5 mb-2">
               {["MIN", "X2", "X/2", "MAX"].map((a) => (
-                <button key={a} onClick={() => {
+                <button key={a} onClick={() =>{
                   const bal = player?.balance ?? 0;
                   let v = activeBet;
                   if (a === "MIN") v = 2000;
@@ -335,10 +336,10 @@ export default function AppleOfFortune() {
               disabled={!player || player.balance < activeBet || activeBet < 2000}
               className="w-full py-3.5 rounded-2xl font-black text-base active:scale-95 transition-all disabled:opacity-40"
               style={{ background: "linear-gradient(135deg, #16a34a, #15803d)", boxShadow: "0 8px 28px rgba(22,163,74,0.4)", color: "white" }}>
-              🔄 QAYTA O'YNASH
+               QAYTA O'YNASH
             </button>
 
-            <button onClick={() => { reset(); nav("/"); }}
+            <button onClick={() =>{ reset(); nav("/"); }}
               className="w-full py-3 rounded-2xl font-black text-sm active:scale-95 transition-all mt-1"
               style={{ background: "rgba(255,255,255,0.06)", border: "1px solid rgba(255,255,255,0.12)", color: "rgba(255,255,255,0.55)" }}>
               ← Ortga qaytish

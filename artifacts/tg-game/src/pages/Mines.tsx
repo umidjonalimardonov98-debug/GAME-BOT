@@ -4,6 +4,7 @@ import { useTheme, pageBg, GAME_BG } from "@/lib/theme-context";
 import { placeBet } from "@/lib/api";
 import { riggedLose } from "@/lib/odds";
 import GameHeader from "@/components/GameHeader";
+import Sym from "@/components/casino/Sym";
 
 const SIZE = 25;
 const MINE_OPTIONS = [3, 5, 7, 10];
@@ -23,7 +24,7 @@ function pickMines(count: number) {
   return set;
 }
 
-type State = "idle" | "playing" | "over";
+type State = "idle"|"playing"|"over";
 
 export default function Mines() {
   const { player, refresh } = usePlayer();
@@ -57,7 +58,7 @@ export default function Mines() {
     setBetInput(String(v));
   }
 
-  const start = useCallback(() => {
+  const start = useCallback(() =>{
     if (!player || bet < 2000 || player.balance < bet || busy) return;
     setBombs(pickMines(mines));
     setLoseAt(riggedLose() ? 1 + Math.floor(Math.random() * 3) : Number.POSITIVE_INFINITY);
@@ -69,7 +70,7 @@ export default function Mines() {
   }, [player, bet, mines, busy]);
 
   const finish = useCallback(
-    async (win: boolean, amount: number) => {
+    async (win: boolean, amount: number) =>{
       setBusy(true);
       setState("over");
       if (player) {
@@ -78,7 +79,7 @@ export default function Mines() {
           game: "mines",
           won: win,
           winAmount: win ? amount : 0,
-        }).catch(() => {});
+        }).catch(() =>{});
         await refresh();
       }
       setBusy(false);
@@ -86,14 +87,14 @@ export default function Mines() {
     [player, bet, refresh],
   );
 
-  const openCell = (i: number) => {
+  const openCell = (i: number) =>{
     if (state !== "playing" || opened.includes(i) || busy) return;
     const forcedBoom = opened.length + 1 === loseAt;
     if (forcedBoom || bombs.has(i)) {
       if (forcedBoom) setBombs((b) => new Set([...b, i]));
       setBoom(i);
       setPrize(0);
-      setMsg("💥 Bomba! Yutqazdingiz");
+      setMsg(" Bomba! Yutqazdingiz");
       void finish(false, 0);
       return;
     }
@@ -102,28 +103,28 @@ export default function Mines() {
     if (next.length === SIZE - mines) {
       const all = Math.floor(bet * multiplier(mines, next.length));
       setPrize(all);
-      setMsg(`🏆 Barcha olmoslar! +${all.toLocaleString()} UZS`);
+      setMsg(` Barcha olmoslar! +${all.toLocaleString()} UZS`);
       void finish(true, all);
     }
   };
 
-  const doCashout = () => {
+  const doCashout = () =>{
     if (state !== "playing" || opened.length === 0 || busy) return;
     setPrize(cashout);
-    setMsg(`💎 Olindi! +${cashout.toLocaleString()} UZS`);
+    setMsg(` Olindi! +${cashout.toLocaleString()} UZS`);
     void finish(true, cashout);
   };
 
-  const cellBg = (i: number) => {
+  const cellBg = (i: number) =>{
     if (boom === i) return "linear-gradient(145deg,#7f1d1d,#ef4444)";
-    if (state === "over" && bombs.has(i)) return "linear-gradient(145deg,#450a0a,#991b1b)";
+    if (state === "over"&& bombs.has(i)) return"linear-gradient(145deg,#450a0a,#991b1b)";
     if (opened.includes(i)) return "linear-gradient(145deg,#065f46,#10b981)";
-    return isLight ? "linear-gradient(145deg,#e0e7ff,#c7d2fe)" : "linear-gradient(145deg,#312e81,#4c1d95)";
+    return isLight ? "linear-gradient(145deg,#e0e7ff,#c7d2fe)":"linear-gradient(145deg,#312e81,#4c1d95)";
   };
 
   return (
     <div className="min-h-screen flex flex-col" style={{ background: pageBg(theme, GAME_BG.mines) }}>
-      <GameHeader title="💣 MINES" subtitle="Olmoslarni top · bombadan qoch" />
+      <GameHeader title=" MINES" subtitle="Olmoslarni top · bombadan qoch" />
 
       <div className="flex-1 px-4 pb-8 flex flex-col gap-4">
         {/* Multiplier bar */}
@@ -143,7 +144,7 @@ export default function Mines() {
             <p className="text-xs font-black tracking-widest" style={{ color: ts.textSub }}>
               KOEFFITSIYENT
             </p>
-            <p className="font-black text-3xl" style={{ color: "#34d399" }}>
+            <p className="font-black text-3xl"style={{ color:"#34d399" }}>
               x{mult.toFixed(2)}
             </p>
           </div>
@@ -151,7 +152,7 @@ export default function Mines() {
             <p className="text-xs font-black tracking-widest" style={{ color: ts.textSub }}>
               YIG'ILGAN
             </p>
-            <p className="font-black text-2xl" style={{ color: "#fbbf24" }}>
+            <p className="font-black text-2xl"style={{ color:"#fbbf24" }}>
               {(state === "playing" ? cashout : prize).toLocaleString()}
             </p>
           </div>
@@ -163,7 +164,7 @@ export default function Mines() {
           style={{ background: ts.card, border: `1px solid ${ts.cardBorder}` }}
         >
           <div className="grid grid-cols-5 gap-2">
-            {Array.from({ length: SIZE }).map((_, i) => {
+            {Array.from({ length: SIZE }).map((_, i) =>{
               const isOpen = opened.includes(i);
               const revealed = state === "over" && bombs.has(i);
               return (
@@ -183,7 +184,7 @@ export default function Mines() {
                       : "0 4px 0 rgba(0,0,0,0.35), inset 0 1px 0 rgba(255,255,255,0.18)",
                   }}
                 >
-                  {isOpen ? "💎" : revealed || boom === i ? "💣" : ""}
+                  {isOpen ? <Sym n="gem" s={34} /> : revealed || boom === i ? <Sym n="bomb" s={34} /> : ""}
                 </button>
               );
             })}
@@ -191,7 +192,7 @@ export default function Mines() {
           {msg && (
             <p
               className="text-center font-black mt-4"
-              style={{ color: prize > 0 ? "#4ade80" : "#f87171" }}
+              style={{ color: prize > 0 ? "#4ade80":"#f87171" }}
             >
               {msg}
             </p>
@@ -201,10 +202,10 @@ export default function Mines() {
         {/* Mines count */}
         <div className="rounded-2xl p-4" style={{ background: ts.card, border: `1px solid ${ts.cardBorder}` }}>
           <p className="text-xs font-black mb-3 tracking-widest" style={{ color: ts.textSub }}>
-            💣 BOMBALAR SONI
+             BOMBALAR SONI
           </p>
           <div className="grid grid-cols-4 gap-2">
-            {MINE_OPTIONS.map((m) => {
+            {MINE_OPTIONS.map((m) =>{
               const sel = mines === m;
               return (
                 <button
@@ -216,7 +217,7 @@ export default function Mines() {
                     background: sel ? "rgba(239,68,68,0.18)" : ts.input,
                     border: sel ? "1.5px solid #ef444488" : `1px solid ${ts.inputBorder}`,
                     color: sel ? "#f87171" : ts.text,
-                    boxShadow: sel ? "0 4px 18px rgba(239,68,68,0.25)" : "0 2px 0 rgba(0,0,0,0.12)",
+                    boxShadow: sel ? "0 4px 18px rgba(239,68,68,0.25)":"0 2px 0 rgba(0,0,0,0.12)",
                   }}
                 >
                   {m}
@@ -229,7 +230,7 @@ export default function Mines() {
         {/* Bet */}
         <div className="rounded-2xl p-4" style={{ background: ts.card, border: `1px solid ${ts.cardBorder}` }}>
           <p className="text-xs font-bold mb-3 tracking-widest" style={{ color: ts.textSub }}>
-            💰 TIKISH MIQDORI
+             TIKISH MIQDORI
           </p>
           <div className="grid grid-cols-4 gap-1.5 mb-3">
             {["MIN", "X2", "X/2", "MAX"].map((a) => (
@@ -266,12 +267,12 @@ export default function Mines() {
             disabled={opened.length === 0 || busy}
             className="w-full py-4 rounded-2xl font-black text-lg text-white active:scale-95 transition-all"
             style={{
-              background: opened.length ? "linear-gradient(135deg,#059669,#34d399)" : "rgba(120,120,120,0.35)",
-              boxShadow: opened.length ? "0 8px 0 #065f46, 0 10px 30px rgba(16,185,129,0.4)" : "none",
+              background: opened.length ? "linear-gradient(135deg,#059669,#34d399)":"rgba(120,120,120,0.35)",
+              boxShadow: opened.length ? "0 8px 0 #065f46, 0 10px 30px rgba(16,185,129,0.4)":"none",
             }}
           >
             {opened.length
-              ? `💎 OLISH · ${cashout.toLocaleString()} UZS`
+              ? ` OLISH · ${cashout.toLocaleString()} UZS`
               : `Katak oching (keyingi x${nextMult.toFixed(2)})`}
           </button>
         ) : (
@@ -285,7 +286,7 @@ export default function Mines() {
               opacity: !player || bet < 2000 || (player?.balance ?? 0) < bet ? 0.5 : 1,
             }}
           >
-            🚀 BOSHLASH
+             BOSHLASH
           </button>
         )}
       </div>

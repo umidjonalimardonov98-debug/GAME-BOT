@@ -21,7 +21,7 @@ export default function Plinko() {
   const { lang } = useLang();
   const { theme, ts } = useTheme();
   const { bet, betInput, setBetInput, quick, settle, canPlay, busy, setBusy, saving } = useBet("plinko");
-  const [risk, setRisk] = useState<"low" | "mid" | "high">("mid");
+  const [risk, setRisk] = useState<"low"|"mid"|"high">("mid");
   const [ballPos, setBallPos] = useState<{ row: number; col: number } | null>(null);
   const [landed, setLanded] = useState<number | null>(null);
   const [won, setWon] = useState<boolean | null>(null);
@@ -32,7 +32,7 @@ export default function Plinko() {
 
   const mults = BUCKETS[risk];
 
-  const drop = () => {
+  const drop = () =>{
     if (!canPlay) return;
     setBusy(true); setWon(null); setLanded(null);
     const winning = riggedWin();
@@ -54,11 +54,11 @@ export default function Plinko() {
     }
     path[ROWS - 1] = target;
 
-    path.forEach((c, r) => {
+    path.forEach((c, r) =>{
       timers.current.push(setTimeout(() => setBallPos({ row: r, col: c }), r * 90));
     });
 
-    timers.current.push(setTimeout(async () => {
+    timers.current.push(setTimeout(async () =>{
       stopTick();
       setBallPos(null);
       setLanded(target);
@@ -71,20 +71,20 @@ export default function Plinko() {
 
   return (
     <div className="min-h-screen flex flex-col" style={{ background: pageBg(theme) }}>
-      <GameHeader title={`🔻 ${GAME_NAMES.plinko[lang]}`} subtitle="x12" />
+      <GameHeader title={` ${GAME_NAMES.plinko[lang]}`} subtitle="x12" />
       <div className="flex-1 px-4 pb-8 flex flex-col gap-4 items-center">
 
         <div className="w-full rounded-3xl p-4" style={{ background: ts.card, border: `1px solid ${ts.cardBorder}` }}>
           <div className="flex flex-col items-center gap-1.5 mb-3">
             {Array.from({ length: ROWS }).map((_, r) => (
               <div key={r} className="flex gap-2.5 items-center">
-                {Array.from({ length: r + 3 }).map((_, c) => {
+                {Array.from({ length: r + 3 }).map((_, c) =>{
                   const active = ballPos?.row === r && Math.abs(ballPos.col - c) < 1;
                   return (
                     <span key={c} style={{
                       width: 8, height: 8, borderRadius: "50%",
-                      background: active ? "#fbbf24" : "rgba(255,255,255,0.45)",
-                      boxShadow: active ? "0 0 12px #fbbf24" : "none",
+                      background: active ? "#fbbf24":"rgba(255,255,255,0.45)",
+                      boxShadow: active ? "0 0 12px #fbbf24":"none",
                       transition: "background .12s",
                     }} />
                   );
@@ -97,8 +97,8 @@ export default function Plinko() {
               <div key={i} className="text-center py-1.5 rounded-lg font-black"
                 style={{
                   fontSize: 9,
-                  background: landed === i ? (m > 0 ? "#16a34a" : "#dc2626") : (m > 0 ? "rgba(251,191,36,0.16)" : "rgba(255,255,255,0.06)"),
-                  color: landed === i ? "#fff" : (m > 0 ? "#fbbf24" : ts.textSub),
+                  background: landed === i ? (m > 0 ? "#16a34a":"#dc2626") : (m > 0 ? "rgba(251,191,36,0.16)":"rgba(255,255,255,0.06)"),
+                  color: landed === i ? "#fff": (m > 0 ?"#fbbf24" : ts.textSub),
                 }}>
                 {m > 0 ? `x${m}` : "0"}
               </div>
@@ -108,7 +108,7 @@ export default function Plinko() {
 
         <div className="w-full grid grid-cols-3 gap-2">
           {(["low", "mid", "high"] as const).map(r => (
-            <button key={r} disabled={busy} onClick={() => { setRisk(r); sfx.select(); }}
+            <button key={r} disabled={busy} onClick={() =>{ setRisk(r); sfx.select(); }}
               className="py-2.5 rounded-xl text-xs font-black active:scale-95 disabled:opacity-40"
               style={{
                 background: risk === r ? "linear-gradient(135deg,#7c3aed,#4f46e5)" : ts.btnSecondary,
@@ -122,7 +122,7 @@ export default function Plinko() {
 
         <ResultBanner win={won} text={won ? g("win", lang) : g("lose", lang)} amount={amount} />
         <BetPanel value={betInput} onChange={setBetInput} onQuick={quick} disabled={busy} />
-        <PlayButton label={`🔻 ${g("play", lang)} · ${bet.toLocaleString()}`} onClick={drop} disabled={!canPlay} />
+        <PlayButton label={` ${g("play", lang)} · ${bet.toLocaleString()}`} onClick={drop} disabled={!canPlay} />
         {saving && <p className="text-xs" style={{ color: ts.textSub }}>...</p>}
       </div>
     </div>

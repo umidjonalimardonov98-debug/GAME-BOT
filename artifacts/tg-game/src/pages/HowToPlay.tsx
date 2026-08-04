@@ -10,9 +10,9 @@ import { sfx } from "@/lib/sound";
 const KEYS = Object.keys(GAME_RULES);
 
 const EXTRA: Record<string, { title: string; items: string[] }> = {
-  uz: { title: "💡 Depozit va Yechish", items: ["Har depozitga +20% bonus", "Yechish uchun depozit miqdorini 100% o'ynash kerak", "Chek (skrinshot) botga yuboriladi, admin tasdiqlaydi", "Kunlik bonus va promo kodlar mavjud"] },
-  ru: { title: "💡 Депозит и вывод", items: ["Бонус +20% к каждому депозиту", "Для вывода нужно отыграть 100% депозита", "Чек (скриншот) отправляется в бот, админ подтверждает", "Есть ежедневный бонус и промокоды"] },
-  en: { title: "💡 Deposit & withdrawal", items: ["+20% bonus on every deposit", "You must wager 100% of the deposit before withdrawing", "Send the receipt screenshot to the bot for admin approval", "Daily bonus and promo codes available"] },
+  uz: { title: " Depozit va Yechish", items: ["Har depozitga +20% bonus", "Yechish uchun depozit miqdorini 100% o'ynash kerak", "Chek (skrinshot) botga yuboriladi, admin tasdiqlaydi", "Kunlik bonus va promo kodlar mavjud"] },
+  ru: { title: " Депозит и вывод", items: ["Бонус +20% к каждому депозиту", "Для вывода нужно отыграть 100% депозита", "Чек (скриншот) отправляется в бот, админ подтверждает", "Есть ежедневный бонус и промокоды"] },
+  en: { title: " Deposit & withdrawal", items: ["+20% bonus on every deposit", "You must wager 100% of the deposit before withdrawing", "Send the receipt screenshot to the bot for admin approval", "Daily bonus and promo codes available"] },
 };
 
 export default function HowToPlay() {
@@ -38,7 +38,7 @@ export default function HowToPlay() {
       {/* 4 qatorli o'yin tanlash gridi */}
       <div className="grid grid-cols-4 gap-2 px-4 mb-4">
         {KEYS.map(k => (
-          <button key={k} onClick={() => { setActive(k); sfx.select(); }}
+          <button key={k} onClick={() =>{ setActive(k); sfx.select(); }}
             className="rounded-2xl py-2.5 px-1 flex flex-col items-center gap-1 active:scale-95 transition-all"
             style={{
               background: active === k ? "linear-gradient(135deg,#7c3aed,#4f46e5)" : ts.card,
@@ -62,15 +62,15 @@ export default function HowToPlay() {
           <ol className="space-y-1.5">
             {cur.rules[lang].map((s, i) => (
               <li key={i} className="flex gap-2.5 text-sm">
-                <span className="font-black shrink-0" style={{ color: "#fbbf24", minWidth: 18 }}>{i + 1}.</span>
+                <span className="font-black shrink-0"style={{ color:"#fbbf24", minWidth: 18 }}>{i + 1}.</span>
                 <span style={{ color: ts.textSub }}>{s}</span>
               </li>
             ))}
           </ol>
         </div>
 
-        <div className="rounded-2xl p-4" style={{ background: "rgba(34,197,94,0.06)", border: "1px solid rgba(34,197,94,0.15)" }}>
-          <p className="font-bold mb-2.5" style={{ color: "#4ade80" }}>{extra.title}</p>
+        <div className="rounded-2xl p-4"style={{ background:"rgba(34,197,94,0.06)", border: "1px solid rgba(34,197,94,0.15)" }}>
+          <p className="font-bold mb-2.5"style={{ color:"#4ade80" }}>{extra.title}</p>
           <ul className="space-y-2">
             {extra.items.map((it, i) => (
               <li key={i} className="flex items-start gap-2 text-sm" style={{ color: ts.textSub }}>

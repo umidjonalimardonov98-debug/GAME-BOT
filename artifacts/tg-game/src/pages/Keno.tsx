@@ -24,13 +24,13 @@ export default function Keno() {
   const [amount, setAmount] = useState(0);
   const [hits, setHits] = useState(0);
 
-  const toggle = (n: number) => {
+  const toggle = (n: number) =>{
     if (busy) return;
     sfx.select();
     setPicks(p => p.includes(n) ? p.filter(x => x !== n) : p.length < PICKS ? [...p, n] : p);
   };
 
-  const play = () => {
+  const play = () =>{
     if (!canPlay || picks.length !== PICKS) return;
     setBusy(true); setWon(null); setDrawn([]); setHits(0);
 
@@ -44,8 +44,8 @@ export default function Keno() {
     const result = [...chosenHits, ...rest].sort((a, b) => a - b);
 
     const stopTick = startTicker(150);
-    result.forEach((n, i) => setTimeout(() => { setDrawn(d => [...d, n]); sfx.reveal(); }, i * 260));
-    setTimeout(async () => {
+    result.forEach((n, i) => setTimeout(() =>{ setDrawn(d => [...d, n]); sfx.reveal(); }, i * 260));
+    setTimeout(async () =>{
       stopTick();
       setHits(hitCount);
       const mult = PAY[hitCount] ?? 0;
@@ -57,20 +57,20 @@ export default function Keno() {
 
   return (
     <div className="min-h-screen flex flex-col" style={{ background: pageBg(theme) }}>
-      <GameHeader title={`🔢 ${GAME_NAMES.keno[lang]}`} subtitle="x60" />
+      <GameHeader title={` ${GAME_NAMES.keno[lang]}`} subtitle="x60" />
       <div className="flex-1 px-4 pb-8 flex flex-col gap-4 items-center">
 
         <p className="text-xs font-bold" style={{ color: ts.textSub }}>{g("pickNums", lang)} ({picks.length}/{PICKS})</p>
 
         <div className="w-full grid grid-cols-8 gap-1.5">
-          {Array.from({ length: TOTAL }, (_, i) => i + 1).map(n => {
+          {Array.from({ length: TOTAL }, (_, i) => i + 1).map(n =>{
             const sel = picks.includes(n);
             const hit = drawn.includes(n);
             return (
               <button key={n} onClick={() => toggle(n)} disabled={busy}
                 className="aspect-square rounded-lg font-black text-xs active:scale-90 transition-all"
                 style={{
-                  background: hit && sel ? "#16a34a" : hit ? "#f59e0b" : sel ? "linear-gradient(135deg,#7c3aed,#4f46e5)" : "rgba(255,255,255,0.06)",
+                  background: hit && sel ? "#16a34a": hit ?"#f59e0b": sel ?"linear-gradient(135deg,#7c3aed,#4f46e5)":"rgba(255,255,255,0.06)",
                   color: sel || hit ? "#fff" : ts.textSub,
                   border: `1px solid ${sel ? "rgba(167,139,250,0.6)" : ts.cardBorder}`,
                 }}>
@@ -81,14 +81,14 @@ export default function Keno() {
         </div>
 
         {!!drawn.length && (
-          <p className="text-sm font-black" style={{ color: "#fbbf24" }}>
+          <p className="text-sm font-black"style={{ color:"#fbbf24" }}>
             {g("matched", lang)}: {hits} → x{PAY[hits] ?? 0}
           </p>
         )}
 
         <ResultBanner win={won} text={won ? g("win", lang) : g("lose", lang)} amount={amount} />
         <BetPanel value={betInput} onChange={setBetInput} onQuick={quick} disabled={busy} />
-        <PlayButton label={`🔢 ${g("play", lang)} · ${bet.toLocaleString()}`} onClick={play} disabled={!canPlay || picks.length !== PICKS} />
+        <PlayButton label={` ${g("play", lang)} · ${bet.toLocaleString()}`} onClick={play} disabled={!canPlay || picks.length !== PICKS} />
         {saving && <p className="text-xs" style={{ color: ts.textSub }}>...</p>}
       </div>
     </div>

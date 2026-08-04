@@ -4,16 +4,17 @@ import { useTheme, pageBg, GAME_BG } from "@/lib/theme-context";
 import { placeBet } from "@/lib/api";
 import { riggedLose } from "@/lib/odds";
 import GameHeader from "@/components/GameHeader";
+import Sym from "@/components/casino/Sym";
 import Dice3D from "@/components/casino/Dice3D";
 
 
-type BetType = "more" | "equal" | "less";
-type GameState = "idle" | "rolling" | "result";
+type BetType = "more"|"equal"|"less";
+type GameState = "idle"|"rolling"|"result";
 
 const ODDS: Record<BetType, { label: string; mult: number; emoji: string; color: string; glow: string }> = {
-  less:  { label: "7 dan Kam",  mult: 2.5, emoji: "⬇️", color: "#60a5fa", glow: "#3b82f633" },
-  equal: { label: "Teng 7",     mult: 6.5, emoji: "🎯", color: "#fbbf24", glow: "#f59e0b33" },
-  more:  { label: "7 dan Ko'p", mult: 2.5, emoji: "⬆️", color: "#34d399", glow: "#10b98133" },
+  less:  { label: "7 dan Kam",  mult: 2.5, emoji: "dice", color: "#60a5fa", glow: "#3b82f633" },
+  equal: { label: "Teng 7",     mult: 6.5, emoji: "target", color: "#fbbf24", glow: "#f59e0b33" },
+  more:  { label: "7 dan Ko'p", mult: 2.5, emoji: "dice", color: "#34d399", glow: "#10b98133" },
 };
 
 function DiceFace({ value, rolling, seed }: { value: number; rolling: boolean; seed: number }) {
@@ -47,14 +48,14 @@ export default function Dice() {
     setBetInput(String(v));
   }
 
-  const roll = useCallback(async () => {
+  const roll = useCallback(async () =>{
     if (!betType || !player || player.balance < activeBet || activeBet < 2000) return;
     setGameState("rolling");
 
     // Uy foydasi: 69% yutqazish — natija oldindan aniqlanadi, zarlar shu yuzda to'xtaydi
     const mustLose = riggedLose();
     const isWinSum = (s: number) =>
-      (betType === "more" && s > 7) || (betType === "equal" && s === 7) || (betType === "less" && s < 7);
+      (betType === "more"&& s > 7) || (betType ==="equal"&& s === 7) || (betType ==="less" && s < 7);
     let d1 = Math.ceil(Math.random() * 6);
     let d2 = Math.ceil(Math.random() * 6);
     for (let tries = 0; tries < 60 && isWinSum(d1 + d2) === mustLose; tries++) {
@@ -64,14 +65,14 @@ export default function Dice() {
     // zar havoda aylanayotganda yuzlar almashinadi
     setDice([d1, d2]);
 
-    setTimeout(async () => {
+    setTimeout(async () =>{
       const s = d1 + d2;
       setGameState("result");
       const win = isWinSum(s);
       const winPrize = win ? Math.floor(activeBet * ODDS[betType].mult) : 0;
       setWon(win); setPrize(winPrize);
       setSaving(true);
-      await placeBet(player.telegramId, { amount: activeBet, game: "dice", won: win, winAmount: winPrize }).catch(() => {});
+      await placeBet(player.telegramId, { amount: activeBet, game: "dice", won: win, winAmount: winPrize }).catch(() =>{});
       await refresh(); setSaving(false);
     }, 1500);
   }, [betType, activeBet, player, refresh]);
@@ -86,7 +87,7 @@ export default function Dice() {
 
   return (
     <div className="min-h-screen flex flex-col" style={{ background: pageBg(theme, GAME_BG.dice) }}>
-      <GameHeader title="🎲 DICE" subtitle="7 dan Kam · Teng · 7 dan Ko'p" />
+      <GameHeader title=" DICE" subtitle="7 dan Kam · Teng · 7 dan Ko'p" />
 
       <div className="flex-1 px-4 pb-6 flex flex-col gap-4">
 
@@ -116,11 +117,11 @@ export default function Dice() {
           <div className="relative flex items-center gap-6">
             <DiceFace value={dice[0]} rolling={gameState === "rolling"} seed={0} />
             <div className="flex flex-col items-center gap-2">
-              <span className="font-black text-3xl" style={{ color: "rgba(247,229,155,0.5)" }}>+</span>
+              <span className="font-black text-3xl"style={{ color:"rgba(247,229,155,0.5)" }}>+</span>
               {gameState !== "idle" && (
                 <div className="px-4 py-1.5 rounded-2xl"
                   style={{ background: "rgba(0,0,0,0.35)", border: "1px solid rgba(212,175,55,0.5)" }}>
-                  <span className="font-black text-2xl" style={{ color: "#f7e59b" }}>{sum}</span>
+                  <span className="font-black text-2xl"style={{ color:"#f7e59b" }}>{sum}</span>
                 </div>
               )}
             </div>
@@ -129,16 +130,16 @@ export default function Dice() {
 
 
           {gameState === "rolling" && (
-            <p className="text-sm font-bold animate-pulse" style={{ color: isLight ? "#7c3aed" : "#c4b5fd" }}>🎲 Aylanmoqda...</p>
+            <p className="text-sm font-bold animate-pulse"style={{ color: isLight ?"#7c3aed":"#c4b5fd" }}> Aylanmoqda...</p>
           )}
           {gameState === "result" && (
             <div className="text-center">
-              <p className="text-3xl mb-1">{won ? "🎉" : "💔"}</p>
-              <p className="font-black text-2xl" style={{ color: won ? "#4ade80" : "#f87171" }}>
+              <div className="mb-1 flex justify-center"><Sym n={won ? "trophy" : "boom"} s={44} /></div>
+              <p className="font-black text-2xl"style={{ color: won ?"#4ade80":"#f87171" }}>
                 {won ? `+${prize.toLocaleString()} UZS` : "Yutqazdingiz!"}
               </p>
               {won && (
-                <p className="text-xs mt-1" style={{ color: "#4ade8088" }}>x{ODDS[betType!].mult} koeffitsiyent</p>
+                <p className="text-xs mt-1"style={{ color:"#4ade8088" }}>x{ODDS[betType!].mult} koeffitsiyent</p>
               )}
             </div>
           )}
@@ -151,7 +152,7 @@ export default function Dice() {
         <div className="rounded-2xl p-4" style={{ background: ts.card, border: `1px solid ${ts.cardBorder}` }}>
           <p className="text-xs font-black mb-3 tracking-widest" style={{ color: ts.textSub }}>TAXMIN TANLANG</p>
           <div className="grid grid-cols-3 gap-2">
-            {(["less", "equal", "more"] as BetType[]).map((type) => {
+            {(["less", "equal", "more"] as BetType[]).map((type) =>{
               const o = ODDS[type];
               const sel = betType === type;
               return (
@@ -175,7 +176,7 @@ export default function Dice() {
 
         {/* Bet controls */}
         <div className="rounded-2xl p-4" style={{ background: ts.card, border: `1px solid ${ts.cardBorder}` }}>
-          <p className="text-xs font-bold mb-3 tracking-widest" style={{ color: ts.textSub }}>💰 TIKISH MIQDORI</p>
+          <p className="text-xs font-bold mb-3 tracking-widest" style={{ color: ts.textSub }}> TIKISH MIQDORI</p>
           <div className="grid grid-cols-4 gap-1.5 mb-3">
             {["MIN","X2","X/2","MAX"].map((a) => (
               <button key={a} disabled={gameState === "rolling"} onClick={() => setQuickBet(a)}
@@ -192,7 +193,7 @@ export default function Dice() {
               className="w-full rounded-xl px-4 py-3 font-black text-lg outline-none"
               style={{ background: ts.input, border: `1px solid ${ts.inputBorder}`, color: ts.text }} />
             {betType && activeBet >= 2000 && (
-              <span className="absolute right-4 top-1/2 -translate-y-1/2 text-sm font-black" style={{ color: "#4ade80" }}>
+              <span className="absolute right-4 top-1/2 -translate-y-1/2 text-sm font-black"style={{ color:"#4ade80" }}>
                 → {potential.toLocaleString()}
               </span>
             )}
@@ -201,16 +202,16 @@ export default function Dice() {
 
         {/* Roll buttons */}
         <div className="grid grid-cols-4 gap-2">
-          <button onClick={() => { setGameState("idle"); setPrize(0); }} disabled={gameState === "rolling"}
+          <button onClick={() =>{ setGameState("idle"); setPrize(0); }} disabled={gameState === "rolling"}
             className="py-4 rounded-2xl flex items-center justify-center text-xl active:scale-95 transition-transform"
             style={{ background: ts.btnSecondary, border: `1px solid ${ts.cardBorder}`, boxShadow: "0 4px 0 rgba(0,0,0,0.2)" }}>
-            🔄
+            
           </button>
           <button onClick={roll}
             disabled={gameState === "rolling" || !betType || !player || player.balance < activeBet || activeBet < 2000 || saving}
             className="col-span-3 py-4 rounded-2xl font-black text-base flex items-center justify-center gap-2 active:scale-95 transition-all disabled:opacity-40"
             style={{ background: accentGradient, boxShadow: accentShadow, color: "white" }}>
-            {gameState === "rolling" ? "🎲 Aylanmoqda..." : "🎲 ZAR TASHLASH"}
+            {gameState === "rolling"?" Aylanmoqda...":" ZAR TASHLASH"}
           </button>
         </div>
 

@@ -1,6 +1,6 @@
 /** Haqiqiy qarta ko'rinishi — pip joylashuvi, indekslar, orqa naqsh */
 
-type Suit = "♠" | "♥" | "♦" | "♣";
+type Suit = "♠"|"♥"|"♦"|"♣";
 
 const PIP_LAYOUT: Record<string, [number, number][]> = {
   A: [[50, 50]],
@@ -15,7 +15,7 @@ const PIP_LAYOUT: Record<string, [number, number][]> = {
   "10": [[30, 18], [70, 18], [50, 29], [30, 40], [70, 40], [30, 62], [70, 62], [50, 71], [30, 84], [70, 84]],
 };
 
-const FACE_GLYPH: Record<string, string> = { J: "🤴", Q: "👸", K: "🤵" };
+const FACE_GLYPH: Record<string, string> = { J: "", Q: "", K: "" };
 
 interface Props {
   suit: Suit;
@@ -27,8 +27,8 @@ interface Props {
 
 export default function PlayingCard({ suit, value, hidden, w = 62, delay = 0 }: Props) {
   const h = Math.round(w * 1.45);
-  const isRed = suit === "♥" || suit === "♦";
-  const ink = isRed ? "#c8102e" : "#101418";
+  const isRed = suit === "♥"|| suit ==="♦";
+  const ink = isRed ? "#c8102e":"#101418";
 
   if (hidden) {
     return (
@@ -127,7 +127,7 @@ export default function PlayingCard({ suit, value, hidden, w = 62, delay = 0 }: 
                 position: "absolute",
                 left: `${x}%`,
                 top: `${y}%`,
-                transform: `translate(-50%,-50%) ${y > 55 ? "rotate(180deg)" : ""}`,
+                transform: `translate(-50%,-50%) ${y > 55 ? "rotate(180deg)":""}`,
                 color: ink,
                 fontSize: value === "A" ? w * 0.5 : w * 0.26,
                 lineHeight: 1,

@@ -4,6 +4,7 @@ import { useTheme, pageBg, GAME_BG } from "@/lib/theme-context";
 import { placeBet } from "@/lib/api";
 import { riggedLose, randomWhere } from "@/lib/odds";
 import GameHeader from "@/components/GameHeader";
+import Sym from "@/components/casino/Sym";
 
 const WHEEL = [
   0, 32, 15, 19, 4, 21, 2, 25, 17, 34, 6, 27, 13, 36, 11, 30, 8, 23, 10,
@@ -12,8 +13,8 @@ const WHEEL = [
 const REDS = new Set([1, 3, 5, 7, 9, 12, 14, 16, 18, 19, 21, 23, 25, 27, 30, 32, 34, 36]);
 
 type BetKey =
-  | "red" | "black" | "even" | "odd" | "low" | "high"
-  | "d1" | "d2" | "d3" | "zero";
+  | "red"|"black"|"even"|"odd"|"low"|"high"
+  | "d1"|"d2"|"d3"|"zero";
 
 const BETS: Record<BetKey, { label: string; mult: number; color: string; test: (n: number) => boolean }> = {
   red:   { label: "Qizil",  mult: 2.15, color: "#ef4444", test: (n) => REDS.has(n) },
@@ -32,7 +33,7 @@ const ORDER: BetKey[] = ["red", "black", "even", "odd", "low", "high", "d1", "d2
 
 function colorOf(n: number) {
   if (n === 0) return "#16a34a";
-  return REDS.has(n) ? "#dc2626" : "#1f2937";
+  return REDS.has(n) ? "#dc2626":"#1f2937";
 }
 
 export default function Roulette() {
@@ -40,7 +41,7 @@ export default function Roulette() {
   const { theme, ts } = useTheme();
   // kichik telefonlarda g'ildirak ekranga sig'sin
   const [wheelScale, setWheelScale] = useState(1);
-  useEffect(() => {
+  useEffect(() =>{
     const fit = () => setWheelScale(Math.min(1, (window.innerWidth - 84) / 264));
     fit();
     window.addEventListener("resize", fit);
@@ -69,7 +70,7 @@ export default function Roulette() {
     setBetInput(String(v));
   }
 
-  const spin = useCallback(() => {
+  const spin = useCallback(() =>{
     if (!pick || !player || spinning || bet < 2000 || player.balance < bet) return;
     setSpinning(true);
     setResult(null);
@@ -83,13 +84,13 @@ export default function Roulette() {
     // Oldingi aylanish burchagini hisobga olib, tanlangan segment markazini
     // har safar yuqoridagi ko'rsatkich ostiga aniq olib kelamiz.
     const desired = (360 - (idx + 0.5) * per) % 360;
-    setAngle((current) => {
+    setAngle((current) =>{
       const normalized = ((current % 360) + 360) % 360;
       const correction = (desired - normalized + 360) % 360;
       return current + 360 * 6 + correction;
     });
 
-    setTimeout(async () => {
+    setTimeout(async () =>{
       const won = BETS[pick].test(num);
       const win = won ? Math.floor(bet * BETS[pick].mult) : 0;
       setResult(num);
@@ -101,12 +102,12 @@ export default function Roulette() {
         game: "roulette",
         won,
         winAmount: win,
-      }).catch(() => {});
+      }).catch(() =>{});
       await refresh();
     }, 4200);
   }, [pick, player, spinning, bet, refresh]);
 
-  const conic = `conic-gradient(${WHEEL.map((n, i) => {
+  const conic = `conic-gradient(${WHEEL.map((n, i) =>{
     const from = (i * 100) / WHEEL.length;
     const to = ((i + 1) * 100) / WHEEL.length;
     return `${colorOf(n)} ${from}% ${to}%`;
@@ -114,7 +115,7 @@ export default function Roulette() {
 
   return (
     <div className="min-h-screen flex flex-col" style={{ background: pageBg(theme, GAME_BG.roulette) }}>
-      <GameHeader title="🎡 RULETKA" subtitle="Yevropa ruletkasi · 0–36" />
+      <GameHeader title=" RULETKA" subtitle="Yevropa ruletkasi · 0–36" />
 
       <div className="flex-1 px-4 pb-8 flex flex-col gap-4">
         {/* Wheel */}
@@ -132,7 +133,7 @@ export default function Roulette() {
           />
 
           <div style={{ width: 264 * wheelScale, height: 264 * wheelScale, display: "flex", alignItems: "center", justifyContent: "center" }}>
-          <div className="relative shrink-0" style={{ width: 264, height: 264, transform: `scale(${wheelScale})`, transformOrigin: "center" }}>
+          <div className="relative shrink-0"style={{ width: 264, height: 264, transform: `scale(${wheelScale})`, transformOrigin:"center" }}>
             {/* yog'och tashqi ramka */}
             <div
               className="absolute inset-0 rounded-full"
@@ -176,7 +177,7 @@ export default function Roulette() {
                   "inset 0 0 0 3px rgba(212,175,55,0.85), inset 0 0 34px rgba(0,0,0,0.75), 0 6px 18px rgba(0,0,0,0.5)",
               }}
             >
-              {WHEEL.map((n, i) => {
+              {WHEEL.map((n, i) =>{
                 const deg = (i + 0.5) * (360 / WHEEL.length);
                 return (
                   <span
@@ -201,7 +202,7 @@ export default function Roulette() {
                 );
               })}
               {/* frets — ajratgichlar */}
-              {WHEEL.map((_, i) => {
+              {WHEEL.map((_, i) =>{
                 const deg = i * (360 / WHEEL.length);
                 return (
                   <span
@@ -227,7 +228,7 @@ export default function Roulette() {
             <div
               className="absolute inset-0 z-20 pointer-events-none"
               style={{
-                animation: spinning ? "ballRun 4.1s cubic-bezier(0.18,0.7,0.08,1) forwards" : "none",
+                animation: spinning ? "ballRun 4.1s cubic-bezier(0.18,0.7,0.08,1) forwards":"none",
                 transform: spinning ? undefined : "rotate(0deg)",
               }}
             >
@@ -262,11 +263,11 @@ export default function Roulette() {
               <span
                 className="font-black text-3xl"
                 style={{
-                  color: result !== null ? (colorOf(result) === "#1f2937" ? "#111827" : colorOf(result)) : "#4b3607",
+                  color: result !== null ? (colorOf(result) === "#1f2937"?"#111827": colorOf(result)) :"#4b3607",
                   textShadow: "0 1px 0 rgba(255,255,255,0.5)",
                 }}
               >
-                {spinning ? "…" : result !== null ? result : "🎡"}
+                {spinning ? "…" : result !== null ? result : <Sym n="wheel" s={46} />}
               </span>
             </div>
           </div>
@@ -274,8 +275,8 @@ export default function Roulette() {
 
 
           {result !== null && !spinning && (
-            <p className="font-black text-xl" style={{ color: prize > 0 ? "#4ade80" : "#f87171" }}>
-              {prize > 0 ? `🎉 +${prize.toLocaleString()} UZS` : "💔 Yutqazdingiz"}
+            <p className="font-black text-xl"style={{ color: prize > 0 ?"#4ade80":"#f87171" }}>
+              {prize > 0 ? ` +${prize.toLocaleString()} UZS` : " Yutqazdingiz"}
             </p>
           )}
 
@@ -307,7 +308,7 @@ export default function Roulette() {
             TIKISH TURI
           </p>
           <div className="grid grid-cols-3 gap-2">
-            {ORDER.map((k) => {
+            {ORDER.map((k) =>{
               const b = BETS[k];
               const sel = pick === k;
               return (
@@ -337,7 +338,7 @@ export default function Roulette() {
         {/* Bet amount */}
         <div className="rounded-2xl p-4" style={{ background: ts.card, border: `1px solid ${ts.cardBorder}` }}>
           <p className="text-xs font-bold mb-3 tracking-widest" style={{ color: ts.textSub }}>
-            💰 TIKISH MIQDORI
+             TIKISH MIQDORI
           </p>
           <div className="grid grid-cols-4 gap-1.5 mb-3">
             {["MIN", "X2", "X/2", "MAX"].map((a) => (
@@ -362,7 +363,7 @@ export default function Roulette() {
             style={{ background: ts.input, border: `1px solid ${ts.inputBorder}`, color: ts.text }}
           />
           {pick && bet >= 2000 && (
-            <p className="text-xs mt-2 font-bold" style={{ color: "#fbbf24" }}>
+            <p className="text-xs mt-2 font-bold"style={{ color:"#fbbf24" }}>
               Yutuq: {potential.toLocaleString()} UZS
             </p>
           )}
@@ -378,7 +379,7 @@ export default function Roulette() {
             opacity: !pick || spinning || bet < 2000 || (player?.balance ?? 0) < bet ? 0.5 : 1,
           }}
         >
-          {spinning ? "🎡 Aylanmoqda..." : "🎡 AYLANTIRISH"}
+          {spinning ? " Aylanmoqda...":" AYLANTIRISH"}
         </button>
       </div>
     </div>

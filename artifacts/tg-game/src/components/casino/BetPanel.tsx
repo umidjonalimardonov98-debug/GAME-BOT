@@ -13,7 +13,7 @@ export default function BetPanel({ value, onChange, onQuick, disabled }: Props) 
   const { t } = useLang();
   return (
     <div className="w-full rounded-2xl p-4" style={{ background: ts.card, border: `1px solid ${ts.cardBorder}` }}>
-      <p className="text-xs font-bold mb-3 tracking-widest" style={{ color: ts.textSub }}>💰 {t.betAmount}</p>
+      <p className="text-xs font-bold mb-3 tracking-widest" style={{ color: ts.textSub }}>{t.betAmount}</p>
       <div className="grid grid-cols-4 gap-2 mb-3">
         {["MIN", "1/2", "X2", "MAX"].map(a => (
           <button key={a} disabled={disabled} onClick={() => onQuick(a)}
