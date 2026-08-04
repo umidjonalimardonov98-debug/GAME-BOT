@@ -91,7 +91,7 @@ export default function Slots() {
       setSpinning(false);
       setOutcome(finalOutcome);
 
-      const mult = finalOutcome === "jackpot" ? 10 : finalOutcome === "three" ? 3 : finalOutcome === "two" ? 1.5 : 0;
+      const mult = finalOutcome === "jackpot" ? 12 : finalOutcome === "three" ? 3.6 : finalOutcome === "two" ? 1.8 : 0;
       const win = mult > 0 ? Math.floor(activeBet * mult) : 0;
       setWinAmt(win);
 
@@ -103,9 +103,9 @@ export default function Slots() {
 
 
   const OUTCOME_STYLE = {
-    jackpot: { color: "#fbbf24", glow: "0 0 30px #fbbf2499", label: "🏆 JACKPOT! x10" },
-    three:   { color: "#4ade80", glow: "0 0 20px #4ade8055", label: `✅ 3x! x3` },
-    two:     { color: isLight ? "#6366f1" : "#a5b4fc", glow: "none", label: `✌️ 2x! x1.5` },
+    jackpot: { color: "#fbbf24", glow: "0 0 30px #fbbf2499", label: "🏆 JACKPOT! x12" },
+    three:   { color: "#4ade80", glow: "0 0 20px #4ade8055", label: `✅ 3x! x3.6` },
+    two:     { color: isLight ? "#6366f1" : "#a5b4fc", glow: "none", label: `✌️ 2x! x1.8` },
     miss:    { color: "#f87171", glow: "none", label: t.noLuck },
   };
 

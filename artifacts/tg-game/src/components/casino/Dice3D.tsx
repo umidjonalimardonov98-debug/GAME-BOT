@@ -57,21 +57,22 @@ export default function Dice3D({ value, rolling, size = 88, seed = 0 }: Props) {
     if (timer.current) clearTimeout(timer.current);
 
     if (rolling) {
+      // BITTA uzluksiz aylanish: zar darrov yakuniy yuzga qarab aylanadi.
+      // (Ilgari to'xtash paytida yana bir marta aylanardi — endi yo'q.)
       setSpinning(true);
-      // havoda erkin ag'anash — keyin aniq yuzga tushadi
-      spins.current += 3 + (seed % 2);
-      const turnsX = 4 + (seed % 2) + Math.floor(Math.random() * 2);
-      const turnsY = 5 + Math.floor(Math.random() * 3);
-      setRot([tx + 360 * turnsX * dir + 360 * spins.current, ty + 360 * turnsY]);
+      const turnsX = 3 + (seed % 2);
+      const turnsY = 4;
+      spins.current += turnsX;
+      setRot([tx + 360 * turnsX * dir, ty + 360 * turnsY]);
+      timer.current = setTimeout(() => setSpinning(false), 1400);
     } else {
-      // to'xtaganda: aynan tushgan yuz tik oldinga qaraydi
-      const settleX = tx + 360 * (spins.current + 1) * dir;
-      const settleY = ty + 360 * (spins.current + 1);
-      setRot([settleX, settleY]);
-      timer.current = setTimeout(() => setSpinning(false), 620);
+      // to'xtaganda hech narsa qayta aylanmaydi — yuz allaqachon to'g'ri turibdi
+      setSpinning(false);
     }
+
     return () => { if (timer.current) clearTimeout(timer.current); };
   }, [value, rolling, seed]);
+
 
   const s = size;
   return (
@@ -109,7 +110,7 @@ export default function Dice3D({ value, rolling, size = 88, seed = 0 }: Props) {
           transformStyle: "preserve-3d",
           transform: `rotateX(${rot[0]}deg) rotateY(${rot[1]}deg)`,
           transition: rolling
-            ? "transform 1.25s cubic-bezier(0.2,0.68,0.3,1)"
+            ? "transform 1.4s cubic-bezier(0.15,0.62,0.2,1)"
             : "transform 0.6s cubic-bezier(0.18,0.9,0.22,1.02)",
           willChange: "transform",
           // @ts-expect-error css var

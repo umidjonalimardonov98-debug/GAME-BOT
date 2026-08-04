@@ -4,8 +4,11 @@ import { db, playersTable } from "@workspace/db";
 
 const router: IRouter = Router();
 
-const FREE_PRIZES  = [0, 0, 0, 0, 0, 500, 500, 1000, 2000, 5000];
-const PAID_PRIZES  = [0, 0, 0, 500, 500, 1000, 1000, 2000, 3000, 5000];
+/** 10 tadan 8 tasi yutqazish */
+const FREE_PRIZES  = [0, 0, 0, 0, 0, 0, 0, 0, 1000, 5000];
+const PAID_PRIZES  = [0, 0, 0, 0, 0, 0, 0, 0, 2000, 5000];
+/** Tekin aylantirishda yutqazsa ham shu miqdor balansdan yechiladi (pul bo'lsa) */
+const FREE_LOSS = 2000;
 
 const SYMBOL_MAP: Record<number, string> = {
   5000: "💎", 3000: "⭐", 2000: "⭐", 1000: "🌟", 500: "🍒",
@@ -50,15 +53,19 @@ router.post("/spin", async (req, res): Promise<void> => {
     const prize = FREE_PRIZES[Math.floor(Math.random() * FREE_PRIZES.length)];
     const symbol = prize > 0 ? (SYMBOL_MAP[prize] ?? "🍒") : "💣";
     const nextSpinAt = new Date(now.getTime() + 24 * 60 * 60 * 1000).toISOString();
+    // yutqazsa — balansda puli bo'lsa, minus tushadi
+    const penalty = prize === 0 && player.balance >= FREE_LOSS ? FREE_LOSS : 0;
 
     await db.update(playersTable).set({
       lastSpinAt: now,
-      balance: player.balance + prize,
+      balance: player.balance + prize - penalty,
       totalWon: prize > 0 ? player.totalWon + prize : player.totalWon,
+      totalWagered: penalty > 0 ? player.totalWagered + penalty : player.totalWagered,
+      gamesPlayed: player.gamesPlayed + 1,
       updatedAt: now,
     }).where(eq(playersTable.telegramId, String(telegramId)));
 
-    res.json({ prize, symbol, nextSpinAt });
+    res.json({ prize, symbol, penalty, net: prize - penalty, nextSpinAt });
     return;
   }
 
@@ -81,7 +88,7 @@ router.post("/spin", async (req, res): Promise<void> => {
     updatedAt: now,
   }).where(eq(playersTable.telegramId, String(telegramId)));
 
-  res.json({ prize, symbol, net, nextSpinAt: null });
+  res.json({ prize, symbol, net, penalty: prize > 0 ? 0 : COST, nextSpinAt: null });
 });
 
 export default router;

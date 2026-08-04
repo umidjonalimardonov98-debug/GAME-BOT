@@ -168,10 +168,100 @@ export const sfx = {
     noise(0.5, 0.28, 500, 60);
     tone({ freq: 120, to: 40, dur: 0.45, type: "sawtooth", gain: 0.2 });
   },
+  /** Orqaga qaytish */
+  back() {
+    if (!enabled) return;
+    tone({ freq: 480, to: 240, dur: 0.11, type: "sine", gain: 0.14 });
+  },
+  /** Sahifaga o'tish / o'yin ochish */
+  nav() {
+    if (!enabled) return;
+    tone({ freq: 380, to: 720, dur: 0.13, type: "triangle", gain: 0.14 });
+  },
+  /** Tikish miqdorini o'zgartirish */
+  bet() {
+    if (!enabled) return;
+    tone({ freq: 900, to: 1250, dur: 0.07, type: "square", gain: 0.09 });
+  },
+  /** Zar tashlash */
+  dice() {
+    if (!enabled) return;
+    noise(0.28, 0.16, 2200, 400);
+    tone({ freq: 260, to: 160, dur: 0.22, type: "triangle", gain: 0.1, delay: 0.05 });
+  },
+  /** Charx / ruletka */
+  wheel() {
+    if (!enabled) return;
+    noise(0.7, 0.1, 900, 200);
+    tone({ freq: 520, to: 180, dur: 0.7, type: "sawtooth", gain: 0.07 });
+  },
+  /** Karta tarqatish */
+  card() {
+    if (!enabled) return;
+    noise(0.14, 0.14, 3200, 900);
+    tone({ freq: 1500, to: 700, dur: 0.06, type: "triangle", gain: 0.06, delay: 0.04 });
+  },
+  /** Samolyot (aviator) uchishi */
+  fly() {
+    if (!enabled) return;
+    noise(0.9, 0.07, 400, 1600);
+    tone({ freq: 160, to: 520, dur: 0.9, type: "sawtooth", gain: 0.07 });
+  },
+  /** Mina maydonida katak ochish */
+  tile() {
+    if (!enabled) return;
+    tone({ freq: 700, to: 1150, dur: 0.08, type: "sine", gain: 0.13 });
+  },
+  /** Depozit / to'ldirish */
+  deposit() {
+    if (!enabled) return;
+    [660, 880, 1100].forEach((f, i) => tone({ freq: f, dur: 0.13, type: "triangle", gain: 0.16, delay: i * 0.07 }));
+  },
+  /** Pul chiqarish */
+  withdraw() {
+    if (!enabled) return;
+    [1100, 820, 620].forEach((f, i) => tone({ freq: f, dur: 0.13, type: "sine", gain: 0.16, delay: i * 0.07 }));
+  },
+  /** Xabar yuborish */
+  send() {
+    if (!enabled) return;
+    tone({ freq: 760, to: 1500, dur: 0.1, type: "sine", gain: 0.13 });
+  },
+  /** Yangilash / qayta boshlash */
+  refresh() {
+    if (!enabled) return;
+    tone({ freq: 420, to: 900, dur: 0.09, type: "triangle", gain: 0.11 });
+    tone({ freq: 900, to: 420, dur: 0.09, type: "triangle", gain: 0.09, delay: 0.09 });
+  },
+  /** Xatolik / bloklangan amal */
+  error() {
+    if (!enabled) return;
+    tone({ freq: 300, to: 200, dur: 0.1, type: "square", gain: 0.13 });
+    tone({ freq: 200, to: 130, dur: 0.16, type: "square", gain: 0.12, delay: 0.1 });
+  },
 };
 
-/** Har qanday tugma bosilishida global "click" ovozi (bir marta ulanadi) */
+/** Har bir tugma o'z ovozini chiqaradi (bir marta ulanadi) */
 let installed = false;
+
+const SOUND_RULES: Array<[RegExp, () => void]> = [
+  [/^(←|⬅|back|orqaga)/, () => sfx.back()],
+  [/zar|dice|tashla/, () => sfx.dice()],
+  [/charx|ruletka|roulette|wheel|aylantir/, () => sfx.wheel()],
+  [/blackjack|karta|card|deal|hit|stand/, () => sfx.card()],
+  [/aviator|samolyot|uchir|fly/, () => sfx.fly()],
+  [/mina|mines|olma|apple/, () => sfx.tile()],
+  [/slot|spin|aylan/, () => sfx.spin()],
+  [/cashout|olish|yech/, () => sfx.cash()],
+  [/chiqar|withdraw/, () => sfx.withdraw()],
+  [/depozit|deposit|to'ldir|toldir|hisob to/, () => sfx.deposit()],
+  [/yubor|send|so'rov|sorov|chaqir/, () => sfx.send()],
+  [/yangila|qayta|refresh|🔄/, () => sfx.refresh()],
+  [/min\b|max\b|x2|x\/2|1\/2|\+|tikish/, () => sfx.bet()],
+  [/boshla|start|play|o'yna|oyna|bet|tik/, () => sfx.spin()],
+  [/tanla|select|toggle|til|mode|rejim/, () => sfx.select()],
+];
+
 export function installGlobalClickSound() {
   if (installed || typeof document === "undefined") return;
   installed = true;
@@ -179,9 +269,13 @@ export function installGlobalClickSound() {
     "pointerdown",
     (e) => {
       const el = (e.target as HTMLElement | null)?.closest?.("button, [role='button'], a");
-      if (!el || (el as HTMLButtonElement).disabled) return;
-      const label = (el.textContent || "").toLowerCase();
-      if (/spin|aylan|tashla|start|boshla|play|o'yna|oyna|deal|roll|bet|tik/.test(label)) sfx.spin();
+      if (!el) return;
+      if ((el as HTMLButtonElement).disabled) { sfx.error(); return; }
+      const label = ((el.getAttribute("aria-label") || "") + " " + (el.textContent || "")).toLowerCase().trim();
+      const href = (el as HTMLAnchorElement).getAttribute?.("href") || "";
+      const rule = SOUND_RULES.find(([re]) => re.test(label));
+      if (rule) rule[1]();
+      else if (href && href !== "#") sfx.nav();
       else sfx.click();
     },
     { passive: true, capture: true }

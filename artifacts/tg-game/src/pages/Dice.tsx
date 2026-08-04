@@ -11,9 +11,9 @@ type BetType = "more" | "equal" | "less";
 type GameState = "idle" | "rolling" | "result";
 
 const ODDS: Record<BetType, { label: string; mult: number; emoji: string; color: string; glow: string }> = {
-  less:  { label: "7 dan Kam",  mult: 2.3, emoji: "⬇️", color: "#60a5fa", glow: "#3b82f633" },
-  equal: { label: "Teng 7",     mult: 5.8, emoji: "🎯", color: "#fbbf24", glow: "#f59e0b33" },
-  more:  { label: "7 dan Ko'p", mult: 2.3, emoji: "⬆️", color: "#34d399", glow: "#10b98133" },
+  less:  { label: "7 dan Kam",  mult: 2.5, emoji: "⬇️", color: "#60a5fa", glow: "#3b82f633" },
+  equal: { label: "Teng 7",     mult: 6.5, emoji: "🎯", color: "#fbbf24", glow: "#f59e0b33" },
+  more:  { label: "7 dan Ko'p", mult: 2.5, emoji: "⬆️", color: "#34d399", glow: "#10b98133" },
 };
 
 function DiceFace({ value, rolling, seed }: { value: number; rolling: boolean; seed: number }) {

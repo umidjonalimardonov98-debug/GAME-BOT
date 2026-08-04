@@ -102,7 +102,7 @@ export default function Parity() {
           type === "big"    ? WIN_BIG(final) :
                               final === picked;
 
-        const mult = type === "exact" ? 20 : 2;
+        const mult = type === "exact" ? 24 : 2.15;
         const winAmt = isWin ? lockedBet.current * mult : 0;
         setWon(isWin);
         setPrize(winAmt);

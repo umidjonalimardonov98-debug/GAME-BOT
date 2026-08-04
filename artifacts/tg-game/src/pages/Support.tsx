@@ -15,6 +15,45 @@ export default function Support() {
   const [sending, setSending] = useState(false);
   const [msg, setMsg] = useState("");
   const prev = useRef<Status>("idle");
+  type ChatMsg = { id: number; from: "user" | "admin" | "system"; text: string; at: number };
+  const [chat, setChat] = useState<ChatMsg[]>([]);
+  const [draft, setDraft] = useState("");
+  const [chatSending, setChatSending] = useState(false);
+  const sinceRef = useRef(0);
+  const listRef = useRef<HTMLDivElement | null>(null);
+
+  async function loadMessages() {
+    if (!player) return;
+    try {
+      const res = await fetch(`/api/support/live-chat/${player.telegramId}/messages?since=${sinceRef.current}`);
+      if (!res.ok) return;
+      const d = await res.json();
+      const arr: ChatMsg[] = d.messages || [];
+      if (arr.length) {
+        sinceRef.current = arr[arr.length - 1].id;
+        setChat((c) => [...c, ...arr]);
+        if (arr.some((m) => m.from === "admin")) hapticNotify("success");
+      }
+    } catch {}
+  }
+
+  async function sendChat() {
+    const text = draft.trim();
+    if (!player || !text || chatSending) return;
+    haptic("light");
+    setChatSending(true);
+    try {
+      const res = await fetch("/api/support/live-chat/message", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ telegramId: player.telegramId, text }),
+      });
+      const d = await res.json().catch(() => ({}));
+      if (!res.ok) { setMsg("❌ " + (d.error || "Yuborilmadi")); hapticNotify("error"); }
+      else { setDraft(""); await loadMessages(); }
+    } catch { setMsg("❌ Tarmoq xatosi"); }
+    setChatSending(false);
+  }
 
   async function loadStatus() {
     if (!player) return;
@@ -29,15 +68,20 @@ export default function Support() {
 
   useEffect(() => {
     loadStatus();
-    const i = setInterval(loadStatus, 3000);
+    loadMessages();
+    const i = setInterval(() => { loadStatus(); loadMessages(); }, 2500);
     return () => clearInterval(i);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [player?.telegramId]);
 
   useEffect(() => {
+    listRef.current?.scrollTo({ top: listRef.current.scrollHeight, behavior: "smooth" });
+  }, [chat.length]);
+
+  useEffect(() => {
     if (prev.current !== "active" && status === "active") {
       hapticNotify("success");
-      setMsg("✅ Admin suhbatni qabul qildi! Bot ichidagi chatda yozishing mumkin.");
+      setMsg("✅ Admin suhbatni qabul qildi! Shu yerda yozishingiz mumkin.");
     }
     prev.current = status;
   }, [status]);
@@ -150,13 +194,69 @@ export default function Support() {
           )}
         </div>
 
+        {/* ilova ichidagi 2 kishilik chat */}
+        {(status === "active" || chat.length > 0) && (
+          <div className="rounded-3xl p-3" style={{ background: ts.card, border: `1px solid ${GOLD.border}` }}>
+            <p className="text-[11px] font-black tracking-widest mb-2 px-1" style={{ color: ts.textSub }}>
+              SUHBAT — SIZ VA ADMIN
+            </p>
+            <div ref={listRef} className="space-y-2 overflow-y-auto px-1" style={{ maxHeight: 320 }}>
+              {chat.length === 0 && (
+                <p className="text-[12px] text-center py-6" style={{ color: ts.textSub }}>Hozircha xabar yo'q</p>
+              )}
+              {chat.map((m) =>
+                m.from === "system" ? (
+                  <p key={m.id} className="text-[11px] text-center py-1" style={{ color: ts.textSub }}>{m.text}</p>
+                ) : (
+                  <div key={m.id} className={`flex ${m.from === "user" ? "justify-end" : "justify-start"}`}>
+                    <div
+                      className="max-w-[78%] px-3 py-2 rounded-2xl text-[13px] leading-snug"
+                      style={
+                        m.from === "user"
+                          ? { background: GOLD.grad, color: "#1a1200", borderBottomRightRadius: 6 }
+                          : { background: ts.btnSecondary, color: ts.text, border: `1px solid ${ts.cardBorder}`, borderBottomLeftRadius: 6 }
+                      }
+                    >
+                      <span className="block text-[10px] font-black opacity-70 mb-0.5">
+                        {m.from === "user" ? "Siz" : "Admin"}
+                      </span>
+                      {m.text}
+                    </div>
+                  </div>
+                )
+              )}
+            </div>
+
+            <div className="flex gap-2 mt-3">
+              <input
+                value={draft}
+                onChange={(e) => setDraft(e.target.value)}
+                onKeyDown={(e) => { if (e.key === "Enter") sendChat(); }}
+                placeholder={status === "active" ? "Xabar yozing..." : "Suhbat faol emas"}
+                disabled={status !== "active"}
+                className="flex-1 px-3 py-3 rounded-2xl text-[13px] outline-none"
+                style={{ background: ts.btnSecondary, color: ts.text, border: `1px solid ${ts.cardBorder}` }}
+              />
+              <button
+                onClick={sendChat}
+                disabled={status !== "active" || chatSending || !draft.trim()}
+                aria-label="Yuborish"
+                className="px-4 rounded-2xl font-black active:scale-95 transition disabled:opacity-45"
+                style={{ background: GOLD.grad, color: "#1a1200", border: `1px solid ${GOLD.border}` }}
+              >
+                ➤
+              </button>
+            </div>
+          </div>
+        )}
+
         {/* steps */}
         <div className="rounded-3xl p-4" style={{ background: ts.card, border: `1px solid ${ts.cardBorder}` }}>
           <p className="text-[11px] font-black tracking-widest mb-3" style={{ color: ts.textSub }}>QANDAY ISHLAYDI</p>
           {[
             ["1", "Adminni chaqirasiz", "So'rov barcha adminlarga bildirishnoma bo'lib boradi."],
             ["2", "Admin tasdiqlaydi", "«Chatga kirish» tugmasini bosadi."],
-            ["3", "Chat avtomatik ochiladi", "Bot ichida 2 kishilik jonli suhbat boshlanadi."],
+            ["3", "Chat shu yerda ochiladi", "Ilova ichida 2 kishilik jonli suhbat: siz va admin."],
             ["4", "Ovozli xabar", "🎤 tugmasi orqali jonli ovoz yuborishingiz mumkin."],
           ].map(([n, title, sub]) => (
             <div key={n} className="flex gap-3 py-2">

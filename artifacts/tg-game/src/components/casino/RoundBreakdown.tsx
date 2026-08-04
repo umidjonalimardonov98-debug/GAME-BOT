@@ -19,10 +19,10 @@ export default function RoundBreakdown() {
 
   useEffect(() => {
     if (!last) return;
-    // Natija animatsiya tugagach, ~1 soniyadan keyin chiqsin
+    // Natija tez chiqadi va ~1 soniyada avtomatik yopiladi
     setOpen(false);
-    const show = setTimeout(() => setOpen(true), 1000);
-    const hide = setTimeout(() => setOpen(false), 8000);
+    const show = setTimeout(() => setOpen(true), 450);
+    const hide = setTimeout(() => setOpen(false), 1700);
     return () => { clearTimeout(show); clearTimeout(hide); };
   }, [last?.id]);
 

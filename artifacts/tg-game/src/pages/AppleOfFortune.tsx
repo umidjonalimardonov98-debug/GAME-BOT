@@ -7,7 +7,7 @@ import { riggedLose } from "@/lib/odds";
 
 const ROWS = 10;
 const COLS = 5;
-const MULTIPLIERS = [1.3, 1.6, 2, 2.8, 3.5, 5, 6.5, 8, 9, 10];
+const MULTIPLIERS = [1.4, 1.8, 2.3, 3.1, 3.9, 5.5, 7.2, 8.8, 10, 11.5];
 
 // Progressive difficulty: bombs per row (bottom → top)
 // Row 0 (1x) = easiest, Row 9 (10x) = hardest

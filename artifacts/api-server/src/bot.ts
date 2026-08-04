@@ -123,6 +123,19 @@ const liveChatUserToAdmin = new Map<number, number>();         // userId -> admi
 const liveChatAdminToUser = new Map<number, number>();         // adminId -> userId
 const liveChatNotified = new Map<number, number[]>();          // userId -> [adminId] xabar yuborilganlar
 
+// Har bir foydalanuvchi uchun ALOHIDA suhbat tarixi (Mini App ichidagi chat oynasi uchun)
+export type LiveChatMsg = { id: number; from: "user" | "admin" | "system"; text: string; at: number };
+const liveChatLog = new Map<number, LiveChatMsg[]>();          // userId -> xabarlar
+let liveChatSeq = 1;
+
+function pushLiveChatMsg(userId: number, from: LiveChatMsg["from"], text: string) {
+  if (!Number.isFinite(userId) || userId <= 0) return;
+  const arr = liveChatLog.get(userId) ?? [];
+  arr.push({ id: liveChatSeq++, from, text, at: Date.now() });
+  if (arr.length > 200) arr.splice(0, arr.length - 200);
+  liveChatLog.set(userId, arr);
+}
+
 function escHtml(t: string) {
   return String(t).replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
 }
@@ -147,6 +160,7 @@ async function endLiveChat(id: number, byWho: "user" | "admin" | "system" = "sys
   const userId = isAdminSide ? liveChatAdminToUser.get(id) : id;
   if (adminId) liveChatAdminToUser.delete(adminId);
   if (userId) { liveChatUserToAdmin.delete(userId); liveChatQueue.delete(userId); liveChatNotified.delete(userId); }
+  if (userId) pushLiveChatMsg(userId, "system", "Suhbat yakunlandi.");
   const note = byWho === "admin" ? "Admin suhbatni yakunladi." : byWho === "user" ? "Foydalanuvchi suhbatni yakunladi." : "Suhbat yakunlandi.";
   for (const target of [adminId, userId]) {
     if (!target) continue;
@@ -212,6 +226,8 @@ async function relayLiveChatMedia(msg: any): Promise<boolean> {
     } else {
       return false;
     }
+    pushLiveChatMsg(isAdminSide ? peerId : id, isAdminSide ? "admin" : "user",
+      msg.voice ? "\u{1F3A4} Ovozli xabar" : msg.photo ? "\u{1F5BC} Rasm" : msg.video || msg.video_note ? "\u{1F3A5} Video" : msg.sticker ? "\u{1F60A} Stiker" : "\u{1F4CE} Fayl");
     try { await bot!.sendMessage(msg.chat.id, "\u2705", { parse_mode: "HTML" }); } catch {}
     return true;
   } catch {
@@ -243,6 +259,33 @@ export function getLiveChatStatus(telegramId: string) {
   if (liveChatUserToAdmin.has(uid)) return { status: "active" as const };
   if (liveChatQueue.has(uid)) return { status: "pending" as const };
   return { status: "idle" as const };
+}
+
+/** Mini App: shu foydalanuvchining suhbat tarixi (faqat o'zi va admin) */
+export function getLiveChatMessages(telegramId: string, since = 0) {
+  const uid = Number(telegramId);
+  const all = liveChatLog.get(uid) ?? [];
+  return all.filter((m) => m.id > since);
+}
+
+/** Mini App ichidan xabar yuborish — adminga yetkaziladi */
+export async function sendLiveChatMessageFromApp(opts: { telegramId: string; text: string }) {
+  const uid = Number(opts.telegramId);
+  const text = String(opts.text ?? "").trim().slice(0, 2000);
+  if (!Number.isFinite(uid) || uid <= 0) return { ok: false, error: "Noto'g'ri foydalanuvchi" };
+  if (!text) return { ok: false, error: "Xabar bo'sh" };
+  if (!bot) return { ok: false, error: "Bot ishga tushmagan" };
+  const adminId = liveChatUserToAdmin.get(uid);
+  if (!adminId) return { ok: false, error: "Suhbat hali faol emas" };
+  try {
+    await bot.sendMessage(adminId,
+      `\u{1F464} <b>Foydalanuvchi</b> (<code>${uid}</code>)\n\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\n${escHtml(text)}`,
+      { parse_mode: "HTML", reply_markup: LIVE_CHAT_END_KB });
+  } catch {
+    return { ok: false, error: "Adminga yetkazilmadi" };
+  }
+  pushLiveChatMsg(uid, "user", text);
+  return { ok: true };
 }
 const waitingForBroadcast = new Set<number>();                  // adminId waiting to type broadcast message
 const waitingForSendId = new Set<number>();                    // admin waiting to type target userId
@@ -1032,6 +1075,7 @@ export async function startBot() {
           `${isAdminSide ? "👨‍💼 <b>Admin</b>" : "👤 <b>Foydalanuvchi</b>"}\n━━━━━━━━━━━━\n${escHtml(text)}`,
           { parse_mode: "HTML", reply_markup: LIVE_CHAT_END_KB }
         );
+        pushLiveChatMsg(isAdminSide ? peerId : userId, isAdminSide ? "admin" : "user", text);
         try { await bot!.sendMessage(chatId, "✅", { parse_mode: "HTML" }); } catch {}
       } catch {
         await bot!.sendMessage(chatId, "❌ Xabar yetkazilmadi. Suhbat tugatildi.", { parse_mode: "HTML" });
@@ -2202,6 +2246,7 @@ export async function startBot() {
       liveChatQueue.delete(targetId);
       liveChatUserToAdmin.set(targetId, adminId);
       liveChatAdminToUser.set(adminId, targetId);
+      pushLiveChatMsg(targetId, "system", "Admin suhbatga qo'shildi. Yozishingiz mumkin.");
       await bot!.answerCallbackQuery(q.id, { text: "✅ Chatga kirdingiz" });
       await bot!.sendMessage(adminId,
         `💬 <b>JONLI SUHBAT BOSHLANDI</b>\n━━━━━━━━━━━━━━━━━━━━\n\n👤 Foydalanuvchi: <code>${targetId}</code>\n\n✍️ Endi yozgan har bir xabaringiz to'g'ridan-to'g'ri unga boradi.\n🔚 Tugatish: /end`,

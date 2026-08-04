@@ -14,7 +14,7 @@ function multiplier(mines: number, opened: number) {
   for (let i = 0; i < opened; i++) {
     m *= (SIZE - i) / (SIZE - mines - i);
   }
-  return Math.max(1, m * 0.95);
+  return Math.max(1, m * 0.99);
 }
 
 function pickMines(count: number) {

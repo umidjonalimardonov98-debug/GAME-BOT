@@ -37,7 +37,8 @@ export default function Spin() {
 
   const [spinning, setSpinning] = useState(false);
   const [rotation, setRotation] = useState(0);
-  const [result, setResult] = useState<{ prize: number; segIdx: number } | null>(null);
+  const [result, setResult] = useState<{ prize: number; segIdx: number; penalty: number } | null>(null);
+  const [lastFree, setLastFree] = useState(false);
   const [canFree, setCanFree] = useState(false);
   const [nextSpinAt, setNextSpinAt] = useState<string | null>(null);
   const [countdown, setCountdown] = useState("");
@@ -76,6 +77,7 @@ export default function Spin() {
     setResult(null);
 
     let prizeFromApi = 0;
+    let penaltyFromApi = 0;
     let nextSpinAtFromApi: string | null = null;
     try {
       const resp = await fetch(`${BASE}/spin`, {
@@ -85,6 +87,7 @@ export default function Spin() {
       });
       const d = await resp.json();
       prizeFromApi = d.prize ?? 0;
+      penaltyFromApi = d.penalty ?? 0;
       nextSpinAtFromApi = d.nextSpinAt ?? null;
     } catch {}
 
@@ -107,7 +110,8 @@ export default function Spin() {
     setRotation(total);
 
     setTimeout(() => {
-      setResult({ prize: prizeFromApi, segIdx });
+      setResult({ prize: prizeFromApi, segIdx, penalty: penaltyFromApi });
+      setLastFree(free);
       setSpinning(false);
       if (free) { setCanFree(false); setNextSpinAt(nextSpinAtFromApi); }
       refresh();
@@ -285,6 +289,9 @@ export default function Spin() {
             ) : (
               <>
                 <p className="font-black text-xl text-white">Omad kelmadi 😔</p>
+                {result.penalty > 0 ? (
+                  <p className="font-black text-lg mt-1 text-white">−{result.penalty.toLocaleString()} UZS</p>
+                ) : null}
                 <p className="text-sm mt-1 text-white/80">Keyingi gal albatta!</p>
               </>
             )}
@@ -333,6 +340,18 @@ export default function Spin() {
             {loading ? "Yuklanmoqda..." : canFree ? "🎁 TEKIN AYLANTIRISH" : `⏳ ${countdown || "Kutilmoqda..."}`}
           </button>
 
+          {result && !spinning && (
+            <button onClick={() => doSpin(lastFree && canFree)}
+              disabled={spinning || (!canPaid && !canFree)}
+              className="w-full py-4 rounded-2xl font-black text-base text-white active:scale-95 transition-all disabled:opacity-45"
+              style={{
+                background: "linear-gradient(145deg,#0ea5e9,#2563eb)",
+                boxShadow: "0 7px 0 #1e3a8a, 0 12px 28px rgba(37,99,235,0.45)",
+              }}>
+              🔁 QAYTA AYLANTIRISH
+            </button>
+          )}
+
           <button onClick={() => doSpin(false)}
             disabled={!canPaid || spinning}
             className="w-full py-4 rounded-2xl font-black text-base active:scale-95 transition-all pro-sheen overflow-hidden disabled:opacity-45"
@@ -345,7 +364,7 @@ export default function Spin() {
           </button>
 
           <p className="text-center text-xs" style={{ color: ts.textSub }}>
-            Tekin spin har 24 soatda bir marta • To'lovli spin cheksiz
+            Tekin spin har 24 soatda bir marta • Yutqazsangiz hisobingizdan 2 000 UZS yechiladi
           </p>
         </div>
       </div>

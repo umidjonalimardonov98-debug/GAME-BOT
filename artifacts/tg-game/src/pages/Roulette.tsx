@@ -16,16 +16,16 @@ type BetKey =
   | "d1" | "d2" | "d3" | "zero";
 
 const BETS: Record<BetKey, { label: string; mult: number; color: string; test: (n: number) => boolean }> = {
-  red:   { label: "Qizil",  mult: 2, color: "#ef4444", test: (n) => REDS.has(n) },
-  black: { label: "Qora",   mult: 2, color: "#64748b", test: (n) => n !== 0 && !REDS.has(n) },
-  even:  { label: "Juft",   mult: 2, color: "#38bdf8", test: (n) => n !== 0 && n % 2 === 0 },
-  odd:   { label: "Toq",    mult: 2, color: "#a78bfa", test: (n) => n % 2 === 1 },
-  low:   { label: "1–18",   mult: 2, color: "#34d399", test: (n) => n >= 1 && n <= 18 },
-  high:  { label: "19–36",  mult: 2, color: "#fbbf24", test: (n) => n >= 19 },
-  d1:    { label: "1–12",   mult: 3, color: "#f472b6", test: (n) => n >= 1 && n <= 12 },
-  d2:    { label: "13–24",  mult: 3, color: "#22d3ee", test: (n) => n >= 13 && n <= 24 },
-  d3:    { label: "25–36",  mult: 3, color: "#c084fc", test: (n) => n >= 25 },
-  zero:  { label: "Zero 0", mult: 36, color: "#4ade80", test: (n) => n === 0 },
+  red:   { label: "Qizil",  mult: 2.15, color: "#ef4444", test: (n) => REDS.has(n) },
+  black: { label: "Qora",   mult: 2.15, color: "#64748b", test: (n) => n !== 0 && !REDS.has(n) },
+  even:  { label: "Juft",   mult: 2.15, color: "#38bdf8", test: (n) => n !== 0 && n % 2 === 0 },
+  odd:   { label: "Toq",    mult: 2.15, color: "#a78bfa", test: (n) => n % 2 === 1 },
+  low:   { label: "1–18",   mult: 2.15, color: "#34d399", test: (n) => n >= 1 && n <= 18 },
+  high:  { label: "19–36",  mult: 2.15, color: "#fbbf24", test: (n) => n >= 19 },
+  d1:    { label: "1–12",   mult: 3.3, color: "#f472b6", test: (n) => n >= 1 && n <= 12 },
+  d2:    { label: "13–24",  mult: 3.3, color: "#22d3ee", test: (n) => n >= 13 && n <= 24 },
+  d3:    { label: "25–36",  mult: 3.3, color: "#c084fc", test: (n) => n >= 25 },
+  zero:  { label: "Zero 0", mult: 38, color: "#4ade80", test: (n) => n === 0 },
 };
 
 const ORDER: BetKey[] = ["red", "black", "even", "odd", "low", "high", "d1", "d2", "d3", "zero"];

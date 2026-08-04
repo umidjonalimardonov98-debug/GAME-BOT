@@ -16,7 +16,7 @@ export default function SlotReel({ strip, target, spinning, idx, cell = 86 }: Pr
 
   useEffect(() => {
     if (spinning) {
-      loops.current += 6 + idx * 2;
+      loops.current += 8;
       setOffset(loops.current * strip.length);
     } else {
       const pos = Math.max(0, strip.indexOf(target));
