@@ -46,7 +46,7 @@ export default function SlotReel({ strip, target, spinning, idx, cell = 86 }: Pr
       <div
         style={{
           transform: `translateY(${-shift}px)`,
-          transition: `transform ${0.45 + idx * 0.12}s cubic-bezier(0.18,0.9,0.22,1.02)`,
+          transition: `transform ${0.72 + idx * 0.19}s cubic-bezier(0.16,0.86,0.2,1.03)`,
         }}
       >
         {items.map((s, i) => (
