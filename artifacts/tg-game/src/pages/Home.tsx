@@ -4,6 +4,7 @@ import { usePlayer } from "@/lib/player-context";
 import { useLang } from "@/lib/lang-context";
 import { useTheme, pageBg, GAME_BG, GOLD } from "@/lib/theme-context";
 import { getGameConfig } from "@/lib/api";
+import { GAME_NAMES } from "@/lib/game-i18n";
 
 const BASE = "/api";
 
@@ -23,16 +24,26 @@ const LANG_FLAG: Record<string, string> = { uz: "🇺🇿", ru: "🇷🇺", en: 
 const LANG_LABEL: Record<string, string> = { uz: "UZ", ru: "RU", en: "EN" };
 
 const GAMES = [
-  { path: "/apple",     emoji: "🍎", img: "/games/apple.jpg",     label: "Olma Omadi",  tag: "HOT",   tagColor: "#ef4444", bg: "linear-gradient(145deg,#064e3b,#059669)", glow: "#05966955" },
-  { path: "/dice",      emoji: "🎲", img: "/games/dice.jpg",      label: "Zar",         tag: "x5.8",  tagColor: "#f59e0b", bg: "linear-gradient(145deg,#78350f,#d97706)", glow: "#d9770655" },
-  { path: "/aviator",   emoji: "✈️", img: "/games/aviator.jpg",   label: "Aviator",     tag: "∞x",    tagColor: "#818cf8", bg: "linear-gradient(145deg,#1e1b4b,#4f46e5)", glow: "#4f46e555" },
-  { path: "/spin",      emoji: "🎡", img: "/games/spin.jpg",      label: "Aylanadur",   tag: "FREE",  tagColor: "#34d399", bg: "linear-gradient(145deg,#4c1d95,#7c3aed)", glow: "#7c3aed55" },
-  { path: "/blackjack", emoji: "🃏", img: "/games/blackjack.jpg", label: "Blackjack",   tag: "x2.5",  tagColor: "#2dd4bf", bg: "linear-gradient(145deg,#134e4a,#0d9488)", glow: "#0d948855" },
-  { path: "/slots",     emoji: "🎰", img: "/games/slots.jpg",     label: "Slot",        tag: "x10",   tagColor: "#f0abfc", bg: "linear-gradient(145deg,#581c87,#9333ea)", glow: "#9333ea55" },
-  { path: "/parity",    emoji: "🔢", img: "/games/parity.jpg",    label: "Toq-Juft",    tag: "50/50", tagColor: "#7dd3fc", bg: "linear-gradient(145deg,#0c4a6e,#0284c7)", glow: "#0284c755" },
-  { path: "/mines",     emoji: "💣", img: "/games/mines.jpg",     label: "Mines",       tag: "NEW",   tagColor: "#f87171", bg: "linear-gradient(145deg,#7f1d1d,#dc2626)", glow: "#dc262655" },
-  { path: "/roulette",  emoji: "🎡", img: "/games/roulette.jpg",  label: "Ruletka",     tag: "x36",   tagColor: "#fcd34d", bg: "linear-gradient(145deg,#78350f,#b45309)", glow: "#b4530955" },
-
+  { key: "apple",       path: "/apple",       img: "/games/apple.jpg",       tag: "HOT",   tagColor: "#ef4444", bg: "linear-gradient(145deg,#064e3b,#059669)", glow: "#05966955" },
+  { key: "dice",        path: "/dice",        img: "/games/dice.jpg",        tag: "x5.8",  tagColor: "#f59e0b", bg: "linear-gradient(145deg,#78350f,#d97706)", glow: "#d9770655" },
+  { key: "aviator",     path: "/aviator",     img: "/games/aviator.jpg",     tag: "∞x",    tagColor: "#818cf8", bg: "linear-gradient(145deg,#1e1b4b,#4f46e5)", glow: "#4f46e555" },
+  { key: "spin",        path: "/spin",        img: "/games/spin.jpg",        tag: "FREE",  tagColor: "#34d399", bg: "linear-gradient(145deg,#4c1d95,#7c3aed)", glow: "#7c3aed55" },
+  { key: "blackjack",   path: "/blackjack",   img: "/games/blackjack.jpg",   tag: "x2.5",  tagColor: "#2dd4bf", bg: "linear-gradient(145deg,#134e4a,#0d9488)", glow: "#0d948855" },
+  { key: "slots",       path: "/slots",       img: "/games/slots.jpg",       tag: "x10",   tagColor: "#f0abfc", bg: "linear-gradient(145deg,#581c87,#9333ea)", glow: "#9333ea55" },
+  { key: "parity",      path: "/parity",      img: "/games/parity.jpg",      tag: "50/50", tagColor: "#7dd3fc", bg: "linear-gradient(145deg,#0c4a6e,#0284c7)", glow: "#0284c755" },
+  { key: "mines",       path: "/mines",       img: "/games/mines.jpg",       tag: "x24",   tagColor: "#f87171", bg: "linear-gradient(145deg,#7f1d1d,#dc2626)", glow: "#dc262655" },
+  { key: "roulette",    path: "/roulette",    img: "/games/roulette.jpg",    tag: "x36",   tagColor: "#fcd34d", bg: "linear-gradient(145deg,#78350f,#b45309)", glow: "#b4530955" },
+  { key: "plinko",      path: "/plinko",      img: "/games/plinko.jpg",      tag: "NEW",   tagColor: "#4ade80", bg: "linear-gradient(145deg,#312e81,#6366f1)", glow: "#6366f155" },
+  { key: "towers",      path: "/towers",      img: "/games/towers.jpg",      tag: "NEW",   tagColor: "#4ade80", bg: "linear-gradient(145deg,#164e63,#0891b2)", glow: "#0891b255" },
+  { key: "limbo",       path: "/limbo",       img: "/games/limbo.jpg",       tag: "x100",  tagColor: "#a78bfa", bg: "linear-gradient(145deg,#3b0764,#8b5cf6)", glow: "#8b5cf655" },
+  { key: "keno",        path: "/keno",        img: "/games/keno.jpg",        tag: "x60",   tagColor: "#fbbf24", bg: "linear-gradient(145deg,#7c2d12,#ea580c)", glow: "#ea580c55" },
+  { key: "hilo",        path: "/hilo",        img: "/games/hilo.jpg",        tag: "NEW",   tagColor: "#4ade80", bg: "linear-gradient(145deg,#14532d,#16a34a)", glow: "#16a34a55" },
+  { key: "coinflip",    path: "/coinflip",    img: "/games/coinflip.jpg",    tag: "x1.9",  tagColor: "#fcd34d", bg: "linear-gradient(145deg,#713f12,#ca8a04)", glow: "#ca8a0455" },
+  { key: "baccarat",    path: "/baccarat",    img: "/games/baccarat.jpg",    tag: "x8",    tagColor: "#f472b6", bg: "linear-gradient(145deg,#4c0519,#be123c)", glow: "#be123c55" },
+  { key: "case",        path: "/case",        img: "/games/case.jpg",        tag: "x25",   tagColor: "#22d3ee", bg: "linear-gradient(145deg,#083344,#0e7490)", glow: "#0e749055" },
+  { key: "scratch",     path: "/scratch",     img: "/games/scratch.jpg",     tag: "x10",   tagColor: "#fda4af", bg: "linear-gradient(145deg,#500724,#9d174d)", glow: "#9d174d55" },
+  { key: "dragontiger", path: "/dragontiger", img: "/games/dragontiger.jpg", tag: "x9",    tagColor: "#fb923c", bg: "linear-gradient(145deg,#450a0a,#b91c1c)", glow: "#b91c1c55" },
+  { key: "rps",         path: "/rps",         img: "/games/rps.jpg",         tag: "x1.9",  tagColor: "#93c5fd", bg: "linear-gradient(145deg,#1e3a8a,#2563eb)", glow: "#2563eb55" },
 ];
 
 export default function Home() {
@@ -311,8 +322,8 @@ export default function Home() {
             </button>
           </div>
 
-          <div className="grid grid-cols-3 gap-3">
-            {GAMES.filter(g => enabledGames[g.path.slice(1)] !== false).map((g) => (
+          <div className="grid grid-cols-4 gap-2">
+            {GAMES.filter(g => enabledGames[g.key] !== false).map((g) => (
               <button key={g.path} onClick={() => nav(g.path)}
                 className="relative overflow-hidden active:scale-[0.93] transition-all pro-tile"
                 style={{
@@ -328,7 +339,7 @@ export default function Home() {
                   border: "1px solid rgba(255,255,255,0.12)",
                 }}>
                 {/* Haqiqiy o'yin surati fon sifatida */}
-                <img src={g.img} alt={g.label} loading="lazy" decoding="async"
+                <img src={g.img} alt={GAME_NAMES[g.key][lang]} loading="lazy" decoding="async"
                   className="absolute inset-0 w-full h-full object-cover pointer-events-none crisp-img"
                   style={{ opacity: 1, borderRadius: 20 }} />
                 {/* Matn o'qilishi uchun faqat pastdan yengil qoraytirish */}
@@ -345,8 +356,8 @@ export default function Home() {
                   </span>
                 </div>
                 <p className="relative text-white font-black leading-tight text-center mt-auto"
-                  style={{ fontSize: 11.5, textShadow: "0 2px 6px rgba(0,0,0,0.9)" }}>
-                  {g.label}
+                  style={{ fontSize: 9.5, textShadow: "0 2px 6px rgba(0,0,0,0.9)" }}>
+                  {GAME_NAMES[g.key][lang]}
                 </p>
 
               </button>

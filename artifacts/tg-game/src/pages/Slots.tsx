@@ -4,6 +4,7 @@ import { useLang } from "@/lib/lang-context";
 import { useTheme, pageBg, GAME_BG } from "@/lib/theme-context";
 import { placeBet } from "@/lib/api";
 import { riggedLose } from "@/lib/odds";
+import { sfx, startTicker } from "@/lib/sound";
 import GameHeader from "@/components/GameHeader";
 import SlotReel from "@/components/casino/SlotReel";
 
@@ -84,21 +85,24 @@ export default function Slots() {
     setSpinning(true);
     setOutcome(null);
     const { reels: finalReels, outcome: finalOutcome } = spinReels();
+    const stopTick = startTicker(70);
     // barabanlar oldindan aniqlangan belgida to'xtaydi (haqiqiy slot kabi)
     setReels(finalReels);
 
     setTimeout(() => {
+      stopTick();
       setSpinning(false);
       setOutcome(finalOutcome);
 
       const mult = finalOutcome === "jackpot" ? 12 : finalOutcome === "three" ? 3.6 : finalOutcome === "two" ? 1.8 : 0;
       const win = mult > 0 ? Math.floor(activeBet * mult) : 0;
       setWinAmt(win);
+      if (win > 0) sfx.win(finalOutcome === "jackpot"); else sfx.lose();
 
       setSaving(true);
       placeBet(player.telegramId, { amount: activeBet, game: "slots", won: mult > 0, winAmount: win })
         .then(() => refresh()).catch(() => {}).finally(() => setSaving(false));
-    }, 1600);
+    }, 780);
   }, [player, activeBet, spinning]);
 
 

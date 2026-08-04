@@ -1,159 +1,83 @@
+import { useState } from "react";
 import { useLocation } from "wouter";
 import { ArrowLeft } from "lucide-react";
+import { useLang } from "@/lib/lang-context";
+import { useTheme, pageBg, GAME_BG } from "@/lib/theme-context";
+import { GAME_RULES, RULES_TITLE } from "@/lib/rules";
+import { GAME_NAMES } from "@/lib/game-i18n";
+import { sfx } from "@/lib/sound";
 
-const GAMES = [
-  {
-    emoji: "🍎", title: "Olma Omadi (Apple Fortune)",
-    steps: [
-      "Tikish miqdorini kiriting (min 2 000 UZS)",
-      "5×6 katakcha grid ochiladi — ularni biring keyin biri bosing",
-      "Har ochilgan olmada koeffitsiyent oshib boradi (max x10)",
-      "O'z vaqtida 'Chiqarish' tugmasini bosing!",
-      "Agar yashirin qo'ziqorin topilsa — hammasi yo'qoladi!",
-    ]
-  },
-  {
-    emoji: "🎲", title: "Zar (Dice)",
-    steps: [
-      "Tikish miqdorini tanlang",
-      "Bashorat turini tanlang: Ko'proq 7 (x2.3) | Teng 7 (x5.8) | Ozroq 7 (x2.3)",
-      "O'YNASH tugmasini bosing",
-      "2 ta zar tashlanadi — yig'indi hisoblanadi",
-      "To'g'ri bashorat = tikish × koeffitsiyent!",
-    ]
-  },
-  {
-    emoji: "✈️", title: "Aviator",
-    steps: [
-      "Tikish kiriting va BOSHLASH bosing",
-      "Samolyot ko'tariladi — koeffitsiyent tezda oshadi",
-      "70% holatlarda 1.1–2.0x da qulab tushadi",
-      "QULAB TUSHISHIDAN OLDIN 'OLISH' bosing!",
-      "Avto olish: belgiga yetganda avtomatik naqd qiladi",
-    ]
-  },
-  {
-    emoji: "🎡", title: "Spin (Aylanadur)",
-    steps: [
-      "Har 24 soatda 1 ta TEKIN spin — bepul!",
-      "To'lovli spin ham mavjud (2 000 UZS)",
-      "G'ildirak 10 segmentdan iborat",
-      "30% yutish ehtimoli: 🍒 1K | ⭐ 2K | 💎 5K",
-      "70% miss (yutqazish) ehtimoli",
-    ]
-  },
-  {
-    emoji: "🃏", title: "Blackjack",
-    steps: [
-      "Tikish kiriting va KARTA OL bosing",
-      "Maqsad: 21 ga yaqin, lekin 21 dan oshirmaslik",
-      "KARTA OL = yana bitta karta olish",
-      "TO'XTASH = dilerni o'ynatish",
-      "Blackjack (A + 10li karta) = x2.5!",
-      "Yutish = x2 | Durrang = tikish qaytadi",
-    ]
-  },
-  {
-    emoji: "🎰", title: "Slot",
-    steps: [
-      "Tikish kiriting va SPIN bosing",
-      "3 ta g'ildirak aylanadi",
-      "7️⃣7️⃣7️⃣ = x10 (Jackpot!)",
-      "3 bir xil mevia/belgi = x3",
-      "2 bir xil = x1.5",
-      "Umumiy yutish ehtimoli ~62%",
-    ]
-  },
-  {
-    emoji: "🔢", title: "Toq-Juft (Parity)",
-    steps: [
-      "Bet turini tanlang: JUFT / TOQ / KICHIK / KATTA",
-      "Tikish miqdorini kiriting",
-      "TIKISH bosing — 1 dan 90 gacha son chiqadi",
-      "JUFT: 2,4,6...90 | TOQ: 1,3,5...89",
-      "KICHIK: 1-45 | KATTA: 46-90",
-      "Har biri 50% ehtimol = x2 pul!",
-    ]
-  },
-];
+const KEYS = Object.keys(GAME_RULES);
+
+const EXTRA: Record<string, { title: string; items: string[] }> = {
+  uz: { title: "💡 Depozit va Yechish", items: ["Har depozitga +20% bonus", "Yechish uchun depozit miqdorini 100% o'ynash kerak", "Chek (skrinshot) botga yuboriladi, admin tasdiqlaydi", "Kunlik bonus va promo kodlar mavjud"] },
+  ru: { title: "💡 Депозит и вывод", items: ["Бонус +20% к каждому депозиту", "Для вывода нужно отыграть 100% депозита", "Чек (скриншот) отправляется в бот, админ подтверждает", "Есть ежедневный бонус и промокоды"] },
+  en: { title: "💡 Deposit & withdrawal", items: ["+20% bonus on every deposit", "You must wager 100% of the deposit before withdrawing", "Send the receipt screenshot to the bot for admin approval", "Daily bonus and promo codes available"] },
+};
 
 export default function HowToPlay() {
   const [, nav] = useLocation();
+  const { lang } = useLang();
+  const { theme, ts } = useTheme();
+  const [active, setActive] = useState<string>(KEYS[0]);
+
+  const cur = GAME_RULES[active];
+  const extra = EXTRA[lang];
 
   return (
-    <div className="min-h-screen flex flex-col"
-      style={{ background: "linear-gradient(180deg, rgba(10,7,2,0.84) 0%, rgba(14,9,3,0.76) 45%, rgba(6,4,1,0.94) 100%), url('/bg/home.jpg') center / cover no-repeat fixed" }}>
-
+    <div className="min-h-screen flex flex-col" style={{ background: pageBg(theme, GAME_BG.home) }}>
       <div className="flex items-center gap-3 px-4 pt-5 pb-4">
         <button onClick={() => nav("/")}
-          className="w-10 h-10 flex items-center justify-center rounded-2xl"
-          style={{ background: "rgba(255,255,255,0.06)", border: "1px solid rgba(255,255,255,0.1)", boxShadow: "0 4px 0 rgba(0,0,0,0.2)" }}>
-          <ArrowLeft className="w-4 h-4 text-white" />
+          className="w-10 h-10 flex items-center justify-center rounded-2xl active:scale-90 transition-transform"
+          style={{ background: "rgba(255,255,255,0.06)", border: "1px solid rgba(255,255,255,0.1)" }}>
+          <ArrowLeft className="w-4 h-4" style={{ color: ts.text }} />
         </button>
-        <h1 className="text-white font-black text-lg">📖 Qanday O'ynaladi</h1>
+        <h1 className="font-black text-lg" style={{ color: ts.text }}>{RULES_TITLE[lang]}</h1>
+      </div>
+
+      {/* 4 qatorli o'yin tanlash gridi */}
+      <div className="grid grid-cols-4 gap-2 px-4 mb-4">
+        {KEYS.map(k => (
+          <button key={k} onClick={() => { setActive(k); sfx.select(); }}
+            className="rounded-2xl py-2.5 px-1 flex flex-col items-center gap-1 active:scale-95 transition-all"
+            style={{
+              background: active === k ? "linear-gradient(135deg,#7c3aed,#4f46e5)" : ts.card,
+              border: `1px solid ${active === k ? "rgba(167,139,250,0.6)" : ts.cardBorder}`,
+            }}>
+            <span style={{ fontSize: 20 }}>{GAME_RULES[k].emoji}</span>
+            <span className="font-black text-center leading-tight"
+              style={{ fontSize: 8.5, color: active === k ? "#fff" : ts.textSub }}>
+              {GAME_NAMES[k][lang]}
+            </span>
+          </button>
+        ))}
       </div>
 
       <div className="px-4 pb-8 space-y-3">
-        {GAMES.map((g) => (
-          <div key={g.title} className="rounded-2xl p-4 relative overflow-hidden"
-            style={{ background: "rgba(255,255,255,0.03)", border: "1px solid rgba(255,255,255,0.07)", boxShadow: "0 4px 0 rgba(0,0,0,0.15)" }}>
-            <div className="absolute inset-0 pointer-events-none rounded-2xl"
-              style={{ background: "linear-gradient(135deg, rgba(255,255,255,0.03) 0%, transparent 50%)" }} />
-            <div className="flex items-center gap-3 mb-3 relative">
-              <span className="text-3xl">{g.emoji}</span>
-              <h2 className="text-white font-black text-sm">{g.title}</h2>
-            </div>
-            <ol className="space-y-1.5 relative">
-              {g.steps.map((s, i) => (
-                <li key={i} className="flex gap-2.5 text-sm">
-                  <span className="font-black shrink-0" style={{ color: "#fbbf24", minWidth: 18 }}>{i + 1}.</span>
-                  <span style={{ color: "rgba(255,255,255,0.6)" }}>{s}</span>
-                </li>
-              ))}
-            </ol>
+        <div className="rounded-2xl p-4" style={{ background: ts.card, border: `1px solid ${ts.cardBorder}` }}>
+          <div className="flex items-center gap-3 mb-3">
+            <span className="text-3xl">{cur.emoji}</span>
+            <h2 className="font-black text-sm" style={{ color: ts.text }}>{GAME_NAMES[active][lang]}</h2>
           </div>
-        ))}
+          <ol className="space-y-1.5">
+            {cur.rules[lang].map((s, i) => (
+              <li key={i} className="flex gap-2.5 text-sm">
+                <span className="font-black shrink-0" style={{ color: "#fbbf24", minWidth: 18 }}>{i + 1}.</span>
+                <span style={{ color: ts.textSub }}>{s}</span>
+              </li>
+            ))}
+          </ol>
+        </div>
 
-        {/* Deposit/Withdraw info */}
-        <div className="rounded-2xl p-4"
-          style={{ background: "rgba(34,197,94,0.06)", border: "1px solid rgba(34,197,94,0.15)" }}>
-          <p className="font-bold mb-2.5 flex items-center gap-2" style={{ color: "#4ade80" }}>💡 Depozit va Yechish</p>
+        <div className="rounded-2xl p-4" style={{ background: "rgba(34,197,94,0.06)", border: "1px solid rgba(34,197,94,0.15)" }}>
+          <p className="font-bold mb-2.5" style={{ color: "#4ade80" }}>{extra.title}</p>
           <ul className="space-y-2">
-            {[
-              ["➕", "Har depozitga", "+20% bonus", "text-white"],
-              ["💸", "Yechish uchun", "depozit miqdorini 100% o'ynash kerak", "text-white"],
-              ["📸", "Chek (screenshot)", "botga yuboriladi, admin tasdiqlaydi", "text-white"],
-              ["🎁", "Kunlik bonus", "har kuni qaytib oling (streak bonuslari bor!)", "text-white"],
-              ["🔑", "Promo kod", "maxsus balans qo'shish imkoni", "text-white"],
-            ].map(([icon, text, bold], i) => (
-              <li key={i} className="flex items-start gap-2 text-sm">
-                <span>{icon}</span>
-                <span style={{ color: "rgba(255,255,255,0.6)" }}>{text} <b className="text-white">{bold}</b></span>
+            {extra.items.map((it, i) => (
+              <li key={i} className="flex items-start gap-2 text-sm" style={{ color: ts.textSub }}>
+                <span>•</span><span>{it}</span>
               </li>
             ))}
           </ul>
-        </div>
-
-        {/* Daily bonus streak */}
-        <div className="rounded-2xl p-4"
-          style={{ background: "rgba(251,191,36,0.06)", border: "1px solid rgba(251,191,36,0.15)" }}>
-          <p className="font-bold mb-2.5" style={{ color: "#fbbf24" }}>🔥 Kunlik Bonus Streak</p>
-          <div className="grid grid-cols-3 gap-2">
-            {[
-              ["1-kun", "1 000 UZS"],
-              ["2-kun", "2 000 UZS"],
-              ["3-kun", "4 000 UZS"],
-              ["5-kun", "8 000 UZS"],
-              ["7-kun", "15 000 UZS"],
-              ["14-kun", "30 000 UZS"],
-            ].map(([day, bonus]) => (
-              <div key={day} className="text-center py-2 px-1 rounded-xl"
-                style={{ background: "rgba(251,191,36,0.08)", border: "1px solid rgba(251,191,36,0.15)" }}>
-                <p className="font-black text-xs" style={{ color: "#fbbf24" }}>{day}</p>
-                <p className="text-xs font-bold" style={{ color: "rgba(255,255,255,0.6)" }}>{bonus}</p>
-              </div>
-            ))}
-          </div>
         </div>
       </div>
     </div>

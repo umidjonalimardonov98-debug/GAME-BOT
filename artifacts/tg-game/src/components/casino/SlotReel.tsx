@@ -14,16 +14,15 @@ export default function SlotReel({ strip, target, spinning, idx, cell = 86 }: Pr
   const [offset, setOffset] = useState(0);
   const loops = useRef(0);
 
+  // Faqat aylanish boshlanganda BIR MARTA harakatlanadi va to'g'ridan-to'g'ri
+  // yakuniy belgida to'xtaydi (ilgari ikki marta aylanardi).
   useEffect(() => {
-    if (spinning) {
-      loops.current += 8;
-      setOffset(loops.current * strip.length);
-    } else {
-      const pos = Math.max(0, strip.indexOf(target));
-      setOffset(loops.current * strip.length + pos);
-    }
+    if (!spinning) return;
+    loops.current += 4;
+    const pos = Math.max(0, strip.indexOf(target));
+    setOffset(loops.current * strip.length + pos);
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [spinning, target]);
+  }, [spinning]);
 
   // uzun lenta: strip ko'p marta takrorlanadi
   const items = Array.from({ length: strip.length * 3 }, (_, i) => strip[i % strip.length]);
@@ -46,9 +45,7 @@ export default function SlotReel({ strip, target, spinning, idx, cell = 86 }: Pr
       <div
         style={{
           transform: `translateY(${-shift}px)`,
-          transition: spinning
-            ? `transform ${1.1 + idx * 0.35}s cubic-bezier(0.35,0.05,0.2,1)`
-            : `transform ${1.4 + idx * 0.45}s cubic-bezier(0.12,0.85,0.16,1.02)`,
+          transition: `transform ${0.45 + idx * 0.12}s cubic-bezier(0.18,0.9,0.22,1.02)`,
         }}
       >
         {items.map((s, i) => (

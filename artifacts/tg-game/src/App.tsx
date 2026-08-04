@@ -21,6 +21,17 @@ import Mines from "@/pages/Mines";
 import Roulette from "@/pages/Roulette";
 import History from "@/pages/History";
 import Support from "@/pages/Support";
+import Plinko from "@/pages/Plinko";
+import Towers from "@/pages/Towers";
+import Limbo from "@/pages/Limbo";
+import Keno from "@/pages/Keno";
+import HiLo from "@/pages/HiLo";
+import CoinFlip from "@/pages/CoinFlip";
+import Baccarat from "@/pages/Baccarat";
+import CaseOpen from "@/pages/CaseOpen";
+import Scratch from "@/pages/Scratch";
+import DragonTiger from "@/pages/DragonTiger";
+import RPS from "@/pages/RPS";
 import NotFound from "@/pages/not-found";
 import RoundBreakdown from "@/components/casino/RoundBreakdown";
 import { installGlobalClickSound } from "@/lib/sound";
@@ -48,6 +59,17 @@ function Router() {
       <Route path="/roulette" component={Roulette} />
       <Route path="/history" component={History} />
       <Route path="/support" component={Support} />
+      <Route path="/plinko" component={Plinko} />
+      <Route path="/towers" component={Towers} />
+      <Route path="/limbo" component={Limbo} />
+      <Route path="/keno" component={Keno} />
+      <Route path="/hilo" component={HiLo} />
+      <Route path="/coinflip" component={CoinFlip} />
+      <Route path="/baccarat" component={Baccarat} />
+      <Route path="/case" component={CaseOpen} />
+      <Route path="/scratch" component={Scratch} />
+      <Route path="/dragontiger" component={DragonTiger} />
+      <Route path="/rps" component={RPS} />
       <Route component={NotFound} />
     </Switch>
   );

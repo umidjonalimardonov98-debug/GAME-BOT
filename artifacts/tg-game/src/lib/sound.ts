@@ -281,3 +281,26 @@ export function installGlobalClickSound() {
     { passive: true, capture: true }
   );
 }
+
+/**
+ * Harakat davomida bir xil "tiq-tiq" ovozi.
+ * Bosilganda emas — animatsiya davomida ishlaydi.
+ * Qaytgan funksiyani chaqirib to'xtatiladi.
+ */
+export function startTicker(intervalMs = 110, slowdown = 1): () => void {
+  if (typeof window === "undefined") return () => {};
+  let stopped = false;
+  let gap = intervalMs;
+  let timer: ReturnType<typeof setTimeout> | null = null;
+  const step = () => {
+    if (stopped) return;
+    sfx.tick();
+    gap = Math.min(gap * slowdown, 420);
+    timer = setTimeout(step, gap);
+  };
+  step();
+  return () => {
+    stopped = true;
+    if (timer) clearTimeout(timer);
+  };
+}
