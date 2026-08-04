@@ -8,6 +8,7 @@ import { GAME_NAMES } from "@/lib/game-i18n";
 import { useU } from "@/lib/ui-i18n";
 import ThemeSwitcher from "@/components/ThemeSwitcher";
 import LangSwitcher from "@/components/LangSwitcher";
+import SoundToggle from "@/components/SoundToggle";
 import Odometer from "@/components/casino/Odometer";
 import { Wallet, Banknote, Gift, Ticket, Home as HomeIcon, History, MessageCircle, BookOpen, Trophy } from "lucide-react";
 
@@ -71,8 +72,8 @@ export default function Home() {
 
   const BG = pageBg(theme);
 
-  const CARD_BG = theme === "light" ? "#ffffff" : theme === "black" ? "#0d141c" : "#122a42";
-  const CARD_BORDER = theme === "light" ? "rgba(14,33,53,0.12)" : "rgba(255,255,255,0.08)";
+  const CARD_BG = false ? "#ffffff" : theme === "black" ? "#0d141c" : "#122a42";
+  const CARD_BORDER = false ? "rgba(14,33,53,0.12)" : "rgba(255,255,255,0.08)";
   const TEXT = isDark ? "#fff" : "#0b1a2b";
   const TEXT_SUB = isDark ? "rgba(255,255,255,0.58)" : "rgba(11,26,43,0.6)";
   const ACCENT = isDark ? "#2f8fff" : "#1668e3";
@@ -126,6 +127,7 @@ export default function Home() {
         {/* Mavzu (kichik suratcha) + til + balans */}
         <div className="flex items-center gap-2">
           <ThemeSwitcher />
+          <SoundToggle />
           <LangSwitcher />
 
           {/* Tanga balansi */}

@@ -79,7 +79,7 @@ export default function Slots() {
   const intervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
   const activeBet = Math.max(bet, 3000);
-  const isLight = theme === "light";
+  const isLight = false;
   const balance = player?.balance ?? 0;
 
   const spin = useCallback(async () => {

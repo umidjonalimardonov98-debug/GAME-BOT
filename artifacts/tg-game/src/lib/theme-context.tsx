@@ -27,16 +27,16 @@ export const THEMES: Record<Theme, ThemeStyle> = {
     btnSecondaryText: "#9fc5ef",
   },
   light: {
-    // Yorug' mavzu — issiq fil suyagi + oltin urg'u (1XBET "day" uslubi)
-    bg: "linear-gradient(180deg, #fffdf7 0%, #f7f1e2 55%, #f2ead6 100%)",
-    card: "#ffffff",
-    cardBorder: "rgba(122,90,16,0.18)",
-    text: "#171208",
-    textSub: "rgba(23,18,8,0.66)",
-    input: "#fbf7ec",
-    inputBorder: "rgba(122,90,16,0.22)",
-    btnSecondary: "#f6edd8",
-    btnSecondaryText: "#7a5a10",
+    // "Qirollik" mavzusi — to'q siyoh-binafsha + zumrad urg'u (yorug' emas)
+    bg: "linear-gradient(180deg, #1a0f2b 0%, #241040 52%, #12071f 100%)",
+    card: "#2a1547",
+    cardBorder: "rgba(212,175,55,0.22)",
+    text: "#ffffff",
+    textSub: "rgba(255,255,255,0.6)",
+    input: "#1d0e33",
+    inputBorder: "rgba(255,255,255,0.14)",
+    btnSecondary: "#3a1e60",
+    btnSecondaryText: "#e3c8ff",
   },
   black: {
     bg: "linear-gradient(180deg, #05080c 0%, #070c12 100%)",
@@ -134,7 +134,7 @@ let remoteBackgroundStyle: "gold" | "classic" = "gold";
 const OVERLAY: Record<Theme, string> = {
   dark: "linear-gradient(180deg, rgba(14,10,4,0.80) 0%, rgba(20,13,4,0.72) 45%, rgba(8,6,2,0.88) 100%)",
   black: "linear-gradient(180deg, rgba(0,0,0,0.88) 0%, rgba(6,4,0,0.84) 45%, rgba(0,0,0,0.93) 100%)",
-  light: "linear-gradient(180deg, rgba(255,253,247,0.94) 0%, rgba(250,243,227,0.90) 45%, rgba(246,236,214,0.95) 100%)",
+  light: "linear-gradient(180deg, rgba(26,15,43,0.86) 0%, rgba(36,16,64,0.80) 45%, rgba(12,7,31,0.92) 100%)",
 };
 
 

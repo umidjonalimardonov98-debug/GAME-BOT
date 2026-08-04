@@ -14,7 +14,7 @@ export default function LangSwitcher() {
   const { lang, setLang } = useLang();
   const { theme } = useTheme();
   const [open, setOpen] = useState(false);
-  const isLight = theme === "light";
+  const isLight = false;
   const cur = LANGS.find((l) => l.code === lang) ?? LANGS[0];
 
   return (

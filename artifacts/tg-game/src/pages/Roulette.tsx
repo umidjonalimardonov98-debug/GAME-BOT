@@ -50,7 +50,7 @@ export default function Roulette() {
     window.addEventListener("resize", fit);
     return () => window.removeEventListener("resize", fit);
   }, []);
-  const isLight = theme === "light";
+  const isLight = false;
 
   const [betInput, setBetInput] = useState("2000");
   const [pick, setPick] = useState<BetKey | null>(null);

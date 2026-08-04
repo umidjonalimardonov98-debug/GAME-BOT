@@ -36,7 +36,7 @@ export default function Dice() {
   const [prize, setPrize] = useState(0);
   const [saving, setSaving] = useState(false);
 
-  const isLight = theme === "light";
+  const isLight = false;
   const activeBet = Math.max(Number(betInput) || 2000, 0);
   const potential = betType ? Math.floor(activeBet * ODDS[betType].mult) : 0;
   const sum = dice[0] + dice[1];

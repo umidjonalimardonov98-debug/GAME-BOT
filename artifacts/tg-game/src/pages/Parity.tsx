@@ -49,7 +49,7 @@ export default function Parity() {
   const lastResultRef = useRef<number | null>(null);
 
   const activeBet = Math.max(Number(betInput) || 2000, 2000);
-  const isLight = theme === "light";
+  const isLight = false;
 
   function setQuickBet(a: string) {
     const bal = player?.balance ?? 0;

@@ -52,7 +52,7 @@ export default function Blackjack() {
   const [dealerRevealed, setDealerRevealed] = useState(false);
 
   const activeBet = Math.max(Number(betInput) || 2000, 2000);
-  const isLight = theme === "light";
+  const isLight = false;
   const playerTotal = calcHand(playerCards);
   const dealerTotal = calcHand(dealerCards);
 

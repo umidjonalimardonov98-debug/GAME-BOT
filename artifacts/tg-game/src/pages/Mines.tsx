@@ -32,7 +32,7 @@ export default function Mines() {
   const u = useU();
   const { player, refresh } = usePlayer();
   const { theme, ts } = useTheme();
-  const isLight = theme === "light";
+  const isLight = false;
 
   const [betInput, setBetInput] = useState("2000");
   const [mines, setMines] = useState(3);

@@ -73,7 +73,7 @@ export default function Support() {
   }
 
   async function startRecording() {
-    if (recording || status !== "active") return;
+    if (recording) return;
     try {
       const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
       const mime = MediaRecorder.isTypeSupported("audio/ogg;codecs=opus")
@@ -112,7 +112,8 @@ export default function Support() {
   }
 
   async function sendVoice(blob: Blob, mime: string) {
-    if (!player || blob.size < 1200) return;
+    if (!player) return;
+    if (blob.size < 800) { setMsg(u("networkError")); sfx.error(); setTimeout(() => setMsg(""), 2500); return; }
     setVoiceBusy(true);
     try {
       const b64 = await new Promise<string>((resolve, reject) => {
@@ -337,7 +338,7 @@ export default function Support() {
               {/* Ovozli xabar */}
               <button
                 onClick={() => (recording ? stopRecording() : startRecording())}
-                disabled={status !== "active" || voiceBusy}
+                disabled={!player || voiceBusy}
                 aria-label={u("holdToRecord")}
                 className="w-12 shrink-0 rounded-2xl flex items-center justify-center active:scale-95 transition disabled:opacity-45"
                 style={{

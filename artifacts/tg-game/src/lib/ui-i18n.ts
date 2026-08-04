@@ -71,7 +71,7 @@ export const U: Record<string, L3> = {
   // Umumiy
   theme: { uz: "Mavzu", ru: "Тема", en: "Theme" },
   theme_dark: { uz: "Ko'k tungi", ru: "Синяя ночь", en: "Blue night" },
-  theme_light: { uz: "Yorug'", ru: "Светлая", en: "Light" },
+  theme_light: { uz: "Qirollik", ru: "Королевская", en: "Royal" },
   theme_black: { uz: "Qora", ru: "Чёрная", en: "Black" },
   promoCodes: { uz: "Promokodlar", ru: "Промокоды", en: "Promo codes" },
   apply: { uz: "QO'LLASH", ru: "ПРИМЕНИТЬ", en: "APPLY" },

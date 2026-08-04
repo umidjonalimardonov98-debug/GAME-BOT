@@ -49,7 +49,7 @@ export default function Spin() {
   const timerRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const rotRef = useRef(0);
 
-  const isLight = theme === "light";
+  const isLight = false;
   const canPaid = (player?.balance ?? 0) >= BET;
 
   useEffect(() =>{

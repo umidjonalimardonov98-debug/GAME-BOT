@@ -95,7 +95,7 @@ export default function ThemeSwitcher({ compact }: { compact?: boolean }) {
           <div
             className="absolute right-0 top-11 z-50 rounded-2xl p-2 pop-in"
             style={{
-              background: theme === "light" ? "#ffffff" : "#0d1b2c",
+              background: false ? "#ffffff" : "#0d1b2c",
               border: "1px solid rgba(255,255,255,0.14)",
               boxShadow: "0 20px 44px rgba(0,0,0,0.55)",
               minWidth: 168,
@@ -103,7 +103,7 @@ export default function ThemeSwitcher({ compact }: { compact?: boolean }) {
           >
             <p
               className="text-[10px] font-black tracking-[0.18em] mb-2 px-1"
-              style={{ color: theme === "light" ? "#64748b" : "rgba(255,255,255,0.5)" }}
+              style={{ color: false ? "#64748b" : "rgba(255,255,255,0.5)" }}
             >
               {u("theme").toUpperCase()}
             </p>
@@ -132,7 +132,7 @@ export default function ThemeSwitcher({ compact }: { compact?: boolean }) {
                       style={{
                         color: active
                           ? "#7fbaff"
-                          : theme === "light"
+                          : false
                             ? "#334155"
                             : "rgba(255,255,255,0.72)",
                       }}

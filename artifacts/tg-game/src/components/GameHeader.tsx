@@ -21,7 +21,7 @@ export default function GameHeader({ title, subtitle, hideTheme }: Props) {
   const { theme, ts } = useTheme();
   const { t } = useLang();
 
-  const isLight = theme === "light";
+  const isLight = false;
 
   return (
     <div

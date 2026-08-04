@@ -40,7 +40,7 @@ export default function Deposit() {
   const [done, setDone] = useState(false);
   const [error, setError] = useState("");
 
-  const isLight = theme === "light";
+  const isLight = false;
   const amount = custom ? Number(custom) : selected;
   const bonusAmt = amount ? Math.floor(amount * BONUS / 100) : 0;
   const total = amount ? amount + bonusAmt : 0;

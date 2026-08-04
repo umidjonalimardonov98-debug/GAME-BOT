@@ -53,7 +53,7 @@ export default function Aviator() {
   const countdownRef = useRef<ReturnType<typeof setInterval> | undefined>(undefined);
   const autoRef = useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
 
-  const isLight = theme === "light";
+  const isLight = false;
 
   useEffect(() =>{ playerRef.current = player; }, [player]);
   useEffect(() =>{ betRef.current = betAmt; }, [betAmt]);
@@ -184,7 +184,7 @@ export default function Aviator() {
           }}>
 
           {/* Stars (dark mode only) */}
-          {theme !== "light" && [...Array(20)].map((_, i) => (
+          {true && [...Array(20)].map((_, i) => (
             <div key={i} className="absolute rounded-full"
               style={{ width: 2, height: 2, background: "white", opacity: 0.2,
                 left: `${(i * 43 + 7) % 95}%`, top: `${(i * 31 + 9) % 75}%`,

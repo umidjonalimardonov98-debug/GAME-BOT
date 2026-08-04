@@ -34,7 +34,17 @@ const APP_URL =
   (DOMAINS ? `https://${DOMAINS.split(",")[0]}` : "") ||
   RAILWAY_FALLBACK;
 const BONUS_PERCENT = 20;
-const MIN_WITHDRAW_AMOUNT = 10000;
+const MIN_WITHDRAW_AMOUNT = 20000;
+const DEFAULT_REFERRAL_BONUS = 1000;
+
+/** Referal bonusi — admin panelidan o'zgartiriladi (app_settings.referral_bonus) */
+async function getReferralBonus(): Promise<number> {
+  try {
+    const [row] = await db.select().from(appSettingsTable).where(eq(appSettingsTable.key, "referral_bonus"));
+    const n = Number(row?.value ?? DEFAULT_REFERRAL_BONUS);
+    return Number.isFinite(n) && n >= 0 ? Math.round(n) : DEFAULT_REFERRAL_BONUS;
+  } catch { return DEFAULT_REFERRAL_BONUS; }
+}
 
 let bot: TelegramBot | null = null;
 let processGuardsInstalled = false;
@@ -292,8 +302,14 @@ export async function sendLiveChatVoiceFromApp(opts: { telegramId: string; audio
   const uid = Number(opts.telegramId);
   if (!Number.isFinite(uid) || uid <= 0) return { ok: false, error: "Noto'g'ri foydalanuvchi" };
   if (!bot) return { ok: false, error: "Bot ishga tushmagan" };
-  const adminId = liveChatUserToAdmin.get(uid);
-  if (!adminId) return { ok: false, error: "Suhbat hali faol emas" };
+  let adminId = liveChatUserToAdmin.get(uid);
+  if (!adminId) {
+    // Suhbat hali ochilmagan bo'lsa — ovozni baribir adminlarga yetkazamiz
+    const admins = await financeAdminIds();
+    adminId = admins[0];
+    if (!adminId) return { ok: false, error: "Hozir admin mavjud emas" };
+    try { await requestLiveChat(uid, "O'yinchi", ""); } catch {}
+  }
   const raw = String(opts.audioBase64 || "").replace(/^data:[^,]+,/, "");
   if (!raw) return { ok: false, error: "Ovoz bo'sh" };
   let buf: Buffer;
@@ -314,6 +330,7 @@ export async function sendLiveChatVoiceFromApp(opts: { telegramId: string; audio
   pushLiveChatMsg(uid, "user", `\u{1F3A4} Ovozli xabar (${secs}s)`);
   return { ok: true };
 }
+const waitingForRefPrice = new Set<number>();                  // admin waiting to type new referral bonus
 const waitingForBroadcast = new Set<number>();                  // adminId waiting to type broadcast message
 const waitingForSendId = new Set<number>();                    // admin waiting to type target userId
 const waitingForSendMsg = new Map<number, string>();           // admin -> targetId (waiting for message text)
@@ -658,10 +675,11 @@ export async function startBot() {
         const [referrer] = await db.select().from(playersTable).where(eq(playersTable.telegramId, referrerId));
         if (referrer) {
           await db.update(playersTable).set({ referredBy: referrerId, updatedAt: new Date() }).where(eq(playersTable.telegramId, String(user.id)));
-          await db.update(playersTable).set({ balance: referrer.balance + 1000, referralCount: referrer.referralCount + 1, updatedAt: new Date() }).where(eq(playersTable.telegramId, referrerId));
+          const refBonus = await getReferralBonus();
+          await db.update(playersTable).set({ balance: referrer.balance + refBonus, referralCount: referrer.referralCount + 1, updatedAt: new Date() }).where(eq(playersTable.telegramId, referrerId));
           try {
             await bot!.sendMessage(Number(referrerId),
-              `🎉 <b>Referal bonus!</b>\n\n👤 ${user.first_name} siz orqali ro'yxatdan o'tdi!\n💰 <b>+1 000 UZS</b> balansingizga qo'shildi!`,
+              `🎉 <b>Referal bonus!</b>\n\n👤 ${user.first_name} siz orqali ro'yxatdan o'tdi!\n💰 <b>+${fmt(refBonus)} UZS</b> balansingizga qo'shildi!`,
               { parse_mode: "HTML" }
             );
           } catch {}
@@ -729,6 +747,7 @@ export async function startBot() {
         ...(p("promo") ? [{ text: "🎫 Promo Kodlar", callback_data: "admin_promo" }] : []),
       ]);
       if (p("admins")) push([{ text: "🎮 O'yin va tema sozlamalari", callback_data: "admin_game_settings" }]);
+      if (p("finance") || p("admins")) push([{ text: "🤝 Referal narxi", callback_data: "admin_ref_price" }]);
       // Faqat egasi (owner) adminlarni boshqaradi
       if (p("admins")) push([{ text: "👑 Adminlar", callback_data: "admin_admins" }]);
       rows.push([{ text: "🔙 Asosiy menyu", callback_data: "main_menu" }]);
@@ -1346,6 +1365,35 @@ export async function startBot() {
       return;
     }
 
+    // Admin: referal narxini o'zgartirish + barchaga xabar
+    if (waitingForRefPrice.has(userId)) {
+      const amount = parseInt(text.replace(/[^0-9]/g, ""), 10);
+      if (!Number.isFinite(amount) || amount < 0 || amount > 10_000_000) {
+        await bot!.sendMessage(chatId, "❌ Noto'g'ri miqdor. Masalan: <code>2000</code>", { parse_mode: "HTML" });
+        return;
+      }
+      waitingForRefPrice.delete(userId);
+      await db.insert(appSettingsTable).values({ key: "referral_bonus", value: String(amount) })
+        .onConflictDoUpdate({ target: appSettingsTable.key, set: { value: String(amount), updatedAt: new Date() } });
+      await bot!.sendMessage(chatId, `✅ Referal narxi <b>${fmt(amount)} UZS</b> qilib belgilandi.\n📢 Barchaga xabar yuborilmoqda...`, { parse_mode: "HTML" });
+      const allPlayers = await db.select({ telegramId: playersTable.telegramId }).from(playersTable);
+      let sent = 0, failed = 0;
+      for (const pl of allPlayers) {
+        try {
+          await bot!.sendMessage(Number(pl.telegramId),
+            `🤝 <b>Referal bonusi yangilandi!</b>\n\nHar bir taklif qilgan do'stingiz uchun endi <b>${fmt(amount)} UZS</b> olasiz.\n\n👥 Havolangizni olish uchun menyudagi <b>Referal</b> bo'limiga kiring.`,
+            { parse_mode: "HTML" });
+          sent++;
+          await new Promise(r => setTimeout(r, 50));
+        } catch { failed++; }
+      }
+      await bot!.sendMessage(chatId,
+        `✅ <b>Xabar yuborildi!</b>\n✅ Muvaffaqiyatli: <b>${sent} ta</b>\n❌ Yuborilmadi: <b>${failed} ta</b>`,
+        { parse_mode: "HTML", reply_markup: { inline_keyboard: [[{ text: "🔙 Admin panel", callback_data: "admin_panel" }]] } }
+      );
+      return;
+    }
+
     // Admin broadcast message
     if (waitingForBroadcast.has(userId)) {
       waitingForBroadcast.delete(userId);
@@ -1437,7 +1485,7 @@ export async function startBot() {
         return;
       }
       if (isNaN(amount) || amount < MIN_WITHDRAW_AMOUNT) {
-        await bot!.sendMessage(chatId, `❌ Noto'g'ri miqdor. Kamida <b>${fmt(MIN_WITHDRAW_AMOUNT)} UZS</b> kiriting:`, { parse_mode: "HTML" });
+        await bot!.sendMessage(chatId, `❌ Noto'g'ri miqdor yoki mablag' yetarli emas. Kamida <b>${fmt(MIN_WITHDRAW_AMOUNT)} UZS</b> kiriting:`, { parse_mode: "HTML" });
         return;
       }
       if (amount > p.balance) {
@@ -1469,7 +1517,7 @@ export async function startBot() {
       const [p] = await db.select().from(playersTable).where(eq(playersTable.telegramId, String(userId)));
       if (!p || p.balance < pw.amount) { await bot!.sendMessage(chatId, "❌ Balans yetarli emas!"); return; }
       if (p.totalDeposited <= 0) { await bot!.sendMessage(chatId, "❌ Pul yechish uchun avval depozit qilishingiz kerak."); return; }
-      if (pw.amount < MIN_WITHDRAW_AMOUNT) { await bot!.sendMessage(chatId, `❌ Minimal yechish miqdori <b>${fmt(MIN_WITHDRAW_AMOUNT)} UZS</b>.`, { parse_mode: "HTML" }); return; }
+      if (pw.amount < MIN_WITHDRAW_AMOUNT) { await bot!.sendMessage(chatId, `❌ Balansingizda mablag' yetarli emas. Minimal yechish miqdori <b>${fmt(MIN_WITHDRAW_AMOUNT)} UZS</b>.`, { parse_mode: "HTML" }); return; }
 
       await db.update(playersTable).set({ balance: p.balance - pw.amount, updatedAt: new Date() }).where(eq(playersTable.telegramId, String(userId)));
       const [req] = await db.insert(withdrawRequestsTable).values({
@@ -1676,7 +1724,7 @@ export async function startBot() {
       }
       if (p.balance < MIN_WITHDRAW_AMOUNT) {
         try { await bot!.editMessageText(
-          `💸 <b>Pul Yechish</b>\n\n❌ Minimal yechish miqdori: <b>${fmt(MIN_WITHDRAW_AMOUNT)} UZS</b>\n\n💰 Balansingiz: <b>${fmt(p.balance)} UZS</b>`,
+          `💸 <b>Pul Yechish</b>\n\n❌ <b>Balansingizda mablag' yetarli emas!</b>\n\nMinimal yechish miqdori: <b>${fmt(MIN_WITHDRAW_AMOUNT)} UZS</b>\n💰 Balansingiz: <b>${fmt(p.balance)} UZS</b>`,
           { chat_id: chatId, message_id: msgId, parse_mode: "HTML", reply_markup: { inline_keyboard: [[{ text: "◀️ Ortga", callback_data: "main_menu" }]] } }
         ); } catch {}
         return;
@@ -1721,7 +1769,7 @@ export async function startBot() {
       const [p] = await db.select().from(playersTable).where(eq(playersTable.telegramId, String(q.from.id)));
       if (!p || p.balance < amount) { await bot!.sendMessage(chatId, "❌ Balans yetarli emas!"); return; }
       if (p.totalDeposited <= 0) { await bot!.sendMessage(chatId, "❌ Pul yechish uchun avval depozit qilishingiz kerak."); return; }
-      if (amount < MIN_WITHDRAW_AMOUNT) { await bot!.sendMessage(chatId, `❌ Minimal yechish miqdori <b>${fmt(MIN_WITHDRAW_AMOUNT)} UZS</b>.`, { parse_mode: "HTML" }); return; }
+      if (amount < MIN_WITHDRAW_AMOUNT) { await bot!.sendMessage(chatId, `❌ Balansingizda mablag' yetarli emas. Minimal yechish miqdori <b>${fmt(MIN_WITHDRAW_AMOUNT)} UZS</b>.`, { parse_mode: "HTML" }); return; }
       pendingWithdraw.set(q.from.id, { amount });
       await bot!.sendMessage(chatId,
         `💸 <b>Karta ma'lumotlarini yuboring:</b>\n\n<code>KARTA: 8600123456789012\nEGASI: Ismingiz Familiyangiz</code>`,
@@ -1840,15 +1888,16 @@ export async function startBot() {
       const botInfo = await bot!.getMe();
       const refLink = `https://t.me/${botInfo.username}?start=ref_${q.from.id}`;
       const count = p?.referralCount ?? 0;
-      const earned = count * 1000;
+      const refBonus = await getReferralBonus();
+      const earned = count * refBonus;
       try { await bot!.editMessageText(
         `👥 <b>REFERAL DASTURI</b>\n\n` +
-        `🎁 Har bir do'stingiz uchun: <b>+1 000 UZS</b>\n\n` +
+        `🎁 Har bir do'stingiz uchun: <b>+${fmt(refBonus)} UZS</b>\n\n` +
         `📊 Sizning natijangiz:\n` +
         `👤 Taklif qilganlar: <b>${count} ta</b>\n` +
         `💰 Jami topganingiz: <b>${fmt(earned)} UZS</b>\n\n` +
         `🔗 <b>Sizning havola:</b>\n<code>${refLink}</code>\n\n` +
-        `📲 Havolani do'stingizga yuboring. U ro'yxatdan o'tgach, sizga <b>1 000 UZS</b> tushadi!`,
+        `📲 Havolani do'stingizga yuboring. U ro'yxatdan o'tgach, sizga <b>${fmt(refBonus)} UZS</b> tushadi!`,
         { chat_id: chatId, message_id: q.message.message_id, parse_mode: "HTML", reply_markup: { inline_keyboard: [[{ text: "◀️ Ortga", callback_data: "main_menu" }]] } }
       ); } catch {}
       return;
@@ -1912,6 +1961,18 @@ export async function startBot() {
       await db.insert(appSettingsTable).values({ key, value }).onConflictDoUpdate({ target: appSettingsTable.key, set: { value, updatedAt: new Date() } });
       await bot!.answerCallbackQuery(q.id, { text: "✅ Dizayn yangilandi" });
       await sendAdminMenu(chatId, q.from.id);
+      return;
+    }
+
+    if (data === "admin_ref_price") {
+      if (!(hasPerm(q.from.id, "finance") || hasPerm(q.from.id, "admins"))) { await bot!.answerCallbackQuery(q.id, { text: "❌ Ruxsat yo'q" }); return; }
+      await bot!.answerCallbackQuery(q.id);
+      waitingForRefPrice.add(q.from.id);
+      const cur = await getReferralBonus();
+      await bot!.sendMessage(chatId,
+        `🤝 <b>Referal narxi</b>\n\nHozirgi qiymat: <b>${fmt(cur)} UZS</b>\n\nYangi miqdorni raqam bilan yozing (masalan: <code>2000</code>).\nO'zgarish barcha foydalanuvchilarga xabar qilinadi.\n\n<i>Bekor qilish: /cancel</i>`,
+        { parse_mode: "HTML" }
+      );
       return;
     }
 
