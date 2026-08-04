@@ -2,6 +2,10 @@ import TelegramBot from "node-telegram-bot-api";
 import { eq, and, isNull, sql, desc } from "drizzle-orm";
 import { db, playersTable, transactionsTable, depositRequestsTable, withdrawRequestsTable, promoCodesTable } from "@workspace/db";
 import { logger } from "./lib/logger";
+import {
+  canSync, isAdminSync, getRoleSync, permForCallback, addAdmin, removeAdmin,
+  listAdmins, isRole, ROLE_LABEL, startAdminCacheRefresh, type AdminRole,
+} from "./lib/admins";
 
 const TOKEN = process.env.TELEGRAM_BOT_TOKEN || process.env.BOT_TOKEN || "";
 const CHANNEL_INVITE = process.env.CHANNEL_INVITE || "https://t.me/+BIxGcXiUhIc5MWJi";
@@ -34,7 +38,14 @@ let bot: TelegramBot | null = null;
 let processGuardsInstalled = false;
 
 function isAdminId(id?: number) {
-  return !!id && (ADMIN_IDS.has(id) || DYNAMIC_ADMIN_IDS.has(id));
+  return !!id && (ADMIN_IDS.has(id) || DYNAMIC_ADMIN_IDS.has(id) || isAdminSync(id));
+}
+
+/** Muayyan ruxsat bormi? (bosh admin — hammasi) */
+function hasPerm(id: number | undefined, perm: Parameters<typeof canSync>[1]) {
+  if (!id) return false;
+  if (ADMIN_IDS.has(id)) return true;
+  return canSync(id, perm);
 }
 
 function isBlockedByUserError(err: any) {
@@ -307,6 +318,7 @@ export async function startBot() {
 
   bot = new TelegramBot(TOKEN, { polling: false });
   patchBotRequest(bot);
+  startAdminCacheRefresh();
 
   const isProduction = process.env.NODE_ENV === "production";
   if (isProduction && APP_URL) {
@@ -397,52 +409,55 @@ export async function startBot() {
   });
 
   // Admin panel helper
-  async function sendAdminMenu(chatId: number) {
+  async function sendAdminMenu(chatId: number, adminId?: number) {
     try {
-      logger.info({ chatId }, "sendAdminMenu called");
+      const uid = adminId ?? chatId;
+      const role = ADMIN_IDS.has(uid) ? "owner" : getRoleSync(uid);
+      if (!role) { await bot!.sendMessage(chatId, "❌ Sizda admin huquqi yo'q."); return; }
+      const p = (perm: Parameters<typeof canSync>[1]) => hasPerm(uid, perm);
+
       const depRes = await db.execute(sql`SELECT count(*)::int as cnt FROM deposit_requests WHERE status='pending'`);
       const wdRes = await db.execute(sql`SELECT count(*)::int as cnt FROM withdraw_requests WHERE status='pending'`);
       const playersRes = await db.execute(sql`SELECT count(*)::int as cnt FROM players`);
       const depCount = Number((depRes.rows?.[0] as any)?.cnt ?? (depRes as any)[0]?.cnt ?? 0);
       const wdCount = Number((wdRes.rows?.[0] as any)?.cnt ?? (wdRes as any)[0]?.cnt ?? 0);
       const totalPlayers = Number((playersRes.rows?.[0] as any)?.cnt ?? (playersRes as any)[0]?.cnt ?? 0);
-      logger.info({ depCount, wdCount, totalPlayers }, "sendAdminMenu stats loaded");
+
+      const rows: any[][] = [];
+      const push = (btns: any[]) => { if (btns.length) rows.push(btns); };
+
+      if (p("broadcast")) push([
+        { text: "📢 Barchaga xabar", callback_data: "admin_broadcast" },
+        { text: "💌 Bitta kishiga", callback_data: "admin_send_user" },
+      ]);
+      push([
+        ...(p("finance") ? [{ text: "💰 Bonus/Balans qo'sh", callback_data: "admin_addbal" }] : []),
+        ...(p("stats") ? [{ text: "📊 Statistika", callback_data: "admin_stat" }] : []),
+      ]);
+      push([
+        ...(p("stats") ? [{ text: "👥 Foydalanuvchilar", callback_data: "admin_users" }] : []),
+        ...(p("finance") ? [{ text: "⏳ Kutilayotganlar", callback_data: "admin_pending" }] : []),
+      ]);
+      if (p("finance")) push([
+        { text: "💸 Kutilayotgan yechimlar", callback_data: "admin_withdrawals" },
+        { text: "📋 Barcha yechimlar", callback_data: "admin_all_withdrawals" },
+      ]);
+      if (p("finance")) push([
+        { text: "✅ Tasdiqlangan depozitlar", callback_data: "admin_approved_deposits" },
+        { text: "✅ To'langan yechimlar", callback_data: "admin_approved_withdrawals" },
+      ]);
+      push([
+        ...(p("moderation") ? [{ text: "🚫 Ban / Unban", callback_data: "admin_ban" }] : []),
+        ...(p("promo") ? [{ text: "🎫 Promo Kodlar", callback_data: "admin_promo" }] : []),
+      ]);
+
+      const roleLine = ROLE_LABEL[(role as AdminRole)] ?? role;
       await bot!.sendMessage(chatId,
-        `🔧 <b>ADMIN PANEL</b>\n\n` +
-        `👥 Jami o'yinchilar: <b>${totalPlayers}</b>\n` +
-        `⏳ Kutilayotgan depozit: <b>${depCount} ta</b>\n` +
-        `⏳ Kutilayotgan yechim: <b>${wdCount} ta</b>`,
-        {
-          parse_mode: "HTML",
-          reply_markup: {
-            inline_keyboard: [
-              [
-                { text: "📢 Barchaga xabar", callback_data: "admin_broadcast" },
-                { text: "💌 Bitta kishiga", callback_data: "admin_send_user" },
-              ],
-              [
-                { text: "💰 Bonus/Balans qo'sh", callback_data: "admin_addbal" },
-                { text: "📊 Statistika", callback_data: "admin_stat" },
-              ],
-              [
-                { text: "👥 Foydalanuvchilar", callback_data: "admin_users" },
-                { text: "⏳ Kutilayotganlar", callback_data: "admin_pending" },
-              ],
-              [
-                { text: "💸 Kutilayotgan yechimlar", callback_data: "admin_withdrawals" },
-                { text: "📋 Barcha yechimlar", callback_data: "admin_all_withdrawals" },
-              ],
-              [
-                { text: "✅ Tasdiqlangan depozitlar", callback_data: "admin_approved_deposits" },
-                { text: "✅ To'langan yechimlar", callback_data: "admin_approved_withdrawals" },
-              ],
-              [
-                { text: "🚫 Ban / Unban", callback_data: "admin_ban" },
-                { text: "🎫 Promo Kodlar", callback_data: "admin_promo" },
-              ],
-            ],
-          },
-        }
+        `🔧 <b>ADMIN PANEL</b>\n` +
+        `🎖 Rolingiz: <b>${roleLine}</b>\n\n` +
+        (p("stats") ? `👥 Jami o'yinchilar: <b>${totalPlayers}</b>\n` : "") +
+        (p("finance") ? `⏳ Kutilayotgan depozit: <b>${depCount} ta</b>\n⏳ Kutilayotgan yechim: <b>${wdCount} ta</b>` : ""),
+        { parse_mode: "HTML", reply_markup: { inline_keyboard: rows } }
       );
     } catch (err) {
       logger.error({ err }, "sendAdminMenu xato");
@@ -474,38 +489,54 @@ export async function startBot() {
   regText(/\/admin/, async (msg) => {
     if (!msg.from) return;
     if (!isAdminId(msg.from.id)) return;
-    await sendAdminMenu(msg.chat.id);
+    await sendAdminMenu(msg.chat.id, msg.from.id);
   });
 
-  // /addadmin <id> — only main admin can add new admins
-  regText(/\/addadmin(?:\s+(\d+))?/, async (msg, match) => {
+  // /addadmin <id> <role> — faqat bosh admin (owner) yangi admin qo'sha oladi
+  regText(/\/addadmin(?:\s+(\d+))?(?:\s+(\w+))?/, async (msg, match) => {
     if (!msg.from) return;
-    if (!ADMIN_IDS.has(msg.from.id)) {
+    if (!hasPerm(msg.from.id, "admins")) {
       await bot!.sendMessage(msg.chat.id, "❌ Bu buyruq faqat bosh admin uchun.");
       return;
     }
     const newId = Number(match?.[1]);
-    if (!newId) {
-      await bot!.sendMessage(msg.chat.id, "❌ Format: /addadmin <telegram_id>\nMisol: /addadmin 123456789");
+    const roleRaw = (match?.[2] || "finance").toLowerCase();
+    if (!newId || !isRole(roleRaw)) {
+      await bot!.sendMessage(msg.chat.id,
+        `❌ Format: <code>/addadmin &lt;telegram_id&gt; &lt;rol&gt;</code>\n\n` +
+        `<b>Rollar:</b>\n` +
+        `• <code>finance</code> — ${ROLE_LABEL.finance}\n` +
+        `• <code>support</code> — ${ROLE_LABEL.support}\n` +
+        `• <code>owner</code> — ${ROLE_LABEL.owner}\n\n` +
+        `Misol: <code>/addadmin 123456789 finance</code>`,
+        { parse_mode: "HTML" });
       return;
     }
-    DYNAMIC_ADMIN_IDS.add(newId);
+    const role = roleRaw as AdminRole;
+    try {
+      await addAdmin(String(newId), role, String(msg.from.id));
+    } catch (err) {
+      logger.error({ err }, "addAdmin xato");
+      await bot!.sendMessage(msg.chat.id, "❌ Bazaga yozishda xato.");
+      return;
+    }
     await bot!.sendMessage(msg.chat.id,
-      `✅ <b>Admin qo'shildi!</b>\n\nID: <code>${newId}</code>\n\nJami adminlar: ${ADMIN_IDS.size + DYNAMIC_ADMIN_IDS.size} ta\n\n<i>Eslatma: Bot qayta ishga tushganda bu admin o'chib ketadi. Doimiy admin uchun Railway'da ADMIN_ID o'zgaruvchisiga qo'shing.</i>`,
+      `✅ <b>Admin qo'shildi!</b>\n\nID: <code>${newId}</code>\nRol: <b>${ROLE_LABEL[role]}</b>\n\n` +
+      `<i>Bu ruxsat bazada saqlanadi — bot qayta ishga tushsa ham yo'qolmaydi.</i>`,
       { parse_mode: "HTML" }
     );
     try {
       await bot!.sendMessage(newId,
-        `🎉 Siz admin qildingiz!\n\n/admin buyrug'ini bosing — admin panel ochiladi.`,
+        `🎉 Sizga admin huquqi berildi!\n\nRol: <b>${ROLE_LABEL[role]}</b>\n\n/admin buyrug'ini bosing.`,
         { parse_mode: "HTML" }
       );
     } catch { /* user may not have started bot */ }
   });
 
-  // /removeadmin <id> — remove a dynamic admin
+  // /removeadmin <id>
   regText(/\/removeadmin(?:\s+(\d+))?/, async (msg, match) => {
     if (!msg.from) return;
-    if (!ADMIN_IDS.has(msg.from.id)) {
+    if (!hasPerm(msg.from.id, "admins")) {
       await bot!.sendMessage(msg.chat.id, "❌ Bu buyruq faqat bosh admin uchun.");
       return;
     }
@@ -519,24 +550,30 @@ export async function startBot() {
       return;
     }
     DYNAMIC_ADMIN_IDS.delete(rmId);
+    try { await removeAdmin(String(rmId)); } catch (err) { logger.error({ err }, "removeAdmin xato"); }
     await bot!.sendMessage(msg.chat.id, `✅ Admin o'chirildi: <code>${rmId}</code>`, { parse_mode: "HTML" });
   });
 
-  // /admins — list all admins
+  // /admins — ro'yxat
   regText(/\/admins/, async (msg) => {
     if (!msg.from) return;
-    if (!ADMIN_IDS.has(msg.from.id)) return;
-    const mainList = [...ADMIN_IDS].join(", ");
-    const dynList = DYNAMIC_ADMIN_IDS.size > 0 ? [...DYNAMIC_ADMIN_IDS].join(", ") : "yo'q";
+    if (!isAdminId(msg.from.id)) return;
+    const rows = await listAdmins();
+    const lines = rows
+      .filter(r => r.active)
+      .map(r => `• <code>${r.telegramId}</code> — ${ROLE_LABEL[(r.role as AdminRole)] ?? r.role}`);
     await bot!.sendMessage(msg.chat.id,
-      `👑 <b>Adminlar ro'yxati</b>\n\n🔒 Asosiy: <code>${mainList}</code>\n➕ Qo'shimcha: <code>${dynList}</code>`,
+      `👑 <b>Adminlar ro'yxati</b>\n\n` +
+      `🔒 Bosh admin: <code>${[...ADMIN_IDS].join(", ")}</code>\n\n` +
+      (lines.length ? lines.join("\n") : "<i>Qo'shimcha admin yo'q</i>") +
+      `\n\n<i>Qo'shish: /addadmin &lt;id&gt; &lt;finance|support|owner&gt;</i>`,
       { parse_mode: "HTML" }
     );
   });
 
   // /broadcast command — admin only
   regText(/\/broadcast/, async (msg) => {
-    if (!isAdminId(msg.from?.id)) return;
+    if (!hasPerm(msg.from?.id, "broadcast")) return;
     waitingForBroadcast.add(msg.from.id);
     await bot!.sendMessage(msg.chat.id,
       `📢 <b>Xabar Yuborish</b>\n\nBarcha o'yinchilarga yuboriladigan xabarni yozing:\n\n<i>Bekor qilish uchun /cancel yozing</i>`,
@@ -546,7 +583,7 @@ export async function startBot() {
 
   // /stat command — admin only
   regText(/\/stat/, async (msg) => {
-    if (!isAdminId(msg.from?.id)) return;
+    if (!hasPerm(msg.from?.id, "stats")) return;
     const chatId = msg.chat.id;
     try {
       const today = new Date(); today.setHours(0, 0, 0, 0);
@@ -576,7 +613,7 @@ export async function startBot() {
 
   // /send <telegramId> <message> — admin only
   regText(/\/send (.+)/, async (msg, match) => {
-    if (!isAdminId(msg.from?.id)) return;
+    if (!hasPerm(msg.from?.id, "broadcast")) return;
     const parts = (match?.[1] || "").trim().split(" ");
     const targetId = parts[0];
     const text = parts.slice(1).join(" ");
@@ -597,7 +634,7 @@ export async function startBot() {
 
   // /users — list all players (admin only)
   regText(/\/users/, async (msg) => {
-    if (!isAdminId(msg.from?.id)) return;
+    if (!hasPerm(msg.from?.id, "stats")) return;
     const all = await db.select({
       telegramId: playersTable.telegramId,
       firstName: playersTable.firstName,
@@ -620,7 +657,7 @@ export async function startBot() {
 
   // /addbal <telegramId> <amount> — admin only
   regText(/\/addbal (.+)/, async (msg, match) => {
-    if (!isAdminId(msg.from?.id)) return;
+    if (!hasPerm(msg.from?.id, "finance")) return;
     const parts = (match?.[1] || "").trim().split(" ");
     const targetId = parts[0];
     const amount = Number(parts[1]);
@@ -1112,6 +1149,19 @@ export async function startBot() {
 
     try {
 
+    // ── RUXSAT NAZORATI: admin/moliya/yordam tugmalari ──
+    const needPerm = permForCallback(data);
+    if (needPerm) {
+      if (!isAdminId(q.from.id)) {
+        await bot!.answerCallbackQuery(q.id, { text: "❌ Ruxsat yo'q" });
+        return;
+      }
+      if (!hasPerm(q.from.id, needPerm)) {
+        await bot!.answerCallbackQuery(q.id, { text: "❌ Sizda bu bo'limga ruxsat yo'q", show_alert: true });
+        return;
+      }
+    }
+
     // Subscription check
     if (data === "check_sub") {
       await bot!.answerCallbackQuery(q.id, { text: "✅ Rahmat! Xush kelibsiz!" });
@@ -1158,6 +1208,8 @@ export async function startBot() {
         `🎡 <b>Spin</b>\n  └ Bepul spin 24 soatda 1 ta\n  └ 🍒 1 000 | ⭐ 2 000 | 💎 5 000 UZS\n\n` +
         `🃏 <b>Blackjack</b>\n  └ 21 ga yaqin qoling | Blackjack=x2.5 | G'alaba=x2\n\n` +
         `🎰 <b>Slot</b>\n  └ 777=x10 | 3 bir xil=x3 | 2 bir xil=x1.5\n\n` +
+        `💣 <b>Mines</b>\n  └ 5x5 katak, olmoslarni top, bombadan qoch — istagan payt olib chiq\n\n` +
+        `🎡 <b>Ruletka</b>\n  └ Qizil/Qora x2 | Dyujina x3 | Zero x36\n\n` +
         `🔢 <b>Toq-Juft (Parity)</b>\n  └ 1-90 son | JUFT/TOQ/KICHIK/KATTA = x2\n\n` +
         `💡 <b>Depozit:</b> +20% bonus | <b>Yechish:</b> 100% wager kerak`,
         { chat_id: chatId, message_id: q.message.message_id, parse_mode: "HTML", reply_markup: { inline_keyboard: [[{ text: "◀️ Ortga", callback_data: "main_menu" }]] } }
@@ -1457,7 +1509,7 @@ export async function startBot() {
     if (data === "admin_panel") {
       if (!isAdmin) { await bot!.answerCallbackQuery(q.id, { text: "❌ Ruxsat yo'q" }); return; }
       await bot!.answerCallbackQuery(q.id);
-      await sendAdminMenu(chatId);
+      await sendAdminMenu(chatId, q.from.id);
       return;
     }
 

@@ -29,6 +29,8 @@ const GAMES = [
   { path: "/blackjack", emoji: "🃏", label: "Blackjack",   tag: "x2.5",  tagColor: "#2dd4bf", bg: "linear-gradient(145deg,#134e4a,#0d9488)", glow: "#0d948855" },
   { path: "/slots",     emoji: "🎰", label: "Slot",        tag: "x10",   tagColor: "#f0abfc", bg: "linear-gradient(145deg,#581c87,#9333ea)", glow: "#9333ea55" },
   { path: "/parity",    emoji: "🔢", label: "Toq-Juft",    tag: "50/50", tagColor: "#7dd3fc", bg: "linear-gradient(145deg,#0c4a6e,#0284c7)", glow: "#0284c755" },
+  { path: "/mines",     emoji: "💣", label: "Mines",       tag: "NEW",   tagColor: "#f87171", bg: "linear-gradient(145deg,#7f1d1d,#dc2626)", glow: "#dc262655" },
+  { path: "/roulette",  emoji: "🎡", label: "Ruletka",     tag: "x36",   tagColor: "#fcd34d", bg: "linear-gradient(145deg,#78350f,#b45309)", glow: "#b4530955" },
 ];
 
 export default function Home() {

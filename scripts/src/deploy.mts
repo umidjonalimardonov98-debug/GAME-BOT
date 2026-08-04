@@ -40,7 +40,7 @@ function collectFiles(base: string): string[] {
   return out;
 }
 
-async function gh(path: string, method = "GET", body?: object) {
+async function gh(path: string, method = "GET", body?: object): Promise<any> {
   const res = await fetch(`https://api.github.com/repos/${REPO}${path}`, {
     method,
     headers: {

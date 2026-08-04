@@ -16,6 +16,8 @@ import Withdraw from "@/pages/Withdraw";
 import HowToPlay from "@/pages/HowToPlay";
 import Leaderboard from "@/pages/Leaderboard";
 import Spin from "@/pages/Spin";
+import Mines from "@/pages/Mines";
+import Roulette from "@/pages/Roulette";
 import NotFound from "@/pages/not-found";
 
 const queryClient = new QueryClient({
@@ -37,6 +39,8 @@ function Router() {
       <Route path="/howtoplay" component={HowToPlay} />
       <Route path="/leaderboard" component={Leaderboard} />
       <Route path="/spin" component={Spin} />
+      <Route path="/mines" component={Mines} />
+      <Route path="/roulette" component={Roulette} />
       <Route component={NotFound} />
     </Switch>
   );
