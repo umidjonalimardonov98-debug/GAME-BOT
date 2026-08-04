@@ -1,4 +1,4 @@
-import { createContext, useContext, useState, type ReactNode } from "react";
+import { createContext, useContext, useEffect, useState, type ReactNode } from "react";
 
 export type Theme = "dark" | "light" | "black";
 
@@ -61,6 +61,13 @@ export function ThemeProvider({ children }: { children: ReactNode }) {
     setThemeState(t);
     try { localStorage.setItem("theme", t); } catch {}
   }
+  useEffect(() => {
+    fetch("/api/game/config").then(res => res.ok ? res.json() : null).then(config => {
+      const remoteTheme = config?.theme?.theme_mode as Theme | undefined;
+      if (remoteTheme && ["dark", "light", "black"].includes(remoteTheme)) setThemeState(remoteTheme);
+      remoteBackgroundStyle = config?.theme?.background_style === "classic" ? "classic" : "gold";
+    }).catch(() => {});
+  }, []);
   return (
     <ThemeContext.Provider value={{ theme, ts: THEMES[theme], setTheme }}>
       {children}
@@ -98,6 +105,8 @@ export const GAME_BG = {
   roulette: "/bg/roulette.jpg",
 } as const;
 
+let remoteBackgroundStyle: "gold" | "classic" = "gold";
+
 const OVERLAY: Record<Theme, string> = {
   dark: "linear-gradient(180deg, rgba(10,7,2,0.82) 0%, rgba(14,9,3,0.74) 45%, rgba(6,4,1,0.93) 100%)",
   black: "linear-gradient(180deg, rgba(0,0,0,0.90) 0%, rgba(0,0,0,0.84) 45%, rgba(0,0,0,0.96) 100%)",
@@ -106,6 +115,6 @@ const OVERLAY: Record<Theme, string> = {
 
 /** Sahifa foni: surat + tema overlay (matn o'qilishi saqlanadi) */
 export function pageBg(theme: Theme, img?: string) {
-  if (!img) return THEMES[theme].bg;
+  if (!img || remoteBackgroundStyle === "classic") return THEMES[theme].bg;
   return `${OVERLAY[theme]}, url('${img}') center / cover no-repeat fixed`;
 }

@@ -18,6 +18,7 @@ import Leaderboard from "@/pages/Leaderboard";
 import Spin from "@/pages/Spin";
 import Mines from "@/pages/Mines";
 import Roulette from "@/pages/Roulette";
+import History from "@/pages/History";
 import NotFound from "@/pages/not-found";
 
 const queryClient = new QueryClient({
@@ -41,6 +42,7 @@ function Router() {
       <Route path="/spin" component={Spin} />
       <Route path="/mines" component={Mines} />
       <Route path="/roulette" component={Roulette} />
+      <Route path="/history" component={History} />
       <Route component={NotFound} />
     </Switch>
   );

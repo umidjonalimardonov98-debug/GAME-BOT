@@ -72,8 +72,14 @@ export default function Roulette() {
     const num = randomWhere(WHEEL, (n) => (mustLose ? !BETS[pick].test(n) : BETS[pick].test(n)));
     const idx = WHEEL.indexOf(num);
     const per = 360 / WHEEL.length;
-    const target = 360 * 6 + (360 - (idx + 0.5) * per);
-    setAngle((a) => a + target);
+    // Oldingi aylanish burchagini hisobga olib, tanlangan segment markazini
+    // har safar yuqoridagi ko'rsatkich ostiga aniq olib kelamiz.
+    const desired = (360 - (idx + 0.5) * per) % 360;
+    setAngle((current) => {
+      const normalized = ((current % 360) + 360) % 360;
+      const correction = (desired - normalized + 360) % 360;
+      return current + 360 * 6 + correction;
+    });
 
     setTimeout(async () => {
       const won = BETS[pick].test(num);

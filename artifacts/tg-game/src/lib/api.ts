@@ -79,6 +79,18 @@ export async function getTransactions(telegramId: string) {
   return res.json();
 }
 
+export async function getPlayerHistory(telegramId: string) {
+  const res = await fetch(`${BASE}/players/${telegramId}/history`);
+  if (!res.ok) throw new Error("History failed");
+  return res.json();
+}
+
+export async function getGameConfig() {
+  const res = await fetch(`${BASE}/game/config`);
+  if (!res.ok) return null;
+  return res.json();
+}
+
 export async function getLeaderboard() {
   const res = await fetch(`${BASE}/game/leaderboard`);
   if (!res.ok) return [];

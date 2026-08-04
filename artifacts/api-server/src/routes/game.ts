@@ -1,8 +1,19 @@
 import { Router, type IRouter } from "express";
 import { desc, sql } from "drizzle-orm";
-import { db, playersTable } from "@workspace/db";
+import { db, playersTable, gameSettingsTable, appSettingsTable } from "@workspace/db";
 
 const router: IRouter = Router();
+
+const DEFAULT_GAMES = ["apple", "dice", "aviator", "spin", "blackjack", "slots", "parity", "mines", "roulette"];
+
+router.get("/game/config", async (_req, res): Promise<void> => {
+  const [games, appSettings] = await Promise.all([db.select().from(gameSettingsTable), db.select().from(appSettingsTable)]);
+  const byGame: Record<string, { enabled: boolean; winChance: number; backgroundUrl: string | null }> = Object.fromEntries(
+    games.map(g => [g.game, { enabled: g.enabled, winChance: g.winChance, backgroundUrl: g.backgroundUrl }]),
+  );
+  for (const game of DEFAULT_GAMES) if (!byGame[game]) byGame[game] = { enabled: true, winChance: 31, backgroundUrl: null };
+  res.json({ games: byGame, theme: Object.fromEntries(appSettings.map(s => [s.key, s.value])) });
+});
 
 router.get("/game/leaderboard", async (_req, res): Promise<void> => {
   const [topDepositors, topWithdrawers] = await Promise.all([

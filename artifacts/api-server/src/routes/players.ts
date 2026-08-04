@@ -242,6 +242,25 @@ router.get("/players/:telegramId/transactions", async (req, res): Promise<void> 
   })));
 });
 
+router.get("/players/:telegramId/history", async (req, res): Promise<void> => {
+  const params = GetTransactionsParams.safeParse(req.params);
+  if (!params.success) { res.status(400).json({ error: params.error.message }); return; }
+  const [player] = await db.select().from(playersTable).where(eq(playersTable.telegramId, params.data.telegramId));
+  if (!player) { res.status(404).json({ error: "Player not found" }); return; }
+  const [games, withdrawals] = await Promise.all([
+    db.select().from(transactionsTable)
+      .where(sql`${transactionsTable.playerId} = ${player.id} and ${transactionsTable.type} in ('win', 'loss')`)
+      .orderBy(desc(transactionsTable.createdAt)).limit(100),
+    db.select().from(withdrawRequestsTable)
+      .where(eq(withdrawRequestsTable.playerId, player.id))
+      .orderBy(desc(withdrawRequestsTable.createdAt)).limit(50),
+  ]);
+  res.json({
+    games: games.map(t => ({ id: t.id, type: t.type, amount: t.amount, game: t.game, createdAt: t.createdAt.toISOString() })),
+    withdrawals: withdrawals.map(w => ({ id: w.id, amount: w.amount, status: w.status, cardNumber: `•••• ${w.cardNumber.slice(-4)}`, createdAt: w.createdAt.toISOString() })),
+  });
+});
+
 // Daily bonus
 router.post("/players/:telegramId/daily-bonus", async (req, res): Promise<void> => {
   const { telegramId } = req.params;

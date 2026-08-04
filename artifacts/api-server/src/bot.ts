@@ -1,6 +1,6 @@
 import TelegramBot from "node-telegram-bot-api";
 import { eq, and, isNull, sql, desc } from "drizzle-orm";
-import { db, playersTable, transactionsTable, depositRequestsTable, withdrawRequestsTable, promoCodesTable } from "@workspace/db";
+import { db, playersTable, transactionsTable, depositRequestsTable, withdrawRequestsTable, promoCodesTable, gameSettingsTable, appSettingsTable } from "@workspace/db";
 import { logger } from "./lib/logger";
 import {
   canSync, isAdminSync, getRoleSync, permForCallback, addAdmin, removeAdmin,
@@ -526,6 +526,7 @@ export async function startBot() {
         ...(p("moderation") ? [{ text: "🚫 Ban / Unban", callback_data: "admin_ban" }] : []),
         ...(p("promo") ? [{ text: "🎫 Promo Kodlar", callback_data: "admin_promo" }] : []),
       ]);
+      if (p("admins")) push([{ text: "🎮 O'yin va tema sozlamalari", callback_data: "admin_game_settings" }]);
       // Faqat egasi (owner) adminlarni boshqaradi
       if (p("admins")) push([{ text: "👑 Adminlar", callback_data: "admin_admins" }]);
       rows.push([{ text: "🔙 Asosiy menyu", callback_data: "main_menu" }]);
@@ -1644,6 +1645,43 @@ export async function startBot() {
     if (data === "admin_panel") {
       if (!isAdmin) { await bot!.answerCallbackQuery(q.id, { text: "❌ Ruxsat yo'q" }); return; }
       await bot!.answerCallbackQuery(q.id);
+      await sendAdminMenu(chatId, q.from.id);
+      return;
+    }
+
+    if (data === "admin_game_settings") {
+      if (!hasPerm(q.from.id, "admins")) { await bot!.answerCallbackQuery(q.id, { text: "❌ Ruxsat yo'q" }); return; }
+      await bot!.answerCallbackQuery(q.id);
+      const configured = await db.select().from(gameSettingsTable);
+      const status = new Map(configured.map(row => [row.game, row.enabled]));
+      const games = [["apple", "🍎 Olma"], ["dice", "🎲 Zar"], ["aviator", "✈️ Aviator"], ["spin", "🎡 Spin"], ["blackjack", "🃏 Blackjack"], ["slots", "🎰 Slot"], ["parity", "🔢 Toq-Juft"], ["mines", "💣 Mines"], ["roulette", "🎡 Ruletka"]] as const;
+      const keyboard = games.map(([key, label]) => [{ text: `${status.get(key) === false ? "🔴" : "🟢"} ${label}`, callback_data: `admin_game_toggle_${key}` }]);
+      keyboard.push([{ text: "🌙 Qora tema", callback_data: "admin_theme_dark" }, { text: "☀️ Oq tema", callback_data: "admin_theme_light" }]);
+      keyboard.push([{ text: "🖤 Toza qora", callback_data: "admin_theme_black" }]);
+      keyboard.push([{ text: "🖼 Oltin fonlar", callback_data: "admin_bg_gold" }, { text: "🎨 Oddiy fon", callback_data: "admin_bg_classic" }]);
+      keyboard.push([{ text: "🔙 Admin panel", callback_data: "admin_panel" }]);
+      await bot!.sendMessage(chatId, "🎮 <b>O'YIN VA DIZAYN SOZLAMALARI</b>\n\nO'yinni yoqish/o'chirish yoki barcha foydalanuvchilar uchun tema va fon uslubini tanlang.", { parse_mode: "HTML", reply_markup: { inline_keyboard: keyboard } });
+      return;
+    }
+
+    if (data.startsWith("admin_game_toggle_")) {
+      if (!hasPerm(q.from.id, "admins")) { await bot!.answerCallbackQuery(q.id, { text: "❌ Ruxsat yo'q" }); return; }
+      const game = data.replace("admin_game_toggle_", "");
+      const [current] = await db.select().from(gameSettingsTable).where(eq(gameSettingsTable.game, game));
+      const enabled = !(current?.enabled ?? true);
+      await db.insert(gameSettingsTable).values({ game, enabled }).onConflictDoUpdate({ target: gameSettingsTable.game, set: { enabled, updatedAt: new Date() } });
+      await bot!.answerCallbackQuery(q.id, { text: enabled ? "✅ O'yin yoqildi" : "⛔ O'yin o'chirildi" });
+      await sendAdminMenu(chatId, q.from.id);
+      return;
+    }
+
+    if (data.startsWith("admin_theme_") || data.startsWith("admin_bg_")) {
+      if (!hasPerm(q.from.id, "admins")) { await bot!.answerCallbackQuery(q.id, { text: "❌ Ruxsat yo'q" }); return; }
+      const isTheme = data.startsWith("admin_theme_");
+      const key = isTheme ? "theme_mode" : "background_style";
+      const value = data.replace(isTheme ? "admin_theme_" : "admin_bg_", "");
+      await db.insert(appSettingsTable).values({ key, value }).onConflictDoUpdate({ target: appSettingsTable.key, set: { value, updatedAt: new Date() } });
+      await bot!.answerCallbackQuery(q.id, { text: "✅ Dizayn yangilandi" });
       await sendAdminMenu(chatId, q.from.id);
       return;
     }

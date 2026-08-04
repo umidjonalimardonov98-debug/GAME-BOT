@@ -1,8 +1,9 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useLocation } from "wouter";
 import { usePlayer } from "@/lib/player-context";
 import { useLang } from "@/lib/lang-context";
 import { useTheme, pageBg, GAME_BG, GOLD } from "@/lib/theme-context";
+import { getGameConfig } from "@/lib/api";
 
 const BASE = "/api";
 
@@ -45,6 +46,11 @@ export default function Home() {
   const [claiming, setClaiming] = useState(false);
   const [claimMsg, setClaimMsg] = useState("");
   const [showLang, setShowLang] = useState(false);
+  const [enabledGames, setEnabledGames] = useState<Record<string, boolean>>({});
+  useEffect(() => { getGameConfig().then(config => {
+    if (!config?.games) return;
+    setEnabledGames(Object.fromEntries(Object.entries(config.games).map(([key, value]) => [key, (value as { enabled?: boolean }).enabled !== false])));
+  }).catch(() => {}); }, []);
 
   const isDark = theme === "dark" || theme === "black";
 
@@ -304,7 +310,7 @@ export default function Home() {
           </div>
 
           <div className="grid grid-cols-3 gap-3">
-            {GAMES.map((g) => (
+            {GAMES.filter(g => enabledGames[g.path.slice(1)] !== false).map((g) => (
               <button key={g.path} onClick={() => nav(g.path)}
                 className="relative overflow-hidden active:scale-[0.93] transition-all pro-tile"
                 style={{
@@ -366,10 +372,10 @@ export default function Home() {
             <span style={{ fontSize: 20 }}>🏠</span>
             <span className="text-xs font-bold" style={{ color: tab === "games" ? ACCENT : TEXT_SUB, fontSize: 9 }}>Bosh sahifa</span>
           </button>
-          <button onClick={() => nav("/leaderboard")}
+          <button onClick={() => nav("/history")}
             className="flex flex-col items-center gap-1 px-4 py-2 rounded-2xl active:scale-95 transition-all">
             <span style={{ fontSize: 20 }}>📋</span>
-            <span className="text-xs font-bold" style={{ color: TEXT_SUB, fontSize: 9 }}>Reyting</span>
+            <span className="text-xs font-bold" style={{ color: TEXT_SUB, fontSize: 9 }}>Tarix</span>
           </button>
           <button onClick={() => nav("/deposit")}
             className="flex flex-col items-center gap-1 px-3 py-1.5 rounded-2xl active:scale-95 transition-all"
