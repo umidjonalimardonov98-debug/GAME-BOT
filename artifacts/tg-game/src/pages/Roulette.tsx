@@ -2,6 +2,7 @@ import { useState, useCallback } from "react";
 import { usePlayer } from "@/lib/player-context";
 import { useTheme } from "@/lib/theme-context";
 import { placeBet } from "@/lib/api";
+import { riggedLose, randomWhere } from "@/lib/odds";
 import GameHeader from "@/components/GameHeader";
 
 const WHEEL = [
@@ -66,8 +67,10 @@ export default function Roulette() {
     setResult(null);
     setPrize(0);
 
-    const idx = Math.floor(Math.random() * WHEEL.length);
-    const num = WHEEL[idx];
+    // Uy foydasi: 69% hollarda yutqaziladigan son tanlanadi
+    const mustLose = riggedLose();
+    const num = randomWhere(WHEEL, (n) => (mustLose ? !BETS[pick].test(n) : BETS[pick].test(n)));
+    const idx = WHEEL.indexOf(num);
     const per = 360 / WHEEL.length;
     const target = 360 * 6 + (360 - idx * per);
     setAngle((a) => a + target);
@@ -128,9 +131,11 @@ export default function Roulette() {
                 filter: "drop-shadow(0 2px 6px rgba(0,0,0,0.5))",
               }}
             />
-            {/* wheel */}
+            {/* wheel + raqamlar */}
             <div
               style={{
+                position: "absolute",
+                inset: 0,
                 width: 240,
                 height: 240,
                 borderRadius: "50%",
@@ -140,7 +145,32 @@ export default function Roulette() {
                 border: "6px solid #b45309",
                 boxShadow: "0 0 0 4px rgba(251,191,36,0.25), 0 14px 40px rgba(0,0,0,0.55), inset 0 0 40px rgba(0,0,0,0.5)",
               }}
-            />
+            >
+              {WHEEL.map((n, i) => {
+                const deg = (i + 0.5) * (360 / WHEEL.length);
+                return (
+                  <span
+                    key={`${n}-${i}`}
+                    style={{
+                      position: "absolute",
+                      left: "50%",
+                      top: 0,
+                      transformOrigin: "0 114px",
+                      transform: `rotate(${deg}deg) translateX(-50%)`,
+                      fontSize: 10,
+                      lineHeight: "12px",
+                      fontWeight: 900,
+                      color: "#fff",
+                      textShadow: "0 1px 2px rgba(0,0,0,0.9)",
+                      paddingTop: 3,
+                      pointerEvents: "none",
+                    }}
+                  >
+                    {n}
+                  </span>
+                );
+              })}
+            </div>
             {/* hub */}
             <div
               className="absolute inset-0 m-auto flex items-center justify-center"

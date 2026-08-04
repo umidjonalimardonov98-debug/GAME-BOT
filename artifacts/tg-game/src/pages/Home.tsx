@@ -156,8 +156,27 @@ export default function Home() {
         </div>
       </div>
 
+      {/* ─── PRO HERO BANNER ─── */}
+      <div className="mx-4 mb-3 rounded-3xl relative overflow-hidden pro-sheen"
+        style={{ aspectRatio: "16 / 7", border: "1px solid rgba(251,191,36,0.35)", boxShadow: "0 14px 40px rgba(0,0,0,0.45)" }}>
+        <img src="banner-main.jpg" alt="" className="absolute inset-0 w-full h-full object-cover" />
+        <div className="absolute inset-0"
+          style={{ background: "linear-gradient(90deg, rgba(4,2,16,0.92) 0%, rgba(4,2,16,0.6) 48%, rgba(4,2,16,0.05) 100%)" }} />
+        <div className="absolute inset-0 flex flex-col justify-center gap-1 px-4">
+          <span className="font-black gold-text" style={{ fontSize: 9, letterSpacing: "0.28em" }}>VIP CASINO</span>
+          <p className="font-black leading-none" style={{ fontSize: 22, color: "#fff", textShadow: "0 2px 10px rgba(0,0,0,0.65)" }}>
+            1X GAME <span className="gold-text">PRO</span>
+          </p>
+          <button onClick={() => nav("/spin")}
+            className="self-start mt-1.5 px-3 py-1.5 rounded-xl font-black active:scale-95 transition-transform"
+            style={{ fontSize: 10, background: "linear-gradient(135deg,#f59e0b,#fcd34d)", color: "#1a1004", boxShadow: "0 6px 18px rgba(245,158,11,0.45)" }}>
+            🎁 BEPUL AYLANTIRISH
+          </button>
+        </div>
+      </div>
+
       {/* ─── BALANCE CARD ─── */}
-      <div className="mx-4 rounded-3xl p-4 mb-3 relative overflow-hidden"
+      <div className="mx-4 rounded-3xl p-4 mb-3 relative overflow-hidden pro-sheen"
         style={{
           background: "linear-gradient(145deg,#1d4ed8,#3b82f6,#1e40af)",
           boxShadow: "0 12px 40px #1d4ed844, 0 2px 0 #1e3a8a, inset 0 1px 0 rgba(255,255,255,0.2)",
@@ -287,7 +306,7 @@ export default function Home() {
           <div className="grid grid-cols-3 gap-3">
             {GAMES.map((g) => (
               <button key={g.path} onClick={() => nav(g.path)}
-                className="relative overflow-hidden active:scale-[0.93] transition-all"
+                className="relative overflow-hidden active:scale-[0.93] transition-all pro-tile"
                 style={{
                   background: g.bg,
                   borderRadius: 20,

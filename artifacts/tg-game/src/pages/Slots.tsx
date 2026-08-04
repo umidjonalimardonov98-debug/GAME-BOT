@@ -3,13 +3,24 @@ import { usePlayer } from "@/lib/player-context";
 import { useLang } from "@/lib/lang-context";
 import { useTheme } from "@/lib/theme-context";
 import { placeBet } from "@/lib/api";
+import { riggedLose } from "@/lib/odds";
 import GameHeader from "@/components/GameHeader";
 
 const FRUITS = ["🍒","🍊","🍋","🍇","🍉","🍓"];
 const ALL    = ["🍒","🍊","🍋","🍇","🍉","🍓","⭐","💎","7️⃣"];
 
+
 // Deterministic outcome first, then generate reels to match
 function spinReels(): { reels: [string,string,string]; outcome: "jackpot"|"three"|"two"|"miss" } {
+  // Uy foydasi: 69% hollarda darhol "miss"
+  if (riggedLose()) {
+    const s1 = ALL[Math.floor(Math.random() * ALL.length)];
+    let s2 = ALL[Math.floor(Math.random() * ALL.length)];
+    while (s2 === s1) s2 = ALL[Math.floor(Math.random() * ALL.length)];
+    let s3 = ALL[Math.floor(Math.random() * ALL.length)];
+    while (s3 === s1 || s3 === s2) s3 = ALL[Math.floor(Math.random() * ALL.length)];
+    return { reels: [s1, s2, s3], outcome: "miss" };
+  }
   const r = Math.random();
   if (r < 0.01) {
     // 1% — Jackpot 777 = x10

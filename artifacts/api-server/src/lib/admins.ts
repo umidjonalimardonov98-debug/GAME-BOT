@@ -16,13 +16,13 @@ export type Perm =
 
 export const ROLE_PERMS: Record<AdminRole, Perm[]> = {
   owner:   ["finance", "stats", "support", "broadcast", "moderation", "promo", "admins"],
-  finance: ["finance", "stats"],
+  finance: ["finance"],
   support: ["support", "stats"],
 };
 
 export const ROLE_LABEL: Record<AdminRole, string> = {
   owner: "👑 Egasi (to'liq huquq)",
-  finance: "💰 Moliya (pul tasdiqlash)",
+  finance: "💰 Moliya admini (faqat pul kirim/chiqim)",
   support: "🎧 Yordam (savollarga javob)",
 };
 
@@ -132,9 +132,12 @@ export function permForCallback(data: string): Perm | null {
   if (data.startsWith("reply_help_")) return "support";
   if (!data.startsWith("admin_") && data !== "broadcast_menu") return null;
 
+  if (data.startsWith("admin_admins") || data.startsWith("admin_addadmin") || data.startsWith("admin_rmadmin")) return "admins";
+
   switch (data) {
     case "admin_panel":
-      return "stats";
+      // panelning o'zi ochiladi — ichidagi tugmalar rol bo'yicha filtrlanadi
+      return null;
     case "admin_broadcast":
     case "admin_send_user":
     case "broadcast_menu":

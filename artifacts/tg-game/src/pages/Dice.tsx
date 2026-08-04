@@ -2,6 +2,7 @@ import { useState, useCallback } from "react";
 import { usePlayer } from "@/lib/player-context";
 import { useTheme } from "@/lib/theme-context";
 import { placeBet } from "@/lib/api";
+import { riggedLose } from "@/lib/odds";
 import GameHeader from "@/components/GameHeader";
 
 type BetType = "more" | "equal" | "less";
@@ -80,8 +81,16 @@ export default function Dice() {
       frame++;
       if (frame >= 18) {
         clearInterval(interval);
-        const d1 = Math.ceil(Math.random() * 6);
-        const d2 = Math.ceil(Math.random() * 6);
+        // Uy foydasi: 69% yutqazish
+        const mustLose = riggedLose();
+        const isWinSum = (sum: number) =>
+          (betType === "more" && sum > 7) || (betType === "equal" && sum === 7) || (betType === "less" && sum < 7);
+        let d1 = Math.ceil(Math.random() * 6);
+        let d2 = Math.ceil(Math.random() * 6);
+        for (let tries = 0; tries < 60 && isWinSum(d1 + d2) === mustLose; tries++) {
+          d1 = Math.ceil(Math.random() * 6);
+          d2 = Math.ceil(Math.random() * 6);
+        }
         const s = d1 + d2;
         setDice([d1, d2]);
         const win = (betType === "more" && s > 7) || (betType === "equal" && s === 7) || (betType === "less" && s < 7);

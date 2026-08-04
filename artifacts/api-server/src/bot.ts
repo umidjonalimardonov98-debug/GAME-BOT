@@ -84,6 +84,24 @@ function patchBotRequest(b: TelegramBot) {
     }
     return data.result;
   };
+
+  // Rasmli (photo) menyularda editMessageText ishlamaydi — avtomatik editMessageCaption ga o'tamiz
+  const origEditText = b.editMessageText.bind(b);
+  (b as any).editMessageText = async (text: string, opts: any = {}) => {
+    try {
+      return await origEditText(text as any, opts);
+    } catch (err: any) {
+      const d = String(err?.message ?? "");
+      if (!/no text in the message|MESSAGE_CAPTION|caption/i.test(d)) throw err;
+      if (String(text).length <= 1000) {
+        return await b.editMessageCaption(text, opts);
+      }
+      try { await b.deleteMessage(opts.chat_id, opts.message_id); } catch {}
+      return await b.sendMessage(opts.chat_id, text, {
+        parse_mode: opts.parse_mode, reply_markup: opts.reply_markup,
+      } as any);
+    }
+  };
 }
 type TextHandler = { re: RegExp; fn: (msg: any, match: RegExpExecArray | null) => Promise<void> };
 const _textHandlers: TextHandler[] = [];
@@ -104,24 +122,66 @@ const waitingForBanId = new Set<number>();                     // admin waiting 
 const waitingForPromoCode = new Set<number>();                 // admin waiting to type promo code name
 const waitingForPromoAmount = new Map<number, string>();       // admin -> code (waiting for amount)
 const waitingForPromoMaxUses = new Map<number, { code: string; amount: number }>(); // admin -> {code,amount}
+const waitingForNewAdminId = new Set<number>();                  // owner waiting to type new admin telegram id
+
+/** Moliya bilan shug'ullanadigan barcha adminlar (owner + finance) */
+const MAX_EXTRA_ADMINS = 2;
+async function financeAdminIds(): Promise<number[]> {
+  const ids = new Set<number>([...ADMIN_IDS]);
+  try {
+    const rows = await listAdmins();
+    for (const r of rows) {
+      if (!r.active) continue;
+      if (r.role === "finance" || r.role === "owner") {
+        const n = Number(r.telegramId);
+        if (Number.isFinite(n) && n > 0) ids.add(n);
+      }
+    }
+  } catch (err) {
+    logger.error({ err }, "financeAdminIds xato");
+  }
+  return [...ids];
+}
+
+async function notifyFinanceText(text: string, kb?: any[][]) {
+  const ids = await financeAdminIds();
+  for (const id of ids) {
+    try {
+      await bot!.sendMessage(id, text, { parse_mode: "HTML", ...(kb ? { reply_markup: { inline_keyboard: kb } } : {}) });
+    } catch (err) {
+      logger.error({ err, adminId: id }, "Moliya adminiga xabar yuborilmadi");
+    }
+  }
+}
+
+async function notifyFinancePhoto(fileId: string, caption: string, kb?: any[][]) {
+  const ids = await financeAdminIds();
+  for (const id of ids) {
+    try {
+      await bot!.sendPhoto(id, fileId, { caption, parse_mode: "HTML", ...(kb ? { reply_markup: { inline_keyboard: kb } } : {}) });
+    } catch (err) {
+      logger.error({ err, adminId: id }, "Moliya adminiga rasm yuborilmadi");
+    }
+  }
+}
 
 export async function notifyAdminWithdraw(opts: {
   reqId: number; telegramId: string; firstName: string; username: string | null;
   amount: number; cardNumber: string; cardHolder: string;
 }) {
-  if (!bot || !ADMIN_ID) return;
+  if (!bot) return;
   try {
-    await bot.sendMessage(ADMIN_ID,
+    await notifyFinanceText(
       `💸 <b>PUL YECHISH SO'ROVI (WEB)</b>\n\n` +
       `👤 ${opts.firstName} (@${opts.username ?? "—"})\n` +
       `🆔 <code>${opts.telegramId}</code>\n` +
       `💵 Miqdor: <b>${fmt(opts.amount)} UZS</b>\n` +
       `💳 Karta: <code>${opts.cardNumber}</code>\n` +
       `👤 Egasi: ${opts.cardHolder}`,
-      { parse_mode: "HTML", reply_markup: { inline_keyboard: [[
+      [[
         { text: "✅ To'landi", callback_data: `wd_ok_${opts.reqId}` },
         { text: "❌ Rad", callback_data: `wd_no_${opts.reqId}` },
-      ]]}}
+      ]]
     );
   } catch (err) {
     logger.error({ err }, "notifyAdminWithdraw xato");
@@ -154,6 +214,9 @@ async function getOrCreatePlayer(tgUser: TelegramBot.User) {
     .returning();
   return p;
 }
+
+const MENU_IMAGE = process.env.MENU_IMAGE_URL || (APP_URL ? `${APP_URL.replace(/\/$/, "")}/banner-main.jpg` : "");
+const ADMIN_IMAGE = process.env.ADMIN_IMAGE_URL || (APP_URL ? `${APP_URL.replace(/\/$/, "")}/banner-admin.jpg` : "");
 
 const DEPOSIT_URL = APP_URL.endsWith("/") ? `${APP_URL}deposit` : `${APP_URL}/deposit`;
 
@@ -192,7 +255,19 @@ async function saveMenuMsgId(telegramId: string, msgId: number, chatId: number) 
 }
 
 async function sendNewMenu(chatId: number, name: string, balance: number, isAdmin: boolean, telegramId?: string) {
-  const sent = await bot!.sendMessage(chatId, mainMenuText(name, balance),
+  let sent: any;
+  if (MENU_IMAGE) {
+    try {
+      sent = await bot!.sendPhoto(chatId, MENU_IMAGE, {
+        caption: mainMenuText(name, balance),
+        parse_mode: "HTML",
+        reply_markup: { inline_keyboard: mainMenuKeyboard(isAdmin) },
+      } as any);
+    } catch (err) {
+      logger.warn({ err }, "Menyu rasmi yuborilmadi — matnli menyu");
+    }
+  }
+  if (!sent) sent = await bot!.sendMessage(chatId, mainMenuText(name, balance),
     { parse_mode: "HTML", reply_markup: { inline_keyboard: mainMenuKeyboard(isAdmin) }}
   );
   if (telegramId) await saveMenuMsgId(telegramId, sent.message_id, chatId);
@@ -343,6 +418,7 @@ export async function startBot() {
       { command: "start", description: "🎮 Botni ishga tushirish" },
       { command: "menu",  description: "📋 Asosiy menyu" },
       { command: "help",  description: "❓ Yordam" },
+      { command: "cancel", description: "❌ Amalni bekor qilish" },
     ]);
   } catch {}
 
@@ -450,8 +526,27 @@ export async function startBot() {
         ...(p("moderation") ? [{ text: "🚫 Ban / Unban", callback_data: "admin_ban" }] : []),
         ...(p("promo") ? [{ text: "🎫 Promo Kodlar", callback_data: "admin_promo" }] : []),
       ]);
+      // Faqat egasi (owner) adminlarni boshqaradi
+      if (p("admins")) push([{ text: "👑 Adminlar", callback_data: "admin_admins" }]);
+      rows.push([{ text: "🔙 Asosiy menyu", callback_data: "main_menu" }]);
 
       const roleLine = ROLE_LABEL[(role as AdminRole)] ?? role;
+      const adminCaption =
+        `🔧 <b>ADMIN PANEL</b>\n` +
+        `🎖 Rolingiz: <b>${roleLine}</b>\n\n` +
+        (p("stats") ? `👥 Jami o'yinchilar: <b>${totalPlayers}</b>\n` : "") +
+        (p("finance") ? `⏳ Kutilayotgan depozit: <b>${depCount} ta</b>\n⏳ Kutilayotgan yechim: <b>${wdCount} ta</b>` : "");
+      if (ADMIN_IMAGE) {
+        try {
+          await bot!.sendPhoto(chatId, ADMIN_IMAGE, {
+            caption: adminCaption, parse_mode: "HTML",
+            reply_markup: { inline_keyboard: rows },
+          } as any);
+          return;
+        } catch (err) {
+          logger.warn({ err }, "Admin panel rasmi yuborilmadi");
+        }
+      }
       await bot!.sendMessage(chatId,
         `🔧 <b>ADMIN PANEL</b>\n` +
         `🎖 Rolingiz: <b>${roleLine}</b>\n\n` +
@@ -733,24 +828,22 @@ export async function startBot() {
 
     await bot!.sendMessage(msg.chat.id, `✅ <b>Chekingiz qabul qilindi!</b>\n\n⏳ Admin tekshirib, ${BONUS_PERCENT}% bonus bilan balansingizni to'ldiradi.`, { parse_mode: "HTML" });
 
-    if (ADMIN_ID) {
+    {
       try {
-        await bot!.sendPhoto(ADMIN_ID, fileId, {
-          caption:
+        await notifyFinancePhoto(fileId,
             `💳 <b>YANGI DEPOZIT SO'ROVI</b>\n\n` +
             `👤 ${player.firstName} (@${player.username ?? "—"})\n` +
             `🆔 <code>${player.telegramId}</code>\n` +
             `💵 Miqdor: <b>${fmt(req.amount)} UZS</b>\n` +
             `🎁 Bonus (+${BONUS_PERCENT}%): <b>${fmt(req.bonusAmount)} UZS</b>\n` +
             `💰 Jami: <b>${fmt(req.amount + req.bonusAmount)} UZS</b>`,
-          parse_mode: "HTML",
-          reply_markup: { inline_keyboard: [[
+          [[
             { text: "✅ Tasdiqlash", callback_data: `dep_ok_${reqId}` },
             { text: "❌ Rad etish", callback_data: `dep_no_${reqId}` },
-          ]]}
-        });
+          ]]
+        );
       } catch (err) {
-        logger.error({ err, adminId: ADMIN_ID }, "Admin ga xabar yuborishda xato — ADMIN_TELEGRAM_ID ni tekshiring");
+        logger.error({ err }, "Adminlarga depozit xabari yuborishda xato");
       }
     }
   };
@@ -758,7 +851,9 @@ export async function startBot() {
 
   // Text handler
   const textMsgHandler = async (msg: any) => {
-    if (!msg.text || !msg.from || msg.text.startsWith("/")) return;
+    if (!msg.text || !msg.from) return;
+    // /cancel dan tashqari boshqa buyruqlar regText handlerlarida ishlanadi
+    if (msg.text.startsWith("/") && msg.text.trim().split(/\s|@/)[0] !== "/cancel") return;
     const userId = msg.from.id;
     const chatId = msg.chat.id;
     const text = msg.text.trim();
@@ -786,6 +881,7 @@ export async function startBot() {
       waitingForPromoCode.delete(userId);
       waitingForPromoAmount.delete(userId);
       waitingForPromoMaxUses.delete(userId);
+      waitingForNewAdminId.delete(userId);
       await bot!.sendMessage(chatId, "❌ Bekor qilindi.", { parse_mode: "HTML" });
       return;
     }
@@ -873,6 +969,47 @@ export async function startBot() {
           reply_markup: { inline_keyboard: [[{ text: "🔙 Admin panel", callback_data: "admin_panel" }]] }
         }
       );
+      return;
+    }
+
+    // Owner: yangi moliya admini qo'shish — ID kutilmoqda
+    if (waitingForNewAdminId.has(userId)) {
+      const newId = Number(text.replace(/\s/g, ""));
+      if (!/^\d+$/.test(text.replace(/\s/g, "")) || !newId) {
+        await bot!.sendMessage(chatId, "❌ Noto'g'ri ID. Faqat raqam kiriting.\n<i>Bekor qilish: /cancel</i>", { parse_mode: "HTML" });
+        return;
+      }
+      if (!hasPerm(userId, "admins")) { waitingForNewAdminId.delete(userId); return; }
+      const existing = (await listAdmins()).filter(r => r.active && !ADMIN_IDS.has(Number(r.telegramId)));
+      if (existing.length >= MAX_EXTRA_ADMINS && !existing.some(r => Number(r.telegramId) === newId)) {
+        waitingForNewAdminId.delete(userId);
+        await bot!.sendMessage(chatId, `❌ Maksimal <b>${MAX_EXTRA_ADMINS}</b> ta qo'shimcha admin qo'shish mumkin. Avval birini o'chiring.`, { parse_mode: "HTML" });
+        return;
+      }
+      if (ADMIN_IDS.has(newId)) {
+        waitingForNewAdminId.delete(userId);
+        await bot!.sendMessage(chatId, "ℹ️ Bu foydalanuvchi allaqachon bosh admin.");
+        return;
+      }
+      waitingForNewAdminId.delete(userId);
+      try {
+        await addAdmin(String(newId), "finance", String(userId));
+        DYNAMIC_ADMIN_IDS.add(newId);
+      } catch (err) {
+        logger.error({ err }, "admin_addadmin xato");
+        await bot!.sendMessage(chatId, "❌ Bazaga yozishda xato.");
+        return;
+      }
+      await bot!.sendMessage(chatId,
+        `✅ <b>Moliya admini qo'shildi!</b>\n\n🆔 <code>${newId}</code>\n🎖 Rol: <b>${ROLE_LABEL.finance}</b>\n\n` +
+        `<i>U faqat pul kirim/chiqim so'rovlarini ko'radi va tasdiqlaydi. O'chirish yoki boshqa bo'limlarga ruxsati yo'q.</i>`,
+        { parse_mode: "HTML", reply_markup: { inline_keyboard: [[{ text: "👑 Adminlar", callback_data: "admin_admins" }]] } }
+      );
+      try {
+        await bot!.sendMessage(newId,
+          `🎉 Sizga <b>moliya admini</b> huquqi berildi!\n\nPul kirim/chiqim so'rovlari sizga ham keladi.\n/admin buyrug'ini bosing.`,
+          { parse_mode: "HTML" });
+      } catch {}
       return;
     }
 
@@ -1116,18 +1253,16 @@ export async function startBot() {
 
       await bot!.sendMessage(chatId, `⏳ <b>So'rovingiz adminga yuborildi!</b>`, { parse_mode: "HTML" });
 
-      if (ADMIN_ID) {
-        try {
-          await bot!.sendMessage(ADMIN_ID,
-            `💸 <b>PUL YECHISH SO'ROVI</b>\n\n👤 ${p.firstName} (@${p.username ?? "—"})\n🆔 <code>${p.telegramId}</code>\n💵 Miqdor: <b>${fmt(pw.amount)} UZS</b>\n💳 Karta: <code>${cardNumber}</code>\n👤 Egasi: ${cardHolder}`,
-            { parse_mode: "HTML", reply_markup: { inline_keyboard: [[
-              { text: "✅ To'landi", callback_data: `wd_ok_${req.id}` },
-              { text: "❌ Rad", callback_data: `wd_no_${req.id}` },
-            ]]}}
-          );
-        } catch (err) {
-          logger.error({ err, adminId: ADMIN_ID }, "Admin ga yechish so'rovi yuborishda xato");
-        }
+      try {
+        await notifyFinanceText(
+          `💸 <b>PUL YECHISH SO'ROVI</b>\n\n👤 ${p.firstName} (@${p.username ?? "—"})\n🆔 <code>${p.telegramId}</code>\n💵 Miqdor: <b>${fmt(pw.amount)} UZS</b>\n💳 Karta: <code>${cardNumber}</code>\n👤 Egasi: ${cardHolder}`,
+          [[
+            { text: "✅ To'landi", callback_data: `wd_ok_${req.id}` },
+            { text: "❌ Rad", callback_data: `wd_no_${req.id}` },
+          ]]
+        );
+      } catch (err) {
+        logger.error({ err }, "Adminlarga yechish so'rovi yuborishda xato");
       }
     }
   };
@@ -1843,6 +1978,50 @@ export async function startBot() {
         `📩 <b>Javob yozing:</b>\n\nQuyidagi foydalanuvchiga javob yuboriladi: <code>${targetUserId}</code>`,
         { parse_mode: "HTML" }
       );
+      return;
+    }
+
+    // Owner: adminlar boshqaruvi
+    if (data === "admin_admins") {
+      if (!hasPerm(q.from.id, "admins")) { await bot!.answerCallbackQuery(q.id, { text: "❌ Faqat egasi uchun" }); return; }
+      await bot!.answerCallbackQuery(q.id);
+      const rows = (await listAdmins()).filter(r => r.active && !ADMIN_IDS.has(Number(r.telegramId)));
+      const kb: any[][] = rows.map(r => [{ text: `🗑 O'chirish — ${r.telegramId}`, callback_data: `admin_rmadmin_${r.telegramId}` }]);
+      if (rows.length < MAX_EXTRA_ADMINS) kb.push([{ text: "➕ Moliya admini qo'shish", callback_data: "admin_addadmin" }]);
+      kb.push([{ text: "🔙 Admin panel", callback_data: "admin_panel" }]);
+      await bot!.sendMessage(chatId,
+        `👑 <b>ADMINLAR</b>\n\n` +
+        `🔒 Bosh admin: <code>${[...ADMIN_IDS].join(", ")}</code>\n\n` +
+        (rows.length
+          ? rows.map(r => `• <code>${r.telegramId}</code> — ${ROLE_LABEL[(r.role as AdminRole)] ?? r.role}`).join("\n")
+          : "<i>Qo'shimcha admin yo'q</i>") +
+        `\n\n📌 Limit: <b>${rows.length}/${MAX_EXTRA_ADMINS}</b>\n` +
+        `<i>Qo'shilgan admin faqat pul kirim/chiqimni ko'radi va tasdiqlaydi.</i>`,
+        { parse_mode: "HTML", reply_markup: { inline_keyboard: kb } }
+      );
+      return;
+    }
+
+    if (data === "admin_addadmin") {
+      if (!hasPerm(q.from.id, "admins")) { await bot!.answerCallbackQuery(q.id, { text: "❌ Faqat egasi uchun" }); return; }
+      await bot!.answerCallbackQuery(q.id);
+      waitingForNewAdminId.add(q.from.id);
+      await bot!.sendMessage(chatId,
+        `➕ <b>Moliya admini qo'shish</b>\n\nYangi adminning Telegram ID sini yuboring:\n\n<i>Masalan: <code>123456789</code></i>\n<i>Bekor qilish: /cancel</i>`,
+        { parse_mode: "HTML" }
+      );
+      return;
+    }
+
+    if (data.startsWith("admin_rmadmin_")) {
+      if (!hasPerm(q.from.id, "admins")) { await bot!.answerCallbackQuery(q.id, { text: "❌ Faqat egasi uchun" }); return; }
+      const rmId = Number(data.replace("admin_rmadmin_", ""));
+      if (ADMIN_IDS.has(rmId)) { await bot!.answerCallbackQuery(q.id, { text: "❌ Bosh adminni o'chirib bo'lmaydi" }); return; }
+      await bot!.answerCallbackQuery(q.id, { text: "O'chirildi" });
+      DYNAMIC_ADMIN_IDS.delete(rmId);
+      try { await removeAdmin(String(rmId)); } catch (err) { logger.error({ err }, "removeAdmin xato"); }
+      await bot!.sendMessage(chatId, `✅ Admin o'chirildi: <code>${rmId}</code>`,
+        { parse_mode: "HTML", reply_markup: { inline_keyboard: [[{ text: "👑 Adminlar", callback_data: "admin_admins" }]] } });
       return;
     }
 
