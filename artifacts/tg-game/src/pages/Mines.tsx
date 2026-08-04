@@ -4,6 +4,7 @@ import { useTheme, pageBg, GAME_BG } from "@/lib/theme-context";
 import { placeBet } from "@/lib/api";
 import { riggedLose } from "@/lib/odds";
 import GameHeader from "@/components/GameHeader";
+import TableFrame from "@/components/casino/TableFrame";
 import Sym from "@/components/casino/Sym";
 
 const SIZE = 25;
@@ -158,11 +159,16 @@ export default function Mines() {
           </div>
         </div>
 
-        {/* Grid */}
-        <div
-          className="rounded-3xl p-4"
-          style={{ background: ts.card, border: `1px solid ${ts.cardBorder}` }}
-        >
+        {/* Grid — GEMS MINES (ko'k kristall skin) */}
+        <TableFrame skin="blue" title="GEMS MINES" bulbs bulbsActive={state === "playing"}>
+          <div
+            className="rounded-2xl p-3"
+            style={{
+              background: "radial-gradient(ellipse at 50% 0%, rgba(80,170,255,0.16) 0%, rgba(3,16,31,0.92) 70%)",
+              border: "1px solid rgba(120,190,255,0.3)",
+              boxShadow: "inset 0 8px 24px rgba(0,0,0,0.6)",
+            }}
+          >
           <div className="grid grid-cols-5 gap-2">
             {Array.from({ length: SIZE }).map((_, i) =>{
               const isOpen = opened.includes(i);
@@ -197,7 +203,8 @@ export default function Mines() {
               {msg}
             </p>
           )}
-        </div>
+          </div>
+        </TableFrame>
 
         {/* Mines count */}
         <div className="rounded-2xl p-4" style={{ background: ts.card, border: `1px solid ${ts.cardBorder}` }}>
