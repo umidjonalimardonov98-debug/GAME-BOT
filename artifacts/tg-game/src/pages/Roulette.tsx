@@ -4,6 +4,7 @@ import { useTheme, pageBg, GAME_BG } from "@/lib/theme-context";
 import { placeBet } from "@/lib/api";
 import { riggedLose, randomWhere } from "@/lib/odds";
 import GameHeader from "@/components/GameHeader";
+import TableFrame from "@/components/casino/TableFrame";
 import Sym from "@/components/casino/Sym";
 
 const WHEEL = [
@@ -119,12 +120,13 @@ export default function Roulette() {
 
       <div className="flex-1 px-4 pb-8 flex flex-col gap-4">
         {/* Wheel */}
+        <TableFrame skin="green" title="ROULETTE" bulbs bulbsActive={spinning}>
         <div
-          className="rounded-3xl p-6 flex flex-col items-center gap-4 relative overflow-hidden"
+          className="rounded-2xl p-4 flex flex-col items-center gap-4 relative overflow-hidden"
           style={{
-            background: ts.card,
-            border: `1px solid ${ts.cardBorder}`,
-            boxShadow: "0 8px 32px rgba(0,0,0,0.3), inset 0 1px 0 rgba(255,255,255,0.07)",
+            background: "radial-gradient(ellipse at 50% 20%, #16794a 0%, #0d5334 45%, #05261a 100%)",
+            border: "1px solid rgba(212,175,55,0.45)",
+            boxShadow: "inset 0 2px 0 rgba(255,255,255,0.1), inset 0 -22px 44px rgba(0,0,0,0.5)",
           }}
         >
           <div
@@ -301,6 +303,7 @@ export default function Roulette() {
             </div>
           )}
         </div>
+        </TableFrame>
 
         {/* Bet types */}
         <div className="rounded-2xl p-4" style={{ background: ts.card, border: `1px solid ${ts.cardBorder}` }}>
