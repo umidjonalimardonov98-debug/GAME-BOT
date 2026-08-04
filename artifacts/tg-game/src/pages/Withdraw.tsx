@@ -46,7 +46,7 @@ export default function Withdraw() {
       style={{ background: "linear-gradient(180deg, rgba(10,7,2,0.84) 0%, rgba(14,9,3,0.76) 45%, rgba(6,4,1,0.94) 100%), url('/bg/home.jpg') center / cover no-repeat fixed" }}>
       <div className="w-20 h-20 rounded-full flex items-center justify-center mb-6"
         style={{ background: "rgba(16,185,129,0.15)", border: "2px solid rgba(16,185,129,0.4)", boxShadow: "0 0 40px rgba(16,185,129,0.2)" }}>
-        <CheckCircle className="w-10 h-10"style={{ color:"#10b981" }} />
+        <CheckCircle className="w-10 h-10"style={{ color:"#25a55a" }} />
       </div>
       <h2 className="text-white font-black text-2xl mb-2">So'rov Yuborildi!</h2>
       <p className="text-center text-sm mb-8"style={{ color:"rgba(255,255,255,0.4)" }}>
@@ -54,7 +54,7 @@ export default function Withdraw() {
       </p>
       <button onClick={() => nav("/")}
         className="px-10 py-4 rounded-2xl font-black text-white active:scale-95"
-        style={{ background: "linear-gradient(135deg, #7c3aed, #3b82f6)", boxShadow: "0 8px 24px rgba(124,58,237,0.4)" }}>
+        style={{ background: "linear-gradient(135deg, #1668e3, #3b82f6)", boxShadow: "0 8px 24px rgba(22,104,227,0.4)" }}>
          Bosh Sahifa
       </button>
     </div>
@@ -73,15 +73,15 @@ export default function Withdraw() {
       <div className="px-4 flex-1">
         {/* Balance */}
         <div className="rounded-2xl p-4 mb-4 relative overflow-hidden"
-          style={{ background: "linear-gradient(135deg, rgba(124,58,237,0.2), rgba(59,130,246,0.1))", border: "1px solid rgba(124,58,237,0.3)" }}>
+          style={{ background: "linear-gradient(135deg, rgba(22,104,227,0.2), rgba(59,130,246,0.1))", border: "1px solid rgba(22,104,227,0.3)" }}>
           <div className="absolute -right-6 -top-6 w-24 h-24 rounded-full"
-            style={{ background: "radial-gradient(circle, rgba(124,58,237,0.2), transparent 70%)" }} />
+            style={{ background: "radial-gradient(circle, rgba(22,104,227,0.2), transparent 70%)" }} />
           <div className="flex items-center gap-2 mb-1">
-            <Wallet className="w-3.5 h-3.5"style={{ color:"rgba(167,139,250,0.6)" }} />
-            <span className="text-xs font-semibold"style={{ color:"rgba(167,139,250,0.6)" }}>BALANS</span>
+            <Wallet className="w-3.5 h-3.5"style={{ color:"rgba(47,143,255,0.6)" }} />
+            <span className="text-xs font-semibold"style={{ color:"rgba(47,143,255,0.6)" }}>BALANS</span>
           </div>
           <p className="text-white font-black text-2xl">
-            {balance.toLocaleString()} <span className="text-lg"style={{ color:"#a78bfa" }}>UZS</span>
+            {balance.toLocaleString()} <span className="text-lg"style={{ color:"#78b6ff" }}>UZS</span>
           </p>
         </div>
 
@@ -99,7 +99,7 @@ export default function Withdraw() {
             </div>
             <button onClick={() => nav("/deposit")}
               className="w-full py-4 rounded-2xl font-black text-base mb-6 active:scale-95"
-              style={{ background: "linear-gradient(135deg, #10b981, #059669)", boxShadow: "0 8px 24px rgba(16,185,129,0.3)", color: "white" }}>
+              style={{ background: "linear-gradient(135deg, #25a55a, #1a7d43)", boxShadow: "0 8px 24px rgba(16,185,129,0.3)", color: "white" }}>
                Hisob To'ldirish
             </button>
           </>
@@ -137,7 +137,7 @@ export default function Withdraw() {
             </div>
             <button onClick={() => nav("/")}
               className="w-full py-4 rounded-2xl font-black text-base mb-6 active:scale-95"
-              style={{ background: "linear-gradient(135deg, #10b981, #059669)", boxShadow: "0 8px 24px rgba(16,185,129,0.3)", color: "white" }}>
+              style={{ background: "linear-gradient(135deg, #25a55a, #1a7d43)", boxShadow: "0 8px 24px rgba(16,185,129,0.3)", color: "white" }}>
                O'ynashni Davom Ettirish
             </button>
           </>
@@ -145,7 +145,7 @@ export default function Withdraw() {
           <>
             <div className="rounded-xl px-3 py-2.5 flex items-center gap-2 mb-4"
               style={{ background: "rgba(16,185,129,0.08)", border: "1px solid rgba(16,185,129,0.2)" }}>
-              <CheckCircle className="w-4 h-4 shrink-0"style={{ color:"#10b981" }} />
+              <CheckCircle className="w-4 h-4 shrink-0"style={{ color:"#25a55a" }} />
               <p className="text-sm font-semibold"style={{ color:"#34d399" }}>Shart bajarildi! Pul yechi olasiz.</p>
             </div>
 
@@ -187,7 +187,7 @@ export default function Withdraw() {
             <button onClick={submit}
               disabled={!amount || amount < MIN_WITHDRAW_AMOUNT || amount > balance || !card || !holder || loading}
               className="w-full py-4 rounded-2xl font-black text-base mb-6 active:scale-95 transition-all disabled:opacity-40"
-              style={{ background: "linear-gradient(135deg, #7c3aed, #3b82f6)", boxShadow: "0 8px 24px rgba(124,58,237,0.4)", color: "white" }}>
+              style={{ background: "linear-gradient(135deg, #1668e3, #3b82f6)", boxShadow: "0 8px 24px rgba(22,104,227,0.4)", color: "white" }}>
               {loading ? "Yuborilmoqda...":" So'rov Yuborish"}
             </button>
           </>

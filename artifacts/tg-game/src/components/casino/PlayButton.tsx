@@ -1,4 +1,5 @@
 import { sfx } from "@/lib/sound";
+import { XGREEN } from "@/lib/theme-context";
 
 interface Props {
   label: string;
@@ -20,10 +21,10 @@ export default function PlayButton({ label, onClick, disabled, color, shadow }: 
     <button
       onClick={press}
       disabled={disabled}
-      className="pro-btn w-full py-4 rounded-2xl font-black text-xl text-white relative overflow-hidden disabled:opacity-40"
+      className="pro-btn w-full py-4 rounded-xl font-black text-lg tracking-wide uppercase text-white relative overflow-hidden disabled:opacity-40"
       style={{
-        background: color ?? "linear-gradient(145deg,#7c3aed,#4f46e5)",
-        boxShadow: disabled ? "none" : (shadow ?? "0 7px 0 #3b1278, 0 10px 28px #7c3aed55"),
+        background: color ?? XGREEN.grad,
+        boxShadow: disabled ? "none" : (shadow ?? XGREEN.shadow),
       }}
     >
       <span className="relative z-10">{label}</span>

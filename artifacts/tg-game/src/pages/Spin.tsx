@@ -13,10 +13,10 @@ const SEGMENTS = [
   { label: "coin", prize: 1000, from: "#78350f", to: "#f59e0b" },
   { label: "skull", prize: 0, from: "#7f1d1d", to: "#b91c1c" },
   { label: "skull", prize: 0, from: "#111827", to: "#374151" },
-  { label: "money", prize: 2000, from: "#064e3b", to: "#10b981" },
+  { label: "money", prize: 2000, from: "#064e3b", to: "#25a55a" },
   { label: "skull", prize: 0, from: "#7f1d1d", to: "#b91c1c" },
   { label: "skull", prize: 0, from: "#111827", to: "#374151" },
-  { label: "chest", prize: 5000, from: "#312e81", to: "#6366f1" },
+  { label: "chest", prize: 5000, from: "#312e81", to: "#1668e3" },
   { label: "skull", prize: 0, from: "#7f1d1d", to: "#b91c1c" },
 ];
 
@@ -279,7 +279,7 @@ export default function Spin() {
         {result && !spinning && (
           <div className="text-center py-3 px-6 rounded-2xl pop-in"
             style={{
-              background: result.prize > 0 ? "linear-gradient(145deg,#064e3b,#059669)":"linear-gradient(145deg,#7f1d1d,#b91c1c)",
+              background: result.prize > 0 ? "linear-gradient(145deg,#064e3b,#1a7d43)":"linear-gradient(145deg,#7f1d1d,#b91c1c)",
               boxShadow: "0 8px 26px rgba(0,0,0,0.45)",
             }}>
             {result.prize > 0 ? (
@@ -319,7 +319,7 @@ export default function Spin() {
               { label: " Omadsiz", prize: "—", color: "#f87171" },
               { label: " Birinchi", prize: "1 000", color: "#fbbf24" },
               { label: " Ikkinchi", prize: "2 000", color: "#34d399" },
-              { label: " Katta", prize: "5 000", color: "#a5b4fc" },
+              { label: " Katta", prize: "5 000", color: "#9fc5ef" },
             ].map(p => (
               <div key={p.label}>
                 <p className="text-xs font-black" style={{ color: p.color }}>{p.prize}</p>
@@ -335,8 +335,8 @@ export default function Spin() {
             disabled={!canFree || spinning || loading}
             className="w-full py-4 rounded-2xl font-black text-base text-white active:scale-95 transition-all pro-sheen overflow-hidden disabled:opacity-45"
             style={{
-              background: "linear-gradient(145deg,#7c3aed,#c026d3)",
-              boxShadow: "0 7px 0 #4c1d95, 0 12px 28px rgba(192,38,211,0.5)",
+              background: "linear-gradient(145deg,#1668e3,#c026d3)",
+              boxShadow: "0 7px 0 #0d4fb0, 0 12px 28px rgba(192,38,211,0.5)",
             }}>
             {loading ? "Yuklanmoqda...": canFree ?" TEKIN AYLANTIRISH": `⏳ ${countdown ||"Kutilmoqda..."}`}
           </button>

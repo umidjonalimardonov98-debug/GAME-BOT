@@ -29,7 +29,7 @@ export default function RoundBreakdown() {
   if (!last || !open) return null;
 
   const win = last.won;
-  const accent = win ? "#4ade80":"#f87171";
+  const accent = win ? "#39c46f":"#f87171";
 
   return (
     <div
@@ -85,7 +85,7 @@ export default function RoundBreakdown() {
                 style={{ borderBottom: "1px solid rgba(255,255,255,0.05)" }}>
                 <span style={{ color: "rgba(255,255,255,0.7)" }}>{gameLabel(r.game)}</span>
                 <span style={{ color: "rgba(255,255,255,0.5)" }}>{fmt(r.bet)} · x{r.mult.toFixed(2)}</span>
-                <span className="font-bold"style={{ color: r.net >= 0 ?"#4ade80":"#f87171" }}>
+                <span className="font-bold"style={{ color: r.net >= 0 ?"#39c46f":"#f87171" }}>
                   {r.net >= 0 ? "+":"−"}{fmt(Math.abs(r.net))}
                 </span>
               </div>

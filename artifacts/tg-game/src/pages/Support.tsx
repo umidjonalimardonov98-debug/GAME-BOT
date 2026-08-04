@@ -118,7 +118,7 @@ export default function Support() {
 
   const badge =
     status === "active"
-      ? { t: " SUHBAT FAOL", c: "#4ade80" }
+      ? { t: " SUHBAT FAOL", c: "#39c46f" }
       : status === "pending"
       ? { t: " ADMIN TASDIQLASHI KUTILMOQDA", c: "#fbbf24" }
       : { t: " SUHBAT YOPIQ", c: "rgba(255,255,255,0.6)" };
@@ -170,7 +170,7 @@ export default function Support() {
             className="w-full mt-4 py-4 rounded-2xl font-black active:scale-[0.98] transition"
             style={{
               background: status === "active"?"rgba(74,222,128,0.18)" : GOLD.grad,
-              color: status === "active"?"#4ade80":"#1a1200",
+              color: status === "active"?"#39c46f":"#1a1200",
               border: `1px solid ${GOLD.border}`,
               boxShadow: `0 10px 26px ${GOLD.glow}`,
               opacity: sending ? 0.6 : 1,

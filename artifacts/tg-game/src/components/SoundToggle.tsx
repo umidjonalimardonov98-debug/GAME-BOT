@@ -13,13 +13,13 @@ export default function SoundToggle({ light }: { light?: boolean }) {
       className="w-9 h-9 rounded-xl flex items-center justify-center shrink-0 active:scale-90 transition-transform"
       style={{
         background: on
-          ? (light ? "rgba(99,102,241,0.12)" : "rgba(124,58,237,0.28)")
+          ? (light ? "rgba(22,104,227,0.12)" : "rgba(22,104,227,0.28)")
           : (light ? "rgba(0,0,0,0.06)" : "rgba(255,255,255,0.07)"),
-        border: `1px solid ${light ? "rgba(99,102,241,0.2)" : "rgba(255,255,255,0.12)"}`,
+        border: `1px solid ${light ? "rgba(22,104,227,0.2)" : "rgba(255,255,255,0.12)"}`,
       }}
     >
       {on
-        ? <Volume2 className="w-4 h-4" style={{ color: light ? "#4338ca" : "#c4b5fd" }} />
+        ? <Volume2 className="w-4 h-4" style={{ color: light ? "#0b3f8f" : "#bcdcff" }} />
         : <VolumeX className="w-4 h-4" style={{ color: light ? "#6b7280" : "rgba(255,255,255,0.45)" }} />}
     </button>
   );

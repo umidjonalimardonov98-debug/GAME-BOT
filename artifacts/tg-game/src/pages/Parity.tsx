@@ -131,18 +131,18 @@ export default function Parity() {
   const numIsBig = finalNum !== null && finalNum >= 47;
 
   const numBg =
-    isSpinning       ? "linear-gradient(145deg,#312e81,#4c1d95)" :
-    phase === "idle"? (isLight ?"rgba(99,102,241,0.1)":"rgba(255,255,255,0.06)") :
+    isSpinning       ? "linear-gradient(145deg,#312e81,#0d4fb0)" :
+    phase === "idle"? (isLight ?"rgba(22,104,227,0.1)":"rgba(255,255,255,0.06)") :
     numIsBig         ? "linear-gradient(145deg,#78350f,#d97706)" :
-                       "linear-gradient(145deg,#064e3b,#059669)";
+                       "linear-gradient(145deg,#064e3b,#1a7d43)";
 
   const numBorder =
-    isSpinning       ? "#a78bfa88" :
-    phase === "idle"? (isLight ?"rgba(99,102,241,0.2)":"rgba(255,255,255,0.1)") :
-    numIsBig         ? "#fbbf24aa":"#4ade80aa";
+    isSpinning       ? "#78b6ff88" :
+    phase === "idle"? (isLight ?"rgba(22,104,227,0.2)":"rgba(255,255,255,0.1)") :
+    numIsBig         ? "#fbbf24aa":"#39c46faa";
 
   const numShadow =
-    isSpinning       ? "0 8px 0 #1e1b4b, 0 10px 30px rgba(139,92,246,0.5)" :
+    isSpinning       ? "0 8px 0 #0b1a2b, 0 10px 30px rgba(47,143,255,0.5)" :
     phase === "idle"?"0 4px 0 rgba(0,0,0,0.1)" :
     numIsBig         ? "0 8px 0 #3d1f00, 0 10px 30px rgba(217,119,6,0.6)" :
                        "0 8px 0 #022c22, 0 10px 30px rgba(5,150,105,0.6)";
@@ -164,7 +164,7 @@ export default function Parity() {
             background: isLight
               ? "linear-gradient(145deg,#e0e7ff,#c7d2fe)"
               : theme === "black"?"rgba(255,255,255,0.03)":"rgba(255,255,255,0.05)",
-            border: `1.5px solid ${isLight ? "rgba(99,102,241,0.3)" : ts.cardBorder}`,
+            border: `1.5px solid ${isLight ? "rgba(22,104,227,0.3)" : ts.cardBorder}`,
           }}>
           <div className="absolute inset-0 pointer-events-none rounded-3xl"
             style={{ background: "linear-gradient(135deg,rgba(255,255,255,0.06) 0%,transparent 50%)" }} />
@@ -190,7 +190,7 @@ export default function Parity() {
           {/* Result badge */}
           {phase === "result" && finalNum !== null && (
             <span className="px-4 py-1.5 rounded-full text-sm font-black"
-              style={{ background: "rgba(255,255,255,0.1)", color: numIsBig ? "#fbbf24":"#4ade80" }}>
+              style={{ background: "rgba(255,255,255,0.1)", color: numIsBig ? "#fbbf24":"#39c46f" }}>
               {numIsBig ? " KATTA":" KICHIK"} ({finalNum})
             </span>
           )}
@@ -199,11 +199,11 @@ export default function Parity() {
           {phase === "result" && (
             <div className="text-center">
               <p className="font-black text-2xl"
-                style={{ color: won ? "#4ade80":"#f87171", textShadow: won ? "0 0 24px #4ade8088":"0 0 16px #f8717166" }}>
+                style={{ color: won ? "#39c46f":"#f87171", textShadow: won ? "0 0 24px #39c46f88":"0 0 16px #f8717166" }}>
                 {won ? " YUTDINGIZ!":" YUTQAZDINGIZ"}
               </p>
               {won && (
-                <p className="font-bold text-lg mt-1"style={{ color: isLight ?"#059669":"white" }}>
+                <p className="font-bold text-lg mt-1"style={{ color: isLight ?"#1a7d43":"white" }}>
                   +{prize.toLocaleString()} UZS
                 </p>
               )}
@@ -218,18 +218,18 @@ export default function Parity() {
             <div className="grid grid-cols-3 gap-2">
               <button onClick={() => setBetType("small")}
                 className="rounded-2xl py-4 text-center active:scale-95 transition-all relative overflow-hidden"
-                style={{ background: "linear-gradient(145deg,#064e3b,#059669)", border: "2px solid #4ade8099",
+                style={{ background: "linear-gradient(145deg,#064e3b,#1a7d43)", border: "2px solid #39c46f99",
                   boxShadow: "0 5px 0 rgba(0,0,0,0.3), 0 6px 20px rgba(5,150,105,0.5)", ...selectedBtnStyle("small") }}>
                 <div className="absolute inset-0 pointer-events-none"
                   style={{ background: "linear-gradient(135deg,rgba(255,255,255,0.12) 0%,transparent 50%)" }} />
                 <p className="font-black text-2xl relative"></p>
-                <p className="font-black text-xs mt-1 relative"style={{ color:"#4ade80" }}>KICHIK x2</p>
+                <p className="font-black text-xs mt-1 relative"style={{ color:"#39c46f" }}>KICHIK x2</p>
                 <p className="text-xs relative"style={{ color:"rgba(255,255,255,0.5)" }}>1–44</p>
               </button>
 
               <button onClick={() => setBetType("exact")}
                 className="rounded-2xl py-4 text-center active:scale-95 transition-all relative overflow-hidden"
-                style={{ background: "linear-gradient(145deg,#1a0533,#3b0764)", border: "2px solid #c084fc99",
+                style={{ background: "linear-gradient(145deg,#1a0533,#0b3f8f)", border: "2px solid #c084fc99",
                   boxShadow: "0 5px 0 rgba(0,0,0,0.3), 0 6px 20px rgba(168,85,247,0.5)", ...selectedBtnStyle("exact") }}>
                 <div className="absolute inset-0 pointer-events-none"
                   style={{ background: "linear-gradient(135deg,rgba(255,255,255,0.1) 0%,transparent 50%)" }} />
@@ -253,7 +253,7 @@ export default function Parity() {
             {/* Exact number picker (only if exact selected) */}
             {betType === "exact" && (
               <div className="rounded-2xl p-4 relative overflow-hidden"
-                style={{ background: "linear-gradient(145deg,#1a0533,#3b0764)", border: "2px solid #c084fc55" }}>
+                style={{ background: "linear-gradient(145deg,#1a0533,#0b3f8f)", border: "2px solid #c084fc55" }}>
                 <p className="font-black text-sm mb-3 relative"style={{ color:"#c084fc" }}>
                    Aniq son tanlang
                 </p>
@@ -309,11 +309,11 @@ export default function Parity() {
               disabled={!player || player.balance < activeBet}
               className="w-full py-5 rounded-2xl font-black text-xl active:scale-95 transition-all disabled:opacity-40"
               style={{
-                background: betType === "small"?"linear-gradient(145deg,#064e3b,#059669)" :
+                background: betType === "small"?"linear-gradient(145deg,#064e3b,#1a7d43)" :
                              betType === "big"?"linear-gradient(145deg,#78350f,#d97706)" :
-                                                    "linear-gradient(145deg,#312e81,#4c1d95)",
-                color: betType === "small"?"#4ade80": betType ==="big"?"#fbbf24":"#a78bfa",
-                boxShadow: "0 5px 0 rgba(0,0,0,0.3), 0 6px 20px rgba(139,92,246,0.5)",
+                                                    "linear-gradient(145deg,#312e81,#0d4fb0)",
+                color: betType === "small"?"#39c46f": betType ==="big"?"#fbbf24":"#78b6ff",
+                boxShadow: "0 5px 0 rgba(0,0,0,0.3), 0 6px 20px rgba(47,143,255,0.5)",
               }}>
                AYLANISH — {activeBet.toLocaleString()} UZS
             </button>
@@ -323,7 +323,7 @@ export default function Parity() {
         {/* Spinning */}
         {isSpinning && (
           <div className="text-center py-6">
-            <p className="font-black text-lg animate-pulse"style={{ color:"#a78bfa" }}>
+            <p className="font-black text-lg animate-pulse"style={{ color:"#78b6ff" }}>
               ⏳ Son chiqmoqda...
             </p>
             <p className="text-sm mt-2" style={{ color: ts.textSub }}>
@@ -344,7 +344,7 @@ export default function Parity() {
               }}>
               <p className="text-sm" style={{ color: ts.textSub }}>
                 Sizning taxminingiz:{" "}
-                <b style={{ color: lockedType.current === "small"?"#4ade80": lockedType.current ==="big"?"#fbbf24":"#c084fc" }}>
+                <b style={{ color: lockedType.current === "small"?"#39c46f": lockedType.current ==="big"?"#fbbf24":"#c084fc" }}>
                   {lockedType.current === "small" ? ` Kichik (1–44)` :
                    lockedType.current === "big" ? ` Katta (47–90)` :
                    ` Aniq: ${lockedExact.current}`}
@@ -355,16 +355,16 @@ export default function Parity() {
             <button onClick={playAgain}
               className="w-full py-4 rounded-2xl font-black text-lg active:scale-95 transition-all"
               style={{
-                background: "linear-gradient(145deg,#312e81,#4c1d95)",
-                color: "#a78bfa",
-                boxShadow: "0 5px 0 rgba(0,0,0,0.3), 0 6px 20px rgba(139,92,246,0.5)",
+                background: "linear-gradient(145deg,#312e81,#0d4fb0)",
+                color: "#78b6ff",
+                boxShadow: "0 5px 0 rgba(0,0,0,0.3), 0 6px 20px rgba(47,143,255,0.5)",
               }}>
                {t.playAgain}
             </button>
             <button onClick={() => nav("/")}
               className="w-full py-4 rounded-2xl font-black text-lg active:scale-95 transition-all"
               style={{
-                background: isLight ? "rgba(99,102,241,0.08)":"rgba(255,255,255,0.07)",
+                background: isLight ? "rgba(22,104,227,0.08)":"rgba(255,255,255,0.07)",
                 color: ts.textSub,
                 border: `1px solid ${ts.cardBorder}`,
               }}>

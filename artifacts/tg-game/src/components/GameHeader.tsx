@@ -31,16 +31,16 @@ export default function GameHeader({ title, subtitle, hideTheme }: Props) {
         <div className="fixed inset-0 z-40" onClick={() => setShowLang(false)} />
       )}
 
-      <div className="flex items-center gap-2 px-4 pt-5 pb-3 relative z-50">
+      <div className="flex items-center gap-2 px-3 py-2.5 relative z-50" style={{ background: theme === "light" ? "#ffffff" : "#0a1726", borderBottom: `1px solid ${ts.cardBorder}` }}>
         {/* Back */}
         <button onClick={() => nav("/")}
-          className="w-10 h-10 rounded-2xl flex items-center justify-center shrink-0 active:scale-90 transition-transform"
+          className="w-9 h-9 rounded-lg flex items-center justify-center shrink-0 active:scale-90 transition-transform"
           style={{
             background: GOLD.soft,
             border: `1px solid ${GOLD.border}`,
-            boxShadow: "0 4px 0 rgba(0,0,0,0.2), inset 0 1px 0 rgba(255,255,255,0.15)",
+            
           }}>
-          <ArrowLeft className="w-4 h-4" style={{ color: GOLD.light }} />
+          <ArrowLeft className="w-4 h-4" style={{ color: "#ffffff" }} />
         </button>
 
         {/* Title */}
@@ -52,7 +52,7 @@ export default function GameHeader({ title, subtitle, hideTheme }: Props) {
         {/* Balance */}
         <div className="text-right shrink-0 mr-1">
           <p className="text-xs" style={{ color: ts.textSub }}></p>
-          <p className="font-black text-xs" style={{ color: GOLD.light }}>{(player?.balance ?? 0).toLocaleString()}</p>
+          <p className="font-black text-xs" style={{ color: "#ffcf4a" }}>{(player?.balance ?? 0).toLocaleString()}</p>
         </div>
 
         {/* Theme toggle */}
@@ -63,8 +63,8 @@ export default function GameHeader({ title, subtitle, hideTheme }: Props) {
                 className="w-7 h-7 rounded-xl flex items-center justify-center text-sm active:scale-90 transition-transform"
                 style={{
                   background: theme === th
-                    ? (th === "light"?"#f0f4ff": th ==="black"?"#000":"#7c3aed")
-                    : (isLight ? "rgba(99,102,241,0.08)":"rgba(255,255,255,0.07)"),
+                    ? (th === "light"?"#f0f4ff": th ==="black"?"#000":"#1668e3")
+                    : (isLight ? "rgba(22,104,227,0.08)":"rgba(255,255,255,0.07)"),
                   border: `1px solid ${theme === th ? "rgba(255,255,255,0.4)":"rgba(255,255,255,0.1)"}`,
                   fontSize: 12,
                 }}>
@@ -82,8 +82,8 @@ export default function GameHeader({ title, subtitle, hideTheme }: Props) {
           <button onClick={() => setShowLang(v => !v)}
             className="w-9 h-9 rounded-xl flex items-center justify-center text-base active:scale-90 transition-transform"
             style={{
-              background: isLight ? "rgba(99,102,241,0.1)":"rgba(255,255,255,0.08)",
-              border: `1px solid ${isLight ? "rgba(99,102,241,0.2)":"rgba(255,255,255,0.12)"}`,
+              background: isLight ? "rgba(22,104,227,0.1)":"rgba(255,255,255,0.08)",
+              border: `1px solid ${isLight ? "rgba(22,104,227,0.2)":"rgba(255,255,255,0.12)"}`,
             }}>
             {FLAG[lang]}
           </button>
@@ -91,7 +91,7 @@ export default function GameHeader({ title, subtitle, hideTheme }: Props) {
             <div className="absolute right-0 top-10 z-50 rounded-2xl overflow-hidden shadow-2xl"
               style={{
                 background: isLight ? "white":"#1a0a3a",
-                border: `1px solid ${isLight ? "rgba(99,102,241,0.25)":"rgba(167,139,250,0.3)"}`,
+                border: `1px solid ${isLight ? "rgba(22,104,227,0.25)":"rgba(47,143,255,0.3)"}`,
                 minWidth: 90,
                 boxShadow: "0 20px 40px rgba(0,0,0,0.4)",
               }}>
@@ -100,10 +100,10 @@ export default function GameHeader({ title, subtitle, hideTheme }: Props) {
                   className="w-full flex items-center gap-2 px-3 py-2.5 text-xs font-bold transition-colors"
                   style={{
                     color: lang === l
-                      ? (isLight ? "#4338ca":"#c4b5fd")
+                      ? (isLight ? "#0b3f8f":"#bcdcff")
                       : (isLight ? "#374151":"rgba(255,255,255,0.6)"),
                     background: lang === l
-                      ? (isLight ? "rgba(99,102,241,0.08)":"rgba(124,58,237,0.25)")
+                      ? (isLight ? "rgba(22,104,227,0.08)":"rgba(22,104,227,0.25)")
                       : "transparent",
                   }}>
                   <span style={{ fontSize: 16 }}>{FLAG[l]}</span>

@@ -62,8 +62,8 @@ export default function Limbo() {
           style={{ background: ts.card, border: `1px solid ${ts.cardBorder}` }}>
           <p className="font-black" style={{
             fontSize: 54,
-            color: final === null ? "#a78bfa": final >= tgt ?"#4ade80":"#f87171",
-            textShadow: "0 0 28px rgba(167,139,250,0.5)",
+            color: final === null ? "#78b6ff": final >= tgt ?"#39c46f":"#f87171",
+            textShadow: "0 0 28px rgba(47,143,255,0.5)",
           }}>
             {(final ?? display).toFixed(2)}x
           </p>
@@ -76,7 +76,7 @@ export default function Limbo() {
             {["1.50", "2.00", "5.00", "10.00"].map(v => (
               <button key={v} disabled={busy} onClick={() =>{ setTarget(v); sfx.select(); }}
                 className="py-2 rounded-xl text-xs font-bold active:scale-95 disabled:opacity-40"
-                style={{ background: target === v ? "linear-gradient(135deg,#7c3aed,#4f46e5)": ts.btnSecondary, color: target === v ?"#fff" : ts.btnSecondaryText }}>
+                style={{ background: target === v ? "linear-gradient(135deg,#1668e3,#0d4fb0)": ts.btnSecondary, color: target === v ?"#fff" : ts.btnSecondaryText }}>
                 x{v}
               </button>
             ))}

@@ -178,9 +178,9 @@ export default function Aviator() {
               ? "linear-gradient(160deg, #dbeafe, #e0e7ff, #ede9fe)"
               : theme === "black"
                 ? "linear-gradient(160deg, #000, #0a0820)"
-                : "linear-gradient(160deg, #1e1b4b, #13103a, #0a0818)",
-            border: `1.5px solid ${isLight ? "rgba(99,102,241,0.3)":"rgba(99,102,241,0.2)"}`,
-            boxShadow: isLight ? "0 6px 24px rgba(99,102,241,0.15)":"0 6px 24px rgba(79,70,229,0.15)",
+                : "linear-gradient(160deg, #0b1a2b, #13103a, #0a0818)",
+            border: `1.5px solid ${isLight ? "rgba(22,104,227,0.3)":"rgba(22,104,227,0.2)"}`,
+            boxShadow: isLight ? "0 6px 24px rgba(22,104,227,0.15)":"0 6px 24px rgba(79,70,229,0.15)",
           }}>
 
           {/* Stars (dark mode only) */}
@@ -214,8 +214,8 @@ export default function Aviator() {
             )}
             {phase === "countdown" && (
               <div className="text-center">
-                <p className="text-sm font-bold mb-2 animate-pulse"style={{ color:"#a78bfa" }}>Tayyorlanmoqda...</p>
-                <p className="font-black"style={{ fontSize: 72, lineHeight: 1, color: isLight ?"#4338ca":"white" }}>{countdown}</p>
+                <p className="text-sm font-bold mb-2 animate-pulse"style={{ color:"#78b6ff" }}>Tayyorlanmoqda...</p>
+                <p className="font-black"style={{ fontSize: 72, lineHeight: 1, color: isLight ?"#0b3f8f":"white" }}>{countdown}</p>
               </div>
             )}
             {phase === "flying" && (
@@ -230,7 +230,7 @@ export default function Aviator() {
               <div className="text-center">
                 <div className="text-3xl mb-1"></div>
                 <p className="font-black text-3xl"style={{ color:"#34d399" }}>{result.mult.toFixed(2)}x</p>
-                <p className="font-bold text-lg"style={{ color:"#4ade80" }}>+{result.amount.toLocaleString()} UZS</p>
+                <p className="font-bold text-lg"style={{ color:"#39c46f" }}>+{result.amount.toLocaleString()} UZS</p>
               </div>
             )}
             {phase === "done" && !result?.won && (
@@ -247,7 +247,7 @@ export default function Aviator() {
         {phase === "flying" && (
           <button onClick={doCashOut}
             className="w-full py-4 rounded-2xl font-black text-xl active:scale-95 transition-transform"
-            style={{ background: "linear-gradient(135deg, #059669, #16a34a)", boxShadow: "0 6px 0 #064e3b, 0 8px 24px rgba(5,150,105,0.5)", color: "white" }}>
+            style={{ background: "linear-gradient(135deg, #1a7d43, #25a55a)", boxShadow: "0 6px 0 #064e3b, 0 8px 24px rgba(5,150,105,0.5)", color: "white" }}>
              OLISH — {Math.floor(betAmt * multiplier).toLocaleString()} UZS
           </button>
         )}
@@ -283,7 +283,7 @@ export default function Aviator() {
               style={{ background: ts.card, border: `1px solid ${ts.cardBorder}` }}>
               <button onClick={() => setAutoCashOut(v => !v)}
                 className="w-11 h-6 rounded-full flex items-center px-0.5 shrink-0 transition-all"
-                style={{ background: autoCashOut ? "#16a34a":"rgba(255,255,255,0.15)" }}>
+                style={{ background: autoCashOut ? "#25a55a":"rgba(255,255,255,0.15)" }}>
                 <div className="w-5 h-5 rounded-full bg-white shadow transition-transform"
                   style={{ transform: autoCashOut ? "translateX(20px)":"translateX(0)" }} />
               </button>
@@ -299,19 +299,19 @@ export default function Aviator() {
               style={{ background: ts.card, border: `1px solid ${ts.cardBorder}` }}>
               <button onClick={() =>{ const nv = !autoBet; setAutoBet(nv); autoBetRef.current = nv; }}
                 className="w-11 h-6 rounded-full flex items-center px-0.5 shrink-0 transition-all"
-                style={{ background: autoBet ? "#4338ca":"rgba(255,255,255,0.15)" }}>
+                style={{ background: autoBet ? "#0b3f8f":"rgba(255,255,255,0.15)" }}>
                 <div className="w-5 h-5 rounded-full bg-white shadow transition-transform"
                   style={{ transform: autoBet ? "translateX(20px)":"translateX(0)" }} />
               </button>
               <span className="text-sm flex-1" style={{ color: ts.textSub }}>Avto tikish</span>
-              {autoBet && <span className="text-xs font-black"style={{ color:"#818cf8" }}>YOQILGAN</span>}
+              {autoBet && <span className="text-xs font-black"style={{ color:"#5aa2f0" }}>YOQILGAN</span>}
             </div>
 
             {phase === "idle" ? (
               <button onClick={() =>{ if (!player || player.balance < betAmt || betAmt < 2000) return; startRound(); }}
                 disabled={!player || player.balance < betAmt || betAmt < 2000}
                 className="w-full py-4 rounded-2xl font-black text-base active:scale-95 transition-all disabled:opacity-40"
-                style={{ background: "linear-gradient(145deg, #4338ca, #7c3aed)", boxShadow: "0 6px 0 #2e1065, 0 8px 24px rgba(124,58,237,0.5)", color: "white" }}>
+                style={{ background: "linear-gradient(145deg, #0b3f8f, #1668e3)", boxShadow: "0 6px 0 #2e1065, 0 8px 24px rgba(22,104,227,0.5)", color: "white" }}>
                  BOSHLASH — {betAmt.toLocaleString()} UZS
               </button>
             ) : (

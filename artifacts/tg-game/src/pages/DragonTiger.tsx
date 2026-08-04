@@ -74,7 +74,7 @@ export default function DragonTiger() {
             <button key={s} disabled={busy} onClick={() =>{ setSide(s); sfx.select(); }}
               className="py-3 rounded-xl text-xs font-black active:scale-95 disabled:opacity-40"
               style={{
-                background: side === s ? "linear-gradient(135deg,#7c3aed,#4f46e5)" : ts.btnSecondary,
+                background: side === s ? "linear-gradient(135deg,#1668e3,#0d4fb0)" : ts.btnSecondary,
                 color: side === s ? "#fff" : ts.btnSecondaryText, border: `1px solid ${ts.cardBorder}`,
               }}>
               {g(s, lang)}<br /><span style={{ fontSize: 9, opacity: .8 }}>x{PAY[s]}</span>

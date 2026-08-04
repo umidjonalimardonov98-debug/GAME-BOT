@@ -77,7 +77,7 @@ export default function Deposit() {
         {/* Bonus banner */}
         <div className="rounded-2xl py-3.5 text-center relative overflow-hidden"
           style={{
-            background: isLight ? "linear-gradient(145deg, #065f46, #059669)":"linear-gradient(145deg, #166534, #15803d)",
+            background: isLight ? "linear-gradient(145deg, #065f46, #1a7d43)":"linear-gradient(145deg, #166534, #15803d)",
             boxShadow: isLight ? "0 6px 0 #064e3b, 0 8px 20px rgba(5,150,105,0.4), inset 0 1px 0 rgba(255,255,255,0.25)":"0 6px 0 #0d3d1e, 0 8px 24px rgba(22,163,74,0.4), inset 0 1px 0 rgba(255,255,255,0.2)",
           }}>
           <div className="absolute inset-0 pointer-events-none"style={{ background:"linear-gradient(135deg, rgba(255,255,255,0.15) 0%, transparent 55%)" }} />
@@ -147,10 +147,10 @@ export default function Deposit() {
                 className="flex flex-col items-start px-3 py-3 rounded-2xl active:scale-95 transition-all"
                 style={{
                   background: isSel
-                    ? "linear-gradient(145deg, rgba(124,58,237,0.5), rgba(59,130,246,0.4))"
+                    ? "linear-gradient(145deg, rgba(22,104,227,0.5), rgba(59,130,246,0.4))"
                     : ts.card,
-                  border: `1px solid ${isSel ? "rgba(167,139,250,0.6)" : ts.cardBorder}`,
-                  boxShadow: isSel ? "0 4px 0 rgba(0,0,0,0.2), 0 6px 16px rgba(124,58,237,0.3)":"0 2px 0 rgba(0,0,0,0.1)",
+                  border: `1px solid ${isSel ? "rgba(47,143,255,0.6)" : ts.cardBorder}`,
+                  boxShadow: isSel ? "0 4px 0 rgba(0,0,0,0.2), 0 6px 16px rgba(22,104,227,0.3)":"0 2px 0 rgba(0,0,0,0.1)",
                 }}>
                 <span className="font-black text-base" style={{ color: ts.text }}>{fmtShort(p.base)}</span>
                 <span className="text-xs font-bold"style={{ color:"#34d399" }}>+{fmtShort(p.bonus)}</span>
@@ -162,7 +162,7 @@ export default function Deposit() {
         {/* Summary */}
         {amount && amount >= 1000 && (
           <div className="rounded-2xl px-4 py-3.5"
-            style={{ background: isLight ? "rgba(124,58,237,0.08)":"rgba(124,58,237,0.1)", border: "1px solid rgba(124,58,237,0.25)" }}>
+            style={{ background: isLight ? "rgba(22,104,227,0.08)":"rgba(22,104,227,0.1)", border: "1px solid rgba(22,104,227,0.25)" }}>
             <div className="flex justify-between text-sm mb-1.5">
               <span style={{ color: ts.textSub }}>To'lov:</span>
               <span className="font-bold" style={{ color: ts.text }}>{fmtFull(amount)} UZS</span>
@@ -180,14 +180,14 @@ export default function Deposit() {
 
         {/* Steps */}
         <div className="rounded-2xl p-4"
-          style={{ background: isLight ? "rgba(99,102,241,0.06)":"rgba(99,102,241,0.07)", border: `1px solid ${isLight ? "rgba(99,102,241,0.2)":"rgba(99,102,241,0.2)"}` }}>
-          <p className="font-bold text-sm mb-3 flex items-center gap-2"style={{ color: isLight ?"#4338ca":"#a5b4fc" }}>
+          style={{ background: isLight ? "rgba(22,104,227,0.06)":"rgba(22,104,227,0.07)", border: `1px solid ${isLight ? "rgba(22,104,227,0.2)":"rgba(22,104,227,0.2)"}` }}>
+          <p className="font-bold text-sm mb-3 flex items-center gap-2"style={{ color: isLight ?"#0b3f8f":"#9fc5ef" }}>
              Qanday qilish kerak?
           </p>
           {["Yuqoridagi kartaga pul o'tkaring","To'lov cheki (screenshot) oling","Botga borib chekni yuboring","Admin tasdiqlagach balans to'ldiriladi"].map((step, i) => (
             <div key={i} className="flex items-start gap-3 mb-2.5 last:mb-0">
               <span className="w-6 h-6 rounded-full flex items-center justify-center text-xs font-black shrink-0 mt-0.5"
-                style={{ background: isLight ? "rgba(99,102,241,0.15)":"rgba(99,102,241,0.3)", color: isLight ? "#4338ca":"#a5b4fc" }}>
+                style={{ background: isLight ? "rgba(22,104,227,0.15)":"rgba(22,104,227,0.3)", color: isLight ? "#0b3f8f":"#9fc5ef" }}>
                 {i + 1}
               </span>
               <span className="text-sm" style={{ color: ts.textSub }}>{step}</span>
@@ -204,9 +204,9 @@ export default function Deposit() {
 
         {done ? (
           <div className="rounded-2xl py-5 text-center"
-            style={{ background: "rgba(34,197,94,0.12)", border: "1px solid rgba(34,197,94,0.35)" }}>
+            style={{ background: "rgba(37,165,90,0.12)", border: "1px solid rgba(37,165,90,0.35)" }}>
             <p className="text-3xl mb-1.5"></p>
-            <p className="font-black text-lg"style={{ color:"#4ade80" }}>So'rov yuborildi!</p>
+            <p className="font-black text-lg"style={{ color:"#39c46f" }}>So'rov yuborildi!</p>
             <p className="text-sm mt-1" style={{ color: ts.textSub }}>Botga o'tyapsiz — chekni yuboring</p>
           </div>
         ) : (
@@ -214,8 +214,8 @@ export default function Deposit() {
             disabled={loading || !amount || amount < 1000}
             className="w-full rounded-2xl font-black text-base flex items-center justify-center gap-2 active:scale-95 transition-all disabled:opacity-40"
             style={{
-              background: "linear-gradient(145deg, #2563eb, #7c3aed)",
-              boxShadow: "0 8px 0 #1e3a8a, 0 10px 28px rgba(124,58,237,0.5)",
+              background: "linear-gradient(145deg, #2563eb, #1668e3)",
+              boxShadow: "0 8px 0 #1e3a8a, 0 10px 28px rgba(22,104,227,0.5)",
               color: "white", padding: "18px 0",
             }}>
             {loading

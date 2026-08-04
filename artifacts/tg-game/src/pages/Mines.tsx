@@ -118,8 +118,8 @@ export default function Mines() {
   const cellBg = (i: number) =>{
     if (boom === i) return "linear-gradient(145deg,#7f1d1d,#ef4444)";
     if (state === "over"&& bombs.has(i)) return"linear-gradient(145deg,#450a0a,#991b1b)";
-    if (opened.includes(i)) return "linear-gradient(145deg,#065f46,#10b981)";
-    return isLight ? "linear-gradient(145deg,#e0e7ff,#c7d2fe)":"linear-gradient(145deg,#312e81,#4c1d95)";
+    if (opened.includes(i)) return "linear-gradient(145deg,#065f46,#25a55a)";
+    return isLight ? "linear-gradient(145deg,#e0e7ff,#c7d2fe)":"linear-gradient(145deg,#312e81,#0d4fb0)";
   };
 
   return (
@@ -192,7 +192,7 @@ export default function Mines() {
           {msg && (
             <p
               className="text-center font-black mt-4"
-              style={{ color: prize > 0 ? "#4ade80":"#f87171" }}
+              style={{ color: prize > 0 ? "#39c46f":"#f87171" }}
             >
               {msg}
             </p>
@@ -267,7 +267,7 @@ export default function Mines() {
             disabled={opened.length === 0 || busy}
             className="w-full py-4 rounded-2xl font-black text-lg text-white active:scale-95 transition-all"
             style={{
-              background: opened.length ? "linear-gradient(135deg,#059669,#34d399)":"rgba(120,120,120,0.35)",
+              background: opened.length ? "linear-gradient(135deg,#1a7d43,#34d399)":"rgba(120,120,120,0.35)",
               boxShadow: opened.length ? "0 8px 0 #065f46, 0 10px 30px rgba(16,185,129,0.4)":"none",
             }}
           >
@@ -281,8 +281,8 @@ export default function Mines() {
             disabled={!player || bet < 2000 || (player?.balance ?? 0) < bet || busy}
             className="w-full py-4 rounded-2xl font-black text-lg text-white active:scale-95 transition-all"
             style={{
-              background: "linear-gradient(135deg,#7c3aed,#a855f7)",
-              boxShadow: "0 8px 0 #3b1278, 0 10px 30px rgba(124,58,237,0.5)",
+              background: "linear-gradient(135deg,#1668e3,#a855f7)",
+              boxShadow: "0 8px 0 #0b3f8f, 0 10px 30px rgba(22,104,227,0.5)",
               opacity: !player || bet < 2000 || (player?.balance ?? 0) < bet ? 0.5 : 1,
             }}
           >

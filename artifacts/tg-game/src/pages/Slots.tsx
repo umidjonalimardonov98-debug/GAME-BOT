@@ -108,8 +108,8 @@ export default function Slots() {
 
   const OUTCOME_STYLE = {
     jackpot: { color: "#fbbf24", glow: "0 0 30px #fbbf2499", label: " JACKPOT! x12" },
-    three:   { color: "#4ade80", glow: "0 0 20px #4ade8055", label: ` 3x! x3.6` },
-    two:     { color: isLight ? "#6366f1":"#a5b4fc", glow: "none", label: ` 2x! x1.8` },
+    three:   { color: "#39c46f", glow: "0 0 20px #39c46f55", label: ` 3x! x3.6` },
+    two:     { color: isLight ? "#1668e3":"#9fc5ef", glow: "none", label: ` 2x! x1.8` },
     miss:    { color: "#f87171", glow: "none", label: t.noLuck },
   };
 
@@ -164,7 +164,7 @@ export default function Slots() {
 
 
           <div className="w-3/4 h-0.5 rounded-full"
-            style={{ background: `linear-gradient(90deg, transparent, ${isLight ? "#818cf8":"#7c3aed"}, transparent)` }} />
+            style={{ background: `linear-gradient(90deg, transparent, ${isLight ? "#5aa2f0":"#1668e3"}, transparent)` }} />
 
           {/* Result */}
           {outcome ? (
@@ -172,10 +172,10 @@ export default function Slots() {
               <p className="font-black text-2xl" style={{ color: OUTCOME_STYLE[outcome].color, textShadow: OUTCOME_STYLE[outcome].glow }}>
                 {OUTCOME_STYLE[outcome].label}
               </p>
-              {winAmt > 0 && <p className="font-bold text-sm mt-1"style={{ color: isLight ?"#059669":"#4ade80" }}>+{winAmt.toLocaleString()} UZS</p>}
+              {winAmt > 0 && <p className="font-bold text-sm mt-1"style={{ color: isLight ?"#1a7d43":"#39c46f" }}>+{winAmt.toLocaleString()} UZS</p>}
             </div>
           ) : spinning ? (
-            <p className="font-bold animate-pulse"style={{ color: isLight ?"#4338ca":"#c4b5fd" }}>{t.spinning}</p>
+            <p className="font-bold animate-pulse"style={{ color: isLight ?"#0b3f8f":"#bcdcff" }}>{t.spinning}</p>
           ) : (
             <p className="text-sm" style={{ color: ts.textSub }}>{t.pressToSpin}</p>
           )}
@@ -188,8 +188,8 @@ export default function Slots() {
           <div className="flex flex-col gap-1.5">
             {[
               { label: "777  JACKPOT", mult: "x10", color: "#fbbf24" },
-              { label: `3x bir xil meva`, mult: "x3", color: "#4ade80" },
-              { label: `2x bir xil`, mult: "x1.5", color: isLight ? "#6366f1":"#a5b4fc" },
+              { label: `3x bir xil meva`, mult: "x3", color: "#39c46f" },
+              { label: `2x bir xil`, mult: "x1.5", color: isLight ? "#1668e3":"#9fc5ef" },
               { label: "Boshqa kombinatsiya", mult: "", color: "#f87171" },
             ].map(row => (
               <div key={row.label} className="flex items-center justify-between px-3 py-2 rounded-xl"
@@ -224,9 +224,9 @@ export default function Slots() {
           disabled={!player || player.balance < activeBet || spinning}
           className="w-full py-4 rounded-2xl font-black text-xl active:scale-95 transition-all disabled:opacity-40"
           style={{
-            background: spinning ? "rgba(124,58,237,0.3)": (isLight ?"linear-gradient(145deg,#4f46e5,#6d28d9)":"linear-gradient(145deg,#7c3aed,#4f46e5)"),
-            boxShadow: spinning ? "none": (isLight ?"0 6px 0 #312e81, 0 8px 24px rgba(79,70,229,0.4)":"0 7px 0 #3b1278, 0 10px 28px #7c3aed55"),
-            color: spinning ? (isLight ? "#6d28d9":"#c4b5fd") : "white",
+            background: spinning ? "rgba(22,104,227,0.3)": (isLight ?"linear-gradient(145deg,#0d4fb0,#6d28d9)":"linear-gradient(145deg,#1668e3,#0d4fb0)"),
+            boxShadow: spinning ? "none": (isLight ?"0 6px 0 #312e81, 0 8px 24px rgba(79,70,229,0.4)":"0 7px 0 #0b3f8f, 0 10px 28px #1668e355"),
+            color: spinning ? (isLight ? "#6d28d9":"#bcdcff") : "white",
           }}>
           {spinning ? t.spinning : ` ${t.spinBtn}`}
         </button>

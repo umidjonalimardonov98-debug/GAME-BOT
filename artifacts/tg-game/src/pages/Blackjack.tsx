@@ -141,7 +141,7 @@ export default function Blackjack() {
 
   const RESULT_CONFIG: Record<NonNullable<Result>, { label: string; color: string; bg: string; shadow: string }> = {
     blackjack: { label: t.bjBlackjack, color: "#fbbf24", bg: "linear-gradient(145deg, #92400e, #d97706)", shadow: "0 6px 0 rgba(0,0,0,0.3), 0 8px 24px rgba(217,119,6,0.5)" },
-    win:       { label: t.bjWin,       color: "#4ade80", bg: "linear-gradient(145deg, #064e3b, #059669)", shadow: "0 6px 0 rgba(0,0,0,0.3), 0 8px 24px rgba(5,150,105,0.5)" },
+    win:       { label: t.bjWin,       color: "#39c46f", bg: "linear-gradient(145deg, #064e3b, #1a7d43)", shadow: "0 6px 0 rgba(0,0,0,0.3), 0 8px 24px rgba(5,150,105,0.5)" },
     push:      { label: t.bjPush,      color: "#93c5fd", bg: "linear-gradient(145deg, #1e3a5f, #1e40af)", shadow: "0 6px 0 rgba(0,0,0,0.3), 0 8px 24px rgba(30,64,175,0.5)" },
     bust:      { label: t.bjBust,      color: "#f87171", bg: "linear-gradient(145deg, #7f1d1d, #dc2626)", shadow: "0 6px 0 rgba(0,0,0,0.3), 0 8px 24px rgba(220,38,38,0.5)" },
     lose:      { label: t.bjLose,      color: "#f87171", bg: "linear-gradient(145deg, #7f1d1d, #dc2626)", shadow: "0 6px 0 rgba(0,0,0,0.3), 0 8px 24px rgba(220,38,38,0.5)" },
@@ -164,13 +164,13 @@ export default function Blackjack() {
           style={{
             background: cardBg,
             border: `1px solid ${cardBorder}`,
-            boxShadow: isLight ? "0 4px 0 rgba(99,102,241,0.1), 0 6px 20px rgba(99,102,241,0.08), inset 0 1px 0 rgba(255,255,255,0.8)":"0 4px 0 rgba(0,0,0,0.2)",
+            boxShadow: isLight ? "0 4px 0 rgba(22,104,227,0.1), 0 6px 20px rgba(22,104,227,0.08), inset 0 1px 0 rgba(255,255,255,0.8)":"0 4px 0 rgba(0,0,0,0.2)",
           }}>
           <div className="flex items-center justify-between mb-3">
             <p className="text-xs font-bold tracking-widest" style={{ color: ts.textSub }}>{t.dealer}</p>
             {gameState !== "idle" && (
               <span className="text-sm font-black px-2.5 py-1 rounded-xl"
-                style={{ background: isLight ? "rgba(99,102,241,0.12)":"rgba(255,255,255,0.1)", color: ts.text }}>
+                style={{ background: isLight ? "rgba(22,104,227,0.12)":"rgba(255,255,255,0.1)", color: ts.text }}>
                 {dealerRevealed ? dealerTotal : "?"}
               </span>
             )}
@@ -198,13 +198,13 @@ export default function Blackjack() {
           style={{
             background: cardBg,
             border: `1px solid ${cardBorder}`,
-            boxShadow: isLight ? "0 4px 0 rgba(99,102,241,0.1), 0 6px 20px rgba(99,102,241,0.08), inset 0 1px 0 rgba(255,255,255,0.8)":"0 4px 0 rgba(0,0,0,0.2)",
+            boxShadow: isLight ? "0 4px 0 rgba(22,104,227,0.1), 0 6px 20px rgba(22,104,227,0.08), inset 0 1px 0 rgba(255,255,255,0.8)":"0 4px 0 rgba(0,0,0,0.2)",
           }}>
           <div className="flex items-center justify-between mb-3">
             <p className="text-xs font-bold tracking-widest" style={{ color: ts.textSub }}>{t.yourHand}</p>
             {gameState !== "idle" && (
               <span className="text-sm font-black px-2.5 py-1 rounded-xl"
-                style={{ background: isLight ? "rgba(99,102,241,0.12)":"rgba(255,255,255,0.1)", color: playerTotal > 21 ? "#f87171" : ts.text }}>
+                style={{ background: isLight ? "rgba(22,104,227,0.12)":"rgba(255,255,255,0.1)", color: playerTotal > 21 ? "#f87171" : ts.text }}>
                 {playerTotal}
               </span>
             )}
@@ -218,7 +218,7 @@ export default function Blackjack() {
         {/* Bet input */}
         {(gameState === "idle"|| gameState ==="result") && (
           <div className="rounded-2xl p-4"
-            style={{ background: ts.card, border: `1px solid ${ts.cardBorder}`, boxShadow: isLight ? "0 4px 16px rgba(99,102,241,0.08)":"none" }}>
+            style={{ background: ts.card, border: `1px solid ${ts.cardBorder}`, boxShadow: isLight ? "0 4px 16px rgba(22,104,227,0.08)":"none" }}>
             <p className="text-xs font-bold mb-3 tracking-widest" style={{ color: ts.textSub }}>{t.betAmount}</p>
             <div className="grid grid-cols-4 gap-2 mb-3">
               {["MIN","1/2","X2","MAX"].map(a => (
@@ -243,7 +243,7 @@ export default function Blackjack() {
             <button onClick={deal} disabled={!player || player.balance < activeBet}
               className="w-full py-4 rounded-2xl font-black text-lg active:scale-95 transition-all disabled:opacity-40"
               style={{
-                background: "linear-gradient(145deg, #059669, #10b981)",
+                background: "linear-gradient(145deg, #1a7d43, #25a55a)",
                 boxShadow: "0 6px 0 #064e3b, 0 8px 24px rgba(16,185,129,0.4)",
                 color: "white",
               }}>

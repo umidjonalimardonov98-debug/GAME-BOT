@@ -62,7 +62,7 @@ export default function CoinFlip() {
             <button key={s} disabled={busy} onClick={() =>{ setSide(s); sfx.select(); }}
               className="py-4 rounded-2xl font-black active:scale-95 disabled:opacity-40"
               style={{
-                background: side === s ? "linear-gradient(145deg,#7c3aed,#4f46e5)" : ts.btnSecondary,
+                background: side === s ? "linear-gradient(145deg,#1668e3,#0d4fb0)" : ts.btnSecondary,
                 color: side === s ? "#fff" : ts.btnSecondaryText,
                 border: `1px solid ${ts.cardBorder}`,
               }}>

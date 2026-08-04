@@ -41,8 +41,8 @@ export default function HowToPlay() {
           <button key={k} onClick={() =>{ setActive(k); sfx.select(); }}
             className="rounded-2xl py-2.5 px-1 flex flex-col items-center gap-1 active:scale-95 transition-all"
             style={{
-              background: active === k ? "linear-gradient(135deg,#7c3aed,#4f46e5)" : ts.card,
-              border: `1px solid ${active === k ? "rgba(167,139,250,0.6)" : ts.cardBorder}`,
+              background: active === k ? "linear-gradient(135deg,#1668e3,#0d4fb0)" : ts.card,
+              border: `1px solid ${active === k ? "rgba(47,143,255,0.6)" : ts.cardBorder}`,
             }}>
             <span style={{ fontSize: 20 }}>{GAME_RULES[k].emoji}</span>
             <span className="font-black text-center leading-tight"
@@ -69,8 +69,8 @@ export default function HowToPlay() {
           </ol>
         </div>
 
-        <div className="rounded-2xl p-4"style={{ background:"rgba(34,197,94,0.06)", border: "1px solid rgba(34,197,94,0.15)" }}>
-          <p className="font-bold mb-2.5"style={{ color:"#4ade80" }}>{extra.title}</p>
+        <div className="rounded-2xl p-4"style={{ background:"rgba(37,165,90,0.06)", border: "1px solid rgba(37,165,90,0.15)" }}>
+          <p className="font-bold mb-2.5"style={{ color:"#39c46f" }}>{extra.title}</p>
           <ul className="space-y-2">
             {extra.items.map((it, i) => (
               <li key={i} className="flex items-start gap-2 text-sm" style={{ color: ts.textSub }}>

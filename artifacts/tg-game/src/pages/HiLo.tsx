@@ -64,7 +64,7 @@ export default function HiLo() {
 
   const Card = ({ c, hidden }: { c: { f: number; s: number }; hidden?: boolean }) => (
     <div className="rounded-2xl flex flex-col items-center justify-center font-black"
-      style={{ width: 96, height: 132, background: hidden ? "linear-gradient(135deg,#4f46e5,#7c3aed)":"#fff", color: hidden ? "#fff": (c.s === 1 || c.s === 2 ?"#dc2626":"#111"), boxShadow: "0 8px 22px rgba(0,0,0,0.35)" }}>
+      style={{ width: 96, height: 132, background: hidden ? "linear-gradient(135deg,#0d4fb0,#1668e3)":"#fff", color: hidden ? "#fff": (c.s === 1 || c.s === 2 ?"#dc2626":"#111"), boxShadow: "0 8px 22px rgba(0,0,0,0.35)" }}>
       {hidden ? <span style={{ fontSize: 40 }}>?</span> : <><span style={{ fontSize: 34 }}>{FACES[c.f]}</span><span style={{ fontSize: 26 }}>{SUITS[c.s]}</span></>}
     </div>
   );
@@ -87,7 +87,7 @@ export default function HiLo() {
           <>
             <div className="w-full grid grid-cols-2 gap-3">
               <button onClick={() => guess(true)} className="py-4 rounded-2xl font-black text-white active:scale-95"
-                style={{ background: "linear-gradient(145deg,#059669,#10b981)", boxShadow: "0 6px 0 #064e3b" }}>{g("higher", lang)}</button>
+                style={{ background: "linear-gradient(145deg,#1a7d43,#25a55a)", boxShadow: "0 6px 0 #064e3b" }}>{g("higher", lang)}</button>
               <button onClick={() => guess(false)} className="py-4 rounded-2xl font-black text-white active:scale-95"
                 style={{ background: "linear-gradient(145deg,#dc2626,#ef4444)", boxShadow: "0 6px 0 #7f1d1d" }}>{g("lower", lang)}</button>
             </div>

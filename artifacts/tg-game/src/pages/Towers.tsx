@@ -81,7 +81,7 @@ export default function Towers() {
                     <button key={col} disabled={!current} onClick={() => choose(col)}
                       className="py-2.5 rounded-lg font-black text-sm active:scale-95 transition-all"
                       style={{
-                        background: exploded ? "#dc2626": done ?"#16a34a": current ?"linear-gradient(135deg,#7c3aed,#4f46e5)":"rgba(255,255,255,0.05)",
+                        background: exploded ? "#dc2626": done ?"#25a55a": current ?"linear-gradient(135deg,#1668e3,#0d4fb0)":"rgba(255,255,255,0.05)",
                         color: "#fff",
                         opacity: current || done || exploded ? 1 : 0.45,
                       }}>
@@ -99,7 +99,7 @@ export default function Towers() {
         {active ? (
           <PlayButton label={` ${g("cashout", lang)} · x${level ? MULTS[level - 1] : 0}`} onClick={cashout}
             disabled={level === 0}
-            color="linear-gradient(145deg,#059669,#10b981)" shadow="0 7px 0 #064e3b" />
+            color="linear-gradient(145deg,#1a7d43,#25a55a)" shadow="0 7px 0 #064e3b" />
         ) : (
           <>
             <BetPanel value={betInput} onChange={setBetInput} onQuick={quick} />

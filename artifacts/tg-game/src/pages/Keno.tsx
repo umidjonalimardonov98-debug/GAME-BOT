@@ -70,9 +70,9 @@ export default function Keno() {
               <button key={n} onClick={() => toggle(n)} disabled={busy}
                 className="aspect-square rounded-lg font-black text-xs active:scale-90 transition-all"
                 style={{
-                  background: hit && sel ? "#16a34a": hit ?"#f59e0b": sel ?"linear-gradient(135deg,#7c3aed,#4f46e5)":"rgba(255,255,255,0.06)",
+                  background: hit && sel ? "#25a55a": hit ?"#f59e0b": sel ?"linear-gradient(135deg,#1668e3,#0d4fb0)":"rgba(255,255,255,0.06)",
                   color: sel || hit ? "#fff" : ts.textSub,
-                  border: `1px solid ${sel ? "rgba(167,139,250,0.6)" : ts.cardBorder}`,
+                  border: `1px solid ${sel ? "rgba(47,143,255,0.6)" : ts.cardBorder}`,
                 }}>
                 {n}
               </button>

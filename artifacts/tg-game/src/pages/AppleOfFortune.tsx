@@ -14,7 +14,7 @@ const MULTIPLIERS = [1.4, 1.8, 2.3, 3.1, 3.9, 5.5, 7.2, 8.8, 10, 11.5];
 // Row 0 (1x) = easiest, Row 9 (10x) = hardest
 const BOMBS_PER_ROW = [1, 2, 2, 2, 3, 3, 3, 4, 4, 4];
 const DIFF_LABELS = ["Oson","Oson","O'rta","O'rta","O'rta","Qiyin","Qiyin","Qiyin","Juda Qiyin","Juda Qiyin"];
-const DIFF_COLORS = ["#4ade80","#4ade80","#fbbf24","#fbbf24","#fbbf24","#f97316","#f97316","#f97316","#f87171","#f87171"];
+const DIFF_COLORS = ["#39c46f","#39c46f","#fbbf24","#fbbf24","#fbbf24","#f97316","#f97316","#f97316","#f87171","#f87171"];
 
 type Cell = "apple"|"bomb";
 type GameState = "idle"|"playing"|"won"|"lost";
@@ -120,7 +120,7 @@ export default function AppleOfFortune() {
     <div className="h-screen flex flex-col relative overflow-hidden"
       style={{ background: "linear-gradient(180deg, rgba(10,7,2,0.84) 0%, rgba(14,9,3,0.76) 45%, rgba(6,4,1,0.94) 100%), url('/bg/apple.jpg') center / cover no-repeat fixed" }}>
 
-      <div className="fixed pointer-events-none"style={{ top: -50, left: -50, width: 200, height: 200, borderRadius:"50%", background: "radial-gradient(circle, #16a34a33 0%, transparent 70%)", filter: "blur(50px)" }} />
+      <div className="fixed pointer-events-none"style={{ top: -50, left: -50, width: 200, height: 200, borderRadius:"50%", background: "radial-gradient(circle, #25a55a33 0%, transparent 70%)", filter: "blur(50px)" }} />
 
       {/* Header */}
       <div className="flex items-center justify-between px-4 pt-4 pb-2 shrink-0 z-10">
@@ -130,7 +130,7 @@ export default function AppleOfFortune() {
         </button>
         <h1 className="font-black text-sm tracking-wider text-white"> APPLE OF FORTUNE</h1>
         <div className="flex items-center gap-1 px-3 py-1.5 rounded-xl"
-          style={{ background: "rgba(34,197,94,0.15)", border: "1px solid rgba(34,197,94,0.35)" }}>
+          style={{ background: "rgba(37,165,90,0.15)", border: "1px solid rgba(37,165,90,0.35)" }}>
           <span className="text-green-400 text-sm font-black">{(player?.balance ?? 0).toLocaleString()} UZS</span>
         </div>
       </div>
@@ -144,7 +144,7 @@ export default function AppleOfFortune() {
           </div>
           <div className="h-1 rounded-full overflow-hidden"style={{ background:"rgba(255,255,255,0.08)" }}>
             <div className="h-1 rounded-full transition-all"
-              style={{ width: `${(activeRow / ROWS) * 100}%`, background: "linear-gradient(90deg, #16a34a, #4ade80)" }} />
+              style={{ width: `${(activeRow / ROWS) * 100}%`, background: "linear-gradient(90deg, #25a55a, #39c46f)" }} />
           </div>
         </div>
       )}
@@ -153,12 +153,12 @@ export default function AppleOfFortune() {
       {gameState === "idle" && (
         <div className="flex-1 flex flex-col items-center justify-center px-4">
           <div className="w-24 h-24 rounded-full flex items-center justify-center mb-4 float-anim"
-            style={{ background: "radial-gradient(circle, #16a34a33, #052e1688)", border: "2px solid #22c55e44", boxShadow: "0 0 40px #22c55e33" }}>
+            style={{ background: "radial-gradient(circle, #25a55a33, #052e1688)", border: "2px solid #25a55a44", boxShadow: "0 0 40px #25a55a33" }}>
             <Sym n="apple" s={60} />
           </div>
           <p className="text-white font-black text-xl mb-1">Apple of Fortune</p>
           <p className="text-sm mb-0.5 text-center"style={{ color:"rgba(255,255,255,0.4)" }}>Har qatorda 4 ta olma, 1 ta bomba</p>
-          <p className="font-black text-base"style={{ color:"#4ade80" }}>1.2x → 1.5x → 2x → ... → 10x</p>
+          <p className="font-black text-base"style={{ color:"#39c46f" }}>1.2x → 1.5x → 2x → ... → 10x</p>
         </div>
       )}
 
@@ -177,7 +177,7 @@ export default function AppleOfFortune() {
                   <div className="w-8 text-right shrink-0">
                     <span className="font-black" style={{
                       fontSize: 10,
-                      color: rowIdx === activeRow - 1 ? "#4ade80": isActive ?"#fbbf24": isPast ?"rgba(74,222,128,0.25)":"rgba(255,255,255,0.2)"
+                      color: rowIdx === activeRow - 1 ? "#39c46f": isActive ?"#fbbf24": isPast ?"rgba(74,222,128,0.25)":"rgba(255,255,255,0.2)"
                     }}>
                       {mult}x
                     </span>
@@ -197,14 +197,14 @@ export default function AppleOfFortune() {
 
                       if (isActive) {
                         bg = "linear-gradient(135deg, rgba(21,128,61,0.4), rgba(5,46,22,0.6))";
-                        border = "1px solid rgba(34,197,94,0.6)";
-                        shadow = "0 0 10px rgba(34,197,94,0.25)";
-                        content = <div className="w-3 h-3 rounded-full pulse-ring"style={{ background:"radial-gradient(circle, #4ade80, #16a34a)" }} />;
+                        border = "1px solid rgba(37,165,90,0.6)";
+                        shadow = "0 0 10px rgba(37,165,90,0.25)";
+                        content = <div className="w-3 h-3 rounded-full pulse-ring"style={{ background:"radial-gradient(circle, #39c46f, #25a55a)" }} />;
                       }
 
                       if (isRev && cell === "apple") {
-                        bg = "linear-gradient(135deg, #16a34a, #15803d)";
-                        border = "1px solid #4ade8066";
+                        bg = "linear-gradient(135deg, #25a55a, #15803d)";
+                        border = "1px solid #39c46f66";
                         shadow = "0 0 12px rgba(74,222,128,0.4)";
                         extraClass = "pop-in";
                         content = <Sym n="apple" s={26} />;
@@ -243,7 +243,7 @@ export default function AppleOfFortune() {
         <div className="px-4 pb-2 shrink-0">
           <button onClick={doCashOut} disabled={saving}
             className="w-full py-3 rounded-2xl font-black text-sm active:scale-95 transition-transform glow-green"
-            style={{ background: "linear-gradient(135deg, #16a34a, #15803d)", color: "white" }}>
+            style={{ background: "linear-gradient(135deg, #25a55a, #15803d)", color: "white" }}>
              OLISH — {potential.toLocaleString()} UZS ({currentMult}x)
           </button>
         </div>
@@ -264,7 +264,7 @@ export default function AppleOfFortune() {
                 setCustomBet(String(v)); setBet(v);
               }} className="py-2 rounded-xl text-xs font-bold active:scale-95"
                 style={a === "MAX"
-                  ? { background: "rgba(22,163,74,0.25)", border: "1px solid rgba(74,222,128,0.55)", color: "#4ade80" }
+                  ? { background: "rgba(22,163,74,0.25)", border: "1px solid rgba(74,222,128,0.55)", color: "#39c46f" }
                   : { background: "rgba(255,255,255,0.06)", border: "1px solid rgba(255,255,255,0.1)", color: "rgba(255,255,255,0.6)" }}>
                 {a}
               </button>
@@ -273,11 +273,11 @@ export default function AppleOfFortune() {
           <input type="number" placeholder="Miqdor (min 2 000)" value={customBet}
             onChange={(e) => setCustomBet(e.target.value)}
             className="w-full rounded-2xl px-4 py-3 font-black text-base focus:outline-none mb-2"
-            style={{ background: "rgba(255,255,255,0.06)", border: "1px solid rgba(34,197,94,0.25)", color: "#4ade80" }} />
+            style={{ background: "rgba(255,255,255,0.06)", border: "1px solid rgba(37,165,90,0.25)", color: "#39c46f" }} />
           <button onClick={start}
             disabled={!player || player.balance < activeBet || activeBet < 2000}
             className="w-full py-3.5 rounded-2xl font-black text-base active:scale-95 transition-all disabled:opacity-40"
-            style={{ background: "linear-gradient(135deg, #16a34a, #15803d)", boxShadow: "0 8px 28px rgba(22,163,74,0.5)", color: "white" }}>
+            style={{ background: "linear-gradient(135deg, #25a55a, #15803d)", boxShadow: "0 8px 28px rgba(22,163,74,0.5)", color: "white" }}>
              O'YINNI BOSHLASH
           </button>
         </div>
@@ -299,7 +299,7 @@ export default function AppleOfFortune() {
 
             <div className="mb-3 flex justify-center"><Sym n={gameState === "won" ? "trophy" : "boom"} s={72} /></div>
 
-            <p className="font-black text-3xl mb-1"style={{ color: gameState ==="won"?"#4ade80":"#f87171" }}>
+            <p className="font-black text-3xl mb-1"style={{ color: gameState ==="won"?"#39c46f":"#f87171" }}>
               {gameState === "won"? `+${cashOutAmount.toLocaleString()} UZS` :"Bomba chiqdi!"}
             </p>
             <p className="text-sm mb-6"style={{ color:"rgba(255,255,255,0.45)" }}>
@@ -321,7 +321,7 @@ export default function AppleOfFortune() {
                   setCustomBet(String(v)); setBet(v);
                 }} className="py-2 rounded-xl text-xs font-bold active:scale-95"
                   style={a === "MAX"
-                    ? { background: "rgba(22,163,74,0.25)", border: "1px solid rgba(74,222,128,0.55)", color: "#4ade80" }
+                    ? { background: "rgba(22,163,74,0.25)", border: "1px solid rgba(74,222,128,0.55)", color: "#39c46f" }
                     : { background: "rgba(255,255,255,0.08)", border: "1px solid rgba(255,255,255,0.12)", color: "rgba(255,255,255,0.6)" }}>
                   {a}
                 </button>
@@ -330,12 +330,12 @@ export default function AppleOfFortune() {
             <input type="number" placeholder="Miqdor (min 2 000)" value={customBet}
               onChange={(e) => setCustomBet(e.target.value)}
               className="w-full rounded-2xl px-4 py-3 font-black text-base focus:outline-none mb-3"
-              style={{ background: "rgba(255,255,255,0.06)", border: "1px solid rgba(34,197,94,0.25)", color: "#4ade80" }} />
+              style={{ background: "rgba(255,255,255,0.06)", border: "1px solid rgba(37,165,90,0.25)", color: "#39c46f" }} />
 
             <button onClick={start}
               disabled={!player || player.balance < activeBet || activeBet < 2000}
               className="w-full py-3.5 rounded-2xl font-black text-base active:scale-95 transition-all disabled:opacity-40"
-              style={{ background: "linear-gradient(135deg, #16a34a, #15803d)", boxShadow: "0 8px 28px rgba(22,163,74,0.4)", color: "white" }}>
+              style={{ background: "linear-gradient(135deg, #25a55a, #15803d)", boxShadow: "0 8px 28px rgba(22,163,74,0.4)", color: "white" }}>
                QAYTA O'YNASH
             </button>
 

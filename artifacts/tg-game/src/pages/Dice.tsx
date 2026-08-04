@@ -14,7 +14,7 @@ type GameState = "idle"|"rolling"|"result";
 const ODDS: Record<BetType, { label: string; mult: number; emoji: string; color: string; glow: string }> = {
   less:  { label: "7 dan Kam",  mult: 2.5, emoji: "dice", color: "#60a5fa", glow: "#3b82f633" },
   equal: { label: "Teng 7",     mult: 6.5, emoji: "target", color: "#fbbf24", glow: "#f59e0b33" },
-  more:  { label: "7 dan Ko'p", mult: 2.5, emoji: "dice", color: "#34d399", glow: "#10b98133" },
+  more:  { label: "7 dan Ko'p", mult: 2.5, emoji: "dice", color: "#34d399", glow: "#25a55a33" },
 };
 
 function DiceFace({ value, rolling, seed }: { value: number; rolling: boolean; seed: number }) {
@@ -79,11 +79,11 @@ export default function Dice() {
 
 
   const accentGradient = isLight
-    ? "linear-gradient(135deg, #4f46e5, #7c3aed)"
-    : "linear-gradient(135deg, #7c3aed, #a855f7)";
+    ? "linear-gradient(135deg, #0d4fb0, #1668e3)"
+    : "linear-gradient(135deg, #1668e3, #a855f7)";
   const accentShadow = isLight
     ? "0 8px 0 #312e81, 0 10px 30px rgba(79,70,229,0.45)"
-    : "0 8px 0 #3b1278, 0 10px 30px rgba(124,58,237,0.5)";
+    : "0 8px 0 #0b3f8f, 0 10px 30px rgba(22,104,227,0.5)";
 
   return (
     <div className="min-h-screen flex flex-col" style={{ background: pageBg(theme, GAME_BG.dice) }}>
@@ -130,16 +130,16 @@ export default function Dice() {
 
 
           {gameState === "rolling" && (
-            <p className="text-sm font-bold animate-pulse"style={{ color: isLight ?"#7c3aed":"#c4b5fd" }}> Aylanmoqda...</p>
+            <p className="text-sm font-bold animate-pulse"style={{ color: isLight ?"#1668e3":"#bcdcff" }}> Aylanmoqda...</p>
           )}
           {gameState === "result" && (
             <div className="text-center">
               <div className="mb-1 flex justify-center"><Sym n={won ? "trophy" : "boom"} s={44} /></div>
-              <p className="font-black text-2xl"style={{ color: won ?"#4ade80":"#f87171" }}>
+              <p className="font-black text-2xl"style={{ color: won ?"#39c46f":"#f87171" }}>
                 {won ? `+${prize.toLocaleString()} UZS` : "Yutqazdingiz!"}
               </p>
               {won && (
-                <p className="text-xs mt-1"style={{ color:"#4ade8088" }}>x{ODDS[betType!].mult} koeffitsiyent</p>
+                <p className="text-xs mt-1"style={{ color:"#39c46f88" }}>x{ODDS[betType!].mult} koeffitsiyent</p>
               )}
             </div>
           )}
@@ -193,7 +193,7 @@ export default function Dice() {
               className="w-full rounded-xl px-4 py-3 font-black text-lg outline-none"
               style={{ background: ts.input, border: `1px solid ${ts.inputBorder}`, color: ts.text }} />
             {betType && activeBet >= 2000 && (
-              <span className="absolute right-4 top-1/2 -translate-y-1/2 text-sm font-black"style={{ color:"#4ade80" }}>
+              <span className="absolute right-4 top-1/2 -translate-y-1/2 text-sm font-black"style={{ color:"#39c46f" }}>
                 → {potential.toLocaleString()}
               </span>
             )}

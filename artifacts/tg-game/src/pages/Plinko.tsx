@@ -97,7 +97,7 @@ export default function Plinko() {
               <div key={i} className="text-center py-1.5 rounded-lg font-black"
                 style={{
                   fontSize: 9,
-                  background: landed === i ? (m > 0 ? "#16a34a":"#dc2626") : (m > 0 ? "rgba(251,191,36,0.16)":"rgba(255,255,255,0.06)"),
+                  background: landed === i ? (m > 0 ? "#25a55a":"#dc2626") : (m > 0 ? "rgba(251,191,36,0.16)":"rgba(255,255,255,0.06)"),
                   color: landed === i ? "#fff": (m > 0 ?"#fbbf24" : ts.textSub),
                 }}>
                 {m > 0 ? `x${m}` : "0"}
@@ -111,7 +111,7 @@ export default function Plinko() {
             <button key={r} disabled={busy} onClick={() =>{ setRisk(r); sfx.select(); }}
               className="py-2.5 rounded-xl text-xs font-black active:scale-95 disabled:opacity-40"
               style={{
-                background: risk === r ? "linear-gradient(135deg,#7c3aed,#4f46e5)" : ts.btnSecondary,
+                background: risk === r ? "linear-gradient(135deg,#1668e3,#0d4fb0)" : ts.btnSecondary,
                 color: risk === r ? "#fff" : ts.btnSecondaryText,
                 border: `1px solid ${ts.cardBorder}`,
               }}>
