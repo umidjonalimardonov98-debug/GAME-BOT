@@ -209,24 +209,31 @@ export default function Spin() {
                       strokeWidth="1.5"
                     />
                     {(() => {
-                      const mid = polarToXY(i * SEG + SEG / 2, r * 0.62);
-                      const rotDeg = i * SEG + SEG / 2;
+                      const ang = i * SEG + SEG / 2;
+                      const mid = polarToXY(ang, r * 0.6);
+                      const flip = ang > 90 && ang < 270;
+                      const rotDeg = flip ? ang + 180 : ang;
+
                       return (
                         <g transform={`translate(${mid.x},${mid.y}) rotate(${rotDeg})`}>
+
                           <text
                             textAnchor="middle"
-                            y={-6}
-                            style={{ fontSize: 20, userSelect: "none" }}
+                            y={-7}
+                            style={{ fontSize: 22, userSelect: "none" }}
                           >
                             {seg.label}
                           </text>
                           <text
                             textAnchor="middle"
-                            y={13}
+                            y={14}
                             style={{
-                              fontSize: 11,
+                              fontSize: 13,
                               fontWeight: 900,
                               fill: "#fff7d6",
+                              paintOrder: "stroke",
+                              stroke: "rgba(0,0,0,0.55)",
+                              strokeWidth: 3,
                               userSelect: "none",
                             }}
                           >
@@ -235,6 +242,7 @@ export default function Spin() {
                         </g>
                       );
                     })()}
+
                   </g>
                 ))}
                 {/* markaz hub */}

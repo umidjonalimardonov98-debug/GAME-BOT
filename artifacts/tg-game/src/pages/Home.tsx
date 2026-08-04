@@ -166,7 +166,7 @@ export default function Home() {
       {/* ─── PRO HERO BANNER ─── */}
       <div className="mx-4 mb-3 rounded-3xl relative overflow-hidden pro-sheen"
         style={{ aspectRatio: "16 / 7", border: "1px solid rgba(251,191,36,0.35)", boxShadow: "0 14px 40px rgba(0,0,0,0.45)" }}>
-        <img src="banner-main.jpg" alt="" className="absolute inset-0 w-full h-full object-cover" />
+        <img src="/banner-main.jpg" alt="" className="absolute inset-0 w-full h-full object-cover" />
         <div className="absolute inset-0"
           style={{ background: "linear-gradient(90deg, rgba(4,2,16,0.92) 0%, rgba(4,2,16,0.6) 48%, rgba(4,2,16,0.05) 100%)" }} />
         <div className="absolute inset-0 flex flex-col justify-center gap-1 px-4">
@@ -286,10 +286,11 @@ export default function Home() {
           <div className="flex gap-2">
             <input value={promoCode} onChange={e => setPromoCode(e.target.value.toUpperCase())}
               placeholder="PROMO123" maxLength={20}
-              className="flex-1 rounded-xl px-3 py-2.5 font-black text-sm outline-none uppercase"
+              className="flex-1 min-w-0 rounded-xl px-3 py-2.5 font-black text-base outline-none uppercase"
+              inputMode="text" autoCapitalize="characters" autoCorrect="off" spellCheck={false}
               style={{ background: "rgba(255,255,255,0.08)", border: "1px solid rgba(255,255,255,0.15)", color: TEXT }} />
             <button onClick={handlePromo}
-              className="px-4 py-2.5 rounded-xl font-black text-sm active:scale-95"
+              className="shrink-0 px-4 py-2.5 rounded-xl font-black text-sm active:scale-95"
               style={{ background: "linear-gradient(135deg,#059669,#10b981)", color: "white" }}>
               ✅
             </button>
@@ -327,15 +328,12 @@ export default function Home() {
                   border: "1px solid rgba(255,255,255,0.12)",
                 }}>
                 {/* Haqiqiy o'yin surati fon sifatida */}
-                <img src={g.img} alt={g.label} loading="lazy"
-                  className="absolute inset-0 w-full h-full object-cover pointer-events-none"
-                  style={{ opacity: 0.62, borderRadius: 20 }} />
-                {/* Matn o'qilishi uchun pastdan qoraytirish */}
+                <img src={g.img} alt={g.label} loading="lazy" decoding="async"
+                  className="absolute inset-0 w-full h-full object-cover pointer-events-none crisp-img"
+                  style={{ opacity: 1, borderRadius: 20 }} />
+                {/* Matn o'qilishi uchun faqat pastdan yengil qoraytirish */}
                 <div className="absolute inset-0 pointer-events-none"
-                  style={{ background: "linear-gradient(180deg,rgba(0,0,0,0.05) 0%,rgba(0,0,0,0.25) 45%,rgba(0,0,0,0.78) 100%)", borderRadius: 20 }} />
-                {/* Shine overlay */}
-                <div className="absolute inset-0 pointer-events-none"
-                  style={{ background: "linear-gradient(135deg,rgba(255,255,255,0.22) 0%,transparent 55%)", borderRadius: 20 }} />
+                  style={{ background: "linear-gradient(180deg,rgba(0,0,0,0) 42%,rgba(0,0,0,0.35) 72%,rgba(0,0,0,0.8) 100%)", borderRadius: 20 }} />
                 {/* Top shine line */}
                 <div className="absolute inset-x-0 top-0 h-px pointer-events-none"
                   style={{ background: "linear-gradient(90deg,transparent,rgba(255,255,255,0.6),transparent)" }} />
@@ -365,20 +363,20 @@ export default function Home() {
           backdropFilter: "blur(20px)",
           paddingBottom: "env(safe-area-inset-bottom,0px)",
         }}>
-        <div className="flex items-center justify-around px-1 py-2">
+        <div className="grid grid-cols-6 items-end px-1 py-2">
           <button onClick={() => setTab("games")}
-            className="flex flex-col items-center gap-1 px-4 py-2 rounded-2xl active:scale-95 transition-all"
+            className="flex flex-col items-center gap-1 px-0 py-2 rounded-2xl active:scale-95 transition-all"
             style={{ background: tab === "games" ? "rgba(99,102,241,0.12)" : "transparent" }}>
             <span style={{ fontSize: 20 }}>🏠</span>
             <span className="text-xs font-bold" style={{ color: tab === "games" ? ACCENT : TEXT_SUB, fontSize: 9 }}>Bosh sahifa</span>
           </button>
           <button onClick={() => nav("/history")}
-            className="flex flex-col items-center gap-1 px-4 py-2 rounded-2xl active:scale-95 transition-all">
+            className="flex flex-col items-center gap-1 px-0 py-2 rounded-2xl active:scale-95 transition-all">
             <span style={{ fontSize: 20 }}>📋</span>
             <span className="text-xs font-bold" style={{ color: TEXT_SUB, fontSize: 9 }}>Tarix</span>
           </button>
           <button onClick={() => nav("/deposit")}
-            className="flex flex-col items-center gap-1 px-3 py-1.5 rounded-2xl active:scale-95 transition-all"
+            className="flex flex-col items-center gap-1 px-1 py-1.5 rounded-2xl active:scale-95 transition-all"
             style={{
               background: "linear-gradient(135deg,#1d4ed8,#3b82f6)",
               boxShadow: "0 4px 16px #1d4ed844",
@@ -389,18 +387,18 @@ export default function Home() {
             <span className="text-xs font-black text-white" style={{ fontSize: 9 }}>{t.deposit}</span>
           </button>
           <button onClick={() => { setTab("promo"); setShowPromo(true); }}
-            className="flex flex-col items-center gap-1 px-4 py-2 rounded-2xl active:scale-95 transition-all"
+            className="flex flex-col items-center gap-1 px-0 py-2 rounded-2xl active:scale-95 transition-all"
             style={{ background: tab === "promo" ? "rgba(99,102,241,0.12)" : "transparent" }}>
             <span style={{ fontSize: 20 }}>🎫</span>
             <span className="text-xs font-bold" style={{ color: tab === "promo" ? ACCENT : TEXT_SUB, fontSize: 9 }}>Promo</span>
           </button>
           <button onClick={() => nav("/support")}
-            className="flex flex-col items-center gap-1 px-3 py-2 rounded-2xl active:scale-95 transition-all">
+            className="flex flex-col items-center gap-1 px-0 py-2 rounded-2xl active:scale-95 transition-all">
             <span style={{ fontSize: 20 }}>💬</span>
             <span className="text-xs font-bold" style={{ color: TEXT_SUB, fontSize: 9 }}>Suhbat</span>
           </button>
           <button onClick={() => nav("/howtoplay")}
-            className="flex flex-col items-center gap-1 px-3 py-2 rounded-2xl active:scale-95 transition-all">
+            className="flex flex-col items-center gap-1 px-0 py-2 rounded-2xl active:scale-95 transition-all">
             <span style={{ fontSize: 20 }}>📖</span>
             <span className="text-xs font-bold" style={{ color: TEXT_SUB, fontSize: 9 }}>Qoidalar</span>
           </button>

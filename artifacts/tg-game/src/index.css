@@ -263,12 +263,15 @@ button, [role="button"], a {
 
 /* ── Tezlik uchun: animatsiyalar GPU'da ishlasin, qotib qolmasin ── */
 .float-anim, .pulse-ring, .spin-fast, .bulb-run, .pointer-tick,
-.card-deal, .coin-pop, .dice-bounce, .pro-tile, .sfx-panel {
+.card-deal, .coin-pop, .pro-tile, .sfx-panel {
   will-change: transform;
   backface-visibility: hidden;
   transform: translateZ(0);
 }
-img { content-visibility: auto; }
+/* Suratlar tiniq ko'rinsin */
+img { image-rendering: -webkit-optimize-contrast; }
+.dice-scene { transform-style: flat; }
+.crisp-img { image-rendering: auto; filter: saturate(1.12) contrast(1.08); }
 
 @media (prefers-reduced-motion: reduce) {
   * { animation-duration: 0.01ms !important; transition-duration: 0.01ms !important; }

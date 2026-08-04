@@ -1,4 +1,4 @@
-import { useState, useCallback } from "react";
+import { useState, useCallback, useEffect } from "react";
 import { usePlayer } from "@/lib/player-context";
 import { useTheme, pageBg, GAME_BG } from "@/lib/theme-context";
 import { placeBet } from "@/lib/api";
@@ -38,6 +38,14 @@ function colorOf(n: number) {
 export default function Roulette() {
   const { player, refresh } = usePlayer();
   const { theme, ts } = useTheme();
+  // kichik telefonlarda g'ildirak ekranga sig'sin
+  const [wheelScale, setWheelScale] = useState(1);
+  useEffect(() => {
+    const fit = () => setWheelScale(Math.min(1, (window.innerWidth - 84) / 264));
+    fit();
+    window.addEventListener("resize", fit);
+    return () => window.removeEventListener("resize", fit);
+  }, []);
   const isLight = theme === "light";
 
   const [betInput, setBetInput] = useState("2000");
@@ -123,7 +131,8 @@ export default function Roulette() {
             style={{ background: "radial-gradient(ellipse at 50% 15%, rgba(251,191,36,0.14) 0%, transparent 62%)" }}
           />
 
-          <div className="relative" style={{ width: 264, height: 264 }}>
+          <div style={{ width: 264 * wheelScale, height: 264 * wheelScale, display: "flex", alignItems: "center", justifyContent: "center" }}>
+          <div className="relative shrink-0" style={{ width: 264, height: 264, transform: `scale(${wheelScale})`, transformOrigin: "center" }}>
             {/* yog'och tashqi ramka */}
             <div
               className="absolute inset-0 rounded-full"
@@ -260,6 +269,7 @@ export default function Roulette() {
                 {spinning ? "…" : result !== null ? result : "🎡"}
               </span>
             </div>
+          </div>
           </div>
 
 

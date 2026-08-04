@@ -1,6 +1,8 @@
 import { useEffect, useRef, useState } from "react";
 
-/** Haqiqiy 3D zar — havoda aylanadi va kerakli yuzda to'xtaydi */
+/** Haqiqiy 3D zar — havoda ag'anab aylanadi va aynan tushgan yuzda to'xtaydi.
+ *  MUHIM: preserve-3d elementga filter/backdrop-filter berilmaydi —
+ *  aks holda brauzer kubni "qog'oz" kabi yassilaydi. */
 
 const PIPS: Record<number, [number, number][]> = {
   1: [[50, 50]],
@@ -11,7 +13,7 @@ const PIPS: Record<number, [number, number][]> = {
   6: [[28, 22], [72, 22], [28, 50], [72, 50], [28, 78], [72, 78]],
 };
 
-/** kub ichida yuzlar joylashuvi */
+/** kub ichida yuzlar joylashuvi (qarama-qarshi yuzlar yig'indisi 7) */
 const FACE_TRANSFORM: Record<number, string> = {
   1: "translateZ(var(--h))",
   6: "rotateY(180deg) translateZ(var(--h))",
@@ -21,7 +23,7 @@ const FACE_TRANSFORM: Record<number, string> = {
   2: "rotateX(-90deg) translateZ(var(--h))",
 };
 
-/** qaysi burilishda kerakli yuz oldinga keladi */
+/** rotateX(x) rotateY(y) — shu burchaklarda kerakli yuz kameraga qaraydi */
 const SHOW: Record<number, [number, number]> = {
   1: [0, 0],
   6: [0, 180],
@@ -35,46 +37,70 @@ interface Props {
   value: number;
   rolling: boolean;
   size?: number;
-  /** ikkinchi zar biroz boshqacha aylansin */
+  /** ikkinchi zar boshqacha aylansin */
   seed?: number;
 }
 
 export default function Dice3D({ value, rolling, size = 88, seed = 0 }: Props) {
-  const [rot, setRot] = useState<[number, number]>(() => SHOW[Math.max(1, Math.min(6, value))]);
-  /** har bir tashlashda umumiy aylanishlar to'planib boradi — hech qachon orqaga qaytmaydi */
+  const clamp = (v: number) => Math.max(1, Math.min(6, Math.round(v) || 1));
+  const [rot, setRot] = useState<[number, number]>(() => SHOW[clamp(value)]);
+  const [spinning, setSpinning] = useState(false);
+  /** aylanishlar to'planadi — zar hech qachon orqaga qaytmaydi */
   const spins = useRef(0);
-  const wasRolling = useRef(false);
+  const timer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   useEffect(() => {
-    const v = Math.max(1, Math.min(6, value));
+    const v = clamp(value);
     const [tx, ty] = SHOW[v];
     const dir = seed % 2 === 0 ? 1 : -1;
 
+    if (timer.current) clearTimeout(timer.current);
+
     if (rolling) {
-      // 4-6 marta to'liq aylanadi (har bir zar boshqacha)
-      spins.current += 4 + (seed % 2) + Math.floor(Math.random() * 2);
-      setRot([tx + 360 * spins.current * dir, ty + 360 * (spins.current + 1)]);
-      wasRolling.current = true;
-    } else if (wasRolling.current) {
-      // to'xtaganda: aynan shu yuzda qoladi (aylanishlar soni saqlanadi)
-      setRot([tx + 360 * spins.current * dir, ty + 360 * (spins.current + 1)]);
+      setSpinning(true);
+      // havoda erkin ag'anash — keyin aniq yuzga tushadi
+      spins.current += 3 + (seed % 2);
+      const turnsX = 4 + (seed % 2) + Math.floor(Math.random() * 2);
+      const turnsY = 5 + Math.floor(Math.random() * 3);
+      setRot([tx + 360 * turnsX * dir + 360 * spins.current, ty + 360 * turnsY]);
     } else {
-      setRot([tx, ty]);
+      // to'xtaganda: aynan tushgan yuz tik oldinga qaraydi
+      const settleX = tx + 360 * (spins.current + 1) * dir;
+      const settleY = ty + 360 * (spins.current + 1);
+      setRot([settleX, settleY]);
+      timer.current = setTimeout(() => setSpinning(false), 620);
     }
+    return () => { if (timer.current) clearTimeout(timer.current); };
   }, [value, rolling, seed]);
 
   const s = size;
   return (
     <div
+      className={rolling ? "dice-scene dice-bounce" : "dice-scene"}
       style={{
         width: s,
         height: s,
-        perspective: s * 4,
-        // @ts-expect-error css var
-        "--h": `${s / 2}px`,
+        perspective: s * 4.5,
+        position: "relative",
       }}
-      className={rolling ? "dice-bounce" : ""}
     >
+      {/* stoldagi soya — kubdan tashqarida (filter kubni yassilamasligi uchun) */}
+      <div
+        aria-hidden
+        style={{
+          position: "absolute",
+          left: "50%",
+          bottom: -s * 0.16,
+          width: s * 0.86,
+          height: s * 0.2,
+          transform: "translateX(-50%)",
+          borderRadius: "50%",
+          background: "radial-gradient(ellipse, rgba(0,0,0,0.55) 0%, rgba(0,0,0,0) 72%)",
+          opacity: rolling ? 0.45 : 0.8,
+          transition: "opacity 0.4s",
+          pointerEvents: "none",
+        }}
+      />
       <div
         style={{
           width: "100%",
@@ -83,10 +109,11 @@ export default function Dice3D({ value, rolling, size = 88, seed = 0 }: Props) {
           transformStyle: "preserve-3d",
           transform: `rotateX(${rot[0]}deg) rotateY(${rot[1]}deg)`,
           transition: rolling
-            ? "transform 1.3s cubic-bezier(0.16,0.72,0.24,1)"
-            : "transform 0.5s cubic-bezier(0.16,0.9,0.2,1)",
+            ? "transform 1.25s cubic-bezier(0.2,0.68,0.3,1)"
+            : "transform 0.6s cubic-bezier(0.18,0.9,0.22,1.02)",
           willChange: "transform",
-          filter: "drop-shadow(0 14px 18px rgba(0,0,0,0.55))",
+          // @ts-expect-error css var
+          "--h": `${s / 2}px`,
         }}
       >
         {[1, 2, 3, 4, 5, 6].map((f) => (
@@ -95,12 +122,12 @@ export default function Dice3D({ value, rolling, size = 88, seed = 0 }: Props) {
             style={{
               position: "absolute",
               inset: 0,
-              borderRadius: s * 0.2,
+              borderRadius: s * 0.18,
               transform: FACE_TRANSFORM[f],
               background:
-                "radial-gradient(circle at 30% 25%, #ffffff 0%, #f4f1e6 45%, #d9d2bd 100%)",
+                "radial-gradient(circle at 30% 25%, #ffffff 0%, #f6f3e8 45%, #ddd6c1 100%)",
               boxShadow:
-                "inset 0 0 0 1px rgba(120,100,50,0.25), inset 0 6px 14px rgba(255,255,255,0.9), inset 0 -8px 16px rgba(120,100,60,0.28)",
+                "inset 0 0 0 1px rgba(120,100,50,0.3), inset 0 6px 14px rgba(255,255,255,0.9), inset 0 -8px 16px rgba(120,100,60,0.3)",
               backfaceVisibility: "hidden",
             }}
           >
@@ -111,20 +138,38 @@ export default function Dice3D({ value, rolling, size = 88, seed = 0 }: Props) {
                   position: "absolute",
                   left: `${x}%`,
                   top: `${y}%`,
-                  width: s * 0.16,
-                  height: s * 0.16,
+                  width: s * 0.17,
+                  height: s * 0.17,
                   transform: "translate(-50%,-50%)",
                   borderRadius: "50%",
                   background:
-                    "radial-gradient(circle at 35% 30%, #7a5c12 0%, #3a2a05 60%, #120c00 100%)",
+                    "radial-gradient(circle at 35% 30%, #8a6a14 0%, #3a2a05 60%, #120c00 100%)",
                   boxShadow:
-                    "inset 0 2px 3px rgba(0,0,0,0.8), 0 1px 0 rgba(255,255,255,0.6)",
+                    "inset 0 2px 3px rgba(0,0,0,0.8), 0 1px 0 rgba(255,255,255,0.55)",
                 }}
               />
             ))}
           </div>
         ))}
       </div>
+      {/* natija belgisi — to'xtagandan keyin ko'rinadi */}
+      {!rolling && !spinning && (
+        <span
+          style={{
+            position: "absolute",
+            left: "50%",
+            bottom: -s * 0.3,
+            transform: "translateX(-50%)",
+            fontSize: Math.max(10, s * 0.15),
+            fontWeight: 900,
+            color: "#f7e59b",
+            textShadow: "0 2px 6px rgba(0,0,0,0.8)",
+            pointerEvents: "none",
+          }}
+        >
+          {clamp(value)}
+        </span>
+      )}
     </div>
   );
 }
