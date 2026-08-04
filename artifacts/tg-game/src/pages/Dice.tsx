@@ -4,6 +4,8 @@ import { useTheme, pageBg, GAME_BG } from "@/lib/theme-context";
 import { placeBet } from "@/lib/api";
 import { riggedLose } from "@/lib/odds";
 import GameHeader from "@/components/GameHeader";
+import Dice3D from "@/components/casino/Dice3D";
+
 
 type BetType = "more" | "equal" | "less";
 type GameState = "idle" | "rolling" | "result";
@@ -14,37 +16,10 @@ const ODDS: Record<BetType, { label: string; mult: number; emoji: string; color:
   more:  { label: "7 dan Ko'p", mult: 2.3, emoji: "⬆️", color: "#34d399", glow: "#10b98133" },
 };
 
-function DiceFace({ value, rolling }: { value: number; rolling: boolean }) {
-  const dots: Record<number, [number, number][]> = {
-    1: [[50,50]],
-    2: [[30,30],[70,70]],
-    3: [[30,30],[50,50],[70,70]],
-    4: [[30,30],[70,30],[30,70],[70,70]],
-    5: [[30,30],[70,30],[50,50],[30,70],[70,70]],
-    6: [[30,22],[70,22],[30,50],[70,50],[30,78],[70,78]],
-  };
-  const v = Math.max(1, Math.min(6, value));
-  return (
-    <div className={rolling ? "animate-spin" : ""}
-      style={{
-        width: 90, height: 90, borderRadius: 20, position: "relative",
-        background: "linear-gradient(145deg, #ffffff 0%, #e2e8f0 100%)",
-        boxShadow: rolling
-          ? "0 0 30px #a78bfa99, 0 8px 24px rgba(0,0,0,0.5)"
-          : "4px 4px 16px rgba(0,0,0,0.5), -2px -2px 8px rgba(255,255,255,0.05), inset 0 2px 0 rgba(255,255,255,0.7)",
-        transition: "box-shadow 0.2s",
-      }}>
-      {dots[v].map(([x, y], i) => (
-        <div key={i} style={{
-          position: "absolute", width: 13, height: 13, borderRadius: "50%",
-          left: `${x}%`, top: `${y}%`, transform: "translate(-50%,-50%)",
-          background: "linear-gradient(145deg, #1e1b4b, #312e81)",
-          boxShadow: "inset 0 1px 2px rgba(0,0,0,0.3)",
-        }} />
-      ))}
-    </div>
-  );
+function DiceFace({ value, rolling, seed }: { value: number; rolling: boolean; seed: number }) {
+  return <Dice3D value={value} rolling={rolling} size={92} seed={seed} />;
 }
+
 
 export default function Dice() {
   const { player, refresh } = usePlayer();
@@ -75,33 +50,32 @@ export default function Dice() {
   const roll = useCallback(async () => {
     if (!betType || !player || player.balance < activeBet || activeBet < 2000) return;
     setGameState("rolling");
-    let frame = 0;
-    const interval = setInterval(async () => {
-      setDice([Math.ceil(Math.random() * 6), Math.ceil(Math.random() * 6)]);
-      frame++;
-      if (frame >= 18) {
-        clearInterval(interval);
-        // Uy foydasi: 69% yutqazish
-        const mustLose = riggedLose();
-        const isWinSum = (sum: number) =>
-          (betType === "more" && sum > 7) || (betType === "equal" && sum === 7) || (betType === "less" && sum < 7);
-        let d1 = Math.ceil(Math.random() * 6);
-        let d2 = Math.ceil(Math.random() * 6);
-        for (let tries = 0; tries < 60 && isWinSum(d1 + d2) === mustLose; tries++) {
-          d1 = Math.ceil(Math.random() * 6);
-          d2 = Math.ceil(Math.random() * 6);
-        }
-        const s = d1 + d2;
-        setDice([d1, d2]);
-        const win = (betType === "more" && s > 7) || (betType === "equal" && s === 7) || (betType === "less" && s < 7);
-        const winPrize = win ? Math.floor(activeBet * ODDS[betType].mult) : 0;
-        setWon(win); setPrize(winPrize); setGameState("result");
-        setSaving(true);
-        await placeBet(player.telegramId, { amount: activeBet, game: "dice", won: win, winAmount: winPrize }).catch(() => {});
-        await refresh(); setSaving(false);
-      }
-    }, 70);
+
+    // Uy foydasi: 69% yutqazish — natija oldindan aniqlanadi, zarlar shu yuzda to'xtaydi
+    const mustLose = riggedLose();
+    const isWinSum = (s: number) =>
+      (betType === "more" && s > 7) || (betType === "equal" && s === 7) || (betType === "less" && s < 7);
+    let d1 = Math.ceil(Math.random() * 6);
+    let d2 = Math.ceil(Math.random() * 6);
+    for (let tries = 0; tries < 60 && isWinSum(d1 + d2) === mustLose; tries++) {
+      d1 = Math.ceil(Math.random() * 6);
+      d2 = Math.ceil(Math.random() * 6);
+    }
+    // zar havoda aylanayotganda yuzlar almashinadi
+    setDice([d1, d2]);
+
+    setTimeout(async () => {
+      const s = d1 + d2;
+      setGameState("result");
+      const win = isWinSum(s);
+      const winPrize = win ? Math.floor(activeBet * ODDS[betType].mult) : 0;
+      setWon(win); setPrize(winPrize);
+      setSaving(true);
+      await placeBet(player.telegramId, { amount: activeBet, game: "dice", won: win, winAmount: winPrize }).catch(() => {});
+      await refresh(); setSaving(false);
+    }, 1500);
   }, [betType, activeBet, player, refresh]);
+
 
   const accentGradient = isLight
     ? "linear-gradient(135deg, #4f46e5, #7c3aed)"
@@ -116,37 +90,43 @@ export default function Dice() {
 
       <div className="flex-1 px-4 pb-6 flex flex-col gap-4">
 
-        {/* Dice display */}
+        {/* Haqiqiy stol — yashil movut ustida zarlar */}
         <div className="rounded-3xl p-6 relative overflow-hidden flex flex-col items-center gap-4"
           style={{
-            background: ts.card,
-            border: `1px solid ${ts.cardBorder}`,
-            boxShadow: isLight
-              ? "0 8px 32px rgba(99,102,241,0.12), inset 0 1px 0 rgba(255,255,255,0.9)"
-              : "0 8px 32px rgba(0,0,0,0.3), inset 0 1px 0 rgba(255,255,255,0.07)",
+            background:
+              "radial-gradient(ellipse at 50% 25%, #16794a 0%, #0d5334 45%, #073021 100%)",
+            border: "2px solid rgba(212,175,55,0.55)",
+            boxShadow:
+              "0 14px 40px rgba(0,0,0,0.55), inset 0 2px 0 rgba(255,255,255,0.12), inset 0 -20px 40px rgba(0,0,0,0.45)",
           }}>
 
-          {/* Glow behind dice */}
+          {/* movut tuki */}
+          <div className="absolute inset-0 pointer-events-none opacity-30" style={{
+            background:
+              "repeating-linear-gradient(45deg, rgba(255,255,255,0.05) 0 2px, transparent 2px 4px)",
+          }} />
+          {/* prozhektor */}
           <div className="absolute inset-0 pointer-events-none" style={{
             background: gameState === "rolling"
-              ? "radial-gradient(ellipse at 50% 30%, rgba(167,139,250,0.18) 0%, transparent 65%)"
-              : "radial-gradient(ellipse at 50% 30%, rgba(124,58,237,0.08) 0%, transparent 65%)",
+              ? "radial-gradient(ellipse at 50% 20%, rgba(255,240,180,0.28) 0%, transparent 60%)"
+              : "radial-gradient(ellipse at 50% 20%, rgba(255,240,180,0.14) 0%, transparent 60%)",
             transition: "background 0.4s",
           }} />
 
           <div className="relative flex items-center gap-6">
-            <DiceFace value={dice[0]} rolling={gameState === "rolling"} />
+            <DiceFace value={dice[0]} rolling={gameState === "rolling"} seed={0} />
             <div className="flex flex-col items-center gap-2">
-              <span className="font-black text-3xl" style={{ color: isLight ? "#c4b5fd" : "rgba(196,181,253,0.35)" }}>+</span>
+              <span className="font-black text-3xl" style={{ color: "rgba(247,229,155,0.5)" }}>+</span>
               {gameState !== "idle" && (
                 <div className="px-4 py-1.5 rounded-2xl"
-                  style={{ background: isLight ? "rgba(99,102,241,0.12)" : "rgba(167,139,250,0.15)", border: `1px solid ${isLight ? "rgba(99,102,241,0.25)" : "rgba(167,139,250,0.3)"}` }}>
-                  <span className="font-black text-2xl" style={{ color: isLight ? "#4338ca" : "#c4b5fd" }}>{sum}</span>
+                  style={{ background: "rgba(0,0,0,0.35)", border: "1px solid rgba(212,175,55,0.5)" }}>
+                  <span className="font-black text-2xl" style={{ color: "#f7e59b" }}>{sum}</span>
                 </div>
               )}
             </div>
-            <DiceFace value={dice[1]} rolling={gameState === "rolling"} />
+            <DiceFace value={dice[1]} rolling={gameState === "rolling"} seed={1} />
           </div>
+
 
           {gameState === "rolling" && (
             <p className="text-sm font-bold animate-pulse" style={{ color: isLight ? "#7c3aed" : "#c4b5fd" }}>🎲 Aylanmoqda...</p>

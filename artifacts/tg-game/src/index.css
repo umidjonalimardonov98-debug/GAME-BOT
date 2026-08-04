@@ -166,3 +166,46 @@
   backdrop-filter: blur(12px) saturate(140%);
   -webkit-backdrop-filter: blur(12px) saturate(140%);
 }
+
+/* ── REAL CASINO MOTION ── */
+@keyframes bulb-run {
+  0%, 100% { opacity: 0.35; transform: scale(0.9); }
+  50% { opacity: 1; transform: scale(1.15); }
+}
+.bulb-run { animation: bulb-run 0.5s ease-in-out infinite; }
+
+@keyframes pointer-tick {
+  0%, 100% { transform: rotate(0deg); }
+  50% { transform: rotate(-9deg); }
+}
+.pointer-tick { animation: pointer-tick 0.09s ease-in-out infinite; transform-origin: 50% 0; }
+
+@keyframes dice-bounce {
+  0% { transform: translateY(0) scale(1); }
+  25% { transform: translateY(-26px) scale(1.06); }
+  55% { transform: translateY(0) scale(0.97); }
+  70% { transform: translateY(-9px) scale(1.02); }
+  85% { transform: translateY(0) scale(0.99); }
+  100% { transform: translateY(0) scale(1); }
+}
+.dice-bounce { animation: dice-bounce 1.35s cubic-bezier(0.3, 0.7, 0.2, 1); }
+
+@keyframes ballRun {
+  0% { transform: rotate(0deg); }
+  100% { transform: rotate(-2160deg); }
+}
+
+@keyframes card-deal {
+  0% { transform: translate(38px, -60px) rotate(22deg) scale(0.8); opacity: 0; }
+  70% { opacity: 1; }
+  100% { transform: translate(0, 0) rotate(0) scale(1); opacity: 1; }
+}
+.card-deal { animation: card-deal 0.42s cubic-bezier(0.2, 0.9, 0.25, 1.05) backwards; }
+
+@keyframes coin-pop {
+  0% { transform: translateY(0) scale(0.6); opacity: 0; }
+  40% { opacity: 1; }
+  100% { transform: translateY(-34px) scale(1.1); opacity: 0; }
+}
+.coin-pop { animation: coin-pop 0.9s ease-out forwards; }
+

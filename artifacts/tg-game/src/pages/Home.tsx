@@ -23,15 +23,16 @@ const LANG_FLAG: Record<string, string> = { uz: "🇺🇿", ru: "🇷🇺", en: 
 const LANG_LABEL: Record<string, string> = { uz: "UZ", ru: "RU", en: "EN" };
 
 const GAMES = [
-  { path: "/apple",     emoji: "🍎", label: "Olma Omadi",  tag: "HOT",   tagColor: "#ef4444", bg: "linear-gradient(145deg,#064e3b,#059669)", glow: "#05966955" },
-  { path: "/dice",      emoji: "🎲", label: "Zar",         tag: "x5.8",  tagColor: "#f59e0b", bg: "linear-gradient(145deg,#78350f,#d97706)", glow: "#d9770655" },
-  { path: "/aviator",   emoji: "✈️", label: "Aviator",     tag: "∞x",    tagColor: "#818cf8", bg: "linear-gradient(145deg,#1e1b4b,#4f46e5)", glow: "#4f46e555" },
-  { path: "/spin",      emoji: "🎡", label: "Aylanadur",   tag: "FREE",  tagColor: "#34d399", bg: "linear-gradient(145deg,#4c1d95,#7c3aed)", glow: "#7c3aed55" },
-  { path: "/blackjack", emoji: "🃏", label: "Blackjack",   tag: "x2.5",  tagColor: "#2dd4bf", bg: "linear-gradient(145deg,#134e4a,#0d9488)", glow: "#0d948855" },
-  { path: "/slots",     emoji: "🎰", label: "Slot",        tag: "x10",   tagColor: "#f0abfc", bg: "linear-gradient(145deg,#581c87,#9333ea)", glow: "#9333ea55" },
-  { path: "/parity",    emoji: "🔢", label: "Toq-Juft",    tag: "50/50", tagColor: "#7dd3fc", bg: "linear-gradient(145deg,#0c4a6e,#0284c7)", glow: "#0284c755" },
-  { path: "/mines",     emoji: "💣", label: "Mines",       tag: "NEW",   tagColor: "#f87171", bg: "linear-gradient(145deg,#7f1d1d,#dc2626)", glow: "#dc262655" },
-  { path: "/roulette",  emoji: "🎡", label: "Ruletka",     tag: "x36",   tagColor: "#fcd34d", bg: "linear-gradient(145deg,#78350f,#b45309)", glow: "#b4530955" },
+  { path: "/apple",     emoji: "🍎", img: "/games/apple.jpg",     label: "Olma Omadi",  tag: "HOT",   tagColor: "#ef4444", bg: "linear-gradient(145deg,#064e3b,#059669)", glow: "#05966955" },
+  { path: "/dice",      emoji: "🎲", img: "/games/dice.jpg",      label: "Zar",         tag: "x5.8",  tagColor: "#f59e0b", bg: "linear-gradient(145deg,#78350f,#d97706)", glow: "#d9770655" },
+  { path: "/aviator",   emoji: "✈️", img: "/games/aviator.jpg",   label: "Aviator",     tag: "∞x",    tagColor: "#818cf8", bg: "linear-gradient(145deg,#1e1b4b,#4f46e5)", glow: "#4f46e555" },
+  { path: "/spin",      emoji: "🎡", img: "/games/spin.jpg",      label: "Aylanadur",   tag: "FREE",  tagColor: "#34d399", bg: "linear-gradient(145deg,#4c1d95,#7c3aed)", glow: "#7c3aed55" },
+  { path: "/blackjack", emoji: "🃏", img: "/games/blackjack.jpg", label: "Blackjack",   tag: "x2.5",  tagColor: "#2dd4bf", bg: "linear-gradient(145deg,#134e4a,#0d9488)", glow: "#0d948855" },
+  { path: "/slots",     emoji: "🎰", img: "/games/slots.jpg",     label: "Slot",        tag: "x10",   tagColor: "#f0abfc", bg: "linear-gradient(145deg,#581c87,#9333ea)", glow: "#9333ea55" },
+  { path: "/parity",    emoji: "🔢", img: "/games/parity.jpg",    label: "Toq-Juft",    tag: "50/50", tagColor: "#7dd3fc", bg: "linear-gradient(145deg,#0c4a6e,#0284c7)", glow: "#0284c755" },
+  { path: "/mines",     emoji: "💣", img: "/games/mines.jpg",     label: "Mines",       tag: "NEW",   tagColor: "#f87171", bg: "linear-gradient(145deg,#7f1d1d,#dc2626)", glow: "#dc262655" },
+  { path: "/roulette",  emoji: "🎡", img: "/games/roulette.jpg",  label: "Ruletka",     tag: "x36",   tagColor: "#fcd34d", bg: "linear-gradient(145deg,#78350f,#b45309)", glow: "#b4530955" },
+
 ];
 
 export default function Home() {
@@ -325,32 +326,31 @@ export default function Home() {
                   boxShadow: `0 6px 0 rgba(0,0,0,0.35), 0 10px 24px ${g.glow}, inset 0 1px 0 rgba(255,255,255,0.18)`,
                   border: "1px solid rgba(255,255,255,0.12)",
                 }}>
+                {/* Haqiqiy o'yin surati fon sifatida */}
+                <img src={g.img} alt={g.label} loading="lazy"
+                  className="absolute inset-0 w-full h-full object-cover pointer-events-none"
+                  style={{ opacity: 0.62, borderRadius: 20 }} />
+                {/* Matn o'qilishi uchun pastdan qoraytirish */}
+                <div className="absolute inset-0 pointer-events-none"
+                  style={{ background: "linear-gradient(180deg,rgba(0,0,0,0.05) 0%,rgba(0,0,0,0.25) 45%,rgba(0,0,0,0.78) 100%)", borderRadius: 20 }} />
                 {/* Shine overlay */}
                 <div className="absolute inset-0 pointer-events-none"
-                  style={{ background: "linear-gradient(135deg,rgba(255,255,255,0.18) 0%,transparent 55%)", borderRadius: 20 }} />
+                  style={{ background: "linear-gradient(135deg,rgba(255,255,255,0.22) 0%,transparent 55%)", borderRadius: 20 }} />
                 {/* Top shine line */}
                 <div className="absolute inset-x-0 top-0 h-px pointer-events-none"
                   style={{ background: "linear-gradient(90deg,transparent,rgba(255,255,255,0.6),transparent)" }} />
                 {/* Tag badge */}
                 <div className="absolute top-2 right-2">
                   <span className="font-black px-1.5 py-0.5 rounded-lg"
-                    style={{ background: "rgba(0,0,0,0.45)", color: g.tagColor, fontSize: 8, letterSpacing: 0.3 }}>
+                    style={{ background: "rgba(0,0,0,0.6)", color: g.tagColor, fontSize: 8, letterSpacing: 0.3 }}>
                     {g.tag}
                   </span>
                 </div>
-                {/* Icon */}
-                <div className="w-12 h-12 rounded-2xl flex items-center justify-center mb-2"
-                  style={{
-                    fontSize: 28,
-                    background: "rgba(0,0,0,0.28)",
-                    boxShadow: "0 3px 0 rgba(0,0,0,0.3), inset 0 1px 0 rgba(255,255,255,0.2)",
-                    border: "1px solid rgba(255,255,255,0.12)",
-                  }}>
-                  {g.emoji}
-                </div>
-                <p className="text-white font-black leading-tight text-center" style={{ fontSize: 11, textShadow: "0 1px 4px rgba(0,0,0,0.6)" }}>
+                <p className="relative text-white font-black leading-tight text-center mt-auto"
+                  style={{ fontSize: 11.5, textShadow: "0 2px 6px rgba(0,0,0,0.9)" }}>
                   {g.label}
                 </p>
+
               </button>
             ))}
           </div>

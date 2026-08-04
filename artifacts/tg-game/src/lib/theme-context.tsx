@@ -108,10 +108,11 @@ export const GAME_BG = {
 let remoteBackgroundStyle: "gold" | "classic" = "gold";
 
 const OVERLAY: Record<Theme, string> = {
-  dark: "linear-gradient(180deg, rgba(10,7,2,0.82) 0%, rgba(14,9,3,0.74) 45%, rgba(6,4,1,0.93) 100%)",
-  black: "linear-gradient(180deg, rgba(0,0,0,0.90) 0%, rgba(0,0,0,0.84) 45%, rgba(0,0,0,0.96) 100%)",
-  light: "linear-gradient(180deg, rgba(255,251,240,0.90) 0%, rgba(252,246,231,0.86) 45%, rgba(255,251,240,0.95) 100%)",
+  dark: "linear-gradient(180deg, rgba(10,7,2,0.52) 0%, rgba(14,9,3,0.42) 45%, rgba(6,4,1,0.66) 100%)",
+  black: "linear-gradient(180deg, rgba(0,0,0,0.62) 0%, rgba(0,0,0,0.5) 45%, rgba(0,0,0,0.74) 100%)",
+  light: "linear-gradient(180deg, rgba(255,251,240,0.66) 0%, rgba(252,246,231,0.56) 45%, rgba(255,251,240,0.72) 100%)",
 };
+
 
 /** Sahifa foni: surat + tema overlay (matn o'qilishi saqlanadi) */
 export function pageBg(theme: Theme, img?: string) {

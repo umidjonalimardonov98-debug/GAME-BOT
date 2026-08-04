@@ -5,6 +5,8 @@ import { useTheme, pageBg, GAME_BG } from "@/lib/theme-context";
 import { placeBet } from "@/lib/api";
 import { riggedLose } from "@/lib/odds";
 import GameHeader from "@/components/GameHeader";
+import PlayingCard from "@/components/casino/PlayingCard";
+
 
 type Suit = "♠" | "♥" | "♦" | "♣";
 type Card = { suit: Suit; value: string; num: number };
@@ -30,39 +32,10 @@ function calcHand(cards: Card[]): number {
   return total;
 }
 
-function CardUI({ card, hidden, theme }: { card: Card; hidden?: boolean; theme: string }) {
-  const isLight = theme === "light";
-  if (hidden) return (
-    <div className="flex items-center justify-center rounded-xl relative overflow-hidden"
-      style={{
-        width: 56, height: 80, borderRadius: 12,
-        background: isLight ? "linear-gradient(145deg, #4f46e5, #6d28d9)" : "linear-gradient(145deg, #312e81, #4338ca)",
-        border: `2px solid ${isLight ? "#818cf8" : "#6366f1"}`,
-        boxShadow: "0 4px 0 rgba(0,0,0,0.25), 0 6px 14px rgba(0,0,0,0.4), inset 0 1px 0 rgba(255,255,255,0.2)",
-      }}>
-      <div className="absolute inset-0" style={{ background: "linear-gradient(135deg, rgba(255,255,255,0.12) 0%, transparent 50%)" }} />
-      <span style={{ fontSize: 26, opacity: 0.5 }}>🂠</span>
-    </div>
-  );
-  const isRed = card.suit === "♥" || card.suit === "♦";
-  return (
-    <div className="flex flex-col justify-between p-1.5 rounded-xl relative overflow-hidden"
-      style={{
-        width: 56, height: 80, borderRadius: 12,
-        background: isLight ? "linear-gradient(145deg, #ffffff, #f8faff)" : "linear-gradient(145deg, #ffffff, #f1f5f9)",
-        border: "2px solid rgba(255,255,255,0.6)",
-        boxShadow: "0 4px 0 rgba(0,0,0,0.2), 0 6px 14px rgba(0,0,0,0.3), inset 0 1px 0 rgba(255,255,255,1)",
-      }}>
-      <div className="absolute inset-0" style={{ background: "linear-gradient(135deg, rgba(255,255,255,0.5) 0%, transparent 60%)" }} />
-      <div className="relative" style={{ fontSize: 12, color: isRed ? "#dc2626" : "#1e1b4b", lineHeight: 1.1, fontWeight: 900 }}>
-        {card.value}<br />{card.suit}
-      </div>
-      <div className="relative" style={{ fontSize: 12, color: isRed ? "#dc2626" : "#1e1b4b", lineHeight: 1.1, fontWeight: 900, textAlign: "right", transform: "rotate(180deg)" }}>
-        {card.value}<br />{card.suit}
-      </div>
-    </div>
-  );
+function CardUI({ card, hidden, delay = 0 }: { card: Card; hidden?: boolean; theme?: string; delay?: number }) {
+  return <PlayingCard suit={card.suit} value={card.value} hidden={hidden} w={62} delay={delay} />;
 }
+
 
 export default function Blackjack() {
   const { player, refresh } = usePlayer();
@@ -174,12 +147,11 @@ export default function Blackjack() {
     lose:      { label: t.bjLose,      color: "#f87171", bg: "linear-gradient(145deg, #7f1d1d, #dc2626)", shadow: "0 6px 0 rgba(0,0,0,0.3), 0 8px 24px rgba(220,38,38,0.5)" },
   };
 
-  const cardBg = isLight
-    ? "linear-gradient(145deg, #e0e7ff, #c7d2fe)"
-    : theme === "black"
-      ? "rgba(255,255,255,0.03)"
-      : "rgba(255,255,255,0.06)";
-  const cardBorder = isLight ? "rgba(99,102,241,0.25)" : ts.cardBorder;
+  // haqiqiy kazino stoli — yashil movut
+  const cardBg =
+    "radial-gradient(ellipse at 50% 20%, #15734a 0%, #0c5233 50%, #06301f 100%)";
+  const cardBorder = "rgba(212,175,55,0.55)";
+
 
   return (
     <div className="min-h-screen flex flex-col" style={{ background: pageBg(theme, GAME_BG.blackjack) }}>

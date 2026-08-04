@@ -123,33 +123,48 @@ export default function Roulette() {
             style={{ background: "radial-gradient(ellipse at 50% 15%, rgba(251,191,36,0.14) 0%, transparent 62%)" }}
           />
 
-          <div className="relative" style={{ width: 240, height: 240 }}>
+          <div className="relative" style={{ width: 264, height: 264 }}>
+            {/* yog'och tashqi ramka */}
+            <div
+              className="absolute inset-0 rounded-full"
+              style={{
+                background: "radial-gradient(circle at 35% 25%, #7c3a1d 0%, #4a1f0c 60%, #2a1006 100%)",
+                boxShadow: "0 20px 50px rgba(0,0,0,0.65), inset 0 2px 6px rgba(255,255,255,0.18)",
+              }}
+            />
+            {/* oltin halqa */}
+            <div
+              className="absolute rounded-full"
+              style={{
+                inset: 12,
+                background: "linear-gradient(135deg,#8a6b16,#d4af37 45%,#f7e59b 55%,#8a6b16)",
+                boxShadow: "inset 0 0 14px rgba(0,0,0,0.5)",
+              }}
+            />
             {/* pointer */}
             <div
-              className="absolute left-1/2 -top-1 z-20"
+              className="absolute left-1/2 -top-2 z-30"
               style={{
                 transform: "translateX(-50%)",
                 width: 0,
                 height: 0,
-                borderLeft: "10px solid transparent",
-                borderRight: "10px solid transparent",
-                borderTop: "18px solid #fbbf24",
-                filter: "drop-shadow(0 2px 6px rgba(0,0,0,0.5))",
+                borderLeft: "11px solid transparent",
+                borderRight: "11px solid transparent",
+                borderTop: "20px solid #f7e59b",
+                filter: "drop-shadow(0 3px 7px rgba(0,0,0,0.7))",
               }}
             />
-            {/* wheel + raqamlar */}
+            {/* aylanuvchi disk + raqamlar */}
             <div
               style={{
                 position: "absolute",
-                inset: 0,
-                width: 240,
-                height: 240,
+                inset: 18,
                 borderRadius: "50%",
                 background: conic,
                 transform: `rotate(${angle}deg)`,
-                transition: "transform 4.1s cubic-bezier(0.16,0.84,0.24,1)",
-                border: "6px solid #b45309",
-                boxShadow: "0 0 0 4px rgba(251,191,36,0.25), 0 14px 40px rgba(0,0,0,0.55), inset 0 0 40px rgba(0,0,0,0.5)",
+                transition: "transform 4.1s cubic-bezier(0.14,0.78,0.04,1)",
+                boxShadow:
+                  "inset 0 0 0 3px rgba(212,175,55,0.85), inset 0 0 34px rgba(0,0,0,0.75), 0 6px 18px rgba(0,0,0,0.5)",
               }}
             >
               {WHEEL.map((n, i) => {
@@ -167,8 +182,8 @@ export default function Roulette() {
                       lineHeight: "12px",
                       fontWeight: 900,
                       color: "#fff",
-                      textShadow: "0 1px 2px rgba(0,0,0,0.9)",
-                      paddingTop: 3,
+                      textShadow: "0 1px 2px rgba(0,0,0,0.95)",
+                      paddingTop: 4,
                       pointerEvents: "none",
                     }}
                   >
@@ -176,26 +191,77 @@ export default function Roulette() {
                   </span>
                 );
               })}
+              {/* frets — ajratgichlar */}
+              {WHEEL.map((_, i) => {
+                const deg = i * (360 / WHEEL.length);
+                return (
+                  <span
+                    key={`f-${i}`}
+                    style={{
+                      position: "absolute",
+                      left: "50%",
+                      top: 0,
+                      width: 1.5,
+                      height: 58,
+                      marginLeft: -0.75,
+                      background: "linear-gradient(180deg,rgba(247,229,155,0.9),rgba(212,175,55,0.1))",
+                      transformOrigin: "50% 114px",
+                      transform: `rotate(${deg}deg)`,
+                      pointerEvents: "none",
+                    }}
+                  />
+                );
+              })}
             </div>
-            {/* hub */}
+
+            {/* to'p — teskari yo'nalishda yuguradi */}
             <div
-              className="absolute inset-0 m-auto flex items-center justify-center"
+              className="absolute inset-0 z-20 pointer-events-none"
               style={{
-                width: 92,
-                height: 92,
-                borderRadius: "50%",
-                background: isLight
-                  ? "linear-gradient(145deg,#fff,#e2e8f0)"
-                  : "linear-gradient(145deg,#1e1b4b,#0f172a)",
-                border: "3px solid rgba(251,191,36,0.5)",
-                boxShadow: "0 6px 20px rgba(0,0,0,0.5), inset 0 1px 0 rgba(255,255,255,0.2)",
+                animation: spinning ? "ballRun 4.1s cubic-bezier(0.18,0.7,0.08,1) forwards" : "none",
+                transform: spinning ? undefined : "rotate(0deg)",
               }}
             >
-              <span className="font-black text-3xl" style={{ color: result !== null ? colorOf(result) === "#1f2937" ? ts.text : colorOf(result) : ts.textSub }}>
+              <span
+                style={{
+                  position: "absolute",
+                  left: "50%",
+                  top: spinning ? 22 : 40,
+                  marginLeft: -6,
+                  width: 12,
+                  height: 12,
+                  borderRadius: "50%",
+                  background: "radial-gradient(circle at 32% 28%,#ffffff,#d7d7d7 55%,#8b8b8b)",
+                  boxShadow: "0 3px 7px rgba(0,0,0,0.7)",
+                  transition: "top 0.6s ease-out",
+                }}
+              />
+            </div>
+
+            {/* hub — konus */}
+            <div
+              className="absolute inset-0 m-auto flex items-center justify-center z-10"
+              style={{
+                width: 96,
+                height: 96,
+                borderRadius: "50%",
+                background: "radial-gradient(circle at 38% 30%, #fff7d6 0%, #d4af37 45%, #7a5c12 100%)",
+                border: "3px solid #4b3607",
+                boxShadow: "0 10px 24px rgba(0,0,0,0.6), inset 0 2px 6px rgba(255,255,255,0.5)",
+              }}
+            >
+              <span
+                className="font-black text-3xl"
+                style={{
+                  color: result !== null ? (colorOf(result) === "#1f2937" ? "#111827" : colorOf(result)) : "#4b3607",
+                  textShadow: "0 1px 0 rgba(255,255,255,0.5)",
+                }}
+              >
                 {spinning ? "…" : result !== null ? result : "🎡"}
               </span>
             </div>
           </div>
+
 
           {result !== null && !spinning && (
             <p className="font-black text-xl" style={{ color: prize > 0 ? "#4ade80" : "#f87171" }}>

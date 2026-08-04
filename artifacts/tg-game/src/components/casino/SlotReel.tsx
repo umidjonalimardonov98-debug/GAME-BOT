@@ -1,0 +1,80 @@
+import { useEffect, useRef, useState } from "react";
+
+/** Haqiqiy slot barabani — vertikal lenta aylanadi va belgi ustida to'xtaydi */
+
+interface Props {
+  strip: string[];
+  target: string;
+  spinning: boolean;
+  idx: number;
+  cell?: number;
+}
+
+export default function SlotReel({ strip, target, spinning, idx, cell = 86 }: Props) {
+  const [offset, setOffset] = useState(0);
+  const loops = useRef(0);
+
+  useEffect(() => {
+    if (spinning) {
+      loops.current += 6 + idx * 2;
+      setOffset(loops.current * strip.length);
+    } else {
+      const pos = Math.max(0, strip.indexOf(target));
+      setOffset(loops.current * strip.length + pos);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [spinning, target]);
+
+  // uzun lenta: strip ko'p marta takrorlanadi
+  const items = Array.from({ length: strip.length * 3 }, (_, i) => strip[i % strip.length]);
+  const shift = (offset % (strip.length * 3)) * cell;
+
+  return (
+    <div
+      style={{
+        width: cell,
+        height: cell,
+        borderRadius: 16,
+        overflow: "hidden",
+        position: "relative",
+        background: "linear-gradient(180deg,#fffdf5 0%,#efe6cf 50%,#d9cba6 100%)",
+        boxShadow:
+          "inset 0 10px 16px rgba(0,0,0,0.35), inset 0 -10px 16px rgba(0,0,0,0.3), 0 4px 0 rgba(0,0,0,0.35)",
+        border: "2px solid rgba(212,175,55,0.75)",
+      }}
+    >
+      <div
+        style={{
+          transform: `translateY(${-shift}px)`,
+          transition: spinning
+            ? `transform ${1.1 + idx * 0.35}s cubic-bezier(0.35,0.05,0.2,1)`
+            : `transform ${1.4 + idx * 0.45}s cubic-bezier(0.12,0.85,0.16,1.02)`,
+        }}
+      >
+        {items.map((s, i) => (
+          <div
+            key={i}
+            style={{
+              height: cell,
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "center",
+              fontSize: cell * 0.5,
+              filter: spinning ? "blur(1.5px)" : "none",
+            }}
+          >
+            {s}
+          </div>
+        ))}
+      </div>
+      {/* shisha yaltirashi */}
+      <div
+        className="pointer-events-none absolute inset-0"
+        style={{
+          background:
+            "linear-gradient(180deg,rgba(255,255,255,0.55) 0%,rgba(255,255,255,0) 38%,rgba(0,0,0,0.18) 100%)",
+        }}
+      />
+    </div>
+  );
+}

@@ -5,6 +5,8 @@ import { useTheme, pageBg, GAME_BG } from "@/lib/theme-context";
 import { placeBet } from "@/lib/api";
 import { riggedLose } from "@/lib/odds";
 import GameHeader from "@/components/GameHeader";
+import SlotReel from "@/components/casino/SlotReel";
+
 
 const FRUITS = ["🍒","🍊","🍋","🍇","🍉","🍓"];
 const ALL    = ["🍒","🍊","🍋","🍇","🍉","🍓","⭐","💎","7️⃣"];
@@ -49,36 +51,8 @@ function spinReels(): { reels: [string,string,string]; outcome: "jackpot"|"three
   }
 }
 
-function Reel({ symbol, spinning, idx, theme }: { symbol: string; spinning: boolean; idx: number; theme: string }) {
-  const bgs = {
-    dark:  ["linear-gradient(145deg,#1e1b4b,#312e81)","linear-gradient(145deg,#2d1b6e,#4c1d95)","linear-gradient(145deg,#1e1b4b,#1e40af)"],
-    light: ["linear-gradient(145deg,#e0e7ff,#c7d2fe)","linear-gradient(145deg,#ede9fe,#ddd6fe)","linear-gradient(145deg,#dbeafe,#bfdbfe)"],
-    black: ["linear-gradient(145deg,#0a0a14,#111128)","linear-gradient(145deg,#0d0a1e,#150d38)","linear-gradient(145deg,#0a0a14,#0a1433)"],
-  };
-  const borders = {
-    dark:  ["#6366f166","#a78bfa66","#60a5fa66"],
-    light: ["#818cf8aa","#a78bfaaa","#60a5faaa"],
-    black: ["#4f46e566","#7c3aed66","#2563eb66"],
-  };
-  const t = theme as keyof typeof bgs;
-  return (
-    <div className="flex items-center justify-center rounded-2xl relative overflow-hidden"
-      style={{
-        width: 88, height: 88,
-        background: bgs[t][idx % 3],
-        border: `2px solid ${borders[t][idx % 3]}`,
-        boxShadow: `0 6px 0 rgba(0,0,0,0.4), 0 8px 20px rgba(0,0,0,0.3), inset 0 2px 6px rgba(0,0,0,0.3), inset 0 1px 0 rgba(255,255,255,0.15)`,
-        fontSize: 38,
-        animation: spinning ? "slotSpin 0.1s linear infinite" : "none",
-      }}>
-      <div className="absolute inset-0 pointer-events-none rounded-2xl"
-        style={{ background: "linear-gradient(145deg, rgba(255,255,255,0.12) 0%, transparent 50%)" }} />
-      <span style={{ filter: spinning ? "blur(2px)" : "none", transition: "filter 0.2s", position: "relative", zIndex: 1 }}>
-        {spinning ? ALL[Math.floor(Math.random() * ALL.length)] : symbol}
-      </span>
-    </div>
-  );
-}
+const STRIP = ["🍒", "🍊", "7️⃣", "🍋", "💎", "🍇", "⭐", "🍉", "🍓"];
+
 
 export default function Slots() {
   const { player, refresh } = usePlayer();
@@ -110,18 +84,10 @@ export default function Slots() {
     setSpinning(true);
     setOutcome(null);
     const { reels: finalReels, outcome: finalOutcome } = spinReels();
-
-    intervalRef.current = setInterval(() => {
-      setReels([
-        ALL[Math.floor(Math.random() * ALL.length)],
-        ALL[Math.floor(Math.random() * ALL.length)],
-        ALL[Math.floor(Math.random() * ALL.length)],
-      ]);
-    }, 90);
+    // barabanlar oldindan aniqlangan belgida to'xtaydi (haqiqiy slot kabi)
+    setReels(finalReels);
 
     setTimeout(() => {
-      clearInterval(intervalRef.current!);
-      setReels(finalReels);
       setSpinning(false);
       setOutcome(finalOutcome);
 
@@ -132,8 +98,9 @@ export default function Slots() {
       setSaving(true);
       placeBet(player.telegramId, { amount: activeBet, game: "slots", won: mult > 0, winAmount: win })
         .then(() => refresh()).catch(() => {}).finally(() => setSaving(false));
-    }, 2000);
+    }, 1600);
   }, [player, activeBet, spinning]);
+
 
   const OUTCOME_STYLE = {
     jackpot: { color: "#fbbf24", glow: "0 0 30px #fbbf2499", label: "🏆 JACKPOT! x10" },
@@ -142,40 +109,55 @@ export default function Slots() {
     miss:    { color: "#f87171", glow: "none", label: t.noLuck },
   };
 
-  const machineBg = isLight
-    ? "linear-gradient(145deg, #e0e7ff, #c7d2fe)"
-    : theme === "black"
-      ? "linear-gradient(145deg, #0a0a14, #111128)"
-      : "linear-gradient(145deg, #2d1b6e, #1a0a4a)";
+  const machineBg =
+    "linear-gradient(180deg,#b5140f 0%,#7c0b09 40%,#4a0604 100%)";
 
   return (
     <div className="min-h-screen flex flex-col" style={{ background: pageBg(theme, GAME_BG.slots) }}>
-      <style>{`@keyframes slotSpin { 0%{transform:translateY(-5px) scale(1.04)} 50%{transform:translateY(5px) scale(0.96)} 100%{transform:translateY(-5px) scale(1.04)} }`}</style>
-      <GameHeader title={`🎰 ${t.slotsTitle}`} subtitle="777 · Mevaları · Kombinatsiyalar" />
+      <GameHeader title={`🎰 ${t.slotsTitle}`} subtitle="777 · Mevalar · Kombinatsiyalar" />
 
       <div className="flex-1 px-4 pb-6 flex flex-col gap-4 items-center">
 
-        {/* Slot machine */}
+        {/* Haqiqiy slot mashina korpusi */}
         <div className="w-full rounded-3xl p-5 flex flex-col items-center gap-4 relative overflow-hidden"
           style={{
             background: machineBg,
-            border: `2px solid ${isLight ? "#818cf8aa" : theme === "black" ? "#4f46e566" : "#7c3aed66"}`,
-            boxShadow: isLight ? "0 8px 0 rgba(99,102,241,0.2), 0 12px 32px rgba(99,102,241,0.15), inset 0 2px 0 rgba(255,255,255,0.8)"
-              : theme === "black" ? "0 8px 0 #000, 0 12px 32px rgba(79,70,229,0.15)"
-              : "0 10px 0 #0d0520, 0 14px 40px #7c3aed44, inset 0 2px 0 rgba(255,255,255,0.12)",
+            border: "3px solid #d4af37",
+            boxShadow:
+              "0 12px 0 #2a0302, 0 20px 44px rgba(0,0,0,0.6), inset 0 2px 0 rgba(255,255,255,0.25), inset 0 -24px 40px rgba(0,0,0,0.5)",
           }}>
-          <div className="absolute inset-0 pointer-events-none rounded-3xl"
-            style={{ background: "linear-gradient(135deg, rgba(255,255,255,0.08) 0%, transparent 50%)" }} />
+          {/* korpus yaltirashi */}
+          <div className="absolute inset-0 pointer-events-none"
+            style={{ background: "linear-gradient(135deg, rgba(255,255,255,0.18) 0%, transparent 42%)" }} />
 
-          {/* Reels */}
-          <div className="relative flex gap-3 p-3 rounded-2xl"
-            style={{
-              background: isLight ? "rgba(99,102,241,0.07)" : "rgba(0,0,0,0.3)",
-              border: `1px solid ${isLight ? "rgba(99,102,241,0.12)" : "rgba(255,255,255,0.05)"}`,
-              boxShadow: "inset 0 4px 12px rgba(0,0,0,0.2)",
-            }}>
-            {reels.map((s, i) => <Reel key={i} symbol={s} spinning={spinning} idx={i} theme={theme} />)}
+          {/* yuqori lampalar */}
+          <div className="relative flex gap-2">
+            {Array.from({ length: 7 }).map((_, i) => (
+              <span key={i} className={spinning ? "bulb-run" : ""}
+                style={{
+                  width: 9, height: 9, borderRadius: "50%",
+                  background: "radial-gradient(circle at 35% 30%,#fffbe6,#fbbf24 60%,#b45309)",
+                  boxShadow: "0 0 10px rgba(251,191,36,0.9)",
+                  animationDelay: `${i * 0.09}s`,
+                }} />
+            ))}
           </div>
+
+          {/* Barabanlar */}
+          <div className="relative flex gap-2.5 p-3 rounded-2xl"
+            style={{
+              background: "linear-gradient(180deg,#1b1206,#000)",
+              border: "2px solid rgba(212,175,55,0.6)",
+              boxShadow: "inset 0 6px 18px rgba(0,0,0,0.8)",
+            }}>
+            {reels.map((s, i) => (
+              <SlotReel key={i} strip={STRIP} target={s} spinning={spinning} idx={i} cell={84} />
+            ))}
+            {/* to'lov chizig'i */}
+            <div className="absolute left-2 right-2 top-1/2 h-[2px] pointer-events-none"
+              style={{ background: "linear-gradient(90deg,transparent,#ef4444,transparent)", opacity: 0.7 }} />
+          </div>
+
 
           <div className="w-3/4 h-0.5 rounded-full"
             style={{ background: `linear-gradient(90deg, transparent, ${isLight ? "#818cf8" : "#7c3aed"}, transparent)` }} />
