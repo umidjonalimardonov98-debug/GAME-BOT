@@ -1,7 +1,7 @@
 import { useState, useCallback } from "react";
 import { usePlayer } from "@/lib/player-context";
 import { useLang } from "@/lib/lang-context";
-import { useTheme } from "@/lib/theme-context";
+import { useTheme, pageBg, GAME_BG } from "@/lib/theme-context";
 import { placeBet } from "@/lib/api";
 import { riggedLose } from "@/lib/odds";
 import GameHeader from "@/components/GameHeader";
@@ -182,7 +182,7 @@ export default function Blackjack() {
   const cardBorder = isLight ? "rgba(99,102,241,0.25)" : ts.cardBorder;
 
   return (
-    <div className="min-h-screen flex flex-col" style={{ background: ts.bg }}>
+    <div className="min-h-screen flex flex-col" style={{ background: pageBg(theme, GAME_BG.blackjack) }}>
       <GameHeader title={`🃏 ${t.blackjackTitle}`} subtitle={t.bjPayout} />
 
       <div className="flex-1 px-4 pb-6 flex flex-col gap-3">

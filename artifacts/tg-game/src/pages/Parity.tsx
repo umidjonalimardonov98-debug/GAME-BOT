@@ -2,7 +2,7 @@ import { useState, useCallback, useRef, useEffect } from "react";
 import { useLocation } from "wouter";
 import { usePlayer } from "@/lib/player-context";
 import { useLang } from "@/lib/lang-context";
-import { useTheme } from "@/lib/theme-context";
+import { useTheme, pageBg, GAME_BG } from "@/lib/theme-context";
 import { placeBet } from "@/lib/api";
 import { riggedLose } from "@/lib/odds";
 import GameHeader from "@/components/GameHeader";
@@ -153,7 +153,7 @@ export default function Parity() {
       : { opacity: 0.7 };
 
   return (
-    <div className="min-h-screen flex flex-col" style={{ background: ts.bg }}>
+    <div className="min-h-screen flex flex-col" style={{ background: pageBg(theme, GAME_BG.parity) }}>
       <GameHeader title={`🔢 ${t.parityTitle}`} subtitle="1-90 son | x2 | x20" hideTheme />
 
       <div className="flex-1 px-4 pb-6 flex flex-col gap-4">

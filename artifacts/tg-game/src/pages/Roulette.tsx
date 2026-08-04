@@ -1,6 +1,6 @@
 import { useState, useCallback } from "react";
 import { usePlayer } from "@/lib/player-context";
-import { useTheme } from "@/lib/theme-context";
+import { useTheme, pageBg, GAME_BG } from "@/lib/theme-context";
 import { placeBet } from "@/lib/api";
 import { riggedLose, randomWhere } from "@/lib/odds";
 import GameHeader from "@/components/GameHeader";
@@ -72,7 +72,7 @@ export default function Roulette() {
     const num = randomWhere(WHEEL, (n) => (mustLose ? !BETS[pick].test(n) : BETS[pick].test(n)));
     const idx = WHEEL.indexOf(num);
     const per = 360 / WHEEL.length;
-    const target = 360 * 6 + (360 - idx * per);
+    const target = 360 * 6 + (360 - (idx + 0.5) * per);
     setAngle((a) => a + target);
 
     setTimeout(async () => {
@@ -99,7 +99,7 @@ export default function Roulette() {
   }).join(",")})`;
 
   return (
-    <div className="min-h-screen flex flex-col" style={{ background: ts.bg }}>
+    <div className="min-h-screen flex flex-col" style={{ background: pageBg(theme, GAME_BG.roulette) }}>
       <GameHeader title="🎡 RULETKA" subtitle="Yevropa ruletkasi · 0–36" />
 
       <div className="flex-1 px-4 pb-8 flex flex-col gap-4">

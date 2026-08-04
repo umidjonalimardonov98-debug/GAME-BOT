@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef } from "react";
 import { usePlayer } from "@/lib/player-context";
-import { useTheme } from "@/lib/theme-context";
+import { useTheme, pageBg, GAME_BG } from "@/lib/theme-context";
 import GameHeader from "@/components/GameHeader";
 
 const BASE = "/api";
@@ -154,7 +154,7 @@ export default function Spin() {
   const wheelBg = isLight ? "#e0e7ff" : theme === "black" ? "#0a0a14" : "#1e1b4b";
 
   return (
-    <div className="min-h-screen flex flex-col" style={{ background: ts.bg }}>
+    <div className="min-h-screen flex flex-col" style={{ background: pageBg(theme, GAME_BG.spin) }}>
       <GameHeader title="🎡 KUNLIK SPIN" subtitle="Har kuni bepul aylantirish!" />
 
       <div className="flex-1 flex flex-col items-center px-4 pb-6 gap-4">

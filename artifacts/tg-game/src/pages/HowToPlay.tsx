@@ -82,7 +82,7 @@ export default function HowToPlay() {
 
   return (
     <div className="min-h-screen flex flex-col"
-      style={{ background: "linear-gradient(180deg, #090b14 0%, #0d1020 100%)" }}>
+      style={{ background: "linear-gradient(180deg, rgba(10,7,2,0.84) 0%, rgba(14,9,3,0.76) 45%, rgba(6,4,1,0.94) 100%), url('/bg/home.jpg') center / cover no-repeat fixed" }}>
 
       <div className="flex items-center gap-3 px-4 pt-5 pb-4">
         <button onClick={() => nav("/")}

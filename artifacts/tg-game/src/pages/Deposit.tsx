@@ -2,7 +2,7 @@ import { useState } from "react";
 import { Copy, Check, Loader2 } from "lucide-react";
 import { usePlayer } from "@/lib/player-context";
 import { useLang } from "@/lib/lang-context";
-import { useTheme } from "@/lib/theme-context";
+import { useTheme, pageBg, GAME_BG } from "@/lib/theme-context";
 import { createDepositRequest } from "@/lib/api";
 import GameHeader from "@/components/GameHeader";
 
@@ -69,7 +69,7 @@ export default function Deposit() {
   };
 
   return (
-    <div className="min-h-screen flex flex-col" style={{ background: ts.bg }}>
+    <div className="min-h-screen flex flex-col" style={{ background: pageBg(theme, GAME_BG.home) }}>
       <GameHeader title={`💳 ${t.depositTitle}`} subtitle={t.depositDesc} />
 
       <div className="px-4 pb-6 flex-1 overflow-y-auto flex flex-col gap-3">

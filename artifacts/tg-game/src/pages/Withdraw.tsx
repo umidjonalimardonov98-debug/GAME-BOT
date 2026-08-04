@@ -43,7 +43,7 @@ export default function Withdraw() {
 
   if (done) return (
     <div className="min-h-screen flex flex-col items-center justify-center px-6"
-      style={{ background: "linear-gradient(160deg, #050816 0%, #0a0a20 100%)" }}>
+      style={{ background: "linear-gradient(180deg, rgba(10,7,2,0.84) 0%, rgba(14,9,3,0.76) 45%, rgba(6,4,1,0.94) 100%), url('/bg/home.jpg') center / cover no-repeat fixed" }}>
       <div className="w-20 h-20 rounded-full flex items-center justify-center mb-6"
         style={{ background: "rgba(16,185,129,0.15)", border: "2px solid rgba(16,185,129,0.4)", boxShadow: "0 0 40px rgba(16,185,129,0.2)" }}>
         <CheckCircle className="w-10 h-10" style={{ color: "#10b981" }} />
@@ -61,7 +61,7 @@ export default function Withdraw() {
   );
 
   return (
-    <div className="min-h-screen flex flex-col" style={{ background: "linear-gradient(160deg, #050816 0%, #0a0a20 100%)" }}>
+    <div className="min-h-screen flex flex-col" style={{ background: "linear-gradient(180deg, rgba(10,7,2,0.84) 0%, rgba(14,9,3,0.76) 45%, rgba(6,4,1,0.94) 100%), url('/bg/home.jpg') center / cover no-repeat fixed" }}>
       <div className="flex items-center gap-3 px-4 pt-5 pb-4">
         <button onClick={() => nav("/")} className="w-9 h-9 flex items-center justify-center rounded-xl"
           style={{ background: "rgba(255,255,255,0.06)", border: "1px solid rgba(255,255,255,0.1)" }}>

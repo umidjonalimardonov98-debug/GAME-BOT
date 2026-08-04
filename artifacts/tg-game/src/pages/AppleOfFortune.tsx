@@ -117,7 +117,7 @@ export default function AppleOfFortune() {
 
   return (
     <div className="h-screen flex flex-col relative overflow-hidden"
-      style={{ background: "linear-gradient(160deg, #022c1a 0%, #052e16 50%, #041a0f 100%)" }}>
+      style={{ background: "linear-gradient(180deg, rgba(10,7,2,0.84) 0%, rgba(14,9,3,0.76) 45%, rgba(6,4,1,0.94) 100%), url('/bg/apple.jpg') center / cover no-repeat fixed" }}>
 
       <div className="fixed pointer-events-none" style={{ top: -50, left: -50, width: 200, height: 200, borderRadius: "50%", background: "radial-gradient(circle, #16a34a33 0%, transparent 70%)", filter: "blur(50px)" }} />
 

@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef } from "react";
 import { usePlayer } from "@/lib/player-context";
-import { useTheme } from "@/lib/theme-context";
+import { useTheme, pageBg, GAME_BG } from "@/lib/theme-context";
 import { placeBet } from "@/lib/api";
 import { riggedLose } from "@/lib/odds";
 import GameHeader from "@/components/GameHeader";
@@ -146,7 +146,7 @@ export default function Aviator() {
   const planeY = Math.max(10, 80 - (multiplier - 1) * 15);
 
   return (
-    <div className="min-h-screen flex flex-col" style={{ background: ts.bg }}>
+    <div className="min-h-screen flex flex-col" style={{ background: pageBg(theme, GAME_BG.aviator) }}>
       <style>{`
         @keyframes float { 0%,100%{transform:translateY(0) rotate(-8deg)} 50%{transform:translateY(-8px) rotate(-8deg)} }
         @keyframes twinkle { 0%,100%{opacity:0.15} 50%{opacity:0.55} }

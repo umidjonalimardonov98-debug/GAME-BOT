@@ -68,3 +68,44 @@ export function ThemeProvider({ children }: { children: ReactNode }) {
   );
 }
 export function useTheme() { return useContext(ThemeContext); }
+
+/* ─────────────────────────────────────────────
+   PRO GOLD LAYER
+   Har bir o'yin uchun orqa fon surati + oltin ranglar.
+   ───────────────────────────────────────────── */
+
+export const GOLD = {
+  main: "#d4af37",
+  light: "#f7e59b",
+  deep: "#8a6b16",
+  glow: "rgba(212,175,55,0.35)",
+  border: "rgba(212,175,55,0.42)",
+  /** oltin gradient — tugma va sarlavhalar uchun */
+  grad: "linear-gradient(135deg,#8a6b16 0%,#d4af37 35%,#f7e59b 55%,#d4af37 75%,#8a6b16 100%)",
+  soft: "linear-gradient(145deg,rgba(212,175,55,0.18),rgba(212,175,55,0.06))",
+};
+
+export const GAME_BG = {
+  home: "/bg/home.jpg",
+  apple: "/bg/apple.jpg",
+  dice: "/bg/dice.jpg",
+  aviator: "/bg/aviator.jpg",
+  spin: "/bg/spin.jpg",
+  blackjack: "/bg/blackjack.jpg",
+  slots: "/bg/slots.jpg",
+  parity: "/bg/parity.jpg",
+  mines: "/bg/mines.jpg",
+  roulette: "/bg/roulette.jpg",
+} as const;
+
+const OVERLAY: Record<Theme, string> = {
+  dark: "linear-gradient(180deg, rgba(10,7,2,0.82) 0%, rgba(14,9,3,0.74) 45%, rgba(6,4,1,0.93) 100%)",
+  black: "linear-gradient(180deg, rgba(0,0,0,0.90) 0%, rgba(0,0,0,0.84) 45%, rgba(0,0,0,0.96) 100%)",
+  light: "linear-gradient(180deg, rgba(255,251,240,0.90) 0%, rgba(252,246,231,0.86) 45%, rgba(255,251,240,0.95) 100%)",
+};
+
+/** Sahifa foni: surat + tema overlay (matn o'qilishi saqlanadi) */
+export function pageBg(theme: Theme, img?: string) {
+  if (!img) return THEMES[theme].bg;
+  return `${OVERLAY[theme]}, url('${img}') center / cover no-repeat fixed`;
+}

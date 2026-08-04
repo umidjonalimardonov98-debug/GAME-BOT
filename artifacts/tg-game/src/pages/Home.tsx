@@ -2,7 +2,7 @@ import { useState } from "react";
 import { useLocation } from "wouter";
 import { usePlayer } from "@/lib/player-context";
 import { useLang } from "@/lib/lang-context";
-import { useTheme } from "@/lib/theme-context";
+import { useTheme, pageBg, GAME_BG, GOLD } from "@/lib/theme-context";
 
 const BASE = "/api";
 
@@ -88,7 +88,7 @@ export default function Home() {
   const initials = (player?.firstName ?? "O")[0].toUpperCase();
 
   return (
-    <div className="min-h-screen flex flex-col" style={{ background: BG, fontFamily: "'Inter', system-ui, sans-serif" }}>
+    <div className="min-h-screen flex flex-col" style={{ background: pageBg(theme, GAME_BG.home), fontFamily: "'Inter', system-ui, sans-serif" }}>
 
       {/* ─── TOP HEADER ─── */}
       <div className="flex items-center justify-between px-4 pt-4 pb-2">
@@ -147,9 +147,9 @@ export default function Home() {
 
           {/* Coin balance */}
           <div className="flex items-center gap-1.5 px-3 py-1.5 rounded-2xl"
-            style={{ background: "linear-gradient(135deg,#f59e0b22,#f59e0b11)", border: "1px solid #f59e0b44" }}>
+            style={{ background: GOLD.soft, border: `1px solid ${GOLD.border}`, boxShadow: `0 6px 18px ${GOLD.glow}` }}>
             <span style={{ fontSize: 16 }}>🪙</span>
-            <span className="font-black text-sm" style={{ color: "#f59e0b" }}>
+            <span className="font-black text-sm" style={{ color: GOLD.light }}>
               {loading ? "..." : (player?.balance ?? 0).toLocaleString()}
             </span>
           </div>
@@ -169,7 +169,7 @@ export default function Home() {
           </p>
           <button onClick={() => nav("/spin")}
             className="self-start mt-1.5 px-3 py-1.5 rounded-xl font-black active:scale-95 transition-transform"
-            style={{ fontSize: 10, background: "linear-gradient(135deg,#f59e0b,#fcd34d)", color: "#1a1004", boxShadow: "0 6px 18px rgba(245,158,11,0.45)" }}>
+            style={{ fontSize: 10, background: GOLD.grad, color: "#1a1004", boxShadow: "0 6px 18px rgba(245,158,11,0.45)" }}>
             🎁 BEPUL AYLANTIRISH
           </button>
         </div>

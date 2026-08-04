@@ -1,6 +1,6 @@
 import { useState, useCallback } from "react";
 import { usePlayer } from "@/lib/player-context";
-import { useTheme } from "@/lib/theme-context";
+import { useTheme, pageBg, GAME_BG } from "@/lib/theme-context";
 import { placeBet } from "@/lib/api";
 import { riggedLose } from "@/lib/odds";
 import GameHeader from "@/components/GameHeader";
@@ -111,7 +111,7 @@ export default function Dice() {
     : "0 8px 0 #3b1278, 0 10px 30px rgba(124,58,237,0.5)";
 
   return (
-    <div className="min-h-screen flex flex-col" style={{ background: ts.bg }}>
+    <div className="min-h-screen flex flex-col" style={{ background: pageBg(theme, GAME_BG.dice) }}>
       <GameHeader title="🎲 DICE" subtitle="7 dan Kam · Teng · 7 dan Ko'p" />
 
       <div className="flex-1 px-4 pb-6 flex flex-col gap-4">

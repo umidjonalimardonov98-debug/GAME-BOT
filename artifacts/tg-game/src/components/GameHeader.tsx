@@ -3,7 +3,7 @@ import { useLocation } from "wouter";
 import { ArrowLeft } from "lucide-react";
 import { usePlayer } from "@/lib/player-context";
 import { useLang } from "@/lib/lang-context";
-import { useTheme } from "@/lib/theme-context";
+import { useTheme, GOLD } from "@/lib/theme-context";
 import type { Lang } from "@/lib/i18n";
 
 interface Props {
@@ -35,11 +35,11 @@ export default function GameHeader({ title, subtitle, hideTheme }: Props) {
         <button onClick={() => nav("/")}
           className="w-10 h-10 rounded-2xl flex items-center justify-center shrink-0 active:scale-90 transition-transform"
           style={{
-            background: isLight ? "rgba(99,102,241,0.12)" : "rgba(255,255,255,0.1)",
-            border: `1px solid ${isLight ? "rgba(99,102,241,0.25)" : "rgba(255,255,255,0.15)"}`,
+            background: GOLD.soft,
+            border: `1px solid ${GOLD.border}`,
             boxShadow: "0 4px 0 rgba(0,0,0,0.2), inset 0 1px 0 rgba(255,255,255,0.15)",
           }}>
-          <ArrowLeft className="w-4 h-4" style={{ color: isLight ? "#4338ca" : "white" }} />
+          <ArrowLeft className="w-4 h-4" style={{ color: GOLD.light }} />
         </button>
 
         {/* Title */}
@@ -51,7 +51,7 @@ export default function GameHeader({ title, subtitle, hideTheme }: Props) {
         {/* Balance */}
         <div className="text-right shrink-0 mr-1">
           <p className="text-xs" style={{ color: ts.textSub }}>💰</p>
-          <p className="font-black text-xs" style={{ color: ts.text }}>{(player?.balance ?? 0).toLocaleString()}</p>
+          <p className="font-black text-xs" style={{ color: GOLD.light }}>{(player?.balance ?? 0).toLocaleString()}</p>
         </div>
 
         {/* Theme toggle */}

@@ -1,7 +1,7 @@
 import { useState, useRef, useCallback } from "react";
 import { usePlayer } from "@/lib/player-context";
 import { useLang } from "@/lib/lang-context";
-import { useTheme } from "@/lib/theme-context";
+import { useTheme, pageBg, GAME_BG } from "@/lib/theme-context";
 import { placeBet } from "@/lib/api";
 import { riggedLose } from "@/lib/odds";
 import GameHeader from "@/components/GameHeader";
@@ -149,7 +149,7 @@ export default function Slots() {
       : "linear-gradient(145deg, #2d1b6e, #1a0a4a)";
 
   return (
-    <div className="min-h-screen flex flex-col" style={{ background: ts.bg }}>
+    <div className="min-h-screen flex flex-col" style={{ background: pageBg(theme, GAME_BG.slots) }}>
       <style>{`@keyframes slotSpin { 0%{transform:translateY(-5px) scale(1.04)} 50%{transform:translateY(5px) scale(0.96)} 100%{transform:translateY(-5px) scale(1.04)} }`}</style>
       <GameHeader title={`🎰 ${t.slotsTitle}`} subtitle="777 · Mevaları · Kombinatsiyalar" />
 
