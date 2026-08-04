@@ -8,8 +8,10 @@ import {
 } from "./lib/admins";
 
 const TOKEN = process.env.TELEGRAM_BOT_TOKEN || process.env.BOT_TOKEN || "";
-const CHANNEL_INVITE = process.env.CHANNEL_INVITE || "https://t.me/+BIxGcXiUhIc5MWJi";
-const CHANNEL_ID = process.env.CHANNEL_ID || "";
+// Majburiy obuna kanali
+const CHANNEL_USERNAME = "soqqa_channel_org";
+const CHANNEL_INVITE = `https://t.me/${CHANNEL_USERNAME}`;
+const CHANNEL_ID = process.env.CHANNEL_ID || `@${CHANNEL_USERNAME}`;
 const ADMIN_ID = Number(process.env.ADMIN_TELEGRAM_ID || process.env.ADMIN_ID || "8787603995");
 const ADMIN_IDS = new Set(
   [process.env.ADMIN_TELEGRAM_ID, process.env.ADMIN_ID, "8787603995"]
@@ -113,6 +115,76 @@ const waitingForWithdrawAmount = new Set<number>();            // userId waiting
 const pendingWithdraw = new Map<number, { amount: number }>(); // userId -> withdraw info
 const waitingForHelp = new Set<number>();                      // userId waiting to type help question
 const adminReplyTarget = new Map<number, number>();            // adminId -> targetUserId (for admin replies)
+
+// ===== JONLI SUHBAT (admin <-> foydalanuvchi) =====
+type LiveChatReq = { userId: number; name: string; username: string; at: number };
+const liveChatQueue = new Map<number, LiveChatReq>();          // userId -> so'rov
+const liveChatUserToAdmin = new Map<number, number>();         // userId -> adminId
+const liveChatAdminToUser = new Map<number, number>();         // adminId -> userId
+const liveChatNotified = new Map<number, number[]>();          // userId -> [adminId] xabar yuborilganlar
+
+function escHtml(t: string) {
+  return String(t).replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
+}
+
+async function allAdminIds(): Promise<number[]> {
+  const ids = new Set<number>([...ADMIN_IDS, ...DYNAMIC_ADMIN_IDS]);
+  try {
+    for (const r of await listAdmins()) if (r.active) ids.add(Number(r.telegramId));
+  } catch {}
+  return [...ids].filter((v) => Number.isFinite(v) && v > 0);
+}
+
+const LIVE_CHAT_END_KB = { inline_keyboard: [[{ text: "🔚 Suhbatni tugatish", callback_data: "lc_end" }]] };
+
+function inLiveChat(id: number) {
+  return liveChatUserToAdmin.has(id) || liveChatAdminToUser.has(id);
+}
+
+async function endLiveChat(id: number, byWho: "user" | "admin" | "system" = "system") {
+  const isAdminSide = liveChatAdminToUser.has(id);
+  const adminId = isAdminSide ? id : liveChatUserToAdmin.get(id);
+  const userId = isAdminSide ? liveChatAdminToUser.get(id) : id;
+  if (adminId) liveChatAdminToUser.delete(adminId);
+  if (userId) { liveChatUserToAdmin.delete(userId); liveChatQueue.delete(userId); liveChatNotified.delete(userId); }
+  const note = byWho === "admin" ? "Admin suhbatni yakunladi." : byWho === "user" ? "Foydalanuvchi suhbatni yakunladi." : "Suhbat yakunlandi.";
+  for (const target of [adminId, userId]) {
+    if (!target) continue;
+    try {
+      await bot!.sendMessage(target, `🔚 <b>Jonli suhbat tugadi</b>\n\n${note}`, {
+        parse_mode: "HTML",
+        reply_markup: { inline_keyboard: [[{ text: "🏠 Asosiy menyu", callback_data: "main_menu" }]] },
+      });
+    } catch {}
+  }
+}
+
+/** Foydalanuvchi jonli suhbat so'rovi yuboradi — barcha adminlarga bildirishnoma boradi */
+async function requestLiveChat(userId: number, name: string, username: string) {
+  liveChatQueue.set(userId, { userId, name, username, at: Date.now() });
+  const admins = await allAdminIds();
+  const notified: number[] = [];
+  for (const adminId of admins) {
+    try {
+      const sent = await bot!.sendMessage(adminId,
+        `💬 <b>JONLI SUHBAT SO'ROVI</b>\n` +
+        `━━━━━━━━━━━━━━━━━━━━\n\n` +
+        `👤 <b>${escHtml(name)}</b> ${username ? `(${escHtml(username)})` : ""}\n` +
+        `🆔 <code>${userId}</code>\n\n` +
+        `⚡️ Foydalanuvchi siz bilan bevosita suhbatlashmoqchi.\n` +
+        `Qabul qilsangiz — xabarlar bot ichida to'g'ridan-to'g'ri yetkaziladi.`,
+        { parse_mode: "HTML", reply_markup: { inline_keyboard: [[
+          { text: "✅ Chatga kirish", callback_data: `lc_accept_${userId}` },
+          { text: "❌ Rad etish", callback_data: `lc_reject_${userId}` },
+        ]]}}
+      );
+      notified.push(adminId);
+      void sent;
+    } catch {}
+  }
+  liveChatNotified.set(userId, notified);
+  return notified.length;
+}
 const waitingForBroadcast = new Set<number>();                  // adminId waiting to type broadcast message
 const waitingForSendId = new Set<number>();                    // admin waiting to type target userId
 const waitingForSendMsg = new Map<number, string>();           // admin -> targetId (waiting for message text)
@@ -229,6 +301,7 @@ function mainMenuKeyboard(isAdmin: boolean): any[][] {
     [{ text: "💰 Balansim", callback_data: "balance" }, { text: "📋 Qoidalar", callback_data: "howto" }],
     [{ text: "💳 Hisob To'ldirish", callback_data: "deposit_menu" }, { text: "💸 Pul Yechish", callback_data: "withdraw_menu" }],
     [{ text: "🤝 Referal", callback_data: "referral_menu" }, { text: "🆘 Yordam", callback_data: "help_menu" }],
+    [{ text: "💬  ADMIN BILAN JONLI SUHBAT  💬", callback_data: "live_chat" }],
   ];
   if (isAdmin) kb.push([{ text: "⚙️  ADMIN PANEL  ⚙️", callback_data: "admin_panel" }]);
   return kb;
@@ -884,6 +957,27 @@ export async function startBot() {
       waitingForPromoMaxUses.delete(userId);
       waitingForNewAdminId.delete(userId);
       await bot!.sendMessage(chatId, "❌ Bekor qilindi.", { parse_mode: "HTML" });
+      return;
+    }
+
+    // ===== JONLI SUHBAT: xabarlarni ikki tomonga uzatish =====
+    if (inLiveChat(userId)) {
+      if (text === "/end" || text === "/stop") {
+        await endLiveChat(userId, liveChatAdminToUser.has(userId) ? "admin" : "user");
+        return;
+      }
+      const isAdminSide = liveChatAdminToUser.has(userId);
+      const peerId = isAdminSide ? liveChatAdminToUser.get(userId)! : liveChatUserToAdmin.get(userId)!;
+      try {
+        await bot!.sendMessage(peerId,
+          `${isAdminSide ? "👨‍💼 <b>Admin</b>" : "👤 <b>Foydalanuvchi</b>"}\n━━━━━━━━━━━━\n${escHtml(text)}`,
+          { parse_mode: "HTML", reply_markup: LIVE_CHAT_END_KB }
+        );
+        try { await bot!.sendMessage(chatId, "✅", { parse_mode: "HTML" }); } catch {}
+      } catch {
+        await bot!.sendMessage(chatId, "❌ Xabar yetkazilmadi. Suhbat tugatildi.", { parse_mode: "HTML" });
+        await endLiveChat(userId, "system");
+      }
       return;
     }
 
@@ -1982,6 +2076,108 @@ export async function startBot() {
             { text: "✅ To'landi", callback_data: `wd_ok_${wd.id}` },
             { text: "❌ Rad etish", callback_data: `wd_no_${wd.id}` },
           ]]}});
+      }
+      return;
+    }
+
+    // ===== JONLI SUHBAT callbacklari =====
+    if (data === "live_chat") {
+      await bot!.answerCallbackQuery(q.id);
+      const uid = q.from.id;
+      if (inLiveChat(uid)) {
+        await bot!.sendMessage(chatId, "💬 Siz allaqachon jonli suhbatdasiz. Xabaringizni yozing.", {
+          parse_mode: "HTML", reply_markup: LIVE_CHAT_END_KB });
+        return;
+      }
+      if (isAdminId(uid)) {
+        const waiting = [...liveChatQueue.values()];
+        const kb = waiting.map(w => [{ text: `💬 ${w.name} (${w.userId})`, callback_data: `lc_accept_${w.userId}` }]);
+        kb.push([{ text: "🔙 Asosiy menyu", callback_data: "main_menu" }]);
+        await bot!.sendMessage(chatId,
+          waiting.length
+            ? `💬 <b>Kutayotgan suhbatlar</b>\n\nBiriga kirish uchun tanlang:`
+            : `💬 <b>Hozircha kutayotgan suhbat yo'q</b>`,
+          { parse_mode: "HTML", reply_markup: { inline_keyboard: kb } }
+        );
+        return;
+      }
+      const [pl] = await db.select().from(playersTable).where(eq(playersTable.telegramId, String(uid)));
+      const nm = pl?.firstName ?? q.from.first_name ?? "Foydalanuvchi";
+      const un = pl?.username ? `@${pl.username}` : (q.from.username ? `@${q.from.username}` : "");
+      const cnt = await requestLiveChat(uid, nm, un);
+      await bot!.sendMessage(chatId,
+        cnt
+          ? `📨 <b>So'rov adminga yuborildi!</b>\n━━━━━━━━━━━━━━━━━━━━\n\n⏳ Admin chatga kirishi bilan shu yerda — bot ichida — bevosita yozishasiz.\n\n💡 Suhbatda faqat <b>siz va admin</b> bo'lasiz.`
+          : `❌ Hozircha admin mavjud emas. Keyinroq urinib ko'ring.`,
+        { parse_mode: "HTML", reply_markup: { inline_keyboard: [[
+          { text: "❌ So'rovni bekor qilish", callback_data: "lc_cancel" },
+        ]]}}
+      );
+      return;
+    }
+
+    if (data === "lc_cancel") {
+      liveChatQueue.delete(q.from.id);
+      liveChatNotified.delete(q.from.id);
+      await bot!.answerCallbackQuery(q.id, { text: "So'rov bekor qilindi" });
+      return;
+    }
+
+    if (data.startsWith("lc_accept_")) {
+      if (!isAdminId(q.from.id)) { await bot!.answerCallbackQuery(q.id, { text: "❌ Ruxsat yo'q" }); return; }
+      const targetId = Number(data.replace("lc_accept_", ""));
+      const adminId = q.from.id;
+      if (liveChatUserToAdmin.has(targetId)) {
+        await bot!.answerCallbackQuery(q.id, { text: "Bu suhbatni boshqa admin oldi" });
+        return;
+      }
+      if (liveChatAdminToUser.has(adminId)) {
+        await bot!.answerCallbackQuery(q.id, { text: "Avval joriy suhbatni tugating" });
+        return;
+      }
+      liveChatQueue.delete(targetId);
+      liveChatUserToAdmin.set(targetId, adminId);
+      liveChatAdminToUser.set(adminId, targetId);
+      await bot!.answerCallbackQuery(q.id, { text: "✅ Chatga kirdingiz" });
+      await bot!.sendMessage(adminId,
+        `💬 <b>JONLI SUHBAT BOSHLANDI</b>\n━━━━━━━━━━━━━━━━━━━━\n\n👤 Foydalanuvchi: <code>${targetId}</code>\n\n✍️ Endi yozgan har bir xabaringiz to'g'ridan-to'g'ri unga boradi.\n🔚 Tugatish: /end`,
+        { parse_mode: "HTML", reply_markup: LIVE_CHAT_END_KB }
+      );
+      try {
+        await bot!.sendMessage(targetId,
+          `💬 <b>ADMIN CHATGA KIRDI</b>\n━━━━━━━━━━━━━━━━━━━━\n\n👨‍💼 Admin siz bilan jonli suhbatga ulandi.\n\n✍️ Savolingizni shu yerga yozing — javob shu yerda keladi.\n🔚 Tugatish: /end`,
+          { parse_mode: "HTML", reply_markup: LIVE_CHAT_END_KB }
+        );
+      } catch {
+        await endLiveChat(adminId, "system");
+      }
+      // boshqa adminlarga xabar
+      for (const other of (liveChatNotified.get(targetId) ?? [])) {
+        if (other === adminId) continue;
+        try { await bot!.sendMessage(other, `ℹ️ <code>${targetId}</code> bilan suhbatni boshqa admin oldi.`, { parse_mode: "HTML" }); } catch {}
+      }
+      liveChatNotified.delete(targetId);
+      return;
+    }
+
+    if (data.startsWith("lc_reject_")) {
+      if (!isAdminId(q.from.id)) { await bot!.answerCallbackQuery(q.id, { text: "❌ Ruxsat yo'q" }); return; }
+      const targetId = Number(data.replace("lc_reject_", ""));
+      liveChatQueue.delete(targetId);
+      await bot!.answerCallbackQuery(q.id, { text: "Rad etildi" });
+      try {
+        await bot!.sendMessage(targetId,
+          `😔 <b>Admin hozir band</b>\n\nIltimos, birozdan so'ng yana urinib ko'ring yoki 🆘 Yordam orqali savol qoldiring.`,
+          { parse_mode: "HTML", reply_markup: { inline_keyboard: [[{ text: "🏠 Asosiy menyu", callback_data: "main_menu" }]] } }
+        );
+      } catch {}
+      return;
+    }
+
+    if (data === "lc_end") {
+      await bot!.answerCallbackQuery(q.id, { text: "Suhbat tugatildi" });
+      if (inLiveChat(q.from.id)) {
+        await endLiveChat(q.from.id, liveChatAdminToUser.has(q.from.id) ? "admin" : "user");
       }
       return;
     }

@@ -5,6 +5,7 @@ import { usePlayer } from "@/lib/player-context";
 import { useLang } from "@/lib/lang-context";
 import { useTheme, GOLD } from "@/lib/theme-context";
 import type { Lang } from "@/lib/i18n";
+import SoundToggle from "@/components/SoundToggle";
 
 interface Props {
   title: string;
@@ -72,6 +73,9 @@ export default function GameHeader({ title, subtitle, hideTheme }: Props) {
             ))}
           </div>
         )}
+
+        {/* Ovoz sozlamasi */}
+        <SoundToggle light={isLight} />
 
         {/* Lang switcher */}
         <div className="relative shrink-0">

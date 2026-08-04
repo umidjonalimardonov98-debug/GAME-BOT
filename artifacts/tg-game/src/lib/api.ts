@@ -1,3 +1,5 @@
+import { recordRound } from "./round-log";
+
 const BASE = "/api";
 
 export async function syncPlayer(data: {
@@ -61,6 +63,8 @@ export async function placeBet(telegramId: string, data: {
   won: boolean;
   winAmount: number;
 }) {
+  // Har bir raund natijasini shaffof ko'rsatish + ovoz effekti uchun yozib qo'yamiz
+  recordRound({ game: data.game, bet: data.amount, won: data.won, winAmount: data.winAmount });
   const res = await fetch(`${BASE}/players/${telegramId}/bet`, {
     method: "POST",
     headers: { "Content-Type": "application/json" },

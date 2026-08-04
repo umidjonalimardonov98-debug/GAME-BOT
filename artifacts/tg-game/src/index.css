@@ -209,3 +209,53 @@
 }
 .coin-pop { animation: coin-pop 0.9s ease-out forwards; }
 
+
+/* ===== Performance & animatsiya optimizatsiyasi ===== */
+
+/* Barcha animatsiyalar GPU (compositor) da ishlasin — 60 FPS uchun */
+.animate-spin,
+.animate-pulse,
+.animate-bounce,
+.animate-ping,
+[class*="animate-"] {
+  will-change: transform, opacity;
+  backface-visibility: hidden;
+  transform: translateZ(0);
+}
+
+/* O'yin stollari va kartalar — layout/paint izolyatsiyasi (reflow kamayadi) */
+.game-surface,
+.sfx-panel {
+  contain: layout paint style;
+  transform: translateZ(0);
+}
+
+/* Natija oynasi silliq chiqishi */
+@keyframes sfxPanelIn {
+  from { opacity: 0; transform: translate3d(-50%, 14px, 0) scale(0.97); }
+  to   { opacity: 1; transform: translate3d(-50%, 0, 0) scale(1); }
+}
+.sfx-panel { animation: sfxPanelIn 0.24s cubic-bezier(0.22, 1, 0.36, 1) both; }
+
+/* Yutuq pulsatsiyasi — faqat transform/opacity (paint yo'q) */
+@keyframes winPulse {
+  0%, 100% { transform: scale(1); filter: brightness(1); }
+  50%      { transform: scale(1.06); filter: brightness(1.25); }
+}
+.win-pulse { animation: winPulse 0.7s ease-in-out 2; will-change: transform; }
+
+/* Silliq scroll va mobil tap kechikishini yo'qotish */
+html { scroll-behavior: smooth; }
+button, [role="button"], a {
+  touch-action: manipulation;
+  -webkit-tap-highlight-color: transparent;
+}
+
+/* Foydalanuvchi animatsiyani kamaytirishni tanlasa — hurmat qilamiz */
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
+}
