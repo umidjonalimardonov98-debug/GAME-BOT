@@ -2,14 +2,14 @@ import { useEffect, useState } from "react";
 import { useLocation } from "wouter";
 import { usePlayer } from "@/lib/player-context";
 import { useLang } from "@/lib/lang-context";
-import { useTheme, pageBg, GAME_BG, GOLD } from "@/lib/theme-context";
+import { useTheme, pageBg, GAME_BG, GOLD, XGREEN } from "@/lib/theme-context";
 import { getGameConfig } from "@/lib/api";
 import { GAME_NAMES } from "@/lib/game-i18n";
 import { useU } from "@/lib/ui-i18n";
 import ThemeSwitcher from "@/components/ThemeSwitcher";
 import LangSwitcher from "@/components/LangSwitcher";
 import Odometer from "@/components/casino/Odometer";
-import { Wallet, Gift, Ticket, Home as HomeIcon, History, MessageCircle, BookOpen, Trophy } from "lucide-react";
+import { Wallet, Banknote, Gift, Ticket, Home as HomeIcon, History, MessageCircle, BookOpen, Trophy } from "lucide-react";
 
 const BASE = "/api";
 
@@ -142,21 +142,36 @@ export default function Home() {
 
       </div>
 
-      {/* ─── PRO HERO BANNER ─── */}
+      {/* ─── PRO HERO BANNER (TEKIN O'YIN) ─── */}
       <div className="mx-4 mb-3 rounded-3xl relative overflow-hidden pro-sheen"
-        style={{ aspectRatio: "16 / 7", border: "1px solid rgba(251,191,36,0.35)", boxShadow: "0 14px 40px rgba(0,0,0,0.45)" }}>
+        style={{ aspectRatio: "16 / 8", border: `1px solid ${GOLD.border}`, boxShadow: "0 16px 44px rgba(0,0,0,0.5)" }}>
         <img src="/banner-main.jpg" alt="" className="absolute inset-0 w-full h-full object-cover" />
         <div className="absolute inset-0"
-          style={{ background: "linear-gradient(90deg, rgba(4,2,16,0.92) 0%, rgba(4,2,16,0.6) 48%, rgba(4,2,16,0.05) 100%)" }} />
-        <div className="absolute inset-0 flex flex-col justify-center gap-1 px-4">
-          <span className="font-black gold-text"style={{ fontSize: 9, letterSpacing:"0.28em" }}>VIP CASINO</span>
-          <p className="font-black leading-none"style={{ fontSize: 22, color:"#fff", textShadow: "0 2px 10px rgba(0,0,0,0.65)" }}>
+          style={{ background: "linear-gradient(90deg, rgba(3,2,12,0.94) 0%, rgba(3,2,12,0.66) 52%, rgba(3,2,12,0.06) 100%)" }} />
+        {/* oltin charx surati */}
+        <img src="/symbols/wheel.png" alt="" width={112} height={112}
+          className="absolute spin-slow"
+          style={{ right: 10, top: "50%", marginTop: -56, opacity: 0.95, filter: "drop-shadow(0 8px 26px rgba(255,207,74,0.5))" }} />
+        <div className="absolute inset-0 flex flex-col justify-center gap-1.5 px-4">
+          <span className="font-black gold-text" style={{ fontSize: 9, letterSpacing: "0.28em" }}>VIP CASINO</span>
+          <p className="font-black leading-none" style={{ fontSize: 24, color: "#fff", textShadow: "0 2px 12px rgba(0,0,0,0.7)" }}>
             1X GAME <span className="gold-text">PRO</span>
           </p>
+          <p className="font-bold" style={{ fontSize: 10, color: "rgba(255,255,255,0.72)" }}>
+            {u("freeSpinHint")}
+          </p>
           <button onClick={() => nav("/spin")}
-            className="self-start mt-1.5 px-3 py-1.5 rounded-xl font-black active:scale-95 transition-transform"
-            style={{ fontSize: 10, background: GOLD.grad, color: "#1a1004", boxShadow: "0 6px 18px rgba(245,158,11,0.45)" }}>
-            {t.spinDesc.toUpperCase()}
+            className="self-start mt-1.5 px-4 py-2 rounded-2xl font-black active:scale-95 transition-transform pro-sheen flex items-center gap-1.5"
+            style={{
+              fontSize: 11,
+              letterSpacing: "0.06em",
+              background: XGREEN.grad,
+              color: "#fff",
+              boxShadow: XGREEN.shadow,
+              border: "1px solid rgba(255,255,255,0.22)",
+            }}>
+            <img src="/symbols/gift.png" alt="" width={14} height={14} />
+            {u("freeGame").toUpperCase()}
           </button>
         </div>
       </div>
@@ -189,8 +204,8 @@ export default function Home() {
         </div>
       </div>
 
-      {/* ─── 3 ACTION BUTTONS ─── */}
-      <div className="grid grid-cols-3 gap-2.5 mx-4 mb-4">
+      {/* ─── 4 ACTION BUTTONS ─── */}
+      <div className="grid grid-cols-4 gap-2 mx-4 mb-4">
         <button onClick={() => nav("/deposit")}
           className="flex flex-col items-center gap-1.5 py-3 rounded-2xl active:scale-95 transition-transform"
           style={{ background: CARD_BG, border: `1px solid ${CARD_BORDER}`, boxShadow: "0 2px 12px rgba(0,0,0,0.08)" }}>
@@ -198,6 +213,15 @@ export default function Home() {
             style={{ background: "linear-gradient(135deg,#1d4ed8,#3b82f6)" }}><Wallet size={18} color="#fff" /></span>
           <span className="text-xs font-bold text-center leading-tight" style={{ color: TEXT, fontSize: 10 }}>
             {t.deposit}
+          </span>
+        </button>
+        <button onClick={() => nav("/withdraw")}
+          className="flex flex-col items-center gap-1.5 py-3 rounded-2xl active:scale-95 transition-transform"
+          style={{ background: CARD_BG, border: `1px solid ${CARD_BORDER}`, boxShadow: "0 2px 12px rgba(0,0,0,0.08)" }}>
+          <span className="w-9 h-9 rounded-xl flex items-center justify-center"
+            style={{ background: "linear-gradient(135deg,#7a5a10,#d4af37)" }}><Banknote size={18} color="#fff" /></span>
+          <span className="text-xs font-bold text-center leading-tight" style={{ color: TEXT, fontSize: 10 }}>
+            {u("withdrawShort")}
           </span>
         </button>
         <button onClick={handleDailyBonus} disabled={claiming}
@@ -327,6 +351,41 @@ export default function Home() {
 
               </button>
             ))}
+          </div>
+        </div>
+      )}
+
+      {/* ─── BRAND FOOTER (pastdagi havola) ─── */}
+      {tab === "games" && (
+        <div className="px-4 pb-24 -mt-20">
+          <div className="rounded-3xl px-4 py-4 relative overflow-hidden pro-sheen"
+            style={{
+              background: isDark
+                ? "linear-gradient(135deg, rgba(18,42,66,0.9), rgba(10,23,38,0.9))"
+                : "linear-gradient(135deg,#fffdf7,#f6edd8)",
+              border: `1px solid ${GOLD.border}`,
+              boxShadow: `0 12px 30px rgba(0,0,0,${isDark ? 0.42 : 0.1})`,
+            }}>
+            <div className="flex items-center gap-3">
+              <div className="w-11 h-11 rounded-2xl flex items-center justify-center shrink-0"
+                style={{ background: GOLD.grad, boxShadow: `0 8px 20px ${GOLD.glow}` }}>
+                <img src="/symbols/crown.png" alt="" width={22} height={22} />
+              </div>
+              <div className="flex-1 min-w-0">
+                <p className="font-black leading-none" style={{ fontSize: 14, color: TEXT }}>
+                  1X GAME <span className="gold-text">PRO</span>
+                </p>
+                <p className="mt-1" style={{ fontSize: 10, color: TEXT_SUB }}>{u("brandTagline")}</p>
+              </div>
+              <a href="https://t.me/soqqa_channel_org" target="_blank" rel="noreferrer"
+                className="shrink-0 px-3 py-2 rounded-xl font-black active:scale-95 transition-transform"
+                style={{ fontSize: 10, background: XGREEN.grad, color: "#fff", boxShadow: XGREEN.shadow }}>
+                {u("openChannel")}
+              </a>
+            </div>
+            <p className="mt-3 text-center" style={{ fontSize: 9, color: TEXT_SUB, letterSpacing: "0.14em" }}>
+              © 2026 1X GAME PRO · 18+ · {u("playResponsibly")}
+            </p>
           </div>
         </div>
       )}

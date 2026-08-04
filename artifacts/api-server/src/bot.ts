@@ -287,6 +287,33 @@ export async function sendLiveChatMessageFromApp(opts: { telegramId: string; tex
   pushLiveChatMsg(uid, "user", text);
   return { ok: true };
 }
+/** Mini App ichidan ovozli xabar (base64 audio) yuborish */
+export async function sendLiveChatVoiceFromApp(opts: { telegramId: string; audioBase64: string; mime?: string; seconds?: number }) {
+  const uid = Number(opts.telegramId);
+  if (!Number.isFinite(uid) || uid <= 0) return { ok: false, error: "Noto'g'ri foydalanuvchi" };
+  if (!bot) return { ok: false, error: "Bot ishga tushmagan" };
+  const adminId = liveChatUserToAdmin.get(uid);
+  if (!adminId) return { ok: false, error: "Suhbat hali faol emas" };
+  const raw = String(opts.audioBase64 || "").replace(/^data:[^,]+,/, "");
+  if (!raw) return { ok: false, error: "Ovoz bo'sh" };
+  let buf: Buffer;
+  try { buf = Buffer.from(raw, "base64"); } catch { return { ok: false, error: "Ovoz o'qilmadi" }; }
+  if (!buf.length || buf.length > 10 * 1024 * 1024) return { ok: false, error: "Ovoz hajmi mos emas" };
+  const isOgg = (opts.mime || "").includes("ogg");
+  try {
+    const caption = `\u{1F464} Foydalanuvchi (${uid}) \u{1F3A4} ovozli xabar`;
+    if (isOgg) {
+      await bot.sendVoice(adminId, buf, { caption, reply_markup: LIVE_CHAT_END_KB }, { filename: "voice.ogg", contentType: "audio/ogg" });
+    } else {
+      await bot.sendAudio(adminId, buf, { caption, reply_markup: LIVE_CHAT_END_KB }, { filename: "voice.webm", contentType: opts.mime || "audio/webm" });
+    }
+  } catch {
+    return { ok: false, error: "Adminga yetkazilmadi" };
+  }
+  const secs = Math.max(1, Math.round(opts.seconds || 0));
+  pushLiveChatMsg(uid, "user", `\u{1F3A4} Ovozli xabar (${secs}s)`);
+  return { ok: true };
+}
 const waitingForBroadcast = new Set<number>();                  // adminId waiting to type broadcast message
 const waitingForSendId = new Set<number>();                    // admin waiting to type target userId
 const waitingForSendMsg = new Map<number, string>();           // admin -> targetId (waiting for message text)

@@ -1,5 +1,5 @@
 import { Router, type IRouter } from "express";
-import { requestLiveChatFromApp, getLiveChatStatus, getLiveChatMessages, sendLiveChatMessageFromApp } from "../bot";
+import { requestLiveChatFromApp, getLiveChatStatus, getLiveChatMessages, sendLiveChatMessageFromApp, sendLiveChatVoiceFromApp } from "../bot";
 
 const router: IRouter = Router();
 
@@ -44,6 +44,24 @@ router.post("/support/live-chat/message", async (req, res) => {
     const { telegramId, text } = req.body ?? {};
     if (!telegramId) return res.status(400).json({ error: "telegramId kerak" });
     const r = await sendLiveChatMessageFromApp({ telegramId: String(telegramId), text: String(text ?? "") });
+    if (!r.ok) return res.status(400).json({ error: r.error });
+    return res.json(r);
+  } catch (e: any) {
+    return res.status(500).json({ error: e?.message || "Xatolik" });
+  }
+});
+
+/** Mini App ichidan ovozli xabar */
+router.post("/support/live-chat/voice", async (req, res) => {
+  try {
+    const { telegramId, audioBase64, mime, seconds } = req.body ?? {};
+    if (!telegramId) return res.status(400).json({ error: "telegramId kerak" });
+    const r = await sendLiveChatVoiceFromApp({
+      telegramId: String(telegramId),
+      audioBase64: String(audioBase64 ?? ""),
+      mime: mime ? String(mime) : undefined,
+      seconds: Number(seconds ?? 0),
+    });
     if (!r.ok) return res.status(400).json({ error: r.error });
     return res.json(r);
   } catch (e: any) {

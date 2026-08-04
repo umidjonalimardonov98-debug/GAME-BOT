@@ -122,6 +122,31 @@ export default function WinFx({ open, win, amount = 0, multiplier, onClose, big 
         >
           <div className="fx-shine" />
 
+          {/* Haqiqiy suratcha (emoji emas) */}
+          <div className="flex justify-center mb-2">
+            <div
+              className="rounded-2xl flex items-center justify-center"
+              style={{
+                width: big ? 86 : 72,
+                height: big ? 86 : 72,
+                background: win
+                  ? "radial-gradient(circle at 50% 35%, rgba(255,207,74,0.35), rgba(255,207,74,0.05) 70%)"
+                  : "radial-gradient(circle at 50% 35%, rgba(255,90,90,0.28), rgba(255,90,90,0.04) 70%)",
+                border: `1px solid ${win ? "rgba(255,214,102,0.45)" : "rgba(255,120,120,0.3)"}`,
+                boxShadow: win ? "0 0 34px rgba(255,207,74,0.35)" : "0 0 22px rgba(200,60,60,0.28)",
+              }}
+            >
+              <img
+                src={win ? (big ? "/symbols/crown.png" : "/symbols/trophy.png") : "/symbols/skull.png"}
+                alt=""
+                width={big ? 56 : 46}
+                height={big ? 56 : 46}
+                className={win ? "fx-pop-img" : ""}
+                style={{ filter: win ? "drop-shadow(0 4px 14px rgba(255,207,74,0.65))" : "grayscale(0.35) opacity(0.9)" }}
+              />
+            </div>
+          </div>
+
           <p
             className="font-black tracking-[0.14em]"
             style={{

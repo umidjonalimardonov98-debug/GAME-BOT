@@ -120,12 +120,16 @@ export const sfx = {
     const now = Date.now();
     if (now - lastClick < 40) return;
     lastClick = now;
-    tone({ freq: 620, to: 320, dur: 0.06, type: "triangle", gain: 0.16 });
+    // 1XBET uslubidagi yumshoq "chip" bosilishi: past "tup" + yengil jaranglash
+    tone({ freq: 210, to: 120, dur: 0.055, type: "sine", gain: 0.16 });
+    tone({ freq: 1180, to: 1560, dur: 0.05, type: "sine", gain: 0.05, delay: 0.008 });
+    noise(0.045, 0.035, 2600, 1100);
   },
   /** Tanlov / toggle */
   select() {
     if (!enabled) return;
-    tone({ freq: 520, to: 780, dur: 0.09, type: "square", gain: 0.1 });
+    tone({ freq: 660, to: 990, dur: 0.07, type: "sine", gain: 0.11 });
+    tone({ freq: 1320, dur: 0.05, type: "sine", gain: 0.045, delay: 0.045 });
   },
   /** Spin / aylanish boshlanishi */
   spin() {
@@ -146,21 +150,45 @@ export const sfx = {
   /** Yutuq — ko'tarilib boruvchi arpejio + tanga jarangi */
   win(big = false) {
     if (!enabled) return;
-    const notes = big ? [523, 659, 784, 1047, 1319] : [523, 659, 784];
-    notes.forEach((f, i) => tone({ freq: f, dur: 0.22, type: "triangle", gain: 0.2, delay: i * 0.08 }));
-    tone({ freq: 1760, to: 2400, dur: 0.18, type: "sine", gain: 0.12, delay: notes.length * 0.08 });
-    if (big) noise(0.5, 0.1, 4000, 1200, 0.1);
+    // 1XBET uslubi: tanga sharqirashi + bayramona fanfara + yorqin shimmer
+    const notes = big ? [523, 659, 784, 1047, 1319, 1568] : [523, 659, 784, 1047];
+    notes.forEach((f, i) => {
+      tone({ freq: f, dur: 0.26, type: "triangle", gain: 0.19, delay: i * 0.075 });
+      tone({ freq: f * 2, dur: 0.2, type: "sine", gain: 0.07, delay: i * 0.075 + 0.01 });
+    });
+    // tangalar to'kilishi
+    const coins = big ? 14 : 8;
+    for (let i = 0; i < coins; i++) {
+      const f = 1600 + Math.random() * 1700;
+      tone({ freq: f, to: f * 0.55, dur: 0.09, type: "sine", gain: 0.055, delay: 0.16 + i * 0.055 });
+    }
+    // porlash
+    tone({ freq: 1976, to: 2960, dur: 0.32, type: "sine", gain: 0.09, delay: notes.length * 0.075 });
+    noise(big ? 0.7 : 0.4, 0.055, 5200, 1400, 0.12);
+    if (big) {
+      [1047, 1319, 1568, 2093].forEach((f, i) =>
+        tone({ freq: f, dur: 0.5, type: "sine", gain: 0.1, delay: 0.62 + i * 0.02 }),
+      );
+    }
   },
   /** Yutqazish — pastga tushuvchi ohang */
   lose() {
     if (!enabled) return;
-    tone({ freq: 320, to: 150, dur: 0.35, type: "sawtooth", gain: 0.14 });
-    tone({ freq: 220, to: 90, dur: 0.4, type: "sine", gain: 0.12, delay: 0.08 });
+    // Yumshoq, "wah-wah" uslubidagi tushuvchi ohang (1XBET yutqazish signali)
+    [392, 349, 294].forEach((f, i) =>
+      tone({ freq: f, to: f * 0.94, dur: 0.26, type: "triangle", gain: 0.13, delay: i * 0.14 }),
+    );
+    tone({ freq: 196, to: 82, dur: 0.55, type: "sine", gain: 0.12, delay: 0.34 });
+    noise(0.3, 0.04, 700, 160, 0.3);
   },
   /** Cashout / pul olish */
   cash() {
     if (!enabled) return;
-    [880, 1175, 1568].forEach((f, i) => tone({ freq: f, dur: 0.15, type: "sine", gain: 0.18, delay: i * 0.06 }));
+    [880, 1175, 1568, 2093].forEach((f, i) => tone({ freq: f, dur: 0.16, type: "sine", gain: 0.17, delay: i * 0.055 }));
+    for (let i = 0; i < 6; i++) {
+      const f = 1700 + Math.random() * 1400;
+      tone({ freq: f, to: f * 0.6, dur: 0.08, type: "sine", gain: 0.05, delay: 0.1 + i * 0.05 });
+    }
   },
   /** Portlash (mina, crash) */
   boom() {
