@@ -82,14 +82,15 @@ export function useTheme() { return useContext(ThemeContext); }
    ───────────────────────────────────────────── */
 
 export const GOLD = {
-  main: "#1668e3",
-  light: "#e8f2ff",
-  deep: "#0b3f8f",
-  glow: "rgba(22,104,227,0.35)",
-  border: "rgba(255,255,255,0.10)",
-  /** 1XBET ko'k gradient — tugma va sarlavhalar uchun */
-  grad: "linear-gradient(180deg,#2f8fff 0%,#1668e3 55%,#0d4fb0 100%)",
-  soft: "linear-gradient(180deg,rgba(22,104,227,0.22),rgba(22,104,227,0.10))",
+  main: "#d4af37",
+  light: "#ffe9a8",
+  deep: "#7a5a10",
+  glow: "rgba(212,175,55,0.42)",
+  border: "rgba(255,214,102,0.35)",
+  /** Oltin gradient — tugma va ramkalar uchun */
+  grad: "linear-gradient(180deg,#ffe9a8 0%,#e8c257 32%,#c99a25 62%,#8d6512 100%)",
+  soft: "linear-gradient(180deg,rgba(212,175,55,0.26),rgba(212,175,55,0.08))",
+  frame: "linear-gradient(150deg,#fff3c4 0%,#e3bb52 18%,#a97c1c 42%,#f2d888 60%,#8a6314 82%,#e0c063 100%)",
 };
 
 /** 1XBET yashil (asosiy CTA) */
@@ -110,19 +111,35 @@ export const GAME_BG = {
   parity: "/bg/parity.jpg",
   mines: "/bg/mines.jpg",
   roulette: "/bg/roulette.jpg",
+  plinko: "/bg/plinko.jpg",
+  // karta o'yinlari
+  baccarat: "/bg/cards.jpg",
+  dragontiger: "/bg/cards.jpg",
+  hilo: "/bg/cards.jpg",
+  // crash / raqamli
+  limbo: "/bg/crash.jpg",
+  towers: "/bg/crash.jpg",
+  // omad o'yinlari
+  keno: "/bg/luck.jpg",
+  scratch: "/bg/luck.jpg",
+  caseopen: "/bg/luck.jpg",
+  coinflip: "/bg/luck.jpg",
+  rps: "/bg/luck.jpg",
 } as const;
+
 
 let remoteBackgroundStyle: "gold" | "classic" = "gold";
 
 const OVERLAY: Record<Theme, string> = {
-  dark: "linear-gradient(180deg, rgba(8,5,18,0.86) 0%, rgba(12,8,26,0.82) 45%, rgba(5,3,12,0.92) 100%)",
-  black: "linear-gradient(180deg, rgba(0,0,0,0.9) 0%, rgba(0,0,0,0.86) 45%, rgba(0,0,0,0.94) 100%)",
-  light: "linear-gradient(180deg, rgba(255,252,246,0.93) 0%, rgba(250,247,240,0.9) 45%, rgba(255,252,246,0.95) 100%)",
+  dark: "linear-gradient(180deg, rgba(14,10,4,0.80) 0%, rgba(20,13,4,0.72) 45%, rgba(8,6,2,0.88) 100%)",
+  black: "linear-gradient(180deg, rgba(0,0,0,0.88) 0%, rgba(6,4,0,0.84) 45%, rgba(0,0,0,0.93) 100%)",
+  light: "linear-gradient(180deg, rgba(255,250,236,0.90) 0%, rgba(252,245,228,0.88) 45%, rgba(255,250,236,0.93) 100%)",
 };
 
 
 /** Sahifa foni: surat + tema overlay (matn o'qilishi saqlanadi) */
-export function pageBg(theme: Theme, _img?: string) {
-  // 1XBET uslubi: barcha sahifalarda bir xil tekis fon
-  return THEMES[theme].bg;
+export function pageBg(theme: Theme, img?: string) {
+  if (remoteBackgroundStyle === "classic" || !img) return THEMES[theme].bg;
+  // Har bir o'yin uchun o'z orqa foni + oltin overlay
+  return `${OVERLAY[theme]}, url("${img}") center/cover no-repeat fixed`;
 }
