@@ -4,6 +4,7 @@ import { useTheme, pageBg, GAME_BG } from "@/lib/theme-context";
 import { placeBet } from "@/lib/api";
 import { riggedLose } from "@/lib/odds";
 import GameHeader from "@/components/GameHeader";
+import TableFrame from "@/components/casino/TableFrame";
 
 type Phase = "idle"|"countdown"|"flying"|"done";
 
@@ -171,16 +172,13 @@ export default function Aviator() {
         </div>
 
         {/* Sky screen */}
-        <div className="rounded-3xl overflow-hidden relative flex items-end justify-start"
+        <TableFrame skin="night" className="!p-[2px]">
+        <div className="rounded-2xl overflow-hidden relative flex items-end justify-start"
           style={{
             height: 200,
-            background: isLight
-              ? "linear-gradient(160deg, #dbeafe, #e0e7ff, #ede9fe)"
-              : theme === "black"
-                ? "linear-gradient(160deg, #000, #0a0820)"
-                : "linear-gradient(160deg, #0b1a2b, #13103a, #0a0818)",
-            border: `1.5px solid ${isLight ? "rgba(22,104,227,0.3)":"rgba(22,104,227,0.2)"}`,
-            boxShadow: isLight ? "0 6px 24px rgba(22,104,227,0.15)":"0 6px 24px rgba(79,70,229,0.15)",
+            background: "radial-gradient(ellipse at 30% 20%, rgba(224,72,63,0.18) 0%, #07070c 55%, #000 100%)",
+            border: "1px solid rgba(224,72,63,0.35)",
+            boxShadow: "inset 0 0 60px rgba(0,0,0,0.8)",
           }}>
 
           {/* Stars (dark mode only) */}
@@ -242,6 +240,7 @@ export default function Aviator() {
             )}
           </div>
         </div>
+        </TableFrame>
 
         {/* Cash out (while flying) */}
         {phase === "flying" && (
