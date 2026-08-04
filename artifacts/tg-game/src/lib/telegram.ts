@@ -14,6 +14,8 @@ declare global {
           user?: TelegramUser;
         };
         expand?: () => void;
+        openTelegramLink?: (url: string) => void;
+        close?: () => void;
         ready?: () => void;
         BackButton?: {
           show: () => void;
@@ -39,6 +41,12 @@ export function haptic(style: "light" | "medium" | "heavy" = "light") {
 
 export function hapticNotify(type: "error" | "success" | "warning") {
   window.Telegram?.WebApp?.HapticFeedback?.notificationOccurred(type);
+}
+
+export function openBotChat(username?: string) {
+  const url = `https://t.me/${username || "SUPPORT"}`;
+  if (window.Telegram?.WebApp?.openTelegramLink) window.Telegram.WebApp.openTelegramLink(url);
+  else window.open(url, "_blank");
 }
 
 export function initTelegramApp() {

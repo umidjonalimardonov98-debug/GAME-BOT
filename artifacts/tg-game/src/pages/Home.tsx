@@ -61,10 +61,10 @@ export default function Home() {
     ? "linear-gradient(160deg, #000 0%, #0a0a0a 100%)"
     : "linear-gradient(160deg, #0f0a1e 0%, #1a0f2e 50%, #0f1428 100%)";
 
-  const CARD_BG = theme === "light" ? "rgba(255,255,255,0.95)" : theme === "black" ? "rgba(255,255,255,0.04)" : "rgba(255,255,255,0.06)";
-  const CARD_BORDER = theme === "light" ? "rgba(99,102,241,0.15)" : "rgba(255,255,255,0.08)";
+  const CARD_BG = theme === "light" ? "#ffffff" : theme === "black" ? "rgba(10,10,12,0.96)" : "rgba(20,14,38,0.94)";
+  const CARD_BORDER = theme === "light" ? "rgba(99,102,241,0.25)" : "rgba(255,255,255,0.14)";
   const TEXT = isDark ? "#fff" : "#1e1b4b";
-  const TEXT_SUB = isDark ? "rgba(255,255,255,0.45)" : "rgba(30,27,75,0.5)";
+  const TEXT_SUB = isDark ? "rgba(255,255,255,0.62)" : "rgba(30,27,75,0.62)";
   const ACCENT = isDark ? "#a78bfa" : "#6366f1";
 
   const handleDailyBonus = async () => {
@@ -365,7 +365,7 @@ export default function Home() {
           backdropFilter: "blur(20px)",
           paddingBottom: "env(safe-area-inset-bottom,0px)",
         }}>
-        <div className="flex items-center justify-around px-2 py-2">
+        <div className="flex items-center justify-around px-1 py-2">
           <button onClick={() => setTab("games")}
             className="flex flex-col items-center gap-1 px-4 py-2 rounded-2xl active:scale-95 transition-all"
             style={{ background: tab === "games" ? "rgba(99,102,241,0.12)" : "transparent" }}>
@@ -394,8 +394,13 @@ export default function Home() {
             <span style={{ fontSize: 20 }}>🎫</span>
             <span className="text-xs font-bold" style={{ color: tab === "promo" ? ACCENT : TEXT_SUB, fontSize: 9 }}>Promo</span>
           </button>
+          <button onClick={() => nav("/support")}
+            className="flex flex-col items-center gap-1 px-3 py-2 rounded-2xl active:scale-95 transition-all">
+            <span style={{ fontSize: 20 }}>💬</span>
+            <span className="text-xs font-bold" style={{ color: TEXT_SUB, fontSize: 9 }}>Suhbat</span>
+          </button>
           <button onClick={() => nav("/howtoplay")}
-            className="flex flex-col items-center gap-1 px-4 py-2 rounded-2xl active:scale-95 transition-all">
+            className="flex flex-col items-center gap-1 px-3 py-2 rounded-2xl active:scale-95 transition-all">
             <span style={{ fontSize: 20 }}>📖</span>
             <span className="text-xs font-bold" style={{ color: TEXT_SUB, fontSize: 9 }}>Qoidalar</span>
           </button>

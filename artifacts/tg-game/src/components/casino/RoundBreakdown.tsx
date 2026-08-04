@@ -19,9 +19,11 @@ export default function RoundBreakdown() {
 
   useEffect(() => {
     if (!last) return;
-    setOpen(true);
-    const t = setTimeout(() => setOpen(false), 7000);
-    return () => clearTimeout(t);
+    // Natija animatsiya tugagach, ~1 soniyadan keyin chiqsin
+    setOpen(false);
+    const show = setTimeout(() => setOpen(true), 1000);
+    const hide = setTimeout(() => setOpen(false), 8000);
+    return () => { clearTimeout(show); clearTimeout(hide); };
   }, [last?.id]);
 
   if (!last || !open) return null;

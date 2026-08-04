@@ -20,6 +20,7 @@ import Spin from "@/pages/Spin";
 import Mines from "@/pages/Mines";
 import Roulette from "@/pages/Roulette";
 import History from "@/pages/History";
+import Support from "@/pages/Support";
 import NotFound from "@/pages/not-found";
 import RoundBreakdown from "@/components/casino/RoundBreakdown";
 import { installGlobalClickSound } from "@/lib/sound";
@@ -46,6 +47,7 @@ function Router() {
       <Route path="/mines" component={Mines} />
       <Route path="/roulette" component={Roulette} />
       <Route path="/history" component={History} />
+      <Route path="/support" component={Support} />
       <Route component={NotFound} />
     </Switch>
   );

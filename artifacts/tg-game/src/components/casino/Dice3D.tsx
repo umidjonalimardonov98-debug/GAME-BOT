@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from "react";
 
-/** Haqiqiy 3D zar — aylanib tushadi va kerakli yuzda to'xtaydi */
+/** Haqiqiy 3D zar — havoda aylanadi va kerakli yuzda to'xtaydi */
 
 const PIPS: Record<number, [number, number][]> = {
   1: [[50, 50]],
@@ -40,22 +40,28 @@ interface Props {
 }
 
 export default function Dice3D({ value, rolling, size = 88, seed = 0 }: Props) {
-  const [rot, setRot] = useState<[number, number]>([0, 0]);
-  const turns = useRef(0);
+  const [rot, setRot] = useState<[number, number]>(() => SHOW[Math.max(1, Math.min(6, value))]);
+  /** har bir tashlashda umumiy aylanishlar to'planib boradi — hech qachon orqaga qaytmaydi */
+  const spins = useRef(0);
+  const wasRolling = useRef(false);
 
   useEffect(() => {
     const v = Math.max(1, Math.min(6, value));
     const [tx, ty] = SHOW[v];
+    const dir = seed % 2 === 0 ? 1 : -1;
+
     if (rolling) {
-      turns.current += 1;
-      const k = 3 + seed;
-      setRot([tx + 360 * k * (seed % 2 === 0 ? 1 : -1), ty + 360 * (k + 1)]);
+      // 4-6 marta to'liq aylanadi (har bir zar boshqacha)
+      spins.current += 4 + (seed % 2) + Math.floor(Math.random() * 2);
+      setRot([tx + 360 * spins.current * dir, ty + 360 * (spins.current + 1)]);
+      wasRolling.current = true;
+    } else if (wasRolling.current) {
+      // to'xtaganda: aynan shu yuzda qoladi (aylanishlar soni saqlanadi)
+      setRot([tx + 360 * spins.current * dir, ty + 360 * (spins.current + 1)]);
     } else {
-      const base = 360 * turns.current;
-      setRot([tx + base * (seed % 2 === 0 ? 1 : -1), ty + base]);
+      setRot([tx, ty]);
     }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [value, rolling]);
+  }, [value, rolling, seed]);
 
   const s = size;
   return (
@@ -77,8 +83,9 @@ export default function Dice3D({ value, rolling, size = 88, seed = 0 }: Props) {
           transformStyle: "preserve-3d",
           transform: `rotateX(${rot[0]}deg) rotateY(${rot[1]}deg)`,
           transition: rolling
-            ? "transform 1.35s cubic-bezier(0.2,0.9,0.15,1)"
-            : "transform 0.9s cubic-bezier(0.16,0.9,0.2,1)",
+            ? "transform 1.3s cubic-bezier(0.16,0.72,0.24,1)"
+            : "transform 0.5s cubic-bezier(0.16,0.9,0.2,1)",
+          willChange: "transform",
           filter: "drop-shadow(0 14px 18px rgba(0,0,0,0.55))",
         }}
       >

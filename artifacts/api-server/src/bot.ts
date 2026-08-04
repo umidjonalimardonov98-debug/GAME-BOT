@@ -185,6 +185,65 @@ async function requestLiveChat(userId: number, name: string, username: string) {
   liveChatNotified.set(userId, notified);
   return notified.length;
 }
+
+/** Jonli suhbatda ovozli xabar / media / stikerlarni peer'ga uzatish */
+async function relayLiveChatMedia(msg: any): Promise<boolean> {
+  const id = msg.from.id;
+  const isAdminSide = liveChatAdminToUser.has(id);
+  const peerId = isAdminSide ? liveChatAdminToUser.get(id)! : liveChatUserToAdmin.get(id)!;
+  if (!peerId) return false;
+  const who = isAdminSide ? "\u{1F468}\u200D\u{1F4BC} Admin" : "\u{1F464} Foydalanuvchi";
+  try {
+    if (msg.voice) {
+      await bot!.sendVoice(peerId, msg.voice.file_id, { caption: `${who} \u{1F3A4} ovozli xabar`, reply_markup: LIVE_CHAT_END_KB });
+    } else if (msg.video_note) {
+      await bot!.sendVideoNote(peerId, msg.video_note.file_id, { reply_markup: LIVE_CHAT_END_KB } as any);
+    } else if (msg.audio) {
+      await bot!.sendAudio(peerId, msg.audio.file_id, { caption: who, reply_markup: LIVE_CHAT_END_KB });
+    } else if (msg.photo) {
+      const fid = msg.photo[msg.photo.length - 1].file_id;
+      await bot!.sendPhoto(peerId, fid, { caption: msg.caption ? `${who}\n${escHtml(msg.caption)}` : who, parse_mode: "HTML", reply_markup: LIVE_CHAT_END_KB });
+    } else if (msg.video) {
+      await bot!.sendVideo(peerId, msg.video.file_id, { caption: who, reply_markup: LIVE_CHAT_END_KB });
+    } else if (msg.document) {
+      await bot!.sendDocument(peerId, msg.document.file_id, { caption: who, reply_markup: LIVE_CHAT_END_KB });
+    } else if (msg.sticker) {
+      await bot!.sendSticker(peerId, msg.sticker.file_id);
+    } else {
+      return false;
+    }
+    try { await bot!.sendMessage(msg.chat.id, "\u2705", { parse_mode: "HTML" }); } catch {}
+    return true;
+  } catch {
+    try { await bot!.sendMessage(msg.chat.id, "\u274C Yuborilmadi."); } catch {}
+    return true;
+  }
+}
+
+/** Mini App ichidan jonli suhbat so'rovi */
+export async function requestLiveChatFromApp(opts: { telegramId: string; name?: string; username?: string }) {
+  const uid = Number(opts.telegramId);
+  if (!Number.isFinite(uid) || uid <= 0) return { ok: false, error: "Noto'g'ri foydalanuvchi" };
+  if (!bot) return { ok: false, error: "Bot ishga tushmagan" };
+  if (inLiveChat(uid)) return { ok: true, status: "active" as const, admins: 0 };
+  const name = opts.name || "O'yinchi";
+  const username = opts.username ? (opts.username.startsWith("@") ? opts.username : "@" + opts.username) : "";
+  try {
+    await bot.sendMessage(uid,
+      "\u{1F4AC} <b>Jonli suhbat so'rovi yuborildi</b>\n\nAdmin tasdiqlashi bilan shu yerda \u2014 bot ichidagi chatda \u2014 yozishma boshlanadi. Ovozli xabar ham yuborsangiz bo'ladi.",
+      { parse_mode: "HTML" });
+  } catch {}
+  const cnt = await requestLiveChat(uid, name, username);
+  return { ok: cnt > 0, status: "pending" as const, admins: cnt, error: cnt > 0 ? undefined : "Hozir admin mavjud emas" };
+}
+
+/** Mini App uchun suhbat holati */
+export function getLiveChatStatus(telegramId: string) {
+  const uid = Number(telegramId);
+  if (liveChatUserToAdmin.has(uid)) return { status: "active" as const };
+  if (liveChatQueue.has(uid)) return { status: "pending" as const };
+  return { status: "idle" as const };
+}
 const waitingForBroadcast = new Set<number>();                  // adminId waiting to type broadcast message
 const waitingForSendId = new Set<number>();                    // admin waiting to type target userId
 const waitingForSendMsg = new Map<number, string>();           // admin -> targetId (waiting for message text)
@@ -1364,6 +1423,11 @@ export async function startBot() {
   bot.on("message", textMsgHandler);
 
   _msgHandler = async (msg: any) => {
+    // Jonli suhbat: ovozli xabar / media ham ikki tomonga uzatiladi
+    if (msg.from && inLiveChat(msg.from.id) && !msg.text) {
+      const handled = await relayLiveChatMedia(msg);
+      if (handled) return;
+    }
     if (msg.photo) {
       await photoHandler(msg);
     } else {
