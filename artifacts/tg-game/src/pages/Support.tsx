@@ -33,6 +33,7 @@ export default function Support() {
   const recRef = useRef<MediaRecorder | null>(null);
   const chunksRef = useRef<Blob[]>([]);
   const timerRef = useRef<ReturnType<typeof setInterval> | null>(null);
+  const clearRef = useRef(0);
 
   async function loadMessages() {
     if (!player) return;
@@ -40,6 +41,16 @@ export default function Support() {
       const res = await fetch(`/api/support/live-chat/${player.telegramId}/messages?since=${sinceRef.current}`);
       if (!res.ok) return;
       const d = await res.json();
+      const token = Number(d.clearToken ?? 0);
+      if (token && token !== clearRef.current) {
+        // Suhbat yakunlandi — yozishmalar saqlanmaydi, tozalaymiz
+        clearRef.current = token;
+        sinceRef.current = 0;
+        setChat([]);
+        setMsg(u("chatCleared"));
+        setTimeout(() => setMsg(""), 3000);
+        return;
+      }
       const arr: ChatMsg[] = d.messages || [];
       if (arr.length) {
         sinceRef.current = arr[arr.length - 1].id;

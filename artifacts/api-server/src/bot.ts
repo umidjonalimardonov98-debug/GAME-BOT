@@ -136,6 +136,7 @@ const liveChatNotified = new Map<number, number[]>();          // userId -> [adm
 // Har bir foydalanuvchi uchun ALOHIDA suhbat tarixi (Mini App ichidagi chat oynasi uchun)
 export type LiveChatMsg = { id: number; from: "user" | "admin" | "system"; text: string; at: number };
 const liveChatLog = new Map<number, LiveChatMsg[]>();          // userId -> xabarlar
+const liveChatCleared = new Map<number, number>();             // userId -> oxirgi tozalash tokeni
 let liveChatSeq = 1;
 
 function pushLiveChatMsg(userId: number, from: LiveChatMsg["from"], text: string) {
@@ -170,7 +171,8 @@ async function endLiveChat(id: number, byWho: "user" | "admin" | "system" = "sys
   const userId = isAdminSide ? liveChatAdminToUser.get(id) : id;
   if (adminId) liveChatAdminToUser.delete(adminId);
   if (userId) { liveChatUserToAdmin.delete(userId); liveChatQueue.delete(userId); liveChatNotified.delete(userId); }
-  if (userId) pushLiveChatMsg(userId, "system", "Suhbat yakunlandi.");
+  // Suhbat yakunlangach yozishmalar saqlanmaydi — butunlay o'chiriladi
+  if (userId) { liveChatLog.delete(userId); liveChatCleared.set(userId, Date.now()); }
   const note = byWho === "admin" ? "Admin suhbatni yakunladi." : byWho === "user" ? "Foydalanuvchi suhbatni yakunladi." : "Suhbat yakunlandi.";
   for (const target of [adminId, userId]) {
     if (!target) continue;
@@ -275,7 +277,7 @@ export function getLiveChatStatus(telegramId: string) {
 export function getLiveChatMessages(telegramId: string, since = 0) {
   const uid = Number(telegramId);
   const all = liveChatLog.get(uid) ?? [];
-  return all.filter((m) => m.id > since);
+  return { messages: all.filter((m) => m.id > since), clearToken: liveChatCleared.get(uid) ?? 0 };
 }
 
 /** Mini App ichidan xabar yuborish — adminga yetkaziladi */

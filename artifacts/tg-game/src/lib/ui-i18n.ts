@@ -47,6 +47,7 @@ export const U: Record<string, L3> = {
   chatAdmin: { uz: "Admin", ru: "Админ", en: "Admin" },
   chatEmpty: { uz: "Hozircha xabar yo'q", ru: "Сообщений пока нет", en: "No messages yet" },
   chatInput: { uz: "Xabar yozing...", ru: "Напишите сообщение...", en: "Type a message..." },
+  chatCleared: { uz: "Suhbat yakunlandi — yozishmalar o'chirildi", ru: "Чат завершён — переписка удалена", en: "Chat ended — messages deleted" },
   chatInactive: { uz: "Suhbat faol emas", ru: "Чат не активен", en: "Chat is not active" },
   chatConvo: { uz: "SUHBAT — SIZ VA ADMIN", ru: "ЧАТ — ВЫ И АДМИН", en: "CHAT — YOU AND ADMIN" },
   howItWorks: { uz: "QANDAY ISHLAYDI", ru: "КАК ЭТО РАБОТАЕТ", en: "HOW IT WORKS" },

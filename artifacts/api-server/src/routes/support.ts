@@ -32,9 +32,9 @@ router.get("/support/live-chat/:telegramId", (req, res) => {
 router.get("/support/live-chat/:telegramId/messages", (req, res) => {
   try {
     const since = Number(req.query.since ?? 0) || 0;
-    res.json({ messages: getLiveChatMessages(String(req.params.telegramId), since) });
+    res.json(getLiveChatMessages(String(req.params.telegramId), since));
   } catch {
-    res.json({ messages: [] });
+    res.json({ messages: [], clearToken: 0 });
   }
 });
 
