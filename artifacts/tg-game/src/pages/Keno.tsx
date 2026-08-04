@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { useLang } from "@/lib/lang-context";
-import { useTheme, pageBg } from "@/lib/theme-context";
+import { useTheme, GAME_BG, pageBg } from "@/lib/theme-context";
 import { useBet } from "@/lib/use-bet";
 import { riggedWin } from "@/lib/odds";
 import { sfx, startTicker } from "@/lib/sound";
@@ -56,7 +56,7 @@ export default function Keno() {
   };
 
   return (
-    <div className="min-h-screen flex flex-col" style={{ background: pageBg(theme) }}>
+    <div className="min-h-screen flex flex-col" style={{ background: pageBg(theme, GAME_BG.keno) }}>
       <GameHeader title={` ${GAME_NAMES.keno[lang]}`} subtitle="x60" />
       <div className="flex-1 px-4 pb-8 flex flex-col gap-4 items-center">
 
