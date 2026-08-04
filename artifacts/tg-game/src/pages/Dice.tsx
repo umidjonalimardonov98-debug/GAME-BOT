@@ -4,6 +4,7 @@ import { useTheme, pageBg, GAME_BG } from "@/lib/theme-context";
 import { placeBet } from "@/lib/api";
 import { riggedLose } from "@/lib/odds";
 import GameHeader from "@/components/GameHeader";
+import TableFrame from "@/components/casino/TableFrame";
 import Sym from "@/components/casino/Sym";
 import Dice3D from "@/components/casino/Dice3D";
 
@@ -78,12 +79,8 @@ export default function Dice() {
   }, [betType, activeBet, player, refresh]);
 
 
-  const accentGradient = isLight
-    ? "linear-gradient(135deg, #0d4fb0, #1668e3)"
-    : "linear-gradient(135deg, #1668e3, #a855f7)";
-  const accentShadow = isLight
-    ? "0 8px 0 #312e81, 0 10px 30px rgba(79,70,229,0.45)"
-    : "0 8px 0 #0b3f8f, 0 10px 30px rgba(22,104,227,0.5)";
+  const accentGradient = "linear-gradient(180deg,#f7e59b 0%,#d4af37 45%,#8d6512 100%)";
+  const accentShadow = "0 8px 0 #4a3305, 0 10px 30px rgba(212,175,55,0.45)";
 
   return (
     <div className="min-h-screen flex flex-col" style={{ background: pageBg(theme, GAME_BG.dice) }}>
@@ -91,62 +88,65 @@ export default function Dice() {
 
       <div className="flex-1 px-4 pb-6 flex flex-col gap-4">
 
-        {/* Haqiqiy stol — yashil movut ustida zarlar */}
-        <div className="rounded-3xl p-6 relative overflow-hidden flex flex-col items-center gap-4"
-          style={{
-            background:
-              "radial-gradient(ellipse at 50% 25%, #16794a 0%, #0d5334 45%, #073021 100%)",
-            border: "2px solid rgba(212,175,55,0.55)",
-            boxShadow:
-              "0 14px 40px rgba(0,0,0,0.55), inset 0 2px 0 rgba(255,255,255,0.12), inset 0 -20px 40px rgba(0,0,0,0.45)",
-          }}>
+        {/* UNDER & OVER 7 — oltin doira arena */}
+        <TableFrame skin="green" title="UNDER & OVER 7" bulbs bulbsActive={gameState === "rolling"}>
+          <div className="relative flex flex-col items-center gap-4 py-4 rounded-2xl overflow-hidden"
+            style={{
+              background: "radial-gradient(ellipse at 50% 25%, #16794a 0%, #0d5334 45%, #05261a 100%)",
+              boxShadow: "inset 0 2px 0 rgba(255,255,255,0.1), inset 0 -22px 44px rgba(0,0,0,0.5)",
+            }}>
+            <div className="absolute inset-0 pointer-events-none opacity-25" style={{
+              background: "repeating-linear-gradient(45deg, rgba(255,255,255,0.05) 0 2px, transparent 2px 4px)",
+            }} />
+            <div className="absolute inset-0 pointer-events-none" style={{
+              background: gameState === "rolling"
+                ? "radial-gradient(ellipse at 50% 20%, rgba(255,240,180,0.3) 0%, transparent 62%)"
+                : "radial-gradient(ellipse at 50% 20%, rgba(255,240,180,0.13) 0%, transparent 62%)",
+              transition: "background 0.4s",
+            }} />
 
-          {/* movut tuki */}
-          <div className="absolute inset-0 pointer-events-none opacity-30" style={{
-            background:
-              "repeating-linear-gradient(45deg, rgba(255,255,255,0.05) 0 2px, transparent 2px 4px)",
-          }} />
-          {/* prozhektor */}
-          <div className="absolute inset-0 pointer-events-none" style={{
-            background: gameState === "rolling"
-              ? "radial-gradient(ellipse at 50% 20%, rgba(255,240,180,0.28) 0%, transparent 60%)"
-              : "radial-gradient(ellipse at 50% 20%, rgba(255,240,180,0.14) 0%, transparent 60%)",
-            transition: "background 0.4s",
-          }} />
-
-          <div className="relative flex items-center gap-6">
-            <DiceFace value={dice[0]} rolling={gameState === "rolling"} seed={0} />
-            <div className="flex flex-col items-center gap-2">
-              <span className="font-black text-3xl"style={{ color:"rgba(247,229,155,0.5)" }}>+</span>
+            {/* oltin doira */}
+            <div className="relative rounded-full p-[4px]"
+              style={{
+                background: "linear-gradient(150deg,#fff6cf 0%,#e8c65c 18%,#8d6512 42%,#ffeba8 60%,#6d4a08 82%,#d4af37 100%)",
+                boxShadow: "0 10px 30px rgba(0,0,0,0.55), 0 0 30px rgba(212,175,55,0.45)",
+              }}>
+              <div className="rounded-full flex items-center justify-center gap-5 px-7 py-7"
+                style={{
+                  background: "radial-gradient(circle at 50% 30%, #0f5c3a 0%, #08361f 70%, #041a10 100%)",
+                  boxShadow: "inset 0 6px 22px rgba(0,0,0,0.65)",
+                }}>
+                <DiceFace value={dice[0]} rolling={gameState === "rolling"} seed={0} />
+                <DiceFace value={dice[1]} rolling={gameState === "rolling"} seed={1} />
+              </div>
               {gameState !== "idle" && (
-                <div className="px-4 py-1.5 rounded-2xl"
-                  style={{ background: "rgba(0,0,0,0.35)", border: "1px solid rgba(212,175,55,0.5)" }}>
-                  <span className="font-black text-2xl"style={{ color:"#f7e59b" }}>{sum}</span>
+                <div className="absolute left-1/2 -translate-x-1/2 -bottom-3 px-4 py-1 rounded-full"
+                  style={{ background: "linear-gradient(180deg,#f7e59b,#b98c14)", boxShadow: "0 4px 12px rgba(0,0,0,0.6)" }}>
+                  <span className="font-black text-lg" style={{ color: "#2b1c02" }}>{sum}</span>
                 </div>
               )}
             </div>
-            <DiceFace value={dice[1]} rolling={gameState === "rolling"} seed={1} />
+
+            {gameState === "rolling" && (
+              <p className="relative text-sm font-black animate-pulse tracking-widest" style={{ color: "#f7e59b" }}>AYLANMOQDA...</p>
+            )}
+            {gameState === "result" && (
+              <div className="relative text-center mt-2">
+                <div className="mb-1 flex justify-center"><Sym n={won ? "trophy" : "boom"} s={44} /></div>
+                <p className="font-black text-2xl" style={{ color: won ? "#39c46f" : "#f87171" }}>
+                  {won ? `+${prize.toLocaleString()} UZS` : "Yutqazdingiz!"}
+                </p>
+                {won && (
+                  <p className="text-xs mt-1" style={{ color: "#39c46f88" }}>x{ODDS[betType!].mult} koeffitsiyent</p>
+                )}
+              </div>
+            )}
+            {gameState === "idle" && (
+              <p className="relative text-xs mt-2 tracking-widest" style={{ color: "rgba(247,229,155,0.65)" }}>TAXMIN TANLANG VA O'YNANG</p>
+            )}
           </div>
+        </TableFrame>
 
-
-          {gameState === "rolling" && (
-            <p className="text-sm font-bold animate-pulse"style={{ color: isLight ?"#1668e3":"#bcdcff" }}> Aylanmoqda...</p>
-          )}
-          {gameState === "result" && (
-            <div className="text-center">
-              <div className="mb-1 flex justify-center"><Sym n={won ? "trophy" : "boom"} s={44} /></div>
-              <p className="font-black text-2xl"style={{ color: won ?"#39c46f":"#f87171" }}>
-                {won ? `+${prize.toLocaleString()} UZS` : "Yutqazdingiz!"}
-              </p>
-              {won && (
-                <p className="text-xs mt-1"style={{ color:"#39c46f88" }}>x{ODDS[betType!].mult} koeffitsiyent</p>
-              )}
-            </div>
-          )}
-          {gameState === "idle" && (
-            <p className="text-sm" style={{ color: ts.textSub }}>Taxmin tanlang va o'ynang</p>
-          )}
-        </div>
 
         {/* Bet type cards */}
         <div className="rounded-2xl p-4" style={{ background: ts.card, border: `1px solid ${ts.cardBorder}` }}>
