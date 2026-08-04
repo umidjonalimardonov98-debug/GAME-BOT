@@ -7,6 +7,7 @@ import GameHeader from "@/components/GameHeader";
 import TableFrame from "@/components/casino/TableFrame";
 import Sym from "@/components/casino/Sym";
 import Dice3D from "@/components/casino/Dice3D";
+import { useU } from "@/lib/ui-i18n";
 
 
 type BetType = "more"|"equal"|"less";
@@ -24,6 +25,7 @@ function DiceFace({ value, rolling, seed }: { value: number; rolling: boolean; s
 
 
 export default function Dice() {
+  const u = useU();
   const { player, refresh } = usePlayer();
   const { theme, ts } = useTheme();
   const [betInput, setBetInput] = useState("2000");
@@ -134,7 +136,7 @@ export default function Dice() {
               <div className="relative text-center mt-2">
                 <div className="mb-1 flex justify-center"><Sym n={won ? "trophy" : "boom"} s={44} /></div>
                 <p className="font-black text-2xl" style={{ color: won ? "#39c46f" : "#f87171" }}>
-                  {won ? `+${prize.toLocaleString()} UZS` : "Yutqazdingiz!"}
+                  {won ? `+${prize.toLocaleString()} UZS` : u("youLose")}
                 </p>
                 {won && (
                   <p className="text-xs mt-1" style={{ color: "#39c46f88" }}>x{ODDS[betType!].mult} koeffitsiyent</p>

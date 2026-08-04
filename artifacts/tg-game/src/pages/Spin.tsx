@@ -3,6 +3,7 @@ import { usePlayer } from "@/lib/player-context";
 import { useTheme, pageBg, GAME_BG, GOLD } from "@/lib/theme-context";
 import GameHeader from "@/components/GameHeader";
 import Sym from "@/components/casino/Sym";
+import { useU } from "@/lib/ui-i18n";
 
 const BASE = "/api";
 const BET = 2000;
@@ -33,6 +34,7 @@ function timeLeft(nextSpinAt: string): string {
 }
 
 export default function Spin() {
+  const u = useU();
   const { player, refresh } = usePlayer();
   const { theme, ts } = useTheme();
 
@@ -136,7 +138,7 @@ export default function Spin() {
 
   return (
     <div className="min-h-screen flex flex-col" style={{ background: pageBg(theme, GAME_BG.spin) }}>
-      <GameHeader title=" OMAD CHARXI" subtitle="Har kuni bepul aylantirish!" />
+      <GameHeader title={u("wheelOfLuck")} subtitle="Har kuni bepul aylantirish!" />
 
       <div className="flex-1 flex flex-col items-center px-4 pb-6 gap-5">
 
@@ -316,7 +318,7 @@ export default function Spin() {
           <p className="text-xs font-black mb-2 text-center tracking-widest gold-text"> MUKOFOTLAR</p>
           <div className="grid grid-cols-4 gap-2 text-center">
             {[
-              { label: " Omadsiz", prize: "—", color: "#f87171" },
+              { label: u("unlucky"), prize: "—", color: "#f87171" },
               { label: " Birinchi", prize: "1 000", color: "#fbbf24" },
               { label: " Ikkinchi", prize: "2 000", color: "#34d399" },
               { label: " Katta", prize: "5 000", color: "#9fc5ef" },

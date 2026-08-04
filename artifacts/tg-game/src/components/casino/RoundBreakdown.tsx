@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { subscribeRounds, gameLabel, type Round } from "@/lib/round-log";
 import { sfx } from "@/lib/sound";
+import { useU } from "@/lib/ui-i18n";
 
 const fmt = (n: number) => Math.round(n).toLocaleString("ru-RU");
 
@@ -9,6 +10,7 @@ const fmt = (n: number) => Math.round(n).toLocaleString("ru-RU");
  * tikilgan pul, koeffitsiyent, yutuq va sof foyda/zarar.
  */
 export default function RoundBreakdown() {
+  const u = useU();
   const [rounds, setRounds] = useState<Round[]>([]);
   const [open, setOpen] = useState(false);
   const [showHistory, setShowHistory] = useState(false);
@@ -48,7 +50,7 @@ export default function RoundBreakdown() {
         <div className="flex items-center justify-between px-4 py-2.5"
           style={{ background: `linear-gradient(90deg, ${accent}22, transparent)` }}>
           <span className="text-xs font-black tracking-wider" style={{ color: accent }}>
-            {win ? " YUTUQ":" YUTQAZISH"} · {gameLabel(last.game)}
+            {win ? u("win"):u("lose")} · {gameLabel(last.game)}
           </span>
           <div className="flex items-center gap-1">
             <button
@@ -56,22 +58,22 @@ export default function RoundBreakdown() {
               className="text-[10px] font-bold px-2 py-1 rounded-lg"
               style={{ color: "rgba(255,255,255,0.7)", background: "rgba(255,255,255,0.08)" }}
             >
-              {showHistory ? "Natija":"Tarix"}
+              {showHistory ? u("result") : u("navHistory")}
             </button>
             <button onClick={() => setOpen(false)} className="text-xs px-2 py-1 rounded-lg"
-              style={{ color: "rgba(255,255,255,0.55)" }}></button>
+              style={{ color: "rgba(255,255,255,0.55)" }}>✕</button>
           </div>
         </div>
 
         {!showHistory ? (
           <div className="px-4 py-3 grid grid-cols-3 gap-2 text-center">
-            <Cell label="Tikilgan" value={`${fmt(last.bet)}`} color="#e5e7eb" />
-            <Cell label="Koeffitsiyent" value={`x${last.mult.toFixed(2)}`} color="#fbbf24" />
-            <Cell label="Yutuq" value={fmt(last.winAmount)} color={accent} />
+            <Cell label={u("staked")} value={`${fmt(last.bet)}`} color="#e5e7eb" />
+            <Cell label={u("multiplier")} value={`x${last.mult.toFixed(2)}`} color="#fbbf24" />
+            <Cell label={u("payout")} value={fmt(last.winAmount)} color={accent} />
             <div className="col-span-3 mt-1 pt-2 flex items-center justify-between"
               style={{ borderTop: "1px solid rgba(255,255,255,0.08)" }}>
               <span className="text-[11px]"style={{ color:"rgba(255,255,255,0.55)" }}>
-                Hisob: {fmt(last.bet)} × {last.mult.toFixed(2)} = {fmt(last.winAmount)}
+                {u("calc")}: {fmt(last.bet)} × {last.mult.toFixed(2)} = {fmt(last.winAmount)}
               </span>
               <span className="text-sm font-black" style={{ color: accent }}>
                 {last.net >= 0 ? "+":"−"}{fmt(Math.abs(last.net))} UZS

@@ -5,6 +5,7 @@ import { placeBet } from "@/lib/api";
 import { riggedLose } from "@/lib/odds";
 import GameHeader from "@/components/GameHeader";
 import TableFrame from "@/components/casino/TableFrame";
+import { useU } from "@/lib/ui-i18n";
 
 type Phase = "idle"|"countdown"|"flying"|"done";
 
@@ -20,6 +21,7 @@ function randomCrash(): number {
 }
 
 export default function Aviator() {
+  const u = useU();
   const { player, refresh } = usePlayer();
   const { theme, ts } = useTheme();
 
@@ -272,7 +274,7 @@ export default function Aviator() {
               ))}
             </div>
 
-            <input type="number" placeholder="Tikish miqdori (min 2 000)" value={betInput}
+            <input type="number" placeholder={u("betMin")} value={betInput}
               onChange={(e) =>{ setBetInput(e.target.value); const v = Number(e.target.value) || 2000; setBetAmt(v); betRef.current = v; }}
               className="w-full rounded-2xl px-4 py-3.5 font-black text-lg focus:outline-none"
               style={{ background: ts.input, border: `1px solid ${ts.inputBorder}`, color: ts.text }} />

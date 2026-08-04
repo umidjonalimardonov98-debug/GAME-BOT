@@ -6,6 +6,7 @@ import { riggedLose, randomWhere } from "@/lib/odds";
 import GameHeader from "@/components/GameHeader";
 import TableFrame from "@/components/casino/TableFrame";
 import Sym from "@/components/casino/Sym";
+import { useU } from "@/lib/ui-i18n";
 
 const WHEEL = [
   0, 32, 15, 19, 4, 21, 2, 25, 17, 34, 6, 27, 13, 36, 11, 30, 8, 23, 10,
@@ -38,6 +39,7 @@ function colorOf(n: number) {
 }
 
 export default function Roulette() {
+  const u = useU();
   const { player, refresh } = usePlayer();
   const { theme, ts } = useTheme();
   // kichik telefonlarda g'ildirak ekranga sig'sin
@@ -278,7 +280,7 @@ export default function Roulette() {
 
           {result !== null && !spinning && (
             <p className="font-black text-xl"style={{ color: prize > 0 ?"#39c46f":"#f87171" }}>
-              {prize > 0 ? ` +${prize.toLocaleString()} UZS` : " Yutqazdingiz"}
+              {prize > 0 ? ` +${prize.toLocaleString()} UZS` : u("youLose")}
             </p>
           )}
 

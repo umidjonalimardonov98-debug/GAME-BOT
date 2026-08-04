@@ -5,6 +5,7 @@ import { useLang } from "@/lib/lang-context";
 import { useTheme, pageBg, GAME_BG } from "@/lib/theme-context";
 import { createDepositRequest } from "@/lib/api";
 import GameHeader from "@/components/GameHeader";
+import { useU } from "@/lib/ui-i18n";
 
 const CARD = "5614683518277611";
 const HOLDER = "Alimardonov Umidjon";
@@ -28,6 +29,7 @@ function fmtFull(n: number) { return n.toLocaleString(); }
 function fmtCard(c: string) { return c.replace(/(\d{4})(?=\d)/g, "$1  "); }
 
 export default function Deposit() {
+  const u = useU();
   const { player } = usePlayer();
   const { t } = useLang();
   const { theme, ts } = useTheme();
@@ -64,7 +66,7 @@ export default function Deposit() {
         } catch { window.history.back(); }
       }, 1600);
     } catch {
-      setError("Xato yuz berdi. Qaytadan urinib ko'ring.");
+      setError(u("tryAgain"));
     } finally { setLoading(false); }
   };
 
@@ -184,7 +186,7 @@ export default function Deposit() {
           <p className="font-bold text-sm mb-3 flex items-center gap-2"style={{ color: isLight ?"#0b3f8f":"#9fc5ef" }}>
              Qanday qilish kerak?
           </p>
-          {["Yuqoridagi kartaga pul o'tkaring","To'lov cheki (screenshot) oling","Botga borib chekni yuboring","Admin tasdiqlagach balans to'ldiriladi"].map((step, i) => (
+          {[u("transferToCard"),"To'lov cheki (screenshot) oling","Botga borib chekni yuboring",u("adminConfirm")].map((step, i) => (
             <div key={i} className="flex items-start gap-3 mb-2.5 last:mb-0">
               <span className="w-6 h-6 rounded-full flex items-center justify-center text-xs font-black shrink-0 mt-0.5"
                 style={{ background: isLight ? "rgba(22,104,227,0.15)":"rgba(22,104,227,0.3)", color: isLight ? "#0b3f8f":"#9fc5ef" }}>

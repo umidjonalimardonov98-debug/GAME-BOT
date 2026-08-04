@@ -5,6 +5,10 @@ import { useLang } from "@/lib/lang-context";
 import { useTheme, pageBg, GAME_BG, GOLD } from "@/lib/theme-context";
 import { getGameConfig } from "@/lib/api";
 import { GAME_NAMES } from "@/lib/game-i18n";
+import { useU } from "@/lib/ui-i18n";
+import ThemeSwitcher from "@/components/ThemeSwitcher";
+import LangSwitcher from "@/components/LangSwitcher";
+import Odometer from "@/components/casino/Odometer";
 import { Wallet, Gift, Ticket, Home as HomeIcon, History, MessageCircle, BookOpen, Trophy } from "lucide-react";
 
 const BASE = "/api";
@@ -21,8 +25,6 @@ async function redeemPromo(telegramId: string, code: string) {
   return res.json();
 }
 
-const LANG_FLAG: Record<string, string> = { uz: "", ru: "", en: "" };
-const LANG_LABEL: Record<string, string> = { uz: "UZ", ru: "RU", en: "EN" };
 
 const GAMES = [
   { key: "apple",       path: "/apple",       img: "/games/apple.jpg",       tag: "HOT",   tagColor: "#ef4444", bg: "linear-gradient(145deg,#064e3b,#1a7d43)", glow: "#1a7d4355" },
@@ -50,15 +52,15 @@ const GAMES = [
 export default function Home() {
   const [, nav] = useLocation();
   const { player, loading, refresh } = usePlayer();
-  const { lang, t, setLang } = useLang();
-  const { theme, setTheme } = useTheme();
+  const { lang, t } = useLang();
+  const { theme } = useTheme();
+  const u = useU();
   const [tab, setTab] = useState<"games"|"promo">("games");
   const [showPromo, setShowPromo] = useState(false);
   const [promoCode, setPromoCode] = useState("");
   const [promoMsg, setPromoMsg] = useState("");
   const [claiming, setClaiming] = useState(false);
   const [claimMsg, setClaimMsg] = useState("");
-  const [showLang, setShowLang] = useState(false);
   const [enabledGames, setEnabledGames] = useState<Record<string, boolean>>({});
   useEffect(() =>{ getGameConfig().then(config =>{
     if (!config?.games) return;
@@ -115,60 +117,29 @@ export default function Home() {
           </div>
           <div>
             <p className="font-black text-sm leading-tight" style={{ color: TEXT }}>
-              {loading ? "...": player?.firstName ??"O'yinchi"}
+              {loading ? "...": player?.firstName ?? u("player")}
             </p>
             <p className="text-xs"style={{ color: TEXT_SUB }}>@{player?.username ??"player"}</p>
           </div>
         </div>
 
-        {/* Coin balance + lang + theme */}
+        {/* Mavzu (kichik suratcha) + til + balans */}
         <div className="flex items-center gap-2">
-          {/* Theme dots */}
-          <div className="flex gap-1">
-            {(["dark", "light", "black"] as const).map(th => (
-              <button key={th} onClick={() => setTheme(th)}
-                className="w-6 h-6 rounded-full flex items-center justify-center active:scale-90 transition-transform"
-                style={{
-                  background: theme === th ? ACCENT : "rgba(47,143,255,0.15)",
-                  border: `1.5px solid ${theme === th ? ACCENT : "rgba(47,143,255,0.25)"}`,
-                  fontSize: 11,
-                }}>
-                {th === "light"?"": th ==="black"?"●":""}
-              </button>
-            ))}
-          </div>
+          <ThemeSwitcher />
+          <LangSwitcher />
 
-          {/* Lang */}
-          <div className="relative">
-            {showLang && <div className="fixed inset-0 z-40" onClick={() => setShowLang(false)} />}
-            <button onClick={() => setShowLang(v => !v)}
-              className="flex items-center gap-1 px-2 py-1 rounded-xl active:scale-95 transition-transform"
-              style={{ background: "rgba(47,143,255,0.15)", border: "1px solid rgba(47,143,255,0.3)", color: ACCENT, fontSize: 12, fontWeight: 700 }}>
-              {LANG_FLAG[lang]} {LANG_LABEL[lang]}
-            </button>
-            {showLang && (
-              <div className="absolute right-0 top-10 z-50 rounded-2xl overflow-hidden shadow-2xl"
-                style={{ background: isDark ? "#122a42":"#fff", border: "1px solid rgba(47,143,255,0.3)", minWidth: 100, boxShadow: "0 16px 40px rgba(0,0,0,0.4)" }}>
-                {(["uz", "ru", "en"] as const).map(l => (
-                  <button key={l} onClick={() =>{ setLang(l); setShowLang(false); }}
-                    className="w-full flex items-center gap-2 px-3 py-2.5 text-xs font-bold"
-                    style={{ color: lang === l ? ACCENT : TEXT_SUB, background: lang === l ? "rgba(22,104,227,0.18)":"transparent" }}>
-                    {LANG_FLAG[l]} {LANG_LABEL[l]}
-                  </button>
-                ))}
-              </div>
+          {/* Tanga balansi */}
+          <div className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-2xl"
+            style={{ background: GOLD.soft, border: `1px solid ${GOLD.border}`, boxShadow: `0 6px 18px ${GOLD.glow}` }}>
+            <img src="/symbols/coin.png" alt="" width={16} height={16} style={{ filter: "drop-shadow(0 0 6px rgba(255,207,74,.6))" }} />
+            {loading ? (
+              <span className="font-black text-sm" style={{ color: GOLD.light }}>...</span>
+            ) : (
+              <Odometer value={player?.balance ?? 0} className="font-black text-sm" style={{ color: GOLD.light }} />
             )}
           </div>
-
-          {/* Coin balance */}
-          <div className="flex items-center gap-1.5 px-3 py-1.5 rounded-2xl"
-            style={{ background: GOLD.soft, border: `1px solid ${GOLD.border}`, boxShadow: `0 6px 18px ${GOLD.glow}` }}>
-            <span style={{ fontSize: 16 }}></span>
-            <span className="font-black text-sm" style={{ color: GOLD.light }}>
-              {loading ? "..." : (player?.balance ?? 0).toLocaleString()}
-            </span>
-          </div>
         </div>
+
       </div>
 
       {/* ─── PRO HERO BANNER ─── */}
@@ -185,7 +156,7 @@ export default function Home() {
           <button onClick={() => nav("/spin")}
             className="self-start mt-1.5 px-3 py-1.5 rounded-xl font-black active:scale-95 transition-transform"
             style={{ fontSize: 10, background: GOLD.grad, color: "#1a1004", boxShadow: "0 6px 18px rgba(245,158,11,0.45)" }}>
-             BEPUL AYLANTIRISH
+            {t.spinDesc.toUpperCase()}
           </button>
         </div>
       </div>
@@ -205,7 +176,7 @@ export default function Home() {
           <div className="h-9 w-40 rounded-xl animate-pulse mb-2"style={{ background:"rgba(255,255,255,0.12)" }} />
         ) : (
           <p className="font-black text-3xl text-white mb-2"style={{ textShadow:"0 2px 8px rgba(0,0,0,0.3)" }}>
-            {(player?.balance ?? 0).toLocaleString()} <span className="text-lg opacity-75">UZS</span>
+            <Odometer value={player?.balance ?? 0} /> <span className="text-lg opacity-75">UZS</span>
           </p>
         )}
         <div className="flex gap-4 pt-2"style={{ borderTop:"1px solid rgba(255,255,255,0.15)" }}>
@@ -281,7 +252,7 @@ export default function Home() {
               color: tab === "promo"?"#fff" : TEXT_SUB,
               boxShadow: tab === "promo"?"0 4px 12px #25a55a44":"none",
             }}>
-             Promokodlar
+            {u("promoCodes")}
           </button>
         </div>
       </div>
@@ -300,7 +271,7 @@ export default function Home() {
             <button onClick={handlePromo}
               className="shrink-0 px-4 py-2.5 rounded-xl font-black text-sm active:scale-95"
               style={{ background: "linear-gradient(180deg,#39c46f,#25a55a)", color: "white" }}>
-              
+              {u("apply")}
             </button>
           </div>
           {promoMsg && <p className="text-xs mt-2 font-bold" style={{ color: promoMsg.startsWith("") ? "#39c46f":"#f87171" }}>{promoMsg}</p>}
@@ -373,12 +344,12 @@ export default function Home() {
             className="flex flex-col items-center gap-1 px-0 py-2 rounded-2xl active:scale-95 transition-all"
             style={{ background: tab === "games"?"rgba(22,104,227,0.12)":"transparent" }}>
             <HomeIcon size={20} color={tab === "games" ? ACCENT : TEXT_SUB} />
-            <span className="text-xs font-bold"style={{ color: tab ==="games" ? ACCENT : TEXT_SUB, fontSize: 9 }}>Bosh sahifa</span>
+            <span className="text-xs font-bold"style={{ color: tab ==="games" ? ACCENT : TEXT_SUB, fontSize: 9 }}>{u("navHome")}</span>
           </button>
           <button onClick={() => nav("/history")}
             className="flex flex-col items-center gap-1 px-0 py-2 rounded-2xl active:scale-95 transition-all">
             <History size={20} color={TEXT_SUB} />
-            <span className="text-xs font-bold" style={{ color: TEXT_SUB, fontSize: 9 }}>Tarix</span>
+            <span className="text-xs font-bold" style={{ color: TEXT_SUB, fontSize: 9 }}>{u("navHistory")}</span>
           </button>
           <button onClick={() => nav("/deposit")}
             className="flex flex-col items-center gap-1 px-1 py-1.5 rounded-2xl active:scale-95 transition-all"
@@ -395,17 +366,17 @@ export default function Home() {
             className="flex flex-col items-center gap-1 px-0 py-2 rounded-2xl active:scale-95 transition-all"
             style={{ background: tab === "promo"?"rgba(22,104,227,0.12)":"transparent" }}>
             <Ticket size={20} color={tab === "promo" ? ACCENT : TEXT_SUB} />
-            <span className="text-xs font-bold"style={{ color: tab ==="promo" ? ACCENT : TEXT_SUB, fontSize: 9 }}>Promo</span>
+            <span className="text-xs font-bold"style={{ color: tab ==="promo" ? ACCENT : TEXT_SUB, fontSize: 9 }}>{u("navPromo")}</span>
           </button>
           <button onClick={() => nav("/support")}
             className="flex flex-col items-center gap-1 px-0 py-2 rounded-2xl active:scale-95 transition-all">
             <MessageCircle size={20} color={TEXT_SUB} />
-            <span className="text-xs font-bold" style={{ color: TEXT_SUB, fontSize: 9 }}>Suhbat</span>
+            <span className="text-xs font-bold" style={{ color: TEXT_SUB, fontSize: 9 }}>{u("navChat")}</span>
           </button>
           <button onClick={() => nav("/howtoplay")}
             className="flex flex-col items-center gap-1 px-0 py-2 rounded-2xl active:scale-95 transition-all">
             <BookOpen size={20} color={TEXT_SUB} />
-            <span className="text-xs font-bold" style={{ color: TEXT_SUB, fontSize: 9 }}>Qoidalar</span>
+            <span className="text-xs font-bold" style={{ color: TEXT_SUB, fontSize: 9 }}>{u("navRules")}</span>
           </button>
         </div>
       </div>

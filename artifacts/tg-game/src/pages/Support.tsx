@@ -3,10 +3,12 @@ import { useLocation } from "wouter";
 import { usePlayer } from "@/lib/player-context";
 import { useTheme, pageBg, GAME_BG, GOLD } from "@/lib/theme-context";
 import { haptic, hapticNotify, openBotChat } from "@/lib/telegram";
+import { useU } from "@/lib/ui-i18n";
 
 type Status = "idle"|"pending"|"active";
 
 export default function Support() {
+  const u = useU();
   const [, nav] = useLocation();
   const { player } = usePlayer();
   const { theme, ts } = useTheme();
@@ -51,7 +53,7 @@ export default function Support() {
       const d = await res.json().catch(() => ({}));
       if (!res.ok) { setMsg(" "+ (d.error ||"Yuborilmadi")); hapticNotify("error"); }
       else { setDraft(""); await loadMessages(); }
-    } catch { setMsg(" Tarmoq xatosi"); }
+    } catch { setMsg(u("networkError")); }
     setChatSending(false);
   }
 
@@ -111,7 +113,7 @@ export default function Support() {
         hapticNotify("success");
       }
     } catch {
-      setMsg(" Tarmoq xatosi");
+      setMsg(u("networkError"));
     }
     setSending(false);
   }

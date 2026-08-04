@@ -6,6 +6,7 @@ import { useTheme, pageBg, GAME_BG } from "@/lib/theme-context";
 import { placeBet } from "@/lib/api";
 import { riggedLose } from "@/lib/odds";
 import GameHeader from "@/components/GameHeader";
+import { useU } from "@/lib/ui-i18n";
 
 type BetType = "small"|"big"|"exact";
 type Phase = "idle"|"spinning"|"result";
@@ -25,6 +26,7 @@ function genFinal(lastResult: number | null): number {
 }
 
 export default function Parity() {
+  const u = useU();
   const [, nav] = useLocation();
   const { player, refresh } = usePlayer();
   const { t } = useLang();
@@ -172,7 +174,7 @@ export default function Parity() {
           <p className="text-xs font-black tracking-widest" style={{ color: ts.textSub }}>
             {phase === "idle"?"SON (1–90)" :
              isSpinning           ? "⏳ SON AYLANMOQDA..." :
-                                    " NATIJA"}
+                                    u("result").toUpperCase()}
           </p>
 
           <div className="w-36 h-36 rounded-3xl flex items-center justify-center relative"
@@ -200,7 +202,7 @@ export default function Parity() {
             <div className="text-center">
               <p className="font-black text-2xl"
                 style={{ color: won ? "#39c46f":"#f87171", textShadow: won ? "0 0 24px #39c46f88":"0 0 16px #f8717166" }}>
-                {won ? " YUTDINGIZ!":" YUTQAZDINGIZ"}
+                {won ? u("youWin"):u("youLose")}
               </p>
               {won && (
                 <p className="font-bold text-lg mt-1"style={{ color: isLight ?"#1a7d43":"white" }}>

@@ -6,16 +6,18 @@ import { useTheme, pageBg, GAME_BG } from "@/lib/theme-context";
 import { GAME_RULES, RULES_TITLE } from "@/lib/rules";
 import { GAME_NAMES } from "@/lib/game-i18n";
 import { sfx } from "@/lib/sound";
+import { useU } from "@/lib/ui-i18n";
 
 const KEYS = Object.keys(GAME_RULES);
 
 const EXTRA: Record<string, { title: string; items: string[] }> = {
-  uz: { title: " Depozit va Yechish", items: ["Har depozitga +20% bonus", "Yechish uchun depozit miqdorini 100% o'ynash kerak", "Chek (skrinshot) botga yuboriladi, admin tasdiqlaydi", "Kunlik bonus va promo kodlar mavjud"] },
-  ru: { title: " Депозит и вывод", items: ["Бонус +20% к каждому депозиту", "Для вывода нужно отыграть 100% депозита", "Чек (скриншот) отправляется в бот, админ подтверждает", "Есть ежедневный бонус и промокоды"] },
-  en: { title: " Deposit & withdrawal", items: ["+20% bonus on every deposit", "You must wager 100% of the deposit before withdrawing", "Send the receipt screenshot to the bot for admin approval", "Daily bonus and promo codes available"] },
+  uz: { title: "💳 Depozit va Yechish", items: ["Har depozitga +20% bonus", "Yechish uchun depozit miqdorini 100% o'ynash kerak", "Chek (skrinshot) botga yuboriladi, admin tasdiqlaydi", "Kunlik bonus va promo kodlar mavjud"] },
+  ru: { title: "💳 Депозит и вывод", items: ["Бонус +20% к каждому депозиту", "Для вывода нужно отыграть 100% депозита", "Чек (скриншот) отправляется в бот, админ подтверждает", "Есть ежедневный бонус и промокоды"] },
+  en: { title: "💳 Deposit & withdrawal", items: ["+20% bonus on every deposit", "You must wager 100% of the deposit before withdrawing", "Send the receipt screenshot to the bot for admin approval", "Daily bonus and promo codes available"] },
 };
 
 export default function HowToPlay() {
+  const u = useU();
   const [, nav] = useLocation();
   const { lang } = useLang();
   const { theme, ts } = useTheme();

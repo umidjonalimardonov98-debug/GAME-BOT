@@ -6,6 +6,7 @@ import { riggedLose } from "@/lib/odds";
 import GameHeader from "@/components/GameHeader";
 import TableFrame from "@/components/casino/TableFrame";
 import Sym from "@/components/casino/Sym";
+import { useU } from "@/lib/ui-i18n";
 
 const SIZE = 25;
 const MINE_OPTIONS = [3, 5, 7, 10];
@@ -28,6 +29,7 @@ function pickMines(count: number) {
 type State = "idle"|"playing"|"over";
 
 export default function Mines() {
+  const u = useU();
   const { player, refresh } = usePlayer();
   const { theme, ts } = useTheme();
   const isLight = theme === "light";
@@ -95,7 +97,7 @@ export default function Mines() {
       if (forcedBoom) setBombs((b) => new Set([...b, i]));
       setBoom(i);
       setPrize(0);
-      setMsg(" Bomba! Yutqazdingiz");
+      setMsg(u("boomLose"));
       void finish(false, 0);
       return;
     }

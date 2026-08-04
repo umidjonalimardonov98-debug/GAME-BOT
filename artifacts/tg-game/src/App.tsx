@@ -34,6 +34,7 @@ import DragonTiger from "@/pages/DragonTiger";
 import RPS from "@/pages/RPS";
 import NotFound from "@/pages/not-found";
 import RoundBreakdown from "@/components/casino/RoundBreakdown";
+import GlobalWinFx from "@/components/casino/GlobalWinFx";
 import { installGlobalClickSound } from "@/lib/sound";
 
 const queryClient = new QueryClient({
@@ -87,6 +88,7 @@ function App() {
               <Router />
             </WouterRouter>
             <RoundBreakdown />
+            <GlobalWinFx />
             <Toaster />
           </PlayerProvider>
         </ThemeProvider>

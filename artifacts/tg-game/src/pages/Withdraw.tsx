@@ -3,10 +3,12 @@ import { useLocation } from "wouter";
 import { ArrowLeft, CheckCircle, AlertTriangle, Wallet } from "lucide-react";
 import { usePlayer } from "@/lib/player-context";
 import { withdraw } from "@/lib/api";
+import { useU } from "@/lib/ui-i18n";
 
 const MIN_WITHDRAW_AMOUNT = 10000;
 
 export default function Withdraw() {
+  const u = useU();
   const [, nav] = useLocation();
   const { player, refresh } = usePlayer();
   const [customAmount, setCustomAmount] = useState("");
@@ -25,11 +27,11 @@ export default function Withdraw() {
     ? Math.min(100, (player.totalWagered / player.wagerRequirement) * 100) : 0;
 
   const submit = async () =>{
-    if (!hasDeposited) { setErr("Pul yechish uchun avval depozit qilishingiz kerak"); return; }
+    if (!hasDeposited) { setErr(u("needDepositFirst")); return; }
     if (!amount || amount < MIN_WITHDRAW_AMOUNT) { setErr("Minimal miqdor 10 000 UZS"); return; }
-    if (amount > balance) { setErr("Balans yetarli emas!"); return; }
-    if (!card || card.length < 4) { setErr("Karta raqamini kiriting"); return; }
-    if (!holder) { setErr("Karta egasini kiriting"); return; }
+    if (amount > balance) { setErr(u("notEnough")); return; }
+    if (!card || card.length < 4) { setErr(u("enterCardNumber")); return; }
+    if (!holder) { setErr(u("enterCardHolder")); return; }
     if (!player) return;
     setLoading(true); setErr("");
     try {
@@ -116,7 +118,7 @@ export default function Withdraw() {
               </p>
               <div className="space-y-2 mb-3">
                 {[
-                  { label: "Kerakli", val: player?.wagerRequirement ?? 0 },
+                  { label: u("required"), val: player?.wagerRequirement ?? 0 },
                   { label: "O'ynaldi", val: player?.totalWagered ?? 0 },
                 ].map(({ label, val }) => (
                   <div key={label} className="flex justify-between text-sm">
@@ -168,11 +170,11 @@ export default function Withdraw() {
             <p className="text-xs font-bold mb-2 tracking-widest"style={{ color:"rgba(255,255,255,0.3)" }}>KARTA MA'LUMOTLARI</p>
             <div className="space-y-2 mb-4">
               <input value={card} onChange={(e) => setCard(e.target.value.replace(/\D/g, ""))}
-                placeholder="Karta raqami"
+                placeholder={u("cardNumberLabel")}
                 className="w-full rounded-xl px-4 py-3 font-mono text-base focus:outline-none"
                 style={{ background: "rgba(255,255,255,0.05)", border: "1px solid rgba(255,255,255,0.1)", color: "white" }} />
               <input value={holder} onChange={(e) => setHolder(e.target.value)}
-                placeholder="Karta egasi (Ism Familiya)"
+                placeholder={u("cardHolderLabel")}
                 className="w-full rounded-xl px-4 py-3 text-sm focus:outline-none"
                 style={{ background: "rgba(255,255,255,0.05)", border: "1px solid rgba(255,255,255,0.1)", color: "white" }} />
             </div>

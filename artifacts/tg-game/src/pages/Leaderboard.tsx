@@ -3,6 +3,7 @@ import { useLocation } from "wouter";
 import { ArrowLeft } from "lucide-react";
 import { getLeaderboard } from "@/lib/api";
 import Sym from "@/components/casino/Sym";
+import { useU } from "@/lib/ui-i18n";
 
 type Entry = { rank: number; firstName: string; username: string | null; amount: number; gamesPlayed?: number };
 
@@ -16,7 +17,7 @@ function rankStyle(rank: number) {
 }
 
 // Always show firstName (real name), not @username
-function getName(e: Entry) { return e.firstName || "O'yinchi"; }
+function getName(e: Entry) { return e.firstName || "Player"; }
 
 function List({ data, field }: { data: Entry[]; field: "deposit"|"win" }) {
   if (!data.length) return (
@@ -62,6 +63,7 @@ function List({ data, field }: { data: Entry[]; field: "deposit"|"win" }) {
 }
 
 export default function Leaderboard() {
+  const u = useU();
   const [, nav] = useLocation();
   const [tab, setTab] = useState<"win"|"deposit">("win");
   const [data, setData] = useState<{ topWinners: Entry[]; topDepositors: Entry[] } | null>(null);
@@ -87,7 +89,7 @@ export default function Leaderboard() {
           style={{ background: "rgba(255,255,255,0.04)", border: "1px solid rgba(255,255,255,0.07)" }}>
           <div className="grid grid-cols-2 gap-1">
             {([
-              { key: "win",     label: " Ko'p Yutganlar",   color: "#fbbf24", glow: "rgba(251,191,36,0.15)" },
+              { key: "win",     label: u("topWinners"),   color: "#fbbf24", glow: "rgba(251,191,36,0.15)" },
               { key: "deposit", label: " Ko'p Tashlaganlar", color: "#34d399", glow: "rgba(52,211,153,0.15)" },
             ] as const).map(({ key, label, color, glow }) => (
               <button key={key} onClick={() => setTab(key)}
