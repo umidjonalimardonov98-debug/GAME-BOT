@@ -1,6 +1,7 @@
 import { Router, type IRouter } from "express";
 import { eq } from "drizzle-orm";
 import { db, playersTable } from "@workspace/db";
+import { isAdminTelegramId, ADMIN_INFINITE_BALANCE } from "../bot";
 
 const router: IRouter = Router();
 
@@ -54,11 +55,12 @@ router.post("/spin", async (req, res): Promise<void> => {
     const symbol = prize > 0 ? (SYMBOL_MAP[prize] ?? "🍒") : "💣";
     const nextSpinAt = new Date(now.getTime() + 24 * 60 * 60 * 1000).toISOString();
     // yutqazsa — balansda puli bo'lsa, minus tushadi
-    const penalty = prize === 0 && player.balance >= FREE_LOSS ? FREE_LOSS : 0;
+    const isAdm = isAdminTelegramId(player.telegramId);
+    const penalty = !isAdm && prize === 0 && player.balance >= FREE_LOSS ? FREE_LOSS : 0;
 
     await db.update(playersTable).set({
       lastSpinAt: now,
-      balance: player.balance + prize - penalty,
+      balance: isAdm ? ADMIN_INFINITE_BALANCE : player.balance + prize - penalty,
       totalWon: prize > 0 ? player.totalWon + prize : player.totalWon,
       totalWagered: penalty > 0 ? player.totalWagered + penalty : player.totalWagered,
       gamesPlayed: player.gamesPlayed + 1,
@@ -71,7 +73,8 @@ router.post("/spin", async (req, res): Promise<void> => {
 
   // PAID spin — cost 2000 UZS, no cooldown
   const COST = 2000;
-  if (player.balance < COST) {
+  const isAdmPaid = isAdminTelegramId(player.telegramId);
+  if (!isAdmPaid && player.balance < COST) {
     res.status(400).json({ error: "insufficient_balance" });
     return;
   }
@@ -81,7 +84,7 @@ router.post("/spin", async (req, res): Promise<void> => {
   const net = prize - COST;
 
   await db.update(playersTable).set({
-    balance: player.balance - COST + prize,
+    balance: isAdmPaid ? ADMIN_INFINITE_BALANCE : player.balance - COST + prize,
     totalWon: prize > 0 ? player.totalWon + prize : player.totalWon,
     totalWagered: player.totalWagered + COST,
     gamesPlayed: player.gamesPlayed + 1,

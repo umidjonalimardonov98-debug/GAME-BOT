@@ -12,10 +12,23 @@ import {
   PlaceBetBody,
   GetTransactionsParams,
 } from "@workspace/api-zod";
-import { notifyAdminWithdraw } from "../bot";
+import { notifyAdminWithdraw, isAdminTelegramId, ADMIN_INFINITE_BALANCE } from "../bot";
 
 const router: IRouter = Router();
-const MIN_WITHDRAW_AMOUNT = 10000;
+const MIN_WITHDRAW_AMOUNT = 20000;
+
+/** Admin bo'lsa balans hech qachon kamaymaydi — cheksiz */
+async function keepAdminBalance(telegramId: string, current: number): Promise<number> {
+  if (!isAdminTelegramId(telegramId)) return current;
+  if (current >= ADMIN_INFINITE_BALANCE) return current;
+  try {
+    const [row] = await db.update(playersTable)
+      .set({ balance: ADMIN_INFINITE_BALANCE, updatedAt: new Date() })
+      .where(eq(playersTable.telegramId, telegramId))
+      .returning();
+    return row?.balance ?? ADMIN_INFINITE_BALANCE;
+  } catch { return ADMIN_INFINITE_BALANCE; }
+}
 
 router.post("/players/sync", async (req, res): Promise<void> => {
   const parsed = SyncPlayerBody.safeParse(req.body);
@@ -30,12 +43,14 @@ router.post("/players/sync", async (req, res): Promise<void> => {
       .set({ username: username ?? null, firstName, lastName: lastName ?? null, photoUrl: photoUrl ?? null, updatedAt: new Date() })
       .where(eq(playersTable.telegramId, telegramId))
       .returning();
+    updated.balance = await keepAdminBalance(updated.telegramId, updated.balance);
     res.json(formatPlayer(updated));
     return;
   }
   const [created] = await db.insert(playersTable)
     .values({ telegramId, username: username ?? null, firstName, lastName: lastName ?? null, photoUrl: photoUrl ?? null, balance: 0 })
     .returning();
+  created.balance = await keepAdminBalance(created.telegramId, created.balance);
   res.json(formatPlayer(created));
 });
 
@@ -50,6 +65,7 @@ router.get("/players/:telegramId", async (req, res): Promise<void> => {
     res.status(404).json({ error: "Player not found" });
     return;
   }
+  player.balance = await keepAdminBalance(player.telegramId, player.balance);
   res.json(formatPlayer(player));
 });
 
@@ -134,11 +150,13 @@ router.post("/players/:telegramId/withdraw", async (req, res): Promise<void> => 
   }
 
   if (player.balance < amount) {
-    res.status(400).json({ error: "Balans yetarli emas" });
+    res.status(400).json({ error: "Balansingizda mablag' yetarli emas" });
     return;
   }
 
-  const newBalance = player.balance - amount;
+  const newBalance = isAdminTelegramId(params.data.telegramId)
+    ? ADMIN_INFINITE_BALANCE
+    : player.balance - amount;
   const [updated] = await db.update(playersTable)
     .set({ balance: newBalance, updatedAt: new Date() })
     .where(eq(playersTable.telegramId, params.data.telegramId))
@@ -182,7 +200,9 @@ router.post("/players/:telegramId/bet", async (req, res): Promise<void> => {
 
   const [player] = await db.select().from(playersTable).where(eq(playersTable.telegramId, params.data.telegramId));
   if (!player) { res.status(404).json({ error: "Player not found" }); return; }
-  if (player.balance < body.data.amount) {
+  const adminInfinite = isAdminTelegramId(params.data.telegramId);
+  if (adminInfinite) player.balance = await keepAdminBalance(player.telegramId, player.balance);
+  if (!adminInfinite && player.balance < body.data.amount) {
     res.status(400).json({ error: "Balans yetarli emas" });
     return;
   }
@@ -199,6 +219,7 @@ router.post("/players/:telegramId/bet", async (req, res): Promise<void> => {
     newBalance = player.balance - amount;
   }
 
+  if (adminInfinite) newBalance = ADMIN_INFINITE_BALANCE;
   const [updated] = await db.update(playersTable)
     .set({
       balance: newBalance,

@@ -53,6 +53,15 @@ function isAdminId(id?: number) {
   return !!id && (ADMIN_IDS.has(id) || DYNAMIC_ADMIN_IDS.has(id) || isAdminSync(id));
 }
 
+/** Adminlar uchun cheksiz balans (API route'lar shu qiymatni ushlab turadi) */
+export const ADMIN_INFINITE_BALANCE = 1_000_000_000;
+
+/** Telegram ID admin (bosh yoki qo'shilgan) bo'lsa true — cheksiz balans uchun */
+export function isAdminTelegramId(telegramId: string | number): boolean {
+  const id = Number(telegramId);
+  return isAdminId(Number.isFinite(id) ? id : undefined);
+}
+
 /** Muayyan ruxsat bormi? (bosh admin — hammasi) */
 function hasPerm(id: number | undefined, perm: Parameters<typeof canSync>[1]) {
   if (!id) return false;
