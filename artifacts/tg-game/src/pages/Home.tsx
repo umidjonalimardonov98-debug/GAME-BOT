@@ -573,6 +573,19 @@ export default function Home() {
           </button>
         </div>
       </div>
+      {/* Referal — oltin tugma */}
+      <button onClick={() => nav("/referral")}
+        className="fixed left-4 z-40 flex items-center gap-1.5 px-3.5 py-2.5 rounded-2xl active:scale-95 transition-all"
+        style={{
+          bottom: 92,
+          background: "linear-gradient(145deg,#f7c948,#b45309)",
+          border: "1px solid rgba(255,246,207,0.7)",
+          boxShadow: "0 10px 28px rgba(247,201,72,0.45)",
+        }}>
+        <Gift size={16} color="#1a1204" />
+        <span className="text-xs font-black" style={{ color: "#1a1204" }}>REFERAL</span>
+      </button>
+
       {/* Ommaviy chat — oltin tugma */}
       <button onClick={() => nav("/chat")}
         className="fixed right-4 z-40 flex items-center gap-1.5 px-3.5 py-2.5 rounded-2xl active:scale-95 transition-all"

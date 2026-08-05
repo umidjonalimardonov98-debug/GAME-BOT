@@ -12,7 +12,7 @@ import {
   PlaceBetBody,
   GetTransactionsParams,
 } from "@workspace/api-zod";
-import { notifyAdminWithdraw, isAdminTelegramId, ADMIN_INFINITE_BALANCE } from "../bot";
+import { notifyAdminWithdraw, isAdminTelegramId, ADMIN_INFINITE_BALANCE, getBotUsername, getReferralBonusPublic, REFERRAL_GOAL, notifyAdminsReferralGoal } from "../bot";
 
 const router: IRouter = Router();
 const MIN_WITHDRAW_AMOUNT = 20000;
@@ -343,4 +343,27 @@ function formatPlayer(p: typeof playersTable.$inferSelect) {
   };
 }
 
+/** Referal ma'lumoti — mini app "Referal" bo'limi uchun */
+router.get("/players/:telegramId/referral", async (req, res): Promise<void> => {
+  const telegramId = String(req.params.telegramId);
+  try {
+    const [p] = await db.select().from(playersTable).where(eq(playersTable.telegramId, telegramId));
+    const count = p?.referralCount ?? 0;
+    const username = await getBotUsername();
+    const bonus = await getReferralBonusPublic();
+    if (count >= REFERRAL_GOAL) { notifyAdminsReferralGoal(telegramId).catch(() => {}); }
+    res.json({
+      count,
+      target: REFERRAL_GOAL,
+      bonus,
+      botUsername: username,
+      link: username ? `https://t.me/${username}?start=ref_${telegramId}` : "",
+      completed: count >= REFERRAL_GOAL,
+    });
+  } catch {
+    res.status(500).json({ error: "referral info failed" });
+  }
+});
+
 export default router;
+

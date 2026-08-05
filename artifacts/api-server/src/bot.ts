@@ -48,6 +48,55 @@ async function getReferralBonus(): Promise<number> {
   } catch { return DEFAULT_REFERRAL_BONUS; }
 }
 
+let cachedBotUsername: string | null = null;
+export async function getBotUsername(): Promise<string> {
+  if (cachedBotUsername) return cachedBotUsername;
+  try {
+    const me = await bot!.getMe();
+    cachedBotUsername = me.username ?? "";
+    return cachedBotUsername;
+  } catch { return ""; }
+}
+
+export async function getReferralBonusPublic() { return getReferralBonus(); }
+
+export const REFERRAL_GOAL = 5;
+
+/** 5 ta referal to'lganda — adminlarga avtomatik so'rov (promokod berish uchun) */
+export async function notifyAdminsReferralGoal(referrerId: string) {
+  if (!bot) return;
+  try {
+    const key = `ref_goal_notified_${referrerId}`;
+    const [row] = await db.select().from(appSettingsTable).where(eq(appSettingsTable.key, key));
+    const [p] = await db.select().from(playersTable).where(eq(playersTable.telegramId, referrerId));
+    const count = p?.referralCount ?? 0;
+    const reached = Math.floor(count / REFERRAL_GOAL);
+    if (reached < 1) return;
+    if (Number(row?.value ?? 0) >= reached) return;
+    await db.insert(appSettingsTable).values({ key, value: String(reached) })
+      .onConflictDoUpdate({ target: appSettingsTable.key, set: { value: String(reached), updatedAt: new Date() } });
+
+    await notifyFinanceText(
+      `\u{1F3AB} <b>REFERAL SOVRINI SO'ROVI</b>\n\n` +
+      `\u{1F464} ${p?.firstName ?? "Foydalanuvchi"} (@${p?.username ?? "\u2014"})\n` +
+      `\u{1F194} <code>${referrerId}</code>\n` +
+      `\u{1F91D} Taklif qilganlar: <b>${count} ta</b>\n\n` +
+      `Ushbu foydalanuvchi <b>${REFERRAL_GOAL} ta do'st</b> taklif qildi \u2014 unga <b>promokod</b> berish kerak.`,
+      [
+        [{ text: "\u{1F3AB} Promokod yaratish", callback_data: "admin_promo_create" }],
+        [{ text: "\u2709\uFE0F Foydalanuvchiga yozish", callback_data: `refmsg_${referrerId}` }],
+      ]
+    );
+    try {
+      await bot.sendMessage(Number(referrerId),
+        `\u{1F389} <b>Tabriklaymiz!</b>\n\nSiz <b>${REFERRAL_GOAL} ta do'st</b> taklif qildingiz!\n\u{1F3AB} So'rovingiz adminga yuborildi \u2014 tez orada <b>promokod</b> olasiz.`,
+        { parse_mode: "HTML" });
+    } catch {}
+  } catch (err) {
+    logger.error({ err }, "notifyAdminsReferralGoal xato");
+  }
+}
+
 let bot: TelegramBot | null = null;
 let processGuardsInstalled = false;
 
@@ -716,6 +765,7 @@ export async function startBot() {
           await db.update(playersTable).set({ referredBy: referrerId, updatedAt: new Date() }).where(eq(playersTable.telegramId, String(user.id)));
           const refBonus = await getReferralBonus();
           await db.update(playersTable).set({ balance: referrer.balance + refBonus, referralCount: referrer.referralCount + 1, updatedAt: new Date() }).where(eq(playersTable.telegramId, referrerId));
+          try { await notifyAdminsReferralGoal(referrerId); } catch {}
           try {
             await bot!.sendMessage(Number(referrerId),
               `🎉 <b>Referal bonus!</b>\n\n👤 ${user.first_name} siz orqali ro'yxatdan o'tdi!\n💰 <b>+${fmt(refBonus)} UZS</b> balansingizga qo'shildi!`,
@@ -2781,6 +2831,18 @@ Miqdorni tanlang yoki o'zingiz kiriting:`,
           [{ text: "➕ Yangi Promo Kod", callback_data: "admin_promo_create" }],
           [{ text: "🔙 Admin panel", callback_data: "admin_panel" }],
         ]}}
+      );
+      return;
+    }
+
+    if (data.startsWith("refmsg_")) {
+      if (!isAdmin) { await bot!.answerCallbackQuery(q.id, { text: "❌ Ruxsat yo'q" }); return; }
+      await bot!.answerCallbackQuery(q.id);
+      const targetId = data.replace("refmsg_", "");
+      waitingForSendMsg.set(q.from.id, targetId);
+      await bot!.sendMessage(chatId,
+        `✍️ <code>${targetId}</code> ga yuboriladigan xabarni (promokodni) yozing:\n\n<i>Bekor qilish: /cancel</i>`,
+        { parse_mode: "HTML" }
       );
       return;
     }

@@ -4,6 +4,7 @@ import { Toaster } from "@/components/ui/toaster";
 import { PlayerProvider } from "@/lib/player-context";
 import { LangProvider } from "@/lib/lang-context";
 import { ThemeProvider } from "@/lib/theme-context";
+import Referral from "@/pages/Referral";
 import Home from "@/pages/Home";
 import AppleOfFortune from "@/pages/AppleOfFortune";
 import Dice from "@/pages/Dice";
@@ -71,6 +72,7 @@ function Router() {
       <Route path="/roulette" component={Roulette} />
       <Route path="/history" component={History} />
       <Route path="/support" component={Support} />
+      <Route path="/referral" component={Referral} />
       <Route path="/chat" component={GlobalChat} />
       <Route path="/plinko" component={Plinko} />
       <Route path="/towers" component={Towers} />
