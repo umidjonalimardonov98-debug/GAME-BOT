@@ -1,22 +1,37 @@
 import type { Lang } from "./i18n";
 
-export type Engine = "pick" | "reel" | "wheel" | "race" | "climb" | "board";
+/** Har bir dvigatel — alohida o'yin mexanikasi. Hech biri takrorlanmaydi. */
+export type Engine =
+  | "mines"      // 5x5 maydon, minaga tushmasdan olmos ochish
+  | "crash"      // ko'tarilayotgan koeffitsiyent, vaqtida chiqish
+  | "sicbo"      // 3 ta zar — katta/kichik/juft
+  | "roulette"   // raqamli ruletka + shar
+  | "hilo"       // karta: keyingisi baland/past
+  | "war"        // kazino urushi: bitta karta vs dilerniki
+  | "plinko"     // shar tushishi, kataklar koeffitsiyenti
+  | "keno"       // 40 raqamdan 6 tasini tanlash
+  | "scratch"    // qirib ochiladigan 9 katak
+  | "match3"     // 5x5 kaskad, 3 tadan mos kelishi
+  | "bingo"      // 5x5 kartochka + 20 shar
+  | "lotto"      // lotereya barabani, 6 shar
+  | "memory"     // juftliklarni topish
+  | "fishing"    // harakatlanuvchi nishonlarni urish
+  | "wheel"      // raqamli g'ildirak
+  | "reel"       // 5x3 baraban, chiziqlar
+  | "race"       // poyga
+  | "climb"      // minora bosqichlari
+  | "board";     // nard / taxta
 
 export type GameCfg = {
   key: string;
   path: string;
   engine: Engine;
-  /** asosiy va ikkilamchi rang (fon, nur, animatsiya) */
   c1: string;
   c2: string;
-  /** o'yin belgilari (public/symbols/*.png) */
   syms: string[];
-  /** yutuq koeffitsiyenti */
   mult: number;
-  /** pick: nechta variant, race: nechta ishtirokchi, climb: nechta bosqich */
   n: number;
   tag: string;
-  /** orqa fon animatsiya turi */
   layer: "rays" | "stars" | "grid" | "bubbles" | "smoke";
   name: Record<Lang, string>;
 };
@@ -34,117 +49,112 @@ const G = (
   ru: string,
   en: string,
 ): GameCfg => ({
-  key,
-  path: `/g/${key}`,
-  engine,
-  c1,
-  c2,
-  syms,
-  mult,
-  n,
-  tag: `x${mult}`,
-  layer,
-  name: { uz, ru, en },
+  key, path: `/g/${key}`, engine, c1, c2, syms, mult, n,
+  tag: `x${mult}`, layer, name: { uz, ru, en },
 });
 
-/** 24 ta yangi kazino o'yini — har biri o'z rangi, belgisi va animatsiyasi bilan */
+/** 35 ta yangi kazino o'yini — har biri boshqacha mexanika bilan */
 export const NEW_GAMES: GameCfg[] = [
-  G("goldenpharaoh", "reel",  "#f7c948", "#b45309", ["crown", "gem", "coin", "seven", "star"], 12,  3, "rays",    "Oltin Fir'avn", "Золотой Фараон", "Golden Pharaoh"),
-  G("book",          "reel",  "#ca8a04", "#4c1d95", ["chest", "crown", "star", "gem", "coin"], 14,  3, "stars",   "Sirli Kitob", "Книга Тайн", "Book of Secrets"),
-  G("fruitcocktail", "reel",  "#e11d48", "#f59e0b", ["cherry", "lemon", "orange", "grape", "melon"], 9, 3, "bubbles", "Meva Kokteyl", "Фруктовый Коктейль", "Fruit Cocktail"),
-  G("crazymonkey",   "reel",  "#15803d", "#f59e0b", ["strawberry", "grape", "bell", "seven", "star"], 10, 3, "bubbles", "Aqlli Maymun", "Крейзи Манки", "Crazy Monkey"),
-  G("resident",      "reel",  "#0f766e", "#111827", ["skull", "bomb", "gem", "seven", "coin"], 11, 3, "smoke",   "Rezident", "Резидент", "Resident"),
-  G("sweetbonanza",  "reel",  "#db2777", "#7c3aed", ["cherry", "grape", "strawberry", "melon", "gem"], 13, 3, "bubbles", "Shirin Bonanza", "Сладкая Бонанза", "Sweet Bonanza"),
-  G("hotluck",       "reel",  "#dc2626", "#f59e0b", ["seven", "bell", "cherry", "coin", "star"], 15, 3, "rays",    "Olovli Omad", "Горячая Удача", "Hot Luck"),
-  G("diamondrush",   "reel",  "#22d3ee", "#1d4ed8", ["gem", "star", "coin", "crown", "seven"], 16, 3, "stars",   "Olmos Yugurishi", "Алмазная Гонка", "Diamond Rush"),
+  /* ── MINA MAYDONI ── */
+  G("minesfield",  "mines", "#ef4444", "#450a0a", ["gem", "bomb"], 1.35, 3, "grid",    "Mina Maydoni", "Минное Поле", "Mines Field"),
+  G("diamondmine", "mines", "#22d3ee", "#0c4a6e", ["gem", "bomb"], 1.75, 5, "stars",   "Olmos Koni", "Алмазная Шахта", "Diamond Mine"),
 
-  G("treasurebox",   "pick",  "#f59e0b", "#7c2d12", ["chest"], 3.4, 4, "rays",    "Xazina Sandig'i", "Сундук Сокровищ", "Treasure Box"),
-  G("luckygift",     "pick",  "#22c55e", "#065f46", ["gift"], 3.4, 4, "bubbles", "Omadli Sovg'a", "Счастливый Подарок", "Lucky Gift"),
-  G("magicdoors",    "pick",  "#8b5cf6", "#312e81", ["question"], 2.6, 3, "smoke",  "Sehrli Eshiklar", "Волшебные Двери", "Magic Doors"),
-  G("goldenegg",     "pick",  "#facc15", "#a16207", ["coin1"], 4.4, 5, "stars",   "Oltin Tuxum", "Золотое Яйцо", "Golden Egg"),
-  G("piratechest",   "pick",  "#0ea5e9", "#0c4a6e", ["chest", "skull"], 5.2, 6, "smoke",  "Qaroqchi Sandig'i", "Пиратский Сундук", "Pirate Chest"),
-  G("clovers",       "pick",  "#16a34a", "#14532d", ["clover"], 3.4, 4, "bubbles", "To'rtbarg", "Клевер", "Lucky Clovers"),
-  G("cardhunt",      "pick",  "#be123c", "#4c0519", ["cardback"], 3.4, 4, "rays",   "Karta Ovi", "Охота за Картой", "Card Hunt"),
-  G("bombsquad",     "pick",  "#ef4444", "#450a0a", ["bomb", "gem"], 2.6, 3, "grid", "Mina Guruhi", "Сапёр", "Bomb Squad"),
+  /* ── KRESH ── */
+  G("rocketcrash", "crash", "#a855f7", "#0b1a2b", ["rocket"], 20, 0, "smoke",  "Raketa Kresh", "Ракета Краш", "Rocket Crash"),
+  G("jetx",        "crash", "#38bdf8", "#0f172a", ["plane"],  30, 0, "grid",   "Jet X", "Джет Икс", "Jet X"),
 
-  G("vipwheel",      "wheel", "#f7c948", "#b91c1c", ["wheel"], 6.5, 8,  "rays",   "VIP G'ildirak", "VIP Колесо", "VIP Wheel"),
-  G("neonwheel",     "wheel", "#22d3ee", "#7c3aed", ["wheel"], 8.5, 10, "stars",  "Neon G'ildirak", "Неоновое Колесо", "Neon Wheel"),
-  G("megawheel",     "wheel", "#f472b6", "#4c1d95", ["wheel"], 11,  12, "rays",   "Mega G'ildirak", "Мега Колесо", "Mega Wheel"),
+  /* ── ZARLAR ── */
+  G("sicbo",       "sicbo", "#f7c948", "#5b3a16", ["dice"], 3.6, 0, "rays",   "Sic Bo", "Сик Бо", "Sic Bo"),
+  G("dicetriple",  "sicbo", "#ef4444", "#450a0a", ["dice"], 5.4, 0, "smoke",  "Zar Uchligi", "Тройной Кубик", "Triple Dice"),
 
-  G("dograce",       "race",  "#f59e0b", "#78350f", ["target"], 5.2, 6, "grid",   "It Poygasi", "Собачьи Бега", "Dog Race"),
-  G("carrace",       "race",  "#ef4444", "#1e3a8a", ["rocket"], 4.4, 5, "grid",   "Avto Poyga", "Автогонки", "Car Race"),
-  G("rocketrace",    "race",  "#a855f7", "#0b1a2b", ["rocket"], 6.2, 7, "smoke",  "Raketa Poygasi", "Гонка Ракет", "Rocket Race"),
+  /* ── RULETKA ── */
+  G("euroroulette","roulette", "#16a34a", "#052e16", ["chip"], 2.9, 0, "grid",  "Yevropa Ruletkasi", "Европейская Рулетка", "European Roulette"),
+  G("goldroulette","roulette", "#f7c948", "#4a2c05", ["chip"], 3.2, 0, "rays",  "Oltin Ruletka", "Золотая Рулетка", "Gold Roulette"),
 
-  G("goldtower",     "climb", "#f7c948", "#78350f", ["coin", "bomb"], 2.2, 6, "grid",  "Oltin Minora", "Золотая Башня", "Gold Tower"),
-  G("gemladder",     "climb", "#22d3ee", "#1e1b4b", ["gem", "skull"], 2.2, 6, "stars", "Olmos Narvon", "Алмазная Лестница", "Gem Ladder"),
+  /* ── KARTA: HI-LO ── */
+  G("hilostreak",  "hilo", "#25a55a", "#14532d", ["cardback"], 1.75, 4, "bubbles", "Hi-Lo Seriya", "Хай-Лоу Серия", "Hi-Lo Streak"),
+  G("kingsroad",   "hilo", "#f472b6", "#4a044e", ["crown"],    1.95, 5, "stars",   "Shoh Yo'li", "Дорога Королей", "King's Road"),
 
-  /* ─── NARD / TAXTA o'yinlari (zar bilan bosqichma-bosqich) ─── */
-  G("nard",          "board", "#f7c948", "#5b3a16", ["dice"], 2.0, 12, "smoke",  "Nard", "Нарды", "Backgammon"),
-  G("nardgold",      "board", "#fbbf24", "#78350f", ["dice"], 2.4, 12, "rays",   "Oltin Nard", "Золотые Нарды", "Golden Backgammon"),
-  G("nardblitz",     "board", "#22d3ee", "#0f172a", ["dice"], 2.2, 12, "grid",   "Nard Blits", "Нарды Блиц", "Backgammon Blitz"),
-  G("nardsultan",    "board", "#a855f7", "#2e1065", ["dice"], 2.6, 12, "stars",  "Sulton Nardi", "Нарды Султана", "Sultan's Backgammon"),
-  G("dicewar",       "board", "#ef4444", "#450a0a", ["dice"], 2.3, 12, "smoke",  "Zar Jangi", "Битва Кубиков", "Dice War"),
-  G("dominotable",   "board", "#e2e8f0", "#1f2937", ["chip"], 2.2, 12, "grid",   "Domino Stol", "Домино", "Domino Table"),
-  G("checkers",      "board", "#16a34a", "#14532d", ["chip"], 2.1, 12, "bubbles","Shashka", "Шашки", "Checkers"),
-  G("caravan",       "board", "#f59e0b", "#7c2d12", ["coin"], 2.5, 12, "smoke",  "Karvon Yo'li", "Путь Каравана", "Caravan Road"),
+  /* ── KARTA: URUSH ── */
+  G("casinowar",   "war", "#be123c", "#4c0519", ["cardback"], 2.0, 0, "rays",   "Kazino Urushi", "Казино Война", "Casino War"),
+  G("dragoncard",  "war", "#dc2626", "#1c1917", ["dragon"],   2.4, 0, "smoke",  "Ajdar Kartasi", "Карта Дракона", "Dragon Card"),
 
-  /* ─── OLMA uslubidagi tanlov o'yinlari ─── */
-  G("appleking",     "pick",  "#22c55e", "#14532d", ["apple", "bomb"], 3.0, 4, "bubbles","Olma Shohi", "Король Яблок", "Apple King"),
-  G("appletree",     "pick",  "#84cc16", "#1a2e05", ["apple", "skull"], 4.0, 5, "rays",  "Olma Daraxti", "Яблоня", "Apple Tree"),
-  G("goldenapple",   "pick",  "#facc15", "#713f12", ["apple", "bomb"], 5.0, 6, "stars", "Oltin Olma", "Золотое Яблоко", "Golden Apple"),
-  G("dragoncave",    "pick",  "#dc2626", "#1c1917", ["dragon", "gem"], 4.2, 5, "smoke", "Ajdar G'ori", "Пещера Дракона", "Dragon Cave"),
-  G("tigerluck",     "pick",  "#f97316", "#431407", ["tiger", "coin"], 3.6, 4, "rays",  "Yo'lbars Omadi", "Удача Тигра", "Tiger Luck"),
-  G("tickethunt",    "pick",  "#38bdf8", "#082f49", ["ticket"], 3.2, 4, "grid",  "Chipta Ovi", "Охота за Билетом", "Ticket Hunt"),
-  G("trophyroom",    "pick",  "#fbbf24", "#3f2d00", ["trophy"], 4.6, 5, "stars", "Kubok Xonasi", "Зал Трофеев", "Trophy Room"),
-  G("moneybags",     "pick",  "#10b981", "#022c22", ["money"], 3.4, 4, "bubbles","Pul Qoplari", "Мешки Денег", "Money Bags"),
+  /* ── PLINKO ── */
+  G("plinkogold",  "plinko", "#f7c948", "#78350f", ["coin"], 9, 8,  "rays",   "Oltin Plinko", "Золотой Плинко", "Gold Plinko"),
+  G("plinkoneon",  "plinko", "#22d3ee", "#1e1b4b", ["gem"],  14, 10, "stars",  "Neon Plinko", "Неон Плинко", "Neon Plinko"),
 
-  /* ─── Yangi barabanlar ─── */
-  G("emirslots",     "reel",  "#f7c948", "#6b3f0c", ["crown", "coin", "gem", "star", "seven"], 10, 3, "rays",   "Amir Slotlari", "Слоты Эмира", "Emir Slots"),
-  G("silkroad",      "reel",  "#f472b6", "#4a044e", ["gem", "coin1", "chest", "star", "crown"], 11, 3, "smoke", "Ipak Yo'li", "Шёлковый Путь", "Silk Road"),
-  G("neonvegas",     "reel",  "#22d3ee", "#111827", ["seven", "bell", "star", "coin", "gem"], 12, 3, "stars",  "Neon Vegas", "Неон Вегас", "Neon Vegas"),
-  G("melonparty",    "reel",  "#4ade80", "#14532d", ["melon", "grape", "lemon", "orange", "cherry"], 8, 3, "bubbles", "Qovun Bazmi", "Дынная Вечеринка", "Melon Party"),
-  G("skytreasure",   "reel",  "#60a5fa", "#0b1a2b", ["plane", "coin", "gem", "star", "crown"], 9, 3, "grid",   "Osmon Xazinasi", "Небесное Сокровище", "Sky Treasure"),
-  G("bellfever",     "reel",  "#fb7185", "#4c0519", ["bell", "seven", "coin", "cherry", "star"], 10, 3, "rays", "Qo'ng'iroq Isitmasi", "Колокольная Лихорадка", "Bell Fever"),
+  /* ── KENO ── */
+  G("keno40",      "keno", "#f59e0b", "#7c2d12", ["ticket"], 8,  6, "grid",   "Keno 40", "Кено 40", "Keno 40"),
+  G("turbokeno",   "keno", "#8b5cf6", "#312e81", ["ticket"], 12, 5, "smoke",  "Turbo Keno", "Турбо Кено", "Turbo Keno"),
 
-  /* ─── Yangi g'ildiraklar ─── */
-  G("sultanwheel",   "wheel", "#fbbf24", "#7c2d12", ["wheel"], 7.5, 9,  "rays",  "Sulton G'ildiragi", "Колесо Султана", "Sultan Wheel"),
-  G("emeraldwheel",  "wheel", "#34d399", "#064e3b", ["wheel"], 9.5, 11, "bubbles","Zumrad G'ildirak", "Изумрудное Колесо", "Emerald Wheel"),
+  /* ── QIRIB OCHISH ── */
+  G("silvercard",  "scratch", "#cbd5e1", "#334155", ["coin1", "gem", "star", "seven", "crown"], 7,  9, "grid",  "Kumush Kartochka", "Серебряная Карточка", "Silver Scratch"),
+  G("goldcard",    "scratch", "#fbbf24", "#78350f", ["crown", "gem", "coin", "seven", "chest"], 11, 9, "rays",  "Oltin Kartochka", "Золотая Карточка", "Gold Scratch"),
 
-  /* ─── Yangi poygalar ─── */
-  G("camelrace",     "race",  "#f59e0b", "#451a03", ["target"], 5.6, 6, "smoke", "Tuya Poygasi", "Гонка Верблюдов", "Camel Race"),
-  G("dronerace",     "race",  "#38bdf8", "#0f172a", ["rocket"], 6.8, 8, "grid",  "Dron Poygasi", "Гонка Дронов", "Drone Race"),
+  /* ── KASKAD ── */
+  G("crystalblast","match3", "#22d3ee", "#0e2a47", ["gem", "star", "coin", "crown", "seven"], 10, 5, "stars",   "Kristall Portlash", "Кристальный Взрыв", "Crystal Blast"),
+  G("fruitcascade","match3", "#e11d48", "#4c0519", ["cherry", "lemon", "grape", "melon", "orange"], 8, 5, "bubbles", "Meva Kaskadi", "Фруктовый Каскад", "Fruit Cascade"),
 
-  /* ─── Yangi minoralar ─── */
-  G("sandtower",     "climb", "#f59e0b", "#78350f", ["coin", "bomb"], 2.3, 7, "smoke", "Qum Minorasi", "Песчаная Башня", "Sand Tower"),
-  G("skyladder",     "climb", "#a78bfa", "#1e1b4b", ["gem", "skull"], 2.4, 7, "stars", "Osmon Narvoni", "Небесная Лестница", "Sky Ladder"),
+  /* ── BINGO ── */
+  G("bingo75",     "bingo", "#38bdf8", "#082f49", ["chip"], 9,  5, "grid",    "Bingo 75", "Бинго 75", "Bingo 75"),
+  G("speedbingo",  "bingo", "#34d399", "#064e3b", ["chip"], 13, 5, "bubbles", "Tezkor Bingo", "Скоростное Бинго", "Speed Bingo"),
+
+  /* ── LOTEREYA ── */
+  G("lottodrum",   "lotto", "#f472b6", "#4c1d95", ["coin1"], 15, 6, "smoke",  "Lotereya Barabani", "Лотерейный Барабан", "Lotto Drum"),
+  G("megalotto",   "lotto", "#f7c948", "#4a2c05", ["money"], 22, 6, "rays",   "Mega Lotto", "Мега Лото", "Mega Lotto"),
+
+  /* ── XOTIRA ── */
+  G("memorypairs", "memory", "#8b5cf6", "#2e1065", ["gem", "coin", "crown", "star", "chest", "bell"], 6, 6, "stars", "Xotira Juftlari", "Парная Память", "Memory Pairs"),
+  G("secretpairs", "memory", "#0ea5e9", "#0c4a6e", ["chest", "gift", "trophy", "clover", "ticket", "medal-gold"], 8, 6, "smoke", "Sirli Juftlik", "Тайные Пары", "Secret Pairs"),
+
+  /* ── OV ── */
+  G("fishhunt",    "fishing", "#0ea5e9", "#082f49", ["target"], 6,  5, "bubbles", "Baliq Ovi", "Рыбалка", "Fish Hunt"),
+  G("pearlhunt",   "fishing", "#a78bfa", "#1e1b4b", ["gem"],    9,  5, "stars",   "Marvarid Ovi", "Охота за Жемчугом", "Pearl Hunt"),
+
+  /* ── RAQAMLI G'ILDIRAK ── */
+  G("vipwheel",    "wheel", "#f7c948", "#b91c1c", ["wheel"], 6.5, 8,  "rays",  "VIP G'ildirak", "VIP Колесо", "VIP Wheel"),
+  G("neonwheel",   "wheel", "#22d3ee", "#312e81", ["wheel"], 9,   10, "stars", "Neon G'ildirak", "Неоновое Колесо", "Neon Wheel"),
+
+  /* ── 5x3 BARABAN ── */
+  G("goldenpharaoh","reel", "#f7c948", "#b45309", ["crown", "gem", "coin", "seven", "star"], 12, 5, "rays",  "Oltin Fir'avn", "Золотой Фараон", "Golden Pharaoh"),
+  G("sweetbonanza", "reel", "#db2777", "#4c1d95", ["cherry", "grape", "strawberry", "melon", "gem"], 14, 5, "bubbles", "Shirin Bonanza", "Сладкая Бонанза", "Sweet Bonanza"),
+
+  /* ── POYGA ── */
+  G("camelrace",   "race", "#f59e0b", "#451a03", ["target"], 5.6, 6, "smoke", "Tuya Poygasi", "Гонка Верблюдов", "Camel Race"),
+
+  /* ── MINORA ── */
+  G("goldtower",   "climb", "#f7c948", "#78350f", ["coin", "bomb"], 2.2, 6, "grid", "Oltin Minora", "Золотая Башня", "Gold Tower"),
+
+  /* ── NARD ── */
+  G("nardgold",    "board", "#fbbf24", "#78350f", ["dice"], 2.4, 12, "rays", "Oltin Nard", "Золотые Нарды", "Golden Backgammon"),
 ];
 
 export const NEW_GAME_MAP: Record<string, GameCfg> = Object.fromEntries(
   NEW_GAMES.map((g) => [g.key, g]),
 );
 
-/* ─────────── Har bir o'yin uchun haqiqiy surat (public/games/new/*.jpg) ─────────── */
+/* ─────────── Har bir o'yin uchun surat ─────────── */
 const COVERS: Record<string, string> = {
-  goldenpharaoh: "pharaoh", book: "book", fruitcocktail: "fruit", crazymonkey: "jungle",
-  resident: "resident", sweetbonanza: "candy", hotluck: "hot777", diamondrush: "diamond",
-  treasurebox: "treasure", luckygift: "gift", magicdoors: "doors", goldenegg: "egg",
-  piratechest: "pirate", clovers: "clover", cardhunt: "cardhunt", bombsquad: "bomb",
-  vipwheel: "wheelgold", neonwheel: "wheelneon", megawheel: "wheelgold",
-  dograce: "dograce", carrace: "carrace", rocketrace: "rocketrace",
-  goldtower: "goldtower", gemladder: "gemladder",
-  nard: "nard", nardgold: "nardgold", nardblitz: "nard", nardsultan: "nardgold",
-  dicewar: "nard", dominotable: "domino", checkers: "checkers", caravan: "caravan",
-  appleking: "apple", appletree: "apple", goldenapple: "goldenapple",
-  dragoncave: "dragon", tigerluck: "tiger", tickethunt: "ticket",
-  trophyroom: "trophy", moneybags: "moneybags",
-  emirslots: "pharaoh", silkroad: "silkroad", neonvegas: "neonvegas",
-  melonparty: "melon", skytreasure: "sky", bellfever: "bell",
-  sultanwheel: "wheelgold", emeraldwheel: "wheelemerald",
-  camelrace: "camelrace", dronerace: "dronerace",
-  sandtower: "sandtower", skyladder: "gemladder",
+  minesfield: "bomb", diamondmine: "diamond",
+  rocketcrash: "rocketrace", jetx: "sky",
+  sicbo: "nard", dicetriple: "nardgold",
+  euroroulette: "wheelemerald", goldroulette: "wheelgold",
+  hilostreak: "cardhunt", kingsroad: "silkroad",
+  casinowar: "cardhunt", dragoncard: "dragon",
+  plinkogold: "goldtower", plinkoneon: "neonvegas",
+  keno40: "ticket", turbokeno: "doors",
+  silvercard: "treasure", goldcard: "goldenapple",
+  crystalblast: "diamond", fruitcascade: "fruit",
+  bingo75: "domino", speedbingo: "checkers",
+  lottodrum: "gift", megalotto: "moneybags",
+  memorypairs: "book", secretpairs: "pirate",
+  fishhunt: "sky", pearlhunt: "gemladder",
+  vipwheel: "wheelgold", neonwheel: "wheelneon",
+  goldenpharaoh: "pharaoh", sweetbonanza: "candy",
+  camelrace: "camelrace", goldtower: "goldtower", nardgold: "nardgold",
 };
 
-/** o'yin muqovasi surati (bosh sahifa katakchasi va o'yin foni uchun) */
+/** o'yin muqovasi surati */
 export function coverOf(key: string): string {
   const f = COVERS[key];
   return f ? `/games/new/${f}.jpg` : "";

@@ -7,6 +7,7 @@ import promoRouter from "./promo";
 import supportRouter from "./support";
 import voiceRoomRouter from "./voiceroom";
 import chatRouter from "./chat";
+import pvpRouter from "./pvp";
 
 const router: IRouter = Router();
 
@@ -18,5 +19,6 @@ router.use(promoRouter);
 router.use(supportRouter);
 router.use(voiceRoomRouter);
 router.use(chatRouter);
+router.use(pvpRouter);
 
 export default router;

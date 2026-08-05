@@ -8,6 +8,7 @@ import GameHeader from "@/components/GameHeader";
 import BetPanel from "@/components/casino/BetPanel";
 import PlayButton from "@/components/casino/PlayButton";
 import ResultBanner from "@/components/casino/ResultBanner";
+import NewEngineGame, { NEW_ENGINE_SET } from "@/games/engines";
 
 /* ─────────────────── umumiy yordamchilar ─────────────────── */
 
@@ -689,6 +690,7 @@ function BoardStage({ cfg, runId, target, onDone }: StageProps) {
 export default function QuickGame({ gameKey }: { gameKey: string }) {
   const cfg = NEW_GAME_MAP[gameKey];
   if (!cfg) return null;
+  if (NEW_ENGINE_SET.has(cfg.engine)) return <NewEngineGame key={cfg.key} cfg={cfg} />;
   return <Game key={cfg.key} cfg={cfg} />;
 }
 
