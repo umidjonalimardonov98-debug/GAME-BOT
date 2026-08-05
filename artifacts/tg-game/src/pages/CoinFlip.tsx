@@ -40,7 +40,7 @@ export default function CoinFlip() {
 
   return (
     <div className="min-h-screen flex flex-col" style={{ background: pageBg(theme, GAME_BG.coinflip) }}>
-      <GameHeader title={` ${GAME_NAMES.coinflip[lang]}`} subtitle="x1.9" />
+      <GameHeader icon="coin" title={` ${GAME_NAMES.coinflip[lang]}`} subtitle="x1.9" />
       <div className="flex-1 px-4 pb-8 flex flex-col gap-4 items-center">
 
         <div className="w-full rounded-3xl py-10 flex items-center justify-center"
@@ -53,7 +53,7 @@ export default function CoinFlip() {
               transform: spin ? "rotateY(180deg) scale(1.06)":"rotateY(0) scale(1)",
               transition: "transform .18s",
             }}>
-            <Sym n={face === "h" ? "crown" : "gem"} s={74} />
+            <Sym n={face === "h" ? "crown" : "gem"} s={74} className="idle-bob" />
           </div>
         </div>
 

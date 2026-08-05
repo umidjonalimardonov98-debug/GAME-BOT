@@ -7,15 +7,18 @@ import SoundToggle from "@/components/SoundToggle";
 import ThemeSwitcher from "@/components/ThemeSwitcher";
 import LangSwitcher from "@/components/LangSwitcher";
 import Odometer from "@/components/casino/Odometer";
+import Sym from "@/components/casino/Sym";
 import { sfx } from "@/lib/sound";
 
 interface Props {
   title: string;
+  /** sarlavha yonidagi rasmli belgi (emoji o'rniga) */
+  icon?: string;
   subtitle?: string;
   hideTheme?: boolean;
 }
 
-export default function GameHeader({ title, subtitle, hideTheme }: Props) {
+export default function GameHeader({ title, icon, subtitle, hideTheme }: Props) {
   const [, nav] = useLocation();
   const { player } = usePlayer();
   const { theme, ts } = useTheme();
@@ -45,9 +48,10 @@ export default function GameHeader({ title, subtitle, hideTheme }: Props) {
       </button>
 
       {/* Sarlavha */}
+      {icon && <Sym n={icon} s={26} className="idle-float shrink-0" />}
       <div className="flex-1 min-w-0">
         <p className="font-black text-base leading-tight truncate" style={{ color: ts.text }}>
-          {title}
+          {title.trim()}
         </p>
         {subtitle && (
           <p className="text-xs truncate" style={{ color: ts.textSub }}>

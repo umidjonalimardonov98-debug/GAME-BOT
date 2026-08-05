@@ -155,7 +155,7 @@ export default function Blackjack() {
 
   return (
     <div className="min-h-screen flex flex-col" style={{ background: pageBg(theme, GAME_BG.blackjack) }}>
-      <GameHeader title={` ${t.blackjackTitle}`} subtitle={t.bjPayout} />
+      <GameHeader icon="cardback" title={` ${t.blackjackTitle}`} subtitle={t.bjPayout} />
 
       <div className="flex-1 px-4 pb-6 flex flex-col gap-3">
 

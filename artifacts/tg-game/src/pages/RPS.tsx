@@ -41,7 +41,7 @@ export default function RPS() {
 
   return (
     <div className="min-h-screen flex flex-col" style={{ background: pageBg(theme, GAME_BG.rps) }}>
-      <GameHeader title={` ${GAME_NAMES.rps[lang]}`} subtitle="x1.9" />
+      <GameHeader icon="rock" title={` ${GAME_NAMES.rps[lang]}`} subtitle="x1.9" />
       <div className="flex-1 px-4 pb-8 flex flex-col gap-4 items-center">
 
         <div className="w-full rounded-3xl py-8 flex items-center justify-around"

@@ -6,6 +6,7 @@ import { useTheme, pageBg, GAME_BG } from "@/lib/theme-context";
 import { placeBet } from "@/lib/api";
 import { riggedLose } from "@/lib/odds";
 import GameHeader from "@/components/GameHeader";
+import Sym from "@/components/casino/Sym";
 import { useU } from "@/lib/ui-i18n";
 
 type BetType = "small"|"big"|"exact";
@@ -156,7 +157,7 @@ export default function Parity() {
 
   return (
     <div className="min-h-screen flex flex-col" style={{ background: pageBg(theme, GAME_BG.parity) }}>
-      <GameHeader title={` ${t.parityTitle}`} subtitle="1-90 son | x2 | x20" hideTheme />
+      <GameHeader icon="target" title={` ${t.parityTitle}`} subtitle="1-90 son | x2 | x20" hideTheme />
 
       <div className="flex-1 px-4 pb-6 flex flex-col gap-4">
 
@@ -224,7 +225,7 @@ export default function Parity() {
                   boxShadow: "0 5px 0 rgba(0,0,0,0.3), 0 6px 20px rgba(5,150,105,0.5)", ...selectedBtnStyle("small") }}>
                 <div className="absolute inset-0 pointer-events-none"
                   style={{ background: "linear-gradient(135deg,rgba(255,255,255,0.12) 0%,transparent 50%)" }} />
-                <p className="font-black text-2xl relative"></p>
+                <div className="flex justify-center relative"><Sym n="coin" s={30} className="idle-float" /></div>
                 <p className="font-black text-xs mt-1 relative"style={{ color:"#39c46f" }}>KICHIK x2</p>
                 <p className="text-xs relative"style={{ color:"rgba(255,255,255,0.5)" }}>1–44</p>
               </button>
@@ -235,7 +236,7 @@ export default function Parity() {
                   boxShadow: "0 5px 0 rgba(0,0,0,0.3), 0 6px 20px rgba(168,85,247,0.5)", ...selectedBtnStyle("exact") }}>
                 <div className="absolute inset-0 pointer-events-none"
                   style={{ background: "linear-gradient(135deg,rgba(255,255,255,0.1) 0%,transparent 50%)" }} />
-                <p className="font-black text-2xl relative"></p>
+                <div className="flex justify-center relative"><Sym n="target" s={30} className="idle-float" /></div>
                 <p className="font-black text-xs mt-1 relative"style={{ color:"#c084fc" }}>ANIQ x20</p>
                 <p className="text-xs relative"style={{ color:"rgba(255,255,255,0.5)" }}>={exactNum}</p>
               </button>
@@ -246,7 +247,7 @@ export default function Parity() {
                   boxShadow: "0 5px 0 rgba(0,0,0,0.3), 0 6px 20px rgba(217,119,6,0.5)", ...selectedBtnStyle("big") }}>
                 <div className="absolute inset-0 pointer-events-none"
                   style={{ background: "linear-gradient(135deg,rgba(255,255,255,0.12) 0%,transparent 50%)" }} />
-                <p className="font-black text-2xl relative"></p>
+                <div className="flex justify-center relative"><Sym n="money" s={30} className="idle-float" /></div>
                 <p className="font-black text-xs mt-1 relative"style={{ color:"#fbbf24" }}>KATTA x2</p>
                 <p className="text-xs relative"style={{ color:"rgba(255,255,255,0.5)" }}>47–90</p>
               </button>

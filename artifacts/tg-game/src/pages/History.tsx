@@ -44,7 +44,7 @@ export default function History() {
 
   return (
     <div className="min-h-screen" style={{ background: pageBg(theme, GAME_BG.home) }}>
-      <GameHeader title={`🧾 ${u("navHistory").toUpperCase()}`} subtitle={u("historySub")} />
+      <GameHeader icon="ticket" title={`🧾 ${u("navHistory").toUpperCase()}`} subtitle={u("historySub")} />
       <main className="px-4 pb-10">
         <div className="grid grid-cols-2 gap-2 mb-4 p-1 rounded-2xl"
           style={{ background: ts.card, border: `1px solid ${ts.cardBorder}` }}>

@@ -9,6 +9,7 @@ import GameHeader from "@/components/GameHeader";
 import BetPanel from "@/components/casino/BetPanel";
 import PlayButton from "@/components/casino/PlayButton";
 import ResultBanner from "@/components/casino/ResultBanner";
+import Sym from "@/components/casino/Sym";
 
 const FACES = ["A", "2", "3", "4", "5", "6", "7", "8", "9", "10", "J", "Q", "K"];
 type Side = "dragon"|"tiger"|"tie";
@@ -49,9 +50,12 @@ export default function DragonTiger() {
     }, 1050);
   };
 
-  const CardBox = ({ v, color, label }: { v: number | null; color: string; label: string }) => (
+  const CardBox = ({ v, color, label, icon }: { v: number | null; color: string; label: string; icon: string }) => (
     <div className="flex-1 flex flex-col items-center gap-2">
-      <p className="font-black text-xs tracking-widest" style={{ color }}>{label}</p>
+      <div className="flex items-center gap-1.5">
+        <Sym n={icon} s={26} className="idle-tilt" />
+        <p className="font-black text-xs tracking-widest" style={{ color }}>{label}</p>
+      </div>
       <div className="rounded-2xl flex items-center justify-center font-black"
         style={{ width: 92, height: 128, fontSize: 38, background: v === null ? "rgba(255,255,255,0.07)":"#fff", color: v === null ? ts.textSub : "#111", boxShadow: "0 8px 22px rgba(0,0,0,0.35)" }}>
         {v === null ? "?" : FACES[v]}
@@ -61,12 +65,12 @@ export default function DragonTiger() {
 
   return (
     <div className="min-h-screen flex flex-col" style={{ background: pageBg(theme, GAME_BG.dragontiger) }}>
-      <GameHeader title={` ${GAME_NAMES.dragontiger[lang]}`} subtitle="x9" />
+      <GameHeader icon="dragon" title={` ${GAME_NAMES.dragontiger[lang]}`} subtitle="x9" />
       <div className="flex-1 px-4 pb-8 flex flex-col gap-4 items-center">
 
         <div className="w-full rounded-3xl py-6 flex" style={{ background: ts.card, border: `1px solid ${ts.cardBorder}` }}>
-          <CardBox v={d} color="#f87171" label={` ${g("dragon", lang)}`} />
-          <CardBox v={t} color="#fbbf24" label={` ${g("tiger", lang)}`} />
+          <CardBox v={d} icon="dragon" color="#f87171" label={g("dragon", lang)} />
+          <CardBox v={t} icon="tiger" color="#fbbf24" label={g("tiger", lang)} />
         </div>
 
         <div className="w-full grid grid-cols-3 gap-2">

@@ -46,7 +46,7 @@ export function setSoundEnabled(v: boolean) {
   enabled = v;
   try { localStorage.setItem(LS_KEY, v ? "1":"0"); } catch {}
   listeners.forEach((l) => l(enabled));
-  if (v) sfx.click();
+
 }
 
 export function toggleSound() { setSoundEnabled(!enabled); return enabled; }
@@ -116,7 +116,7 @@ let lastClick = 0;
 export const sfx = {
   /** Tugma bosilishi — qisqa, quruq "tak" */
   click() {
-    if (!enabled) return;
+    return; // bosish/tiq-tiq ovozlari o'chirilgan
     const now = Date.now();
     if (now - lastClick < 40) return;
     lastClick = now;
@@ -127,7 +127,7 @@ export const sfx = {
   },
   /** Tanlov / toggle */
   select() {
-    if (!enabled) return;
+    return; // bosish/tiq-tiq ovozlari o'chirilgan
     tone({ freq: 660, to: 990, dur: 0.07, type: "sine", gain: 0.11 });
     tone({ freq: 1320, dur: 0.05, type: "sine", gain: 0.045, delay: 0.045 });
   },
@@ -139,12 +139,12 @@ export const sfx = {
   },
   /** G'ildirak/reel tiqillashi */
   tick() {
-    if (!enabled) return;
+    return; // bosish/tiq-tiq ovozlari o'chirilgan
     tone({ freq: 2100, to: 1500, dur: 0.018, type: "sine", gain: 0.028 });
   },
   /** Karta / plitka ochilishi */
   reveal() {
-    if (!enabled) return;
+    return; // bosish/tiq-tiq ovozlari o'chirilgan
     noise(0.12, 0.1, 2600, 800);
   },
   /** Yutuq — ko'tarilib boruvchi arpejio + tanga jarangi */
@@ -198,17 +198,17 @@ export const sfx = {
   },
   /** Orqaga qaytish */
   back() {
-    if (!enabled) return;
+    return; // bosish/tiq-tiq ovozlari o'chirilgan
     tone({ freq: 480, to: 240, dur: 0.11, type: "sine", gain: 0.14 });
   },
   /** Sahifaga o'tish / o'yin ochish */
   nav() {
-    if (!enabled) return;
+    return; // bosish/tiq-tiq ovozlari o'chirilgan
     tone({ freq: 380, to: 720, dur: 0.13, type: "triangle", gain: 0.14 });
   },
   /** Tikish miqdorini o'zgartirish */
   bet() {
-    if (!enabled) return;
+    return; // bosish/tiq-tiq ovozlari o'chirilgan
     tone({ freq: 900, to: 1250, dur: 0.07, type: "square", gain: 0.09 });
   },
   /** Zar tashlash */
@@ -237,7 +237,7 @@ export const sfx = {
   },
   /** Mina maydonida katak ochish */
   tile() {
-    if (!enabled) return;
+    return; // bosish/tiq-tiq ovozlari o'chirilgan
     tone({ freq: 700, to: 1150, dur: 0.08, type: "sine", gain: 0.13 });
   },
   /** Depozit / to'ldirish */
@@ -263,7 +263,7 @@ export const sfx = {
   },
   /** Xatolik / bloklangan amal */
   error() {
-    if (!enabled) return;
+    return; // bosish/tiq-tiq ovozlari o'chirilgan
     tone({ freq: 300, to: 200, dur: 0.1, type: "square", gain: 0.13 });
     tone({ freq: 200, to: 130, dur: 0.16, type: "square", gain: 0.12, delay: 0.1 });
   },
@@ -291,6 +291,8 @@ const SOUND_RULES: Array<[RegExp, () => void]> = [
 ];
 
 export function installGlobalClickSound() {
+  // Tugma bosilish ovozlari butunlay o'chirilgan (foydalanuvchi so'roviga ko'ra)
+  if (true) return;
   if (installed || typeof document === "undefined") return;
   installed = true;
   document.addEventListener(
@@ -315,7 +317,11 @@ export function installGlobalClickSound() {
  * Bosilganda emas — animatsiya davomida ishlaydi.
  * Qaytgan funksiyani chaqirib to'xtatiladi.
  */
-export function startTicker(intervalMs = 60, slowdown = 1): () => void {
+export function startTicker(_intervalMs = 60, _slowdown = 1): () => void {
+  // "tiq-tiq" ovozi o'chirilgan
+  return () =>{};
+  // eslint-disable-next-line no-unreachable
+  const intervalMs = _intervalMs, slowdown = _slowdown;
   if (typeof window === "undefined") return () =>{};
   let stopped = false;
   let gap = Math.max(45, intervalMs * 0.6);

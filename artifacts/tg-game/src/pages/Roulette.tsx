@@ -90,7 +90,7 @@ export default function Roulette() {
     setAngle((current) =>{
       const normalized = ((current % 360) + 360) % 360;
       const correction = (desired - normalized + 360) % 360;
-      return current + 360 * 6 + correction;
+      return current + 360 * 5 + correction;
     });
 
     setTimeout(async () =>{
@@ -107,7 +107,7 @@ export default function Roulette() {
         winAmount: win,
       }).catch(() =>{});
       await refresh();
-    }, 4200);
+    }, 3700);
   }, [pick, player, spinning, bet, refresh]);
 
   const conic = `conic-gradient(${WHEEL.map((n, i) =>{
@@ -118,7 +118,7 @@ export default function Roulette() {
 
   return (
     <div className="min-h-screen flex flex-col" style={{ background: pageBg(theme, GAME_BG.roulette) }}>
-      <GameHeader title=" RULETKA" subtitle="Yevropa ruletkasi · 0–36" />
+      <GameHeader icon="wheel" title=" RULETKA" subtitle="Yevropa ruletkasi · 0–36" />
 
       <div className="flex-1 px-4 pb-8 flex flex-col gap-4">
         {/* Wheel */}
@@ -176,7 +176,7 @@ export default function Roulette() {
                 borderRadius: "50%",
                 background: conic,
                 transform: `rotate(${angle}deg)`,
-                transition: "transform 4.1s cubic-bezier(0.14,0.78,0.04,1)",
+                transition: "transform 3.6s cubic-bezier(0.16,0.76,0.03,1)",
                 boxShadow:
                   "inset 0 0 0 3px rgba(212,175,55,0.85), inset 0 0 34px rgba(0,0,0,0.75), 0 6px 18px rgba(0,0,0,0.5)",
               }}
@@ -232,7 +232,7 @@ export default function Roulette() {
             <div
               className="absolute inset-0 z-20 pointer-events-none"
               style={{
-                animation: spinning ? "ballRun 4.1s cubic-bezier(0.18,0.7,0.08,1) forwards":"none",
+                animation: spinning ? "ballRun 3.6s cubic-bezier(0.2,0.7,0.08,1) forwards":"none",
                 transform: spinning ? undefined : "rotate(0deg)",
               }}
             >
@@ -271,7 +271,7 @@ export default function Roulette() {
                   textShadow: "0 1px 0 rgba(255,255,255,0.5)",
                 }}
               >
-                {spinning ? "…" : result !== null ? result : <Sym n="wheel" s={46} />}
+                {spinning ? "…" : result !== null ? result : <Sym n="wheel" s={46} className="spin-slow" />}
               </span>
             </div>
           </div>

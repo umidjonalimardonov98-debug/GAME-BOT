@@ -2,7 +2,7 @@ import { useState, useEffect, useRef } from "react";
 import { usePlayer } from "@/lib/player-context";
 import { useTheme, pageBg, GAME_BG, GOLD } from "@/lib/theme-context";
 import GameHeader from "@/components/GameHeader";
-import Sym from "@/components/casino/Sym";
+import Sym, { symUrl } from "@/components/casino/Sym";
 import { useU } from "@/lib/ui-i18n";
 
 const BASE = "/api";
@@ -108,7 +108,7 @@ export default function Spin() {
     const jitter = (Math.random() - 0.5) * (SEG * 0.5);
     const targetAngle = segIdx * SEG + SEG / 2 + jitter;
     const landAngle = (360 - targetAngle + 360) % 360;
-    const total = rotRef.current + 360 * 8 + landAngle;
+    const total = rotRef.current + 360 * 6 + landAngle;
     rotRef.current = total;
     setRotation(total);
 
@@ -118,7 +118,7 @@ export default function Spin() {
       setSpinning(false);
       if (free) { setCanFree(false); setNextSpinAt(nextSpinAtFromApi); }
       refresh();
-    }, 5200);
+    }, 3600);
   };
 
   const size = 288;
@@ -138,7 +138,7 @@ export default function Spin() {
 
   return (
     <div className="min-h-screen flex flex-col" style={{ background: pageBg(theme, GAME_BG.spin) }}>
-      <GameHeader title={u("wheelOfLuck")} subtitle="Har kuni bepul aylantirish!" />
+      <GameHeader icon="wheel" title={u("wheelOfLuck")} subtitle="Har kuni bepul aylantirish!" />
 
       <div className="flex-1 flex flex-col items-center px-4 pb-6 gap-5">
 
@@ -186,7 +186,7 @@ export default function Spin() {
                 height: size,
                 borderRadius: "50%",
                 overflow: "hidden",
-                transition: spinning ? "transform 5.2s cubic-bezier(0.12,0.72,0.02,1)":"none",
+                transition: spinning ? "transform 3.6s cubic-bezier(0.16,0.74,0.02,1)":"none",
                 transform: `rotate(${rotation}deg)`,
                 boxShadow: "inset 0 0 40px rgba(0,0,0,0.55)",
               }}
@@ -224,13 +224,14 @@ export default function Spin() {
                       return (
                         <g transform={`translate(${mid.x},${mid.y}) rotate(${rotDeg})`}>
 
-                          <text
-                            textAnchor="middle"
-                            y={-7}
-                            style={{ fontSize: 22, userSelect: "none" }}
-                          >
-                            <Sym n={seg.label} s={30} />
-                          </text>
+                          <image
+                            href={symUrl(seg.label)}
+                            x={-15}
+                            y={-30}
+                            width={30}
+                            height={30}
+                            style={{ filter: "drop-shadow(0 2px 3px rgba(0,0,0,.6))" }}
+                          />
                           <text
                             textAnchor="middle"
                             y={14}

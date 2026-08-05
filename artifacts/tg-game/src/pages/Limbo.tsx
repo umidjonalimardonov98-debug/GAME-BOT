@@ -55,7 +55,7 @@ export default function Limbo() {
 
   return (
     <div className="min-h-screen flex flex-col" style={{ background: pageBg(theme, GAME_BG.limbo) }}>
-      <GameHeader title={` ${GAME_NAMES.limbo[lang]}`} subtitle="x100" />
+      <GameHeader icon="rocket" title={` ${GAME_NAMES.limbo[lang]}`} subtitle="x100" />
       <div className="flex-1 px-4 pb-8 flex flex-col gap-4 items-center">
 
         <div className="w-full rounded-3xl py-10 flex flex-col items-center justify-center"

@@ -62,7 +62,7 @@ export default function Scratch() {
 
   return (
     <div className="min-h-screen flex flex-col" style={{ background: pageBg(theme, GAME_BG.scratch) }}>
-      <GameHeader title={` ${GAME_NAMES.scratch[lang]}`} subtitle="x10" />
+      <GameHeader icon="ticket" title={` ${GAME_NAMES.scratch[lang]}`} subtitle="x10" />
       <div className="flex-1 px-4 pb-8 flex flex-col gap-4 items-center">
 
         <p className="text-xs font-bold" style={{ color: ts.textSub }}>{g("scratchIt", lang)}</p>
@@ -77,7 +77,7 @@ export default function Scratch() {
                 background: open[i] ? "rgba(251,191,36,0.16)":"linear-gradient(145deg,#9ca3af,#6b7280)",
                 border: `1px solid ${ts.cardBorder}`,
               }}>
-              {open[i] ? <Sym n={cells[i]} s={40} /> : <Sym n="question" s={30} style={{ opacity: 0.75 }} />}
+              {open[i] ? <Sym n={cells[i]} s={40} className="idle-float" /> : <Sym n="question" s={30} className="idle-flick" style={{ opacity: 0.75 }} />}
             </button>
           ))}
         </div>

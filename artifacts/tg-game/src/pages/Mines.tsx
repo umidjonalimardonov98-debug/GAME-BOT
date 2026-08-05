@@ -127,7 +127,7 @@ export default function Mines() {
 
   return (
     <div className="min-h-screen flex flex-col" style={{ background: pageBg(theme, GAME_BG.mines) }}>
-      <GameHeader title=" MINES" subtitle="Olmoslarni top · bombadan qoch" />
+      <GameHeader icon="bomb" title=" MINES" subtitle="Olmoslarni top · bombadan qoch" />
 
       <div className="flex-1 px-4 pb-8 flex flex-col gap-4">
         {/* Multiplier bar */}
@@ -192,7 +192,7 @@ export default function Mines() {
                       : "0 4px 0 rgba(0,0,0,0.35), inset 0 1px 0 rgba(255,255,255,0.18)",
                   }}
                 >
-                  {isOpen ? <Sym n="gem" s={34} /> : revealed || boom === i ? <Sym n="bomb" s={34} /> : ""}
+                  {isOpen ? <Sym n="gem" s={34} className="idle-glow" /> : revealed || boom === i ? <Sym n="bomb" s={34} className="idle-tilt" /> : ""}
                 </button>
               );
             })}

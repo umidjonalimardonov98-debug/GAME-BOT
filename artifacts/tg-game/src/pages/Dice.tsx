@@ -86,7 +86,7 @@ export default function Dice() {
 
   return (
     <div className="min-h-screen flex flex-col" style={{ background: pageBg(theme, GAME_BG.dice) }}>
-      <GameHeader title=" DICE" subtitle="7 dan Kam · Teng · 7 dan Ko'p" />
+      <GameHeader icon="dice" title=" DICE" subtitle="7 dan Kam · Teng · 7 dan Ko'p" />
 
       <div className="flex-1 px-4 pb-6 flex flex-col gap-4">
 
@@ -134,7 +134,7 @@ export default function Dice() {
             )}
             {gameState === "result" && (
               <div className="relative text-center mt-2">
-                <div className="mb-1 flex justify-center"><Sym n={won ? "trophy" : "boom"} s={44} /></div>
+                <div className="mb-1 flex justify-center"><Sym n={won ? "trophy" : "boom"} s={44} className="idle-float" /></div>
                 <p className="font-black text-2xl" style={{ color: won ? "#39c46f" : "#f87171" }}>
                   {won ? `+${prize.toLocaleString()} UZS` : u("youLose")}
                 </p>
@@ -167,7 +167,7 @@ export default function Dice() {
                     border: sel ? `1.5px solid ${o.color}88` : `1px solid ${ts.inputBorder}`,
                     boxShadow: sel ? `0 4px 20px ${o.glow}, 0 2px 0 rgba(0,0,0,0.15)` : "0 2px 0 rgba(0,0,0,0.1)",
                   }}>
-                  <span className="text-xl mb-1.5">{o.emoji}</span>
+                  <span className="mb-1.5 flex items-center justify-center"><Sym n={o.emoji} s={28} className="idle-tilt" /></span>
                   <span className="text-xs font-semibold mb-1" style={{ color: sel ? o.color : ts.textSub }}>{o.label}</span>
                   <span className="font-black text-xl" style={{ color: sel ? o.color : ts.text }}>x{o.mult}</span>
                 </button>

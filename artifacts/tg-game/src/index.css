@@ -428,3 +428,143 @@ button:not(:disabled):active { transform: scale(.955); }
 /* ── Sekin aylanuvchi oltin charx (hero banner) ── */
 @keyframes spinSlow { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }
 .spin-slow { animation: spinSlow 14s linear infinite; }
+
+/* ══════════════════════════════════════════════
+   TIRIK ORQA FON (har o'yin uchun o'ziga xos)
+   ══════════════════════════════════════════════ */
+.live-bg {
+  position: fixed;
+  inset: 0;
+  z-index: 3;
+  pointer-events: none;
+  overflow: hidden;
+  mix-blend-mode: screen;
+  opacity: 0.5;
+}
+
+/* ambiyent nur dog'lari */
+.live-blob {
+  position: absolute;
+  width: 62vw; height: 62vw;
+  max-width: 520px; max-height: 520px;
+  border-radius: 50%;
+  filter: blur(70px);
+  opacity: 0.28;
+  animation: blobDrift 18s ease-in-out infinite;
+}
+.live-blob-2 { animation-duration: 24s; animation-delay: -6s; opacity: 0.22; }
+.live-blob-3 { animation-duration: 30s; animation-delay: -12s; opacity: 0.18; }
+@keyframes blobDrift {
+  0%,100% { transform: translate3d(0,0,0) scale(1); }
+  33%     { transform: translate3d(6%, -5%, 0) scale(1.12); }
+  66%     { transform: translate3d(-5%, 6%, 0) scale(0.94); }
+}
+
+/* aylanuvchi nur (kazino projektorlari) */
+.live-rays {
+  position: absolute;
+  left: 50%; top: -30%;
+  width: 180vmax; height: 180vmax;
+  margin-left: -90vmax;
+  background: repeating-conic-gradient(from 0deg,
+    rgba(255,255,255,0.055) 0deg 7deg, transparent 7deg 22deg);
+  animation: raySpin 46s linear infinite;
+  opacity: 0.5;
+}
+@keyframes raySpin { to { transform: rotate(360deg); } }
+
+/* siljib boruvchi neon to'r */
+.live-grid {
+  position: absolute; inset: -40%;
+  background-image:
+    linear-gradient(rgba(120,190,255,0.12) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(120,190,255,0.12) 1px, transparent 1px);
+  background-size: 46px 46px;
+  animation: gridScroll 12s linear infinite;
+  opacity: 0.5;
+}
+@keyframes gridScroll { to { transform: translate3d(46px, 46px, 0); } }
+
+/* tutun / bulut (aviator, dragon) */
+.live-smoke {
+  position: absolute; inset: -20%;
+  background:
+    radial-gradient(45% 30% at 20% 30%, rgba(255,255,255,0.10), transparent 70%),
+    radial-gradient(40% 26% at 75% 60%, rgba(255,255,255,0.08), transparent 70%),
+    radial-gradient(35% 22% at 45% 85%, rgba(255,255,255,0.07), transparent 70%);
+  animation: smokeMove 26s ease-in-out infinite alternate;
+}
+@keyframes smokeMove {
+  from { transform: translate3d(-4%, 0, 0) scale(1); }
+  to   { transform: translate3d(6%, -4%, 0) scale(1.1); }
+}
+
+/* miltillovchi yulduzlar */
+.live-stars { position: absolute; inset: 0; }
+.live-stars i {
+  position: absolute; border-radius: 50%;
+  background: #fff7d6;
+  box-shadow: 0 0 8px rgba(255,240,180,0.9);
+  animation: starTwinkle 2.8s ease-in-out infinite;
+}
+@keyframes starTwinkle {
+  0%,100% { opacity: 0.15; transform: scale(0.7); }
+  50%     { opacity: 1;    transform: scale(1.25); }
+}
+
+/* ko'tarilayotgan pufakchalar */
+.live-bubbles {
+  position: absolute; inset: 0;
+  background-image:
+    radial-gradient(circle at 15% 100%, rgba(255,255,255,0.16) 0 6px, transparent 7px),
+    radial-gradient(circle at 42% 100%, rgba(255,255,255,0.12) 0 9px, transparent 10px),
+    radial-gradient(circle at 68% 100%, rgba(255,255,255,0.14) 0 5px, transparent 6px),
+    radial-gradient(circle at 88% 100%, rgba(255,255,255,0.10) 0 11px, transparent 12px);
+  animation: bubbleRise 15s linear infinite;
+}
+@keyframes bubbleRise {
+  from { transform: translateY(0); opacity: 0.9; }
+  to   { transform: translateY(-115vh); opacity: 0; }
+}
+
+/* uchib yuruvchi o'yin belgilari (rasm) */
+.live-sym {
+  position: absolute;
+  bottom: -12vh;
+  object-fit: contain;
+  opacity: 0.55;
+  filter: drop-shadow(0 4px 10px rgba(0,0,0,0.5));
+  animation-name: symRise, symSpin;
+  animation-timing-function: linear, ease-in-out;
+  animation-iteration-count: infinite, infinite;
+  will-change: transform;
+}
+@keyframes symRise {
+  0%   { transform: translate3d(0, 0, 0); opacity: 0; }
+  10%  { opacity: 0.55; }
+  85%  { opacity: 0.4; }
+  100% { transform: translate3d(var(--drift, 0px), -122vh, 0); opacity: 0; }
+}
+@keyframes symSpin {
+  from { rotate: 0deg; }
+  to   { rotate: var(--spin, 360deg); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .live-bg { display: none; }
+}
+
+/* ══ O'yinga xos "tirik" harakatlar ══ */
+@keyframes idleFloat { 0%,100% { transform: translateY(0) } 50% { transform: translateY(-6px) } }
+@keyframes idleBob   { 0%,100% { transform: translateY(0) rotate(-4deg) } 50% { transform: translateY(-9px) rotate(4deg) } }
+@keyframes idleTilt  { 0%,100% { transform: rotate(-7deg) scale(1) } 50% { transform: rotate(7deg) scale(1.06) } }
+@keyframes idleGlow  { 0%,100% { filter: drop-shadow(0 0 4px rgba(251,191,36,.45)) } 50% { filter: drop-shadow(0 0 16px rgba(251,191,36,.95)) } }
+@keyframes idleFlick { 0%,100% { opacity: 1 } 45% { opacity: .72 } }
+.idle-float { animation: idleFloat 2.6s ease-in-out infinite; }
+.idle-bob   { animation: idleBob 2.2s ease-in-out infinite; }
+.idle-tilt  { animation: idleTilt 3s ease-in-out infinite; }
+.idle-glow  { animation: idleGlow 2s ease-in-out infinite; }
+.idle-flick { animation: idleFlick 1.8s ease-in-out infinite; }
+@media (prefers-reduced-motion: reduce) {
+  .idle-float, .idle-bob, .idle-tilt, .idle-glow, .idle-flick { animation: none !important; }
+}

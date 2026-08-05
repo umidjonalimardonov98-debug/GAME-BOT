@@ -71,7 +71,7 @@ export default function HiLo() {
 
   return (
     <div className="min-h-screen flex flex-col" style={{ background: pageBg(theme, GAME_BG.hilo) }}>
-      <GameHeader title={` ${GAME_NAMES.hilo[lang]}`} subtitle="x1.65 / qadam" />
+      <GameHeader icon="cardback" title={` ${GAME_NAMES.hilo[lang]}`} subtitle="x1.65 / qadam" />
       <div className="flex-1 px-4 pb-8 flex flex-col gap-4 items-center">
 
         <div className="w-full rounded-3xl py-6 flex items-center justify-center gap-4"

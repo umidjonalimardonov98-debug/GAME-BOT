@@ -62,7 +62,7 @@ export default function Towers() {
 
   return (
     <div className="min-h-screen flex flex-col" style={{ background: pageBg(theme, GAME_BG.towers) }}>
-      <GameHeader title={` ${GAME_NAMES.towers[lang]}`} subtitle="x20" />
+      <GameHeader icon="gem" title={` ${GAME_NAMES.towers[lang]}`} subtitle="x20" />
       <div className="flex-1 px-4 pb-8 flex flex-col gap-4 items-center">
 
         <div className="w-full rounded-3xl p-3 flex flex-col-reverse gap-1.5"
@@ -85,7 +85,7 @@ export default function Towers() {
                         color: "#fff",
                         opacity: current || done || exploded ? 1 : 0.45,
                       }}>
-                      {exploded ? <Sym n="boom" s={26} /> : done ? <Sym n="star" s={24} /> : current ? "?" : ""}
+                      {exploded ? <Sym n="boom" s={26} className="idle-tilt" /> : done ? <Sym n="star" s={24} className="idle-glow" /> : current ? "?" : ""}
                     </button>
                   );
                 })}

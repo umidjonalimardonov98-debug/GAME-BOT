@@ -72,7 +72,7 @@ export default function Plinko() {
 
   return (
     <div className="min-h-screen flex flex-col" style={{ background: pageBg(theme, GAME_BG.plinko) }}>
-      <GameHeader title={` ${GAME_NAMES.plinko[lang]}`} subtitle="x12" />
+      <GameHeader icon="gem" title={` ${GAME_NAMES.plinko[lang]}`} subtitle="x12" />
       <div className="flex-1 px-4 pb-8 flex flex-col gap-4 items-center">
 
         <TableFrame skin="blue" title="PLINKO" bulbs bulbsActive={busy}>

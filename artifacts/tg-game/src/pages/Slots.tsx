@@ -118,7 +118,7 @@ export default function Slots() {
 
   return (
     <div className="min-h-screen flex flex-col" style={{ background: pageBg(theme, GAME_BG.slots) }}>
-      <GameHeader title="Diamond Slots" subtitle="777 · Mevalar · Kombinatsiyalar" />
+      <GameHeader icon="seven" title="Diamond Slots" subtitle="777 · Mevalar · Kombinatsiyalar" />
 
       <div className="flex-1 px-3 pb-6 flex flex-col gap-4 items-center">
 

@@ -1,8 +1,10 @@
 import { sfx } from "@/lib/sound";
 import { XGREEN } from "@/lib/theme-context";
+import Sym from "@/components/casino/Sym";
 
 interface Props {
   label: string;
+  icon?: string;
   onClick: () => void;
   disabled?: boolean;
   color?: string;
@@ -10,7 +12,7 @@ interface Props {
 }
 
 /** PRO tugma — bosilganda cho'kadi, yaltirash animatsiyasi va haptik javob */
-export default function PlayButton({ label, onClick, disabled, color, shadow }: Props) {
+export default function PlayButton({ label, icon = "chip", onClick, disabled, color, shadow }: Props) {
   const press = () => {
     if (disabled) return;
     sfx.click();
@@ -27,7 +29,10 @@ export default function PlayButton({ label, onClick, disabled, color, shadow }: 
         boxShadow: disabled ? "none" : (shadow ?? XGREEN.shadow),
       }}
     >
-      <span className="relative z-10">{label}</span>
+      <span className="relative z-10 inline-flex items-center justify-center gap-2">
+        {icon && <Sym n={icon} s={24} className="idle-tilt" />}
+        {label.trim()}
+      </span>
       <span className="pro-btn-shine" aria-hidden />
     </button>
   );

@@ -5,6 +5,7 @@ import { placeBet } from "@/lib/api";
 import { riggedLose } from "@/lib/odds";
 import GameHeader from "@/components/GameHeader";
 import TableFrame from "@/components/casino/TableFrame";
+import Sym from "@/components/casino/Sym";
 import { useU } from "@/lib/ui-i18n";
 
 type Phase = "idle"|"countdown"|"flying"|"done";
@@ -155,7 +156,7 @@ export default function Aviator() {
         @keyframes twinkle { 0%,100%{opacity:0.15} 50%{opacity:0.55} }
       `}</style>
 
-      <GameHeader title=" AVIATOR" subtitle="Qulab tushishidan oldin oling!" />
+      <GameHeader icon="plane" title=" AVIATOR" subtitle="Qulab tushishidan oldin oling!" />
 
       <div className="flex-1 px-4 pb-6 flex flex-col gap-3">
 
@@ -206,7 +207,7 @@ export default function Aviator() {
           <div className="absolute w-full h-full flex items-center justify-center">
             {phase === "idle" && (
               <div className="text-center">
-                <div className="text-5xl mb-2"style={{ animation:"float 2s ease-in-out infinite" }}></div>
+                <div className="mb-2 flex justify-center"><Sym n="plane" s={62} className="idle-bob" /></div>
                 <p className="text-sm font-semibold"style={{ color: isLight ?"rgba(30,27,75,0.4)":"rgba(255,255,255,0.3)" }}>
                   Tikish kiriting va boshlang
                 </p>
@@ -220,7 +221,7 @@ export default function Aviator() {
             )}
             {phase === "flying" && (
               <div className="text-center">
-                <div className="text-4xl mb-1"style={{ animation:"float 1.5s ease-in-out infinite" }}></div>
+                <div className="mb-1 flex justify-center"><Sym n="plane" s={52} className="idle-bob" /></div>
                 <p className="font-black" style={{ fontSize: 52, lineHeight: 1, color: multColor, textShadow: `0 0 30px ${multColor}99` }}>
                   {multiplier.toFixed(2)}x
                 </p>
@@ -228,14 +229,14 @@ export default function Aviator() {
             )}
             {phase === "done" && result?.won && (
               <div className="text-center">
-                <div className="text-3xl mb-1"></div>
+                <div className="mb-1 flex justify-center"><Sym n="trophy" s={42} className="idle-glow" /></div>
                 <p className="font-black text-3xl"style={{ color:"#34d399" }}>{result.mult.toFixed(2)}x</p>
                 <p className="font-bold text-lg"style={{ color:"#39c46f" }}>+{result.amount.toLocaleString()} UZS</p>
               </div>
             )}
             {phase === "done" && !result?.won && (
               <div className="text-center">
-                <div className="text-3xl mb-1"></div>
+                <div className="mb-1 flex justify-center"><Sym n="boom" s={42} className="idle-tilt" /></div>
                 <p className="font-black text-3xl"style={{ color:"#f87171" }}>{result?.mult.toFixed(2)}x</p>
                 <p className="text-sm"style={{ color:"#f87171aa" }}>Qulab tushdi!</p>
               </div>

@@ -5,6 +5,7 @@ import { useLang } from "@/lib/lang-context";
 import { useTheme, pageBg, GAME_BG } from "@/lib/theme-context";
 import { createDepositRequest } from "@/lib/api";
 import GameHeader from "@/components/GameHeader";
+import Sym from "@/components/casino/Sym";
 import { useU } from "@/lib/ui-i18n";
 
 const CARD = "5614683518277611";
@@ -72,7 +73,7 @@ export default function Deposit() {
 
   return (
     <div className="min-h-screen flex flex-col" style={{ background: pageBg(theme, GAME_BG.home) }}>
-      <GameHeader title={` ${t.depositTitle}`} subtitle={t.depositDesc} />
+      <GameHeader icon="money" title={` ${t.depositTitle}`} subtitle={t.depositDesc} />
 
       <div className="px-4 pb-6 flex-1 overflow-y-auto flex flex-col gap-3">
 
@@ -207,7 +208,7 @@ export default function Deposit() {
         {done ? (
           <div className="rounded-2xl py-5 text-center"
             style={{ background: "rgba(37,165,90,0.12)", border: "1px solid rgba(37,165,90,0.35)" }}>
-            <p className="text-3xl mb-1.5"></p>
+            <div className="flex justify-center mb-1.5"><Sym n="money" s={40} className="idle-float" /></div>
             <p className="font-black text-lg"style={{ color:"#39c46f" }}>So'rov yuborildi!</p>
             <p className="text-sm mt-1" style={{ color: ts.textSub }}>Botga o'tyapsiz — chekni yuboring</p>
           </div>

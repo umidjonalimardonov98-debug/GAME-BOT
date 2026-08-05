@@ -35,6 +35,7 @@ import RPS from "@/pages/RPS";
 import NotFound from "@/pages/not-found";
 import RoundBreakdown from "@/components/casino/RoundBreakdown";
 import GlobalWinFx from "@/components/casino/GlobalWinFx";
+import LiveBg from "@/components/casino/LiveBg";
 import { installGlobalClickSound } from "@/lib/sound";
 
 const queryClient = new QueryClient({
@@ -85,6 +86,7 @@ function App() {
         <ThemeProvider>
           <PlayerProvider>
             <WouterRouter base={import.meta.env.BASE_URL.replace(/\/$/, "")}>
+              <LiveBg />
               <Router />
             </WouterRouter>
             <RoundBreakdown />
