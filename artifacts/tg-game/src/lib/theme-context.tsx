@@ -131,7 +131,7 @@ export const GAME_BG = {
   luckycard: "/bg/cards.jpg",
   hands: "/bg/luck.jpg",
   fruitblast: "/bg/slots.jpg",
-  derby: "/bg/crash.jpg",
+  derby: "/bg/derby.jpg",
   moneywheel: "/bg/spin.jpg",
 } as const;
 

@@ -52,7 +52,7 @@ const GAMES = [
   { key: "luckycard",   path: "/luckycard",   img: "/games/luckycard.jpg",   tag: "x3.5",  tagColor: "#fcd34d", bg: "linear-gradient(145deg,#0b1f3d,#123a6b)", glow: "#123a6b55" },
   { key: "hands",       path: "/hands",       img: "/games/hands.jpg",       tag: "NEW",   tagColor: "#39c46f", bg: "linear-gradient(145deg,#713f12,#ca8a04)", glow: "#ca8a0455" },
   { key: "fruitblast",  path: "/fruitblast",  img: "/games/fruitblast.jpg",  tag: "x2.9",  tagColor: "#f472b6", bg: "linear-gradient(145deg,#500724,#be123c)", glow: "#be123c55" },
-  { key: "derby",       path: "/derby",       img: "/games/derby.jpg",       tag: "x3.6",  tagColor: "#34d399", bg: "linear-gradient(145deg,#064e3b,#059669)", glow: "#05966955" },
+  { key: "derby",       path: "/derby",       img: "/games/derby.jpg",       tag: "x12",  tagColor: "#34d399", bg: "linear-gradient(145deg,#064e3b,#059669)", glow: "#05966955" },
   { key: "moneywheel",  path: "/moneywheel",  img: "/games/moneywheel.jpg",  tag: "x40",   tagColor: "#fbbf24", bg: "linear-gradient(145deg,#0d4fb0,#1668e3)", glow: "#1668e355" },
 ];
 
