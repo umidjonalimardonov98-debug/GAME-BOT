@@ -1,4 +1,3 @@
-import { useEffect } from "react";
 import { Switch, Route, Router as WouterRouter } from "wouter";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { Toaster } from "@/components/ui/toaster";
@@ -40,11 +39,11 @@ import Derby from "@/pages/Derby";
 import MoneyWheel from "@/pages/MoneyWheel";
 import NotFound from "@/pages/not-found";
 import QuickGame from "@/pages/QuickGame";
+import GlobalChat from "@/pages/GlobalChat";
 import { NEW_GAMES } from "@/lib/new-games";
 import RoundBreakdown from "@/components/casino/RoundBreakdown";
 import GlobalWinFx from "@/components/casino/GlobalWinFx";
 import LiveBg from "@/components/casino/LiveBg";
-import { installGlobalClickSound } from "@/lib/sound";
 
 const queryClient = new QueryClient({
   defaultOptions: { queries: { retry: 1, staleTime: 30000 } },
@@ -69,6 +68,7 @@ function Router() {
       <Route path="/roulette" component={Roulette} />
       <Route path="/history" component={History} />
       <Route path="/support" component={Support} />
+      <Route path="/chat" component={GlobalChat} />
       <Route path="/plinko" component={Plinko} />
       <Route path="/towers" component={Towers} />
       <Route path="/limbo" component={Limbo} />
@@ -95,7 +95,6 @@ function Router() {
 }
 
 function App() {
-  useEffect(() => { installGlobalClickSound(); }, []);
 
   return (
     <QueryClientProvider client={queryClient}>

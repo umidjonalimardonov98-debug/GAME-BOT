@@ -27,7 +27,8 @@ async function redeemPromo(telegramId: string, code: string) {
 }
 
 
-import { NEW_GAMES } from "@/lib/new-games";
+import { NEW_GAMES, NEW_GAME_MAP } from "@/lib/new-games";
+import GameArt from "@/components/casino/GameArt";
 
 const GAMES = [
   { key: "apple",       path: "/apple",       img: "/games/apple.jpg",       tag: "HOT",   tagColor: "#ef4444", bg: "linear-gradient(145deg,#064e3b,#1a7d43)", glow: "#1a7d4355" },
@@ -355,6 +356,13 @@ export default function Home() {
                   <img src={g.img} alt={GAME_NAMES[g.key][lang]} loading="lazy" decoding="async"
                     className="absolute inset-0 w-full h-full object-cover pointer-events-none crisp-img"
                     style={{ opacity: 1, borderRadius: 12 }} />
+                ) : NEW_GAME_MAP[g.key] ? (
+                  <div className="absolute inset-0 pointer-events-none overflow-hidden" style={{ borderRadius: 12 }}>
+                    <GameArt cfg={NEW_GAME_MAP[g.key]} />
+                    <img src={`/symbols/${(g as { sym?: string }).sym ?? "coin"}.png`} alt="" width={40} height={40}
+                      className="idle-float absolute left-1/2 top-[38%] -translate-x-1/2 -translate-y-1/2"
+                      style={{ filter: "drop-shadow(0 6px 16px rgba(0,0,0,0.65))" }} />
+                  </div>
                 ) : (
                   <div className="absolute inset-0 pointer-events-none flex items-center justify-center overflow-hidden"
                     style={{ background: (g as { bg: string }).bg, borderRadius: 12 }}>
@@ -470,6 +478,19 @@ export default function Home() {
           </button>
         </div>
       </div>
+      {/* Ommaviy chat — oltin tugma */}
+      <button onClick={() => nav("/chat")}
+        className="fixed right-4 z-40 flex items-center gap-1.5 px-3.5 py-2.5 rounded-2xl active:scale-95 transition-all"
+        style={{
+          bottom: 92,
+          background: "linear-gradient(145deg,#f7c948,#b45309)",
+          border: "1px solid rgba(255,246,207,0.7)",
+          boxShadow: "0 10px 28px rgba(247,201,72,0.45)",
+        }}>
+        <MessageCircle size={16} color="#1a1204" />
+        <span className="text-xs font-black" style={{ color: "#1a1204" }}>CHAT</span>
+      </button>
+
     </div>
   );
 }

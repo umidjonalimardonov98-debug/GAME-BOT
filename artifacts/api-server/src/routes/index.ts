@@ -6,6 +6,7 @@ import spinRouter from "./spin";
 import promoRouter from "./promo";
 import supportRouter from "./support";
 import voiceRoomRouter from "./voiceroom";
+import chatRouter from "./chat";
 
 const router: IRouter = Router();
 
@@ -16,5 +17,6 @@ router.use(spinRouter);
 router.use(promoRouter);
 router.use(supportRouter);
 router.use(voiceRoomRouter);
+router.use(chatRouter);
 
 export default router;

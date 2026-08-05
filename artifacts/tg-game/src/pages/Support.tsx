@@ -6,7 +6,6 @@ import { useTheme, pageBg, GAME_BG, GOLD, XGREEN } from "@/lib/theme-context";
 import { haptic, hapticNotify, openBotChat } from "@/lib/telegram";
 import { useU } from "@/lib/ui-i18n";
 import { sfx } from "@/lib/sound";
-import VoiceRoom from "@/components/VoiceRoom";
 
 type Status = "idle" | "pending" | "active";
 
@@ -289,7 +288,6 @@ export default function Support() {
           {msg && <p className="text-[12px] mt-3 text-center font-bold" style={{ color: ts.text }}>{msg}</p>}
         </div>
 
-        <VoiceRoom />
 
         {/* ilova ichidagi 2 kishilik chat */}
         {(status === "active" || chat.length > 0) && (

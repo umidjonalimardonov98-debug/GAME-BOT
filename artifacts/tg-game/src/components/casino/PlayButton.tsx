@@ -1,4 +1,3 @@
-import { sfx } from "@/lib/sound";
 import { XGREEN } from "@/lib/theme-context";
 import Sym from "@/components/casino/Sym";
 
@@ -15,7 +14,6 @@ interface Props {
 export default function PlayButton({ label, icon = "chip", onClick, disabled, color, shadow }: Props) {
   const press = () => {
     if (disabled) return;
-    sfx.click();
     try { (window as any).Telegram?.WebApp?.HapticFeedback?.impactOccurred?.("medium"); } catch { /* ignore */ }
     onClick();
   };

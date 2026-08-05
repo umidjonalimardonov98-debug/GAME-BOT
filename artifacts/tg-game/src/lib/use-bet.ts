@@ -1,7 +1,6 @@
 import { useCallback, useState } from "react";
 import { usePlayer } from "./player-context";
 import { placeBet } from "./api";
-import { sfx } from "./sound";
 
 export const MIN_BET = 2000;
 export const MAX_BET = 500000;
@@ -18,7 +17,6 @@ export function useBet(game: string) {
   const canPlay = !!player && balance >= bet && !busy;
 
   const quick = useCallback((a: string) => {
-    sfx.bet();
     let v = bet;
     if (a === "MIN") v = MIN_BET;
     else if (a === "MAX") v = Math.max(MIN_BET, Math.min(balance, MAX_BET));
