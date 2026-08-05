@@ -1,11 +1,12 @@
-import { useState, useCallback, useEffect } from "react";
+import { useState, useCallback, useEffect, useRef } from "react";
 import { usePlayer } from "@/lib/player-context";
 import { useTheme, pageBg, GAME_BG } from "@/lib/theme-context";
 import { placeBet } from "@/lib/api";
 import { riggedLose, randomWhere } from "@/lib/odds";
 import GameHeader from "@/components/GameHeader";
 import TableFrame from "@/components/casino/TableFrame";
-import Sym from "@/components/casino/Sym";
+import RouletteWheel from "@/components/casino/RouletteWheel";
+import { sfx } from "@/lib/sound";
 import { useU } from "@/lib/ui-i18n";
 
 const WHEEL = [
@@ -59,6 +60,9 @@ export default function Roulette() {
   const [result, setResult] = useState<number | null>(null);
   const [prize, setPrize] = useState(0);
   const [history, setHistory] = useState<number[]>([]);
+  const [spinCmd, setSpinCmd] = useState<{ id: number; num: number } | null>(null);
+  const spinIdRef = useRef(0);
+  const tickRef = useRef(0);
 
   const bet = Math.max(Number(betInput) || 0, 0);
   const potential = pick ? Math.floor(bet * BETS[pick].mult) : 0;
@@ -73,48 +77,35 @@ export default function Roulette() {
     setBetInput(String(v));
   }
 
-  const spin = useCallback(() =>{
+  const spin = useCallback(() => {
     if (!pick || !player || spinning || bet < 2000 || player.balance < bet) return;
     setSpinning(true);
     setResult(null);
     setPrize(0);
-
-    // Uy foydasi: 69% hollarda yutqaziladigan son tanlanadi
+    sfx.spin();
+    // Uy foydasi: yutqaziladigan/yutuqli son oldindan tanlanadi, keyin shar
+    // real fizika bilan aynan shu uyaga tushadi.
     const mustLose = riggedLose();
     const num = randomWhere(WHEEL, (n) => (mustLose ? !BETS[pick].test(n) : BETS[pick].test(n)));
-    const idx = WHEEL.indexOf(num);
-    const per = 360 / WHEEL.length;
-    // Oldingi aylanish burchagini hisobga olib, tanlangan segment markazini
-    // har safar yuqoridagi ko'rsatkich ostiga aniq olib kelamiz.
-    const desired = (360 - (idx + 0.5) * per) % 360;
-    setAngle((current) =>{
-      const normalized = ((current % 360) + 360) % 360;
-      const correction = (desired - normalized + 360) % 360;
-      return current + 360 * 5 + correction;
-    });
+    setSpinCmd({ id: ++spinIdRef.current, num });
+  }, [pick, player, spinning, bet]);
 
-    setTimeout(async () =>{
-      const won = BETS[pick].test(num);
-      const win = won ? Math.floor(bet * BETS[pick].mult) : 0;
-      setResult(num);
-      setPrize(win);
-      setHistory((h) => [num, ...h].slice(0, 12));
-      setSpinning(false);
-      await placeBet(player.telegramId, {
-        amount: bet,
-        game: "roulette",
-        won,
-        winAmount: win,
-      }).catch(() =>{});
-      await refresh();
-    }, 1750);
-  }, [pick, player, spinning, bet, refresh]);
+  const onSettled = useCallback(async (num: number) => {
+    if (!pick || !player) return;
+    const won = BETS[pick].test(num);
+    const win = won ? Math.floor(bet * BETS[pick].mult) : 0;
+    setResult(num);
+    setPrize(win);
+    setHistory((h) => [num, ...h].slice(0, 12));
+    setSpinning(false);
+    await placeBet(player.telegramId, { amount: bet, game: "roulette", won, winAmount: win }).catch(() => {});
+    await refresh();
+  }, [pick, player, bet, refresh]);
 
-  const conic = `conic-gradient(${WHEEL.map((n, i) =>{
-    const from = (i * 100) / WHEEL.length;
-    const to = ((i + 1) * 100) / WHEEL.length;
-    return `${colorOf(n)} ${from}% ${to}%`;
-  }).join(",")})`;
+  const onTick = useCallback(() => {
+    const now = performance.now();
+    if (now - tickRef.current > 70) { tickRef.current = now; sfx.click(); }
+  }, []);
 
   return (
     <div className="min-h-screen flex flex-col" style={{ background: pageBg(theme, GAME_BG.roulette) }}>
@@ -136,147 +127,12 @@ export default function Roulette() {
             style={{ background: "radial-gradient(ellipse at 50% 15%, rgba(251,191,36,0.14) 0%, transparent 62%)" }}
           />
 
-          <div style={{ width: 264 * wheelScale, height: 264 * wheelScale, display: "flex", alignItems: "center", justifyContent: "center" }}>
-          <div className="relative shrink-0"style={{ width: 264, height: 264, transform: `scale(${wheelScale})`, transformOrigin:"center" }}>
-            {/* yog'och tashqi ramka */}
-            <div
-              className="absolute inset-0 rounded-full"
-              style={{
-                background: "radial-gradient(circle at 35% 25%, #7c3a1d 0%, #4a1f0c 60%, #2a1006 100%)",
-                boxShadow: "0 20px 50px rgba(0,0,0,0.65), inset 0 2px 6px rgba(255,255,255,0.18)",
-              }}
-            />
-            {/* oltin halqa */}
-            <div
-              className="absolute rounded-full"
-              style={{
-                inset: 12,
-                background: "linear-gradient(135deg,#8a6b16,#d4af37 45%,#f7e59b 55%,#8a6b16)",
-                boxShadow: "inset 0 0 14px rgba(0,0,0,0.5)",
-              }}
-            />
-            {/* pointer */}
-            <div
-              className="absolute left-1/2 -top-2 z-30"
-              style={{
-                transform: "translateX(-50%)",
-                width: 0,
-                height: 0,
-                borderLeft: "11px solid transparent",
-                borderRight: "11px solid transparent",
-                borderTop: "20px solid #f7e59b",
-                filter: "drop-shadow(0 3px 7px rgba(0,0,0,0.7))",
-              }}
-            />
-            {/* aylanuvchi disk + raqamlar */}
-            <div
-              style={{
-                position: "absolute",
-                inset: 18,
-                borderRadius: "50%",
-                background: conic,
-                transform: `rotate(${angle}deg)`,
-                transition: "transform 1.6s cubic-bezier(0.16,0.76,0.06,1)",
-                boxShadow:
-                  "inset 0 0 0 3px rgba(212,175,55,0.85), inset 0 0 34px rgba(0,0,0,0.75), 0 6px 18px rgba(0,0,0,0.5)",
-              }}
-            >
-              {WHEEL.map((n, i) =>{
-                const deg = (i + 0.5) * (360 / WHEEL.length);
-                return (
-                  <span
-                    key={`${n}-${i}`}
-                    style={{
-                      position: "absolute",
-                      left: "50%",
-                      top: 0,
-                      transformOrigin: "0 114px",
-                      transform: `rotate(${deg}deg) translateX(-50%)`,
-                      fontSize: 10,
-                      lineHeight: "12px",
-                      fontWeight: 900,
-                      color: "#fff",
-                      textShadow: "0 1px 2px rgba(0,0,0,0.95)",
-                      paddingTop: 4,
-                      pointerEvents: "none",
-                    }}
-                  >
-                    {n}
-                  </span>
-                );
-              })}
-              {/* frets — ajratgichlar */}
-              {WHEEL.map((_, i) =>{
-                const deg = i * (360 / WHEEL.length);
-                return (
-                  <span
-                    key={`f-${i}`}
-                    style={{
-                      position: "absolute",
-                      left: "50%",
-                      top: 0,
-                      width: 1.5,
-                      height: 58,
-                      marginLeft: -0.75,
-                      background: "linear-gradient(180deg,rgba(247,229,155,0.9),rgba(212,175,55,0.1))",
-                      transformOrigin: "50% 114px",
-                      transform: `rotate(${deg}deg)`,
-                      pointerEvents: "none",
-                    }}
-                  />
-                );
-              })}
-            </div>
-
-            {/* to'p — teskari yo'nalishda yuguradi */}
-            <div
-              className="absolute inset-0 z-20 pointer-events-none"
-              style={{
-                animation: spinning ? "ballRun 3.6s cubic-bezier(0.2,0.7,0.08,1) forwards":"none",
-                transform: spinning ? undefined : "rotate(0deg)",
-              }}
-            >
-              <span
-                style={{
-                  position: "absolute",
-                  left: "50%",
-                  top: spinning ? 22 : 40,
-                  marginLeft: -6,
-                  width: 12,
-                  height: 12,
-                  borderRadius: "50%",
-                  background: "radial-gradient(circle at 32% 28%,#ffffff,#d7d7d7 55%,#8b8b8b)",
-                  boxShadow: "0 3px 7px rgba(0,0,0,0.7)",
-                  transition: "top 0.32s ease-out",
-                }}
-              />
-            </div>
-
-            {/* hub — konus */}
-            <div
-              className="absolute inset-0 m-auto flex items-center justify-center z-10"
-              style={{
-                width: 96,
-                height: 96,
-                borderRadius: "50%",
-                background: "radial-gradient(circle at 38% 30%, #fff7d6 0%, #d4af37 45%, #7a5c12 100%)",
-                border: "3px solid #4b3607",
-                boxShadow: "0 10px 24px rgba(0,0,0,0.6), inset 0 2px 6px rgba(255,255,255,0.5)",
-              }}
-            >
-              <span
-                className="font-black text-3xl"
-                style={{
-                  color: result !== null ? (colorOf(result) === "#1f2937"?"#111827": colorOf(result)) :"#4b3607",
-                  textShadow: "0 1px 0 rgba(255,255,255,0.5)",
-                }}
-              >
-                {spinning ? "…" : result !== null ? result : <Sym n="wheel" s={46} className="spin-slow" />}
-              </span>
-            </div>
-          </div>
-          </div>
-
+          <RouletteWheel
+            size={Math.round(264 * wheelScale)}
+            spin={spinCmd}
+            onSettled={onSettled}
+            onTick={onTick}
+          />
 
           {result !== null && !spinning && (
             <p className="font-black text-xl"style={{ color: prize > 0 ?"#39c46f":"#f87171" }}>

@@ -1,126 +1,147 @@
 import { useState, useRef, useEffect } from "react";
 import { useLang } from "@/lib/lang-context";
-import { useTheme, GAME_BG, pageBg } from "@/lib/theme-context";
+import { useTheme, GAME_BG, pageBg, GOLD } from "@/lib/theme-context";
 import { useBet } from "@/lib/use-bet";
 import { riggedWin } from "@/lib/odds";
-import { sfx, startTicker } from "@/lib/sound";
+import { sfx } from "@/lib/sound";
 import { g, GAME_NAMES } from "@/lib/game-i18n";
 import GameHeader from "@/components/GameHeader";
 import BetPanel from "@/components/casino/BetPanel";
 import PlayButton from "@/components/casino/PlayButton";
 import ResultBanner from "@/components/casino/ResultBanner";
 import TableFrame from "@/components/casino/TableFrame";
+import PlinkoBoard from "@/components/casino/PlinkoBoard";
 
-const ROWS = 8;
-const BUCKETS: Record<string, number[]> = {
-  low:  [1.6, 1.2, 1.05, 0, 0, 0, 1.05, 1.2, 1.6],
-  mid:  [4, 2, 1.2, 0, 0, 0, 1.2, 2, 4],
-  high: [12, 4, 1.5, 0, 0, 0, 1.5, 4, 12],
+type Risk = "low" | "mid" | "high";
+const ROW_OPTIONS = [8, 12, 16] as const;
+
+/** Haqiqiy plinko to'lov jadvallari (chetlari — yuqori, o'rtasi — 0) */
+const TABLES: Record<number, Record<Risk, number[]>> = {
+  8: {
+    low: [3.2, 1.9, 1.4, 1.1, 0, 1.1, 1.4, 1.9, 3.2],
+    mid: [8, 3, 1.6, 1.1, 0, 1.1, 1.6, 3, 8],
+    high: [24, 6, 2, 1.1, 0, 1.1, 2, 6, 24],
+  },
+  12: {
+    low: [5, 2.6, 1.8, 1.4, 1.1, 1.05, 0, 1.05, 1.1, 1.4, 1.8, 2.6, 5],
+    mid: [16, 6, 3, 1.8, 1.2, 1.05, 0, 1.05, 1.2, 1.8, 3, 6, 16],
+    high: [60, 14, 5, 2, 1.2, 1.05, 0, 1.05, 1.2, 2, 5, 14, 60],
+  },
+  16: {
+    low: [8, 4, 2.4, 1.7, 1.4, 1.2, 1.1, 1.05, 0, 1.05, 1.1, 1.2, 1.4, 1.7, 2.4, 4, 8],
+    mid: [40, 12, 6, 3, 1.8, 1.3, 1.1, 1.05, 0, 1.05, 1.1, 1.3, 1.8, 3, 6, 12, 40],
+    high: [180, 40, 12, 5, 2, 1.3, 1.1, 1.05, 0, 1.05, 1.1, 1.3, 2, 5, 12, 40, 180],
+  },
 };
 
 export default function Plinko() {
   const { lang } = useLang();
   const { theme, ts } = useTheme();
   const { bet, betInput, setBetInput, quick, settle, canPlay, busy, setBusy, saving } = useBet("plinko");
-  const [risk, setRisk] = useState<"low"|"mid"|"high">("mid");
-  const [ballPos, setBallPos] = useState<{ row: number; col: number } | null>(null);
-  const [landed, setLanded] = useState<number | null>(null);
+  const [risk, setRisk] = useState<Risk>("mid");
+  const [rows, setRows] = useState<number>(12);
+  const [drop, setDrop] = useState<{ id: number; target: number } | null>(null);
   const [won, setWon] = useState<boolean | null>(null);
   const [amount, setAmount] = useState(0);
-  const timers = useRef<ReturnType<typeof setTimeout>[]>([]);
+  const [last, setLast] = useState<number[]>([]);
+  const [width, setWidth] = useState(320);
+  const wrapRef = useRef<HTMLDivElement | null>(null);
+  const idRef = useRef(0);
+  const pegTick = useRef(0);
 
-  useEffect(() => () => timers.current.forEach(clearTimeout), []);
+  useEffect(() => {
+    const el = wrapRef.current;
+    if (!el) return;
+    const ro = new ResizeObserver(() => setWidth(Math.max(240, el.clientWidth)));
+    ro.observe(el);
+    setWidth(Math.max(240, el.clientWidth));
+    return () => ro.disconnect();
+  }, []);
 
-  const mults = BUCKETS[risk];
+  const mults = TABLES[rows][risk];
 
-  const drop = () =>{
+  const play = () => {
     if (!canPlay) return;
-    setBusy(true); setWon(null); setLanded(null);
+    setBusy(true);
+    setWon(null);
     const winning = riggedWin();
-    const winIdx = [0, 1, 2, 6, 7, 8].filter(i => mults[i] > 0);
-    const loseIdx = [3, 4, 5];
-    const target = winning
-      ? winIdx[Math.floor(Math.random() * winIdx.length)]
-      : loseIdx[Math.floor(Math.random() * loseIdx.length)];
-
-    const stopTick = startTicker(90);
-    sfx.spin();
-    const path: number[] = [];
-    let col = 4;
-    for (let r = 0; r < ROWS; r++) {
-      const dir = target > col ? 1 : target < col ? -1 : (Math.random() < 0.5 ? -1 : 1);
-      col = Math.max(0, Math.min(8, col + (r >= ROWS - Math.abs(target - col) ? (target > col ? 1 : -1) : dir * 0.5 >= 0 ? dir : dir)));
-      col = Math.round(col);
-      path.push(col);
+    const idxs = mults.map((_, i) => i);
+    const winIdx = idxs.filter((i) => mults[i] > 0);
+    const loseIdx = idxs.filter((i) => mults[i] === 0);
+    // Yutuqda chetlarga yaqinlik ehtimoli kichik (haqiqiy plinko taqsimoti)
+    let target: number;
+    if (winning) {
+      const r = Math.random();
+      const sorted = [...winIdx].sort((a, b) => mults[a] - mults[b]);
+      const zone = r < 0.72 ? sorted.slice(0, Math.ceil(sorted.length * 0.6))
+        : r < 0.95 ? sorted.slice(Math.ceil(sorted.length * 0.5))
+        : sorted.slice(-2);
+      target = zone[Math.floor(Math.random() * zone.length)];
+    } else {
+      target = loseIdx[Math.floor(Math.random() * loseIdx.length)];
     }
-    path[ROWS - 1] = target;
+    sfx.spin();
+    setDrop({ id: ++idRef.current, target });
+  };
 
-    path.forEach((c, r) =>{
-      timers.current.push(setTimeout(() => setBallPos({ row: r, col: c }), r * 90));
-    });
+  const onLanded = async (idx: number) => {
+    const mult = mults[idx];
+    setLast((l) => [mult, ...l].slice(0, 8));
+    const w = await settle(mult);
+    setAmount(w);
+    setWon(mult > 0);
+    setBusy(false);
+  };
 
-    timers.current.push(setTimeout(async () =>{
-      stopTick();
-      setBallPos(null);
-      setLanded(target);
-      const mult = mults[target];
-      const w = await settle(mult);
-      setAmount(w); setWon(mult > 0); setBusy(false);
-    }, ROWS * 90 + 220));
+  const onPeg = () => {
+    const now = performance.now();
+    if (now - pegTick.current > 55) { pegTick.current = now; sfx.click(); }
   };
 
   return (
     <div className="min-h-screen flex flex-col" style={{ background: pageBg(theme, GAME_BG.plinko) }}>
-      <GameHeader icon="gem" title={` ${GAME_NAMES.plinko[lang]}`} subtitle="x12" />
-      <div className="flex-1 px-4 pb-8 flex flex-col gap-4 items-center">
+      <GameHeader icon="gem" title={` ${GAME_NAMES.plinko[lang]}`} subtitle={`x${Math.max(...mults)}`} />
+      <div className="flex-1 px-4 pb-8 flex flex-col gap-3 items-center">
 
-        <TableFrame skin="blue" title="PLINKO" bulbs bulbsActive={busy}>
-          <div className="rounded-2xl p-3"
+        {/* oxirgi natijalar */}
+        <div className="w-full flex gap-1.5 overflow-x-auto">
+          {last.map((m, i) => (
+            <span key={i} className="shrink-0 text-[11px] font-black px-2.5 py-1 rounded-xl"
+              style={{
+                background: m > 0 ? "rgba(57,196,111,0.16)" : "rgba(239,68,68,0.14)",
+                color: m > 0 ? "#39c46f" : "#f87171",
+                border: `1px solid ${m > 0 ? "rgba(57,196,111,0.3)" : "rgba(239,68,68,0.28)"}`,
+              }}>x{m}</span>
+          ))}
+        </div>
+
+        <TableFrame skin="blue" title="PLINKO PRO" bulbs bulbsActive={busy}>
+          <div ref={wrapRef} className="rounded-2xl overflow-hidden"
             style={{
-              background: "radial-gradient(ellipse at 50% 0%, rgba(80,170,255,0.18) 0%, rgba(3,16,31,0.9) 70%)",
+              background: "radial-gradient(ellipse at 50% 0%, rgba(80,170,255,0.16) 0%, rgba(3,16,31,0.94) 70%)",
               border: "1px solid rgba(120,190,255,0.35)",
               boxShadow: "inset 0 8px 24px rgba(0,0,0,0.6)",
             }}>
-            <div className="flex flex-col items-center gap-1.5 mb-3">
-              {Array.from({ length: ROWS }).map((_, r) => (
-                <div key={r} className="flex gap-2.5 items-center">
-                  {Array.from({ length: r + 3 }).map((_, c) => {
-                    const active = ballPos?.row === r && Math.abs(ballPos.col - c) < 1;
-                    return (
-                      <span key={c} style={{
-                        width: 9, height: 9, borderRadius: "50%",
-                        background: active
-                          ? "radial-gradient(circle at 35% 30%,#fffbe6,#ffd766 60%,#b45309)"
-                          : "radial-gradient(circle at 35% 30%,#eaf6ff,#8fc7f5 55%,#3f7fb5)",
-                        boxShadow: active ? "0 0 14px #ffd766" : "0 1px 3px rgba(0,0,0,0.6)",
-                        transition: "background .16s, box-shadow .16s",
-                      }} />
-                    );
-                  })}
-                </div>
-              ))}
-            </div>
-            <div className="grid grid-cols-9 gap-1">
-              {mults.map((m, i) => (
-                <div key={i} className="text-center py-1.5 rounded-lg font-black"
-                  style={{
-                    fontSize: 9,
-                    background: landed === i
-                      ? (m > 0 ? "linear-gradient(180deg,#39c46f,#14653a)" : "linear-gradient(180deg,#ef4444,#7f1d1d)")
-                      : (m > 0 ? "linear-gradient(180deg,rgba(255,214,102,0.28),rgba(255,214,102,0.06))" : "rgba(255,255,255,0.06)"),
-                    color: landed === i ? "#fff" : (m > 0 ? "#ffd766" : "rgba(200,225,255,0.55)"),
-                    border: `1px solid ${m > 0 ? "rgba(255,214,102,0.35)" : "rgba(140,190,240,0.18)"}`,
-                    boxShadow: landed === i ? "0 0 14px rgba(255,255,255,0.35)" : "none",
-                  }}>
-                  {m > 0 ? `x${m}` : "0"}
-                </div>
-              ))}
-            </div>
+            <PlinkoBoard rows={rows} mults={mults} width={width} drop={drop} onLanded={onLanded} onPeg={onPeg} />
           </div>
         </TableFrame>
 
+        {/* qatorlar */}
         <div className="w-full grid grid-cols-3 gap-2">
-          {(["low", "mid", "high"] as const).map(r => (
+          {ROW_OPTIONS.map((r) => (
+            <button key={r} disabled={busy} onClick={() => { setRows(r); sfx.select(); }}
+              className="py-2 rounded-xl text-[11px] font-black active:scale-95 disabled:opacity-40 transition-all"
+              style={{
+                background: rows === r ? GOLD.frame : "linear-gradient(180deg,rgba(20,50,90,0.85),rgba(6,20,40,0.9))",
+                color: rows === r ? "#2a1c00" : "#9fc5ef",
+                border: `1px solid ${rows === r ? "#ffd766" : "rgba(120,190,255,0.3)"}`,
+              }}>{r} QATOR</button>
+          ))}
+        </div>
+
+        {/* risk */}
+        <div className="w-full grid grid-cols-3 gap-2">
+          {(["low", "mid", "high"] as const).map((r) => (
             <button key={r} disabled={busy} onClick={() => { setRisk(r); sfx.select(); }}
               className="py-2.5 rounded-xl text-xs font-black active:scale-95 disabled:opacity-40 transition-all"
               style={{
@@ -136,10 +157,9 @@ export default function Plinko() {
           ))}
         </div>
 
-
         <ResultBanner win={won} text={won ? g("win", lang) : g("lose", lang)} amount={amount} />
         <BetPanel value={betInput} onChange={setBetInput} onQuick={quick} disabled={busy} />
-        <PlayButton label={` ${g("play", lang)} · ${bet.toLocaleString()}`} onClick={drop} disabled={!canPlay} />
+        <PlayButton label={` ${g("play", lang)} · ${bet.toLocaleString()}`} onClick={play} disabled={!canPlay} />
         {saving && <p className="text-xs" style={{ color: ts.textSub }}>...</p>}
       </div>
     </div>

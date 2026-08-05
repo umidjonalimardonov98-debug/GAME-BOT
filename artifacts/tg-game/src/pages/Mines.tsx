@@ -6,6 +6,7 @@ import { riggedLose } from "@/lib/odds";
 import GameHeader from "@/components/GameHeader";
 import TableFrame from "@/components/casino/TableFrame";
 import Sym from "@/components/casino/Sym";
+import { sfx } from "@/lib/sound";
 import { useU } from "@/lib/ui-i18n";
 
 const SIZE = 25;
@@ -45,6 +46,8 @@ export default function Mines() {
   const [busy, setBusy] = useState(false);
   // Uy foydasi: 69% raundda bomba oldindan belgilangan qadamda chiqadi
   const [loseAt, setLoseAt] = useState<number>(Number.POSITIVE_INFINITY);
+  const [shown, setShown] = useState<number[]>([]);   // ketma-ket ochiladigan bombalar
+  const [shake, setShake] = useState(0);
 
   const bet = Math.max(Number(betInput) || 0, 0);
   const mult = multiplier(mines, opened.length);
@@ -69,6 +72,9 @@ export default function Mines() {
     setBoom(null);
     setPrize(0);
     setMsg("");
+    setShown([]);
+    setShake(0);
+    sfx.spin();
     setState("playing");
   }, [player, bet, mines, busy]);
 
@@ -94,14 +100,24 @@ export default function Mines() {
     if (state !== "playing" || opened.includes(i) || busy) return;
     const forcedBoom = opened.length + 1 === loseAt;
     if (forcedBoom || bombs.has(i)) {
-      if (forcedBoom) setBombs((b) => new Set([...b, i]));
+      const allBombs = forcedBoom ? new Set([...bombs, i]) : bombs;
+      if (forcedBoom) setBombs(allBombs);
       setBoom(i);
+      sfx.lose();
+      setShake(1);
+      setTimeout(() => setShake(0), 620);
+      // qolgan bombalar ketma-ket ochiladi (haqiqiy kazino kabi)
+      [...allBombs].filter((b) => b !== i).forEach((b, k) => {
+        setTimeout(() => { setShown((s2) => [...s2, b]); sfx.reveal(); }, 260 + k * 130);
+      });
       setPrize(0);
       setMsg(u("boomLose"));
       void finish(false, 0);
       return;
     }
     const next = [...opened, i];
+    sfx.reveal();
+    sfx.select();
     setOpened(next);
     if (next.length === SIZE - mines) {
       const all = Math.floor(bet * multiplier(mines, next.length));
@@ -127,6 +143,13 @@ export default function Mines() {
 
   return (
     <div className="min-h-screen flex flex-col" style={{ background: pageBg(theme, GAME_BG.mines) }}>
+      <style>{`
+        @keyframes mn-pop { 0%{transform:rotateY(180deg) scale(.7)} 60%{transform:rotateY(180deg) scale(1.12)} 100%{transform:rotateY(180deg) scale(1)} }
+        @keyframes mn-boom { 0%{transform:rotateY(180deg) scale(.6);filter:brightness(2.2)} 45%{transform:rotateY(180deg) scale(1.28);filter:brightness(1.6)} 100%{transform:rotateY(180deg) scale(1);filter:brightness(1)} }
+        @keyframes mn-shake { 0%,100%{transform:translate(0,0)} 20%{transform:translate(-4px,2px) rotate(-3deg)} 40%{transform:translate(4px,-2px) rotate(3deg)} 60%{transform:translate(-3px,-1px)} 80%{transform:translate(3px,1px)} }
+        @keyframes mn-spark { 0%{opacity:1;transform:translate(-50%,-50%) scale(1)} 100%{opacity:0;transform:translate(calc(-50% + var(--tx)),calc(-50% + var(--ty))) scale(.3)} }
+      `}</style>
+
       <GameHeader icon="bomb" title=" MINES" subtitle="Olmoslarni top · bombadan qoch" />
 
       <div className="flex-1 px-4 pb-8 flex flex-col gap-4">
@@ -174,25 +197,71 @@ export default function Mines() {
           <div className="grid grid-cols-5 gap-2">
             {Array.from({ length: SIZE }).map((_, i) =>{
               const isOpen = opened.includes(i);
-              const revealed = state === "over" && bombs.has(i);
+              const isBoom = boom === i;
+              const revealed = state === "over" && bombs.has(i) && (shown.includes(i) || isBoom);
+              const flipped = isOpen || revealed;
               return (
                 <button
                   key={i}
                   onClick={() => openCell(i)}
                   disabled={state !== "playing"}
-                  className="relative flex items-center justify-center transition-all active:scale-90"
+                  className="relative active:scale-90"
                   style={{
                     aspectRatio: "1 / 1",
-                    borderRadius: 14,
-                    fontSize: 22,
-                    background: cellBg(i),
-                    border: "1px solid rgba(255,255,255,0.12)",
-                    boxShadow: isOpen || revealed
-                      ? "inset 0 2px 8px rgba(0,0,0,0.35)"
-                      : "0 4px 0 rgba(0,0,0,0.35), inset 0 1px 0 rgba(255,255,255,0.18)",
+                    perspective: 520,
+                    background: "transparent",
+                    border: "none",
+                    padding: 0,
+                    animation: isBoom && shake ? "mn-shake .6s ease-out" : undefined,
                   }}
                 >
-                  {isOpen ? <Sym n="gem" s={34} className="idle-glow" /> : revealed || boom === i ? <Sym n="bomb" s={34} className="idle-tilt" /> : ""}
+                  <div style={{
+                    position: "relative", width: "100%", height: "100%",
+                    transformStyle: "preserve-3d",
+                    transition: "transform .42s cubic-bezier(.2,.9,.25,1.1)",
+                    transform: flipped ? "rotateY(180deg)" : "rotateY(0deg)",
+                  }}>
+                    {/* orqa yuz — yopiq katak */}
+                    <div style={{
+                      position: "absolute", inset: 0, borderRadius: 14, backfaceVisibility: "hidden",
+                      background: "linear-gradient(145deg,#312e81,#0d4fb0)",
+                      border: "1px solid rgba(255,255,255,0.14)",
+                      boxShadow: "0 4px 0 rgba(0,0,0,0.35), inset 0 1px 0 rgba(255,255,255,0.2)",
+                      display: "flex", alignItems: "center", justifyContent: "center",
+                    }}>
+                      <span style={{
+                        width: "42%", height: "42%", borderRadius: 6,
+                        background: "linear-gradient(135deg,rgba(255,255,255,0.16),rgba(255,255,255,0.03))",
+                      }} />
+                    </div>
+                    {/* old yuz — natija */}
+                    <div style={{
+                      position: "absolute", inset: 0, borderRadius: 14,
+                      backfaceVisibility: "hidden", transform: "rotateY(180deg)",
+                      background: isBoom
+                        ? "radial-gradient(circle at 50% 40%,#ffd28a,#ef4444 45%,#7f1d1d)"
+                        : revealed ? "linear-gradient(145deg,#450a0a,#991b1b)"
+                        : "radial-gradient(circle at 50% 35%,#5ce89a,#25a55a 55%,#065f46)",
+                      border: "1px solid rgba(255,255,255,0.14)",
+                      boxShadow: isOpen
+                        ? "inset 0 2px 10px rgba(0,0,0,0.35), 0 0 16px rgba(52,211,153,0.45)"
+                        : "inset 0 2px 10px rgba(0,0,0,0.4)",
+                      display: "flex", alignItems: "center", justifyContent: "center",
+                      animation: isBoom ? "mn-boom .5s ease-out" : isOpen ? "mn-pop .38s ease-out" : undefined,
+                    }}>
+                      {isOpen ? <Sym n="gem" s={30} glow /> : <Sym n="bomb" s={30} />}
+                    </div>
+                  </div>
+                  {/* portlash uchqunlari */}
+                  {isBoom && [...Array(10)].map((_, k) => (
+                    <span key={k} style={{
+                      position: "absolute", left: "50%", top: "50%", width: 5, height: 5, borderRadius: 99,
+                      background: k % 2 ? "#ffd766" : "#ff6b4a", pointerEvents: "none",
+                      animation: `mn-spark .7s ease-out ${k * 0.015}s forwards`,
+                      "--tx": `${Math.cos((k / 10) * 6.283) * 46}px`,
+                      "--ty": `${Math.sin((k / 10) * 6.283) * 46}px`,
+                    } as React.CSSProperties} />
+                  ))}
                 </button>
               );
             })}

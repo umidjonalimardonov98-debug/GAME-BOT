@@ -5,7 +5,8 @@ import { placeBet } from "@/lib/api";
 import { riggedLose } from "@/lib/odds";
 import GameHeader from "@/components/GameHeader";
 import TableFrame from "@/components/casino/TableFrame";
-import Sym from "@/components/casino/Sym";
+import AviatorSky from "@/components/casino/AviatorSky";
+import AutoWidth from "@/components/casino/AutoWidth";
 import { useU } from "@/lib/ui-i18n";
 
 type Phase = "idle"|"countdown"|"flying"|"done";
@@ -174,75 +175,23 @@ export default function Aviator() {
           ))}
         </div>
 
-        {/* Sky screen */}
+        {/* Sky screen — HAQIQIY canvas uchish dvigateli */}
         <TableFrame skin="night" className="!p-[2px]">
-        <div className="rounded-2xl overflow-hidden relative flex items-end justify-start"
-          style={{
-            height: 200,
-            background: "radial-gradient(ellipse at 30% 20%, rgba(224,72,63,0.18) 0%, #07070c 55%, #000 100%)",
-            border: "1px solid rgba(224,72,63,0.35)",
-            boxShadow: "inset 0 0 60px rgba(0,0,0,0.8)",
-          }}>
-
-          {/* Stars (dark mode only) */}
-          {true && [...Array(20)].map((_, i) => (
-            <div key={i} className="absolute rounded-full"
-              style={{ width: 2, height: 2, background: "white", opacity: 0.2,
-                left: `${(i * 43 + 7) % 95}%`, top: `${(i * 31 + 9) % 75}%`,
-                animation: `twinkle ${2 + (i % 3)}s ease-in-out infinite`, animationDelay: `${i * 0.2}s` }} />
-          ))}
-
-          {/* Flight curve */}
-          {phase === "flying" && (
-            <svg className="absolute inset-0 w-full h-full" viewBox="0 0 300 200" preserveAspectRatio="none">
-              <path
-                d={`M 0 180 Q ${100 + planeX * 1.5} ${180 - (multiplier - 1) * 30} ${Math.min(280, 50 + planeX * 3)} ${Math.max(20, 180 - (multiplier - 1) * 30)}`}
-                fill="none" stroke={multColor} strokeWidth="2.5" opacity="0.7"
-                strokeDasharray="6 3"
-              />
-            </svg>
-          )}
-
-          {/* Plane + multiplier */}
-          <div className="absolute w-full h-full flex items-center justify-center">
-            {phase === "idle" && (
-              <div className="text-center">
-                <div className="mb-2 flex justify-center"><Sym n="plane" s={62} className="idle-bob" /></div>
-                <p className="text-sm font-semibold"style={{ color: isLight ?"rgba(30,27,75,0.4)":"rgba(255,255,255,0.3)" }}>
-                  Tikish kiriting va boshlang
-                </p>
-              </div>
-            )}
-            {phase === "countdown" && (
-              <div className="text-center">
-                <p className="text-sm font-bold mb-2 animate-pulse"style={{ color:"#78b6ff" }}>Tayyorlanmoqda...</p>
-                <p className="font-black"style={{ fontSize: 72, lineHeight: 1, color: isLight ?"#0b3f8f":"white" }}>{countdown}</p>
-              </div>
-            )}
-            {phase === "flying" && (
-              <div className="text-center">
-                <div className="mb-1 flex justify-center"><Sym n="plane" s={52} className="idle-bob" /></div>
-                <p className="font-black" style={{ fontSize: 52, lineHeight: 1, color: multColor, textShadow: `0 0 30px ${multColor}99` }}>
-                  {multiplier.toFixed(2)}x
-                </p>
-              </div>
-            )}
-            {phase === "done" && result?.won && (
-              <div className="text-center">
-                <div className="mb-1 flex justify-center"><Sym n="trophy" s={42} className="idle-glow" /></div>
-                <p className="font-black text-3xl"style={{ color:"#34d399" }}>{result.mult.toFixed(2)}x</p>
-                <p className="font-bold text-lg"style={{ color:"#39c46f" }}>+{result.amount.toLocaleString()} UZS</p>
-              </div>
-            )}
-            {phase === "done" && !result?.won && (
-              <div className="text-center">
-                <div className="mb-1 flex justify-center"><Sym n="boom" s={42} className="idle-tilt" /></div>
-                <p className="font-black text-3xl"style={{ color:"#f87171" }}>{result?.mult.toFixed(2)}x</p>
-                <p className="text-sm"style={{ color:"#f87171aa" }}>Qulab tushdi!</p>
-              </div>
-            )}
+          <div className="rounded-2xl overflow-hidden"
+            style={{ border: "1px solid rgba(224,72,63,0.35)", boxShadow: "inset 0 0 60px rgba(0,0,0,0.8)" }}>
+            <AutoWidth>
+              {(w) => (
+                <AviatorSky
+                  width={w}
+                  height={210}
+                  phase={phase}
+                  multiplier={multiplier}
+                  countdown={countdown}
+                  crashed={phase === "done" && !result?.won}
+                />
+              )}
+            </AutoWidth>
           </div>
-        </div>
         </TableFrame>
 
         {/* Cash out (while flying) */}
