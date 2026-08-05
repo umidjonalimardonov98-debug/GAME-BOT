@@ -3,7 +3,7 @@
  *
  * WIN_RATE — o'yinchining yutish ehtimoli (0..1). Barcha o'yinlar shu yerdan boshqariladi.
  */
-export const WIN_RATE = 0.20;
+export const WIN_RATE = 0.44;
 export const LOSE_RATE = 1 - WIN_RATE;
 
 /** true bo'lsa — bu raund yutqaziladigan qilib belgilanadi */

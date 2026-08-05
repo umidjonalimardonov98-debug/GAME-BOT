@@ -1,218 +1,219 @@
-import { useState, useRef, useCallback } from "react";
+import { useState, useCallback, useMemo, useRef, useEffect } from "react";
 import { usePlayer } from "@/lib/player-context";
 import { useLang } from "@/lib/lang-context";
 import { useTheme, pageBg, GAME_BG, GOLD } from "@/lib/theme-context";
 import { placeBet } from "@/lib/api";
-import { riggedLose } from "@/lib/odds";
+import { WIN_RATE } from "@/lib/odds";
 import { sfx, startTicker } from "@/lib/sound";
 import GameHeader from "@/components/GameHeader";
-import SlotReel from "@/components/casino/SlotReel";
+import SlotColumn from "@/components/casino/SlotColumn";
 import Sym from "@/components/casino/Sym";
+import {
+  spin as spinEngine, PAYTABLE, PAYLINES, LINE_COLORS, LINE_OPTIONS,
+  SYMBOLS, WILD, SCATTER, REELS, ROWS, type SpinResult,
+} from "@/lib/slot-engine";
 
+const CHIPS = [1000, 3000, 5000, 10000, 25000, 50000];
+const CELL = 58;
 
-const FRUITS = ["cherry", "lemon", "orange", "grape", "melon", "strawberry"];
-const ALL    = ["cherry", "lemon", "orange", "grape", "melon", "strawberry", "bell", "star", "seven"];
+const EMPTY_GRID: string[][] = Array.from({ length: REELS }, (_, c) =>
+  Array.from({ length: ROWS }, (_, r) => SYMBOLS[(c * 3 + r) % SYMBOLS.length])
+);
 
-
-// Deterministic outcome first, then generate reels to match
-function spinReels(): { reels: [string,string,string]; outcome: "jackpot"|"three"|"two"|"miss" } {
-  // Uy foydasi: 69% hollarda darhol "miss"
-  if (riggedLose()) {
-    const s1 = ALL[Math.floor(Math.random() * ALL.length)];
-    let s2 = ALL[Math.floor(Math.random() * ALL.length)];
-    while (s2 === s1) s2 = ALL[Math.floor(Math.random() * ALL.length)];
-    let s3 = ALL[Math.floor(Math.random() * ALL.length)];
-    while (s3 === s1 || s3 === s2) s3 = ALL[Math.floor(Math.random() * ALL.length)];
-    return { reels: [s1, s2, s3], outcome: "miss" };
-  }
-  const r = Math.random();
-  if (r < 0.01) {
-    return { reels: ["seven", "seven", "seven"], outcome: "jackpot" };
-  } else if (r < 0.08) {
-    const sym = FRUITS[Math.floor(Math.random() * FRUITS.length)];
-    return { reels: [sym, sym, sym], outcome: "three" };
-  } else if (r < 0.33) {
-    const sym = ALL[Math.floor(Math.random() * ALL.length)];
-    const others = ALL.filter(s => s !== sym);
-    const diff = others[Math.floor(Math.random() * others.length)];
-    const pos = Math.floor(Math.random() * 3);
-    const reels: [string,string,string] = [sym, sym, sym];
-    reels[pos] = diff;
-    return { reels, outcome: "two" };
-  } else {
-    const s1 = ALL[Math.floor(Math.random() * ALL.length)];
-    let s2 = ALL[Math.floor(Math.random() * ALL.length)];
-    while (s2 === s1) s2 = ALL[Math.floor(Math.random() * ALL.length)];
-    let s3 = ALL[Math.floor(Math.random() * ALL.length)];
-    while (s3 === s1 || s3 === s2) s3 = ALL[Math.floor(Math.random() * ALL.length)];
-    return { reels: [s1, s2, s3], outcome: "miss" };
-  }
-}
-
-const STRIP = ["cherry", "lemon", "seven", "orange", "grape", "melon", "strawberry", "bell", "star"];
-
-/** 1XBET Diamond Slots uslubidagi tikish chiplari */
-const CHIPS = [3000, 10000, 40000, 100000, 200000, 1000000];
-
-/** Chap tomondagi to'lovlar jadvali (o'yin ichida, ramka ichida) */
-const PAYS: { sym: string; mult: string; color: string }[] = [
-  { sym: "seven",      mult: "x12",  color: "#ffd766" },
-  { sym: "star",       mult: "x8",   color: "#ffe9a8" },
-  { sym: "bell",       mult: "x6",   color: "#ffd766" },
-  { sym: "melon",      mult: "x3.6", color: "#9be8b4" },
-  { sym: "grape",      mult: "x3.6", color: "#9be8b4" },
-  { sym: "strawberry", mult: "x1.8", color: "#ffc9c9" },
-];
-
+const PAY_ROWS: string[] = [WILD, "seven", "bell", "star", "melon", "grape", "orange", "lemon", "cherry"];
 
 export default function Slots() {
   const { player, refresh } = usePlayer();
   const { t } = useLang();
   const { theme, ts } = useTheme();
-  const [bet, setBet] = useState(3000);
-  const [reels, setReels] = useState<[string,string,string]>(["cherry", "lemon", "orange"]);
+
+  const [betPerLine, setBetPerLine] = useState(1000);
+  const [lines, setLines] = useState(10);
+  const [grid, setGrid] = useState<string[][]>(EMPTY_GRID);
+  const [result, setResult] = useState<SpinResult | null>(null);
   const [spinning, setSpinning] = useState(false);
-  const [outcome, setOutcome] = useState<"jackpot"|"three"|"two"|"miss"|null>(null);
-  const [winAmt, setWinAmt] = useState(0);
   const [saving, setSaving] = useState(false);
+  const [showPays, setShowPays] = useState(false);
+  const [auto, setAuto] = useState(0);
   const [lever, setLever] = useState(false);
-  const intervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
+  const autoRef = useRef(0);
 
-  const activeBet = Math.max(bet, 3000);
-  const isLight = false;
+  const totalBet = betPerLine * lines;
   const balance = player?.balance ?? 0;
+  const canSpin = !!player && balance >= totalBet && !spinning;
 
-  const spin = useCallback(async () => {
-    if (!player || player.balance < activeBet || spinning) return;
+  /** yonadigan kataklar */
+  const highlight = useMemo(() => {
+    const map: boolean[][] = Array.from({ length: REELS }, () => Array(ROWS).fill(false));
+    if (!spinning && result) {
+      result.lineWins.forEach((w) => w.cells.forEach(([c, r]) => { map[c][r] = true; }));
+      if (result.scatterWin > 0)
+        for (let c = 0; c < REELS; c++)
+          for (let r = 0; r < ROWS; r++) if (result.grid[c][r] === SCATTER) map[c][r] = true;
+    }
+    return map;
+  }, [result, spinning]);
+
+  const doSpin = useCallback(() => {
+    if (!player || player.balance < totalBet || spinning) return;
     setSpinning(true);
+    setResult(null);
     setLever(true);
-    setTimeout(() => setLever(false), 420);
-    setOutcome(null);
-    const { reels: finalReels, outcome: finalOutcome } = spinReels();
-    const stopTick = startTicker(70);
-    setReels(finalReels);
+    setTimeout(() => setLever(false), 400);
+    sfx?.click?.();
 
+    const res = spinEngine(lines, betPerLine, WIN_RATE);
+    setGrid(res.grid);
+    const stopTick = startTicker(70);
+
+    const total = 900 + (REELS - 1) * 260 + 260;
     setTimeout(() => {
       stopTick();
       setSpinning(false);
-      setOutcome(finalOutcome);
-
-      const mult = finalOutcome === "jackpot" ? 12 : finalOutcome === "three" ? 3.6 : finalOutcome === "two" ? 1.8 : 0;
-      const win = mult > 0 ? Math.floor(activeBet * mult) : 0;
-      setWinAmt(win);
+      setResult(res);
+      if (res.totalWin > 0) sfx?.win?.(); else sfx?.lose?.();
 
       setSaving(true);
-      placeBet(player.telegramId, { amount: activeBet, game: "slots", won: mult > 0, winAmount: win })
-        .then(() => refresh()).catch(() => {}).finally(() => setSaving(false));
-    }, 1900);
-  }, [player, activeBet, spinning]);
+      placeBet(player.telegramId, {
+        amount: totalBet, game: "slots",
+        won: res.totalWin > 0, winAmount: res.totalWin,
+      }).then(() => refresh()).catch(() => {}).finally(() => setSaving(false));
+    }, total);
+  }, [player, totalBet, lines, betPerLine, spinning, refresh]);
 
-
-  const OUTCOME_STYLE = {
-    jackpot: { color: "#ffd766", glow: "0 0 32px rgba(255,215,102,0.75)", label: "JACKPOT! x12" },
-    three:   { color: "#39c46f", glow: "0 0 20px rgba(57,196,111,0.45)", label: "3x! x3.6" },
-    two:     { color: "#ffe9a8", glow: "none", label: "2x! x1.8" },
-    miss:    { color: "#f87171", glow: "none", label: t.noLuck },
-  };
+  // AVTO-SPIN
+  useEffect(() => {
+    autoRef.current = auto;
+  }, [auto]);
+  useEffect(() => {
+    if (auto <= 0 || spinning) return;
+    const id = setTimeout(() => {
+      if (!canSpin) { setAuto(0); return; }
+      setAuto((a) => Math.max(0, a - 1));
+      doSpin();
+    }, 700);
+    return () => clearTimeout(id);
+  }, [auto, spinning, canSpin, doSpin]);
 
   return (
     <div className="min-h-screen flex flex-col" style={{ background: pageBg(theme, GAME_BG.slots) }}>
-      <GameHeader icon="seven" title="Diamond Slots" subtitle="777 · Mevalar · Kombinatsiyalar" />
+      <GameHeader icon="seven" title="Diamond Slots 5×3" subtitle="10 liniya · Wild · Scatter" />
 
-      <div className="flex-1 px-3 pb-6 flex flex-col gap-4 items-center">
+      <div className="flex-1 px-2.5 pb-6 flex flex-col gap-3 items-center">
 
-        {/* ===== Oltin kabinet ===== */}
-        <div className="w-full rounded-[26px] p-[3px] relative"
+        {/* ===== KABINET ===== */}
+        <div className="w-full rounded-[24px] p-[3px] relative"
           style={{ background: GOLD.frame, boxShadow: `0 14px 40px rgba(0,0,0,0.62), 0 0 40px ${GOLD.glow}` }}>
-          <div className="rounded-[23px] p-3 relative overflow-hidden"
+          <div className="rounded-[21px] p-2.5 relative overflow-hidden"
             style={{
               background: "linear-gradient(180deg,#241703 0%,#140c02 45%,#0a0600 100%)",
               boxShadow: "inset 0 2px 0 rgba(255,235,170,0.25), inset 0 -30px 50px rgba(0,0,0,0.6)",
             }}>
 
-            {/* marquee lampalar */}
+            {/* lampalar */}
             <div className="flex justify-between px-1 mb-2">
-              {Array.from({ length: 13 }).map((_, i) => (
+              {Array.from({ length: 15 }).map((_, i) => (
                 <span key={i} className={spinning ? "bulb-run" : ""}
                   style={{
-                    width: 7, height: 7, borderRadius: "50%",
+                    width: 6, height: 6, borderRadius: "50%",
                     background: "radial-gradient(circle at 35% 30%,#fffbe6,#ffd766 55%,#8d6512)",
                     boxShadow: "0 0 9px rgba(255,215,102,0.85)",
-                    animationDelay: `${i * 0.07}s`,
+                    animationDelay: `${i * 0.06}s`,
                   }} />
               ))}
             </div>
 
-            {/* sarlavha plakati */}
-            <div className="mx-auto mb-3 px-5 py-1.5 rounded-full text-center"
-              style={{ background: GOLD.grad, boxShadow: "0 4px 0 #6a4a0c, 0 8px 18px rgba(0,0,0,0.5)" }}>
-              <span className="font-black tracking-[0.22em] text-[13px]" style={{ color: "#3a2705" }}>DIAMOND SLOTS</span>
+            {/* tablo */}
+            <div className="flex items-stretch gap-1.5 mb-2">
+              <div className="flex-1 rounded-lg px-2 py-1 text-center"
+                style={{ background: "rgba(0,0,0,0.55)", border: `1px solid ${GOLD.border}` }}>
+                <p className="text-[9px] tracking-widest" style={{ color: "#c9b071" }}>BALANS</p>
+                <p className="font-black text-[13px]" style={{ color: "#ffe9a8" }}>{balance.toLocaleString()}</p>
+              </div>
+              <div className="flex-1 rounded-lg px-2 py-1 text-center"
+                style={{ background: "rgba(0,0,0,0.55)", border: `1px solid ${GOLD.border}` }}>
+                <p className="text-[9px] tracking-widest" style={{ color: "#c9b071" }}>TIKIM</p>
+                <p className="font-black text-[13px]" style={{ color: "#ffe9a8" }}>{totalBet.toLocaleString()}</p>
+              </div>
+              <div className="flex-1 rounded-lg px-2 py-1 text-center"
+                style={{ background: "rgba(0,0,0,0.55)", border: `1px solid ${GOLD.border}` }}>
+                <p className="text-[9px] tracking-widest" style={{ color: "#c9b071" }}>YUTUQ</p>
+                <p className="font-black text-[13px]" style={{ color: result?.totalWin ? "#39c46f" : "#ffe9a8" }}>
+                  {(result?.totalWin ?? 0).toLocaleString()}
+                </p>
+              </div>
             </div>
 
-            <div className="flex gap-2.5 items-stretch">
-              {/* chap: to'lov jadvali ustuni */}
-              <div className="rounded-2xl p-1.5 flex flex-col justify-between shrink-0"
-                style={{
-                  width: 74,
-                  background: "linear-gradient(180deg,rgba(212,175,55,0.20),rgba(0,0,0,0.55))",
-                  border: `1px solid ${GOLD.border}`,
-                }}>
-                {PAYS.map(p => (
-                  <div key={p.sym} className="flex items-center justify-between px-1 py-[3px]">
-                    <Sym n={p.sym} s={20} />
-                    <span className="font-black text-[10px]" style={{ color: p.color }}>{p.mult}</span>
-                  </div>
+            {/* barabanlar + chiziq raqamlari */}
+            <div className="flex items-center gap-1.5">
+              <div className="flex flex-col justify-around" style={{ height: CELL * 3 }}>
+                {PAYLINES.slice(0, lines).slice(0, 5).map((_, i) => (
+                  <span key={i} className="text-[8px] font-black" style={{ color: LINE_COLORS[i] }}>{i + 1}</span>
                 ))}
               </div>
 
-              {/* markaz: barabanlar */}
-              <div className="flex-1 rounded-2xl p-2.5 relative"
+              <div className="flex-1 rounded-xl p-1.5 relative"
                 style={{
                   background: "linear-gradient(180deg,#120b01,#000)",
                   border: `2px solid ${GOLD.main}`,
                   boxShadow: `inset 0 8px 22px rgba(0,0,0,0.85), 0 0 22px ${GOLD.glow}`,
                 }}>
-                <div className="flex gap-2 justify-center">
-                  {reels.map((s, i) => (
-                    <SlotReel key={i} strip={STRIP} target={s} spinning={spinning} idx={i} cell={72} />
+                <div className="flex gap-1 justify-center">
+                  {grid.map((col, i) => (
+                    <SlotColumn key={i} target={col} spinning={spinning} idx={i}
+                      cell={CELL} strip={SYMBOLS} highlight={highlight[i]} />
                   ))}
                 </div>
-                {/* to'lov chizig'i */}
-                <div className="absolute left-3 right-3 top-1/2 h-[2px] pointer-events-none"
-                  style={{ background: "linear-gradient(90deg,transparent,#ffd766,transparent)", opacity: 0.85 }} />
               </div>
 
-              {/* o'ng: richag */}
-              <div className="shrink-0 flex flex-col items-center justify-center" style={{ width: 26 }}>
+              {/* richag */}
+              <div className="shrink-0 flex flex-col items-center justify-center" style={{ width: 20 }}>
                 <div style={{
-                  width: 4, height: 76, borderRadius: 4,
+                  width: 4, height: 64, borderRadius: 4,
                   background: "linear-gradient(180deg,#e8c257,#7a5a10)",
                   transformOrigin: "bottom center",
                   transform: lever ? "rotate(26deg)" : "rotate(0deg)",
                   transition: "transform .32s cubic-bezier(.2,.8,.25,1)",
                 }} />
                 <div style={{
-                  width: 20, height: 20, borderRadius: "50%", marginTop: -84,
+                  width: 16, height: 16, borderRadius: "50%", marginTop: -72,
                   background: "radial-gradient(circle at 32% 28%,#ff8b8b,#c0261f 60%,#6b0f0b)",
                   boxShadow: "0 3px 8px rgba(0,0,0,0.6)",
-                  transform: lever ? "translateY(26px)" : "none",
+                  transform: lever ? "translateY(22px)" : "none",
                   transition: "transform .32s cubic-bezier(.2,.8,.25,1)",
                 }} />
               </div>
             </div>
 
-            {/* natija tablosi */}
-            <div className="mt-3 rounded-xl py-2 text-center"
+            {/* natija */}
+            <div className="mt-2 rounded-xl py-1.5 px-2 text-center min-h-[46px] flex flex-col justify-center"
               style={{ background: "rgba(0,0,0,0.55)", border: `1px solid ${GOLD.border}` }}>
-              {outcome ? (
-                <>
-                  <p className="font-black text-xl" style={{ color: OUTCOME_STYLE[outcome].color, textShadow: OUTCOME_STYLE[outcome].glow }}>
-                    {OUTCOME_STYLE[outcome].label}
-                  </p>
-                  {winAmt > 0 && <p className="font-bold text-sm mt-0.5" style={{ color: "#39c46f" }}>+{winAmt.toLocaleString()} UZS</p>}
-                </>
-              ) : spinning ? (
+              {spinning ? (
                 <p className="font-black animate-pulse" style={{ color: "#ffe9a8" }}>{t.spinning}</p>
+              ) : result ? (
+                result.totalWin > 0 ? (
+                  <>
+                    <p className="font-black text-lg" style={{ color: "#39c46f", textShadow: "0 0 18px rgba(57,196,111,.55)" }}>
+                      +{result.totalWin.toLocaleString()} UZS
+                    </p>
+                    <div className="flex flex-wrap gap-1 justify-center mt-0.5">
+                      {result.lineWins.map((w, i) => (
+                        <span key={i} className="text-[9px] font-bold px-1.5 py-[1px] rounded"
+                          style={{ background: "rgba(255,215,102,0.14)", color: LINE_COLORS[w.line] }}>
+                          L{w.line + 1} · {w.count}× · {w.amount.toLocaleString()}
+                        </span>
+                      ))}
+                      {result.scatterWin > 0 && (
+                        <span className="text-[9px] font-bold px-1.5 py-[1px] rounded"
+                          style={{ background: "rgba(95,176,255,0.16)", color: "#5fb0ff" }}>
+                          SCATTER {result.scatterCount}× · {result.scatterWin.toLocaleString()}
+                        </span>
+                      )}
+                    </div>
+                  </>
+                ) : (
+                  <p className="font-black" style={{ color: "#f87171" }}>{t.noLuck}</p>
+                )
               ) : (
                 <p className="text-sm" style={{ color: "#c9b071" }}>{t.pressToSpin}</p>
               )}
@@ -220,17 +221,40 @@ export default function Slots() {
           </div>
         </div>
 
-        {/* ===== Tikish chiplari (1XBET uslubi) ===== */}
+        {/* ===== CHIZIQLAR ===== */}
         <div className="w-full">
-          <p className="text-[11px] font-black mb-2 tracking-[0.2em] text-center" style={{ color: "#c9b071" }}>
-            {t.betAmount}
+          <p className="text-[10px] font-black mb-1.5 tracking-[0.2em] text-center" style={{ color: "#c9b071" }}>
+            LINIYALAR: {lines}
+          </p>
+          <div className="grid grid-cols-8 gap-1">
+            {LINE_OPTIONS.map((n) => {
+              const active = lines === n;
+              return (
+                <button key={n} onClick={() => setLines(n)} disabled={spinning}
+                  className="py-2 rounded-lg font-black text-[12px] active:scale-95 transition-all disabled:opacity-40"
+                  style={{
+                    background: active ? GOLD.grad : "rgba(255,215,102,0.10)",
+                    color: active ? "#3a2705" : "#ffe9a8",
+                    border: `1px solid ${active ? "#fff3c4" : "rgba(255,214,102,0.3)"}`,
+                  }}>
+                  {n}
+                </button>
+              );
+            })}
+          </div>
+        </div>
+
+        {/* ===== TIKIM (1 chiziqqa) ===== */}
+        <div className="w-full">
+          <p className="text-[10px] font-black mb-1.5 tracking-[0.2em] text-center" style={{ color: "#c9b071" }}>
+            1 LINIYAGA TIKIM
           </p>
           <div className="grid grid-cols-3 gap-2">
-            {CHIPS.map(c => {
-              const active = activeBet === c;
-              const disabled = c > balance;
+            {CHIPS.map((c) => {
+              const active = betPerLine === c;
+              const disabled = c * lines > balance;
               return (
-                <button key={c} onClick={() => setBet(c)} disabled={disabled || spinning}
+                <button key={c} onClick={() => setBetPerLine(c)} disabled={disabled || spinning}
                   className="py-2.5 rounded-xl font-black text-[13px] active:scale-95 transition-all disabled:opacity-35"
                   style={{
                     background: active
@@ -238,9 +262,7 @@ export default function Slots() {
                       : "linear-gradient(180deg,#c93a33 0%,#8e1710 60%,#5a0703 100%)",
                     color: "#fff3c4",
                     border: `1px solid ${active ? "#ffd766" : "rgba(255,214,102,0.35)"}`,
-                    boxShadow: active
-                      ? `0 4px 0 #4a0503, 0 0 18px ${GOLD.glow}`
-                      : "0 4px 0 #3d0402, 0 6px 14px rgba(0,0,0,0.45)",
+                    boxShadow: active ? `0 4px 0 #4a0503, 0 0 18px ${GOLD.glow}` : "0 4px 0 #3d0402",
                     textShadow: "0 1px 2px rgba(0,0,0,0.55)",
                   }}>
                   {c.toLocaleString()}
@@ -250,19 +272,61 @@ export default function Slots() {
           </div>
         </div>
 
-        {/* ===== SPIN ===== */}
-        <button onClick={spin}
-          disabled={!player || balance < activeBet || spinning}
-          className="w-full py-4 rounded-2xl font-black text-xl active:scale-95 transition-all disabled:opacity-40"
-          style={{
-            background: GOLD.grad,
-            color: "#3a2705",
-            border: "1px solid #fff3c4",
-            boxShadow: spinning ? "none" : `0 7px 0 #6a4a0c, 0 12px 30px ${GOLD.glow}`,
-            letterSpacing: "0.12em",
-          }}>
-          {spinning ? t.spinning : t.spinBtn}
+        {/* ===== SPIN + AVTO ===== */}
+        <div className="w-full flex gap-2">
+          <button onClick={doSpin} disabled={!canSpin}
+            className="flex-1 py-4 rounded-2xl font-black text-xl active:scale-95 transition-all disabled:opacity-40"
+            style={{
+              background: GOLD.grad, color: "#3a2705", border: "1px solid #fff3c4",
+              boxShadow: spinning ? "none" : `0 7px 0 #6a4a0c, 0 12px 30px ${GOLD.glow}`,
+              letterSpacing: "0.12em",
+            }}>
+            {spinning ? t.spinning : t.spinBtn}
+          </button>
+          <button onClick={() => setAuto(auto > 0 ? 0 : 10)}
+            className="px-4 rounded-2xl font-black text-sm active:scale-95 transition-all"
+            style={{
+              background: auto > 0 ? "linear-gradient(180deg,#39c46f,#136c36)" : "rgba(255,215,102,0.12)",
+              color: auto > 0 ? "#eafff1" : "#ffe9a8",
+              border: "1px solid rgba(255,214,102,0.4)",
+            }}>
+            {auto > 0 ? `AUTO ${auto}` : "AUTO"}
+          </button>
+        </div>
+
+        {/* ===== TO'LOVLAR JADVALI ===== */}
+        <button onClick={() => setShowPays((s) => !s)}
+          className="w-full py-2 rounded-xl font-bold text-[12px]"
+          style={{ background: "rgba(255,215,102,0.10)", color: "#ffe9a8", border: "1px solid rgba(255,214,102,0.3)" }}>
+          {showPays ? "To'lovlar jadvalini yopish" : "To'lovlar jadvali"}
         </button>
+
+        {showPays && (
+          <div className="w-full rounded-xl p-2.5"
+            style={{ background: "rgba(0,0,0,0.5)", border: `1px solid ${GOLD.border}` }}>
+            <div className="grid grid-cols-2 gap-x-3 gap-y-1">
+              {PAY_ROWS.map((s) => (
+                <div key={s} className="flex items-center justify-between">
+                  <Sym n={s} s={22} />
+                  <span className="text-[10px] font-bold" style={{ color: "#ffe9a8" }}>
+                    x{PAYTABLE[s][0]} / x{PAYTABLE[s][1]} / x{PAYTABLE[s][2]}
+                  </span>
+                </div>
+              ))}
+              <div className="flex items-center justify-between col-span-2 pt-1 mt-1"
+                style={{ borderTop: "1px solid rgba(255,215,102,0.2)" }}>
+                <div className="flex items-center gap-1">
+                  <Sym n={SCATTER} s={22} />
+                  <span className="text-[10px]" style={{ color: "#c9b071" }}>SCATTER (istalgan joyda)</span>
+                </div>
+                <span className="text-[10px] font-bold" style={{ color: "#5fb0ff" }}>x3 / x10 / x50</span>
+              </div>
+              <p className="col-span-2 text-[9px] mt-1" style={{ color: "#c9b071" }}>
+                Kombinatsiyalar chapdan o'ngga · WILD barcha belgilar o'rniga o'tadi · 3/4/5 ta belgi
+              </p>
+            </div>
+          </div>
+        )}
 
         {saving && <p className="text-xs text-center" style={{ color: ts.textSub }}>{t.saving}</p>}
       </div>
