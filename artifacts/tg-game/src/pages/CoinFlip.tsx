@@ -32,7 +32,6 @@ export default function CoinFlip() {
       clearInterval(iv); stopTick(); setSpin(false);
       const res: "h"|"t"= win ? side : (side ==="h"?"t":"h");
       setFace(res);
-      if (win) sfx.win(); else sfx.lose();
       const w = await settle(win ? 1.9 : 0);
       setAmount(w); setWon(win); setBusy(false);
     }, 1000);

@@ -48,7 +48,6 @@ export default function Limbo() {
   const finish = async (res: number, win: boolean, stopTick: () => void) =>{
     stopTick();
     setFinal(res);
-    if (win) sfx.win(tgt >= 5); else sfx.lose();
     const w = await settle(win ? tgt : 0);
     setAmount(w); setWon(win); setBusy(false);
   };

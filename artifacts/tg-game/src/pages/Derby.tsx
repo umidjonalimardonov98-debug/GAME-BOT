@@ -120,7 +120,6 @@ export default function Derby() {
         stopTick();
         const ranking = HORSES.map((_, i) => i).sort((a, b) => (b === winner ? 1 : 0) - (a === winner ? 1 : 0) || power[b] - power[a]);
         setOrder(ranking);
-        if (win) sfx.win(horse.odds >= 6); else sfx.lose();
         const w = await settle(win ? horse.odds : 0);
         setAmount(w); setWon(win); setBusy(false);
       };

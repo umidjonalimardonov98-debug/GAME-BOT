@@ -51,8 +51,6 @@ export default function WinFx({ open, win, amount = 0, multiplier, onClose, big 
 
   useEffect(() => {
     if (!open) return;
-    if (win) sfx.win(!!big);
-    else sfx.lose();
     const t = setTimeout(() => onClose?.(), win ? 3200 : 2200);
     return () => clearTimeout(t);
   }, [open, win, big, onClose]);

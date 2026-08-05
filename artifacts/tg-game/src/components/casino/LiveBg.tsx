@@ -1,4 +1,5 @@
 import { useMemo } from "react";
+import { NEW_GAMES } from "@/lib/new-games";
 import { useLocation } from "wouter";
 
 /**
@@ -44,6 +45,10 @@ const V: Record<string, Variant> = {
   "/withdraw":    { glow: ["#0ea5e9", "#f7c948"], syms: ["money", "coin1"], layer: "rays", count: 10 },
   "/leaderboard": { glow: ["#f7c948", "#b45309"], syms: ["trophy", "medal-gold", "crown"], layer: "stars", count: 10 },
 };
+
+for (const g of NEW_GAMES) {
+  V[g.path] = { glow: [g.c1, g.c2], syms: g.syms, layer: g.layer, count: 11 };
+}
 
 const DEFAULT: Variant = { glow: ["#f7c948", "#7c3aed"], syms: ["coin", "star"], layer: "stars", count: 9 };
 

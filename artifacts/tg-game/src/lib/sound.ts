@@ -116,7 +116,7 @@ let lastOutcome = 0;
 /** bir natijaga bitta ovoz — takroriy chaqiruv o'tkazilmaydi */
 function outcomeGate() {
   const now = Date.now();
-  if (now - lastOutcome < 500) return false;
+  if (now - lastOutcome < 1300) return false;
   lastOutcome = now;
   return true;
 }

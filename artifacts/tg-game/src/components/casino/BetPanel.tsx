@@ -1,6 +1,7 @@
 import { useTheme, GOLD } from "@/lib/theme-context";
 import { useLang } from "@/lib/lang-context";
 import { usePlayer } from "@/lib/player-context";
+import { sfx } from "@/lib/sound";
 
 interface Props {
   value: string;
@@ -31,8 +32,8 @@ export default function BetPanel({ value, onChange, onQuick, disabled }: Props) 
           {CHIPS.map(c => {
             const active = cur === c;
             return (
-              <button key={c} disabled={disabled || c > balance} onClick={() => onChange(String(c))}
-                className="py-2 rounded-xl font-black text-[12px] active:scale-95 transition-all disabled:opacity-35"
+              <button key={c} disabled={disabled || c > balance} onClick={() => { sfx.bet(); try { (window as any).Telegram?.WebApp?.HapticFeedback?.impactOccurred?.("light"); } catch { /* ignore */ } onChange(String(c)); }}
+                className="py-2 rounded-xl font-black text-[12px] active:scale-90 transition-all duration-150 disabled:opacity-35"
                 style={{
                   background: active
                     ? "linear-gradient(180deg,#ff5f57 0%,#d61f18 55%,#8e0b06 100%)"

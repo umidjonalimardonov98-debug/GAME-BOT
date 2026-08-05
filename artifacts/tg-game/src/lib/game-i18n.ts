@@ -1,4 +1,5 @@
 import type { Lang } from "./i18n";
+import { NEW_GAMES } from "./new-games";
 
 type L3 = Record<Lang, string>;
 
@@ -68,3 +69,8 @@ export const GAME_NAMES: Record<string, L3> = {
   derby:      { uz: "Ot Poygasi", ru: "Скачки", en: "Derby Racing" },
   moneywheel: { uz: "Pul G'ildiragi", ru: "Колесо денег", en: "Money Wheel" },
 };
+
+// 24 ta yangi o'yin nomi avtomatik qo'shiladi
+for (const g of NEW_GAMES) {
+  GAME_NAMES[g.key] = g.name;
+}

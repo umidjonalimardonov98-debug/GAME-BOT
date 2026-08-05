@@ -39,6 +39,8 @@ import FruitBlast from "@/pages/FruitBlast";
 import Derby from "@/pages/Derby";
 import MoneyWheel from "@/pages/MoneyWheel";
 import NotFound from "@/pages/not-found";
+import QuickGame from "@/pages/QuickGame";
+import { NEW_GAMES } from "@/lib/new-games";
 import RoundBreakdown from "@/components/casino/RoundBreakdown";
 import GlobalWinFx from "@/components/casino/GlobalWinFx";
 import LiveBg from "@/components/casino/LiveBg";
@@ -84,6 +86,9 @@ function Router() {
       <Route path="/fruitblast" component={FruitBlast} />
       <Route path="/derby" component={Derby} />
       <Route path="/moneywheel" component={MoneyWheel} />
+      {NEW_GAMES.map((g) => (
+        <Route key={g.key} path={g.path}>{() => <QuickGame gameKey={g.key} />}</Route>
+      ))}
       <Route component={NotFound} />
     </Switch>
   );

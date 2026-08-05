@@ -46,7 +46,6 @@ export default function Towers() {
     sfx.tile();
     if (level + 1 >= LEVELS) {
       const w = await settle(MULTS[LEVELS - 1]);
-      sfx.win(true);
       setAmount(w); setWon(true); setActive(false); setBusy(false);
       return;
     }

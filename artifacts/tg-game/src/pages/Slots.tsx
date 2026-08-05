@@ -100,7 +100,6 @@ export default function Slots() {
       const mult = finalOutcome === "jackpot" ? 12 : finalOutcome === "three" ? 3.6 : finalOutcome === "two" ? 1.8 : 0;
       const win = mult > 0 ? Math.floor(activeBet * mult) : 0;
       setWinAmt(win);
-      if (win > 0) sfx.win(finalOutcome === "jackpot"); else sfx.lose();
 
       setSaving(true);
       placeBet(player.telegramId, { amount: activeBet, game: "slots", won: mult > 0, winAmount: win })

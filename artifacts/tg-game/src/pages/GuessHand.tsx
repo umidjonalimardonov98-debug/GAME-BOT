@@ -34,7 +34,6 @@ export default function GuessHand() {
       stopTick(); setShaking(false);
       const res: 0 | 1 = win ? pick : (pick === 0 ? 1 : 0);
       setCoinIn(res);
-      if (win) sfx.win(); else sfx.lose();
       const w = await settle(win ? MULT : 0);
       setAmount(w); setWon(win); setBusy(false);
     }, 3000);

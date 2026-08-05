@@ -39,7 +39,6 @@ export default function MoneyWheel() {
     setTimeout(async () => {
       stopTick();
       const realWin = SECTORS[idx] === pick;
-      if (realWin) sfx.win(); else sfx.lose();
       const w = await settle(realWin ? SECTORS[idx] : 0);
       setAmount(w); setWon(realWin); setBusy(false);
     }, 1700);

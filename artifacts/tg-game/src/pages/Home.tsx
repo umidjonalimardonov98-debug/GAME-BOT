@@ -27,6 +27,8 @@ async function redeemPromo(telegramId: string, code: string) {
 }
 
 
+import { NEW_GAMES } from "@/lib/new-games";
+
 const GAMES = [
   { key: "apple",       path: "/apple",       img: "/games/apple.jpg",       tag: "HOT",   tagColor: "#ef4444", bg: "linear-gradient(145deg,#064e3b,#1a7d43)", glow: "#1a7d4355" },
   { key: "dice",        path: "/dice",        img: "/games/dice.jpg",        tag: "x5.8",  tagColor: "#f59e0b", bg: "linear-gradient(145deg,#78350f,#d97706)", glow: "#d9770655" },
@@ -54,6 +56,16 @@ const GAMES = [
   { key: "fruitblast",  path: "/fruitblast",  img: "/games/fruitblast.jpg",  tag: "x2.9",  tagColor: "#f472b6", bg: "linear-gradient(145deg,#500724,#be123c)", glow: "#be123c55" },
   { key: "derby",       path: "/derby",       img: "/games/derby.jpg",       tag: "x12",  tagColor: "#34d399", bg: "linear-gradient(145deg,#064e3b,#059669)", glow: "#05966955" },
   { key: "moneywheel",  path: "/moneywheel",  img: "/games/moneywheel.jpg",  tag: "x40",   tagColor: "#fbbf24", bg: "linear-gradient(145deg,#0d4fb0,#1668e3)", glow: "#1668e355" },
+  ...NEW_GAMES.map((g) => ({
+    key: g.key,
+    path: g.path,
+    img: "",
+    sym: g.syms[0],
+    tag: g.tag,
+    tagColor: g.c1,
+    bg: `linear-gradient(145deg,${g.c2},${g.c1})`,
+    glow: `${g.c1}55`,
+  })),
 ];
 
 export default function Home() {
@@ -339,9 +351,20 @@ export default function Home() {
                   border: `1px solid ${CARD_BORDER}`,
                 }}>
                 {/* Haqiqiy o'yin surati fon sifatida */}
-                <img src={g.img} alt={GAME_NAMES[g.key][lang]} loading="lazy" decoding="async"
-                  className="absolute inset-0 w-full h-full object-cover pointer-events-none crisp-img"
-                  style={{ opacity: 1, borderRadius: 12 }} />
+                {g.img ? (
+                  <img src={g.img} alt={GAME_NAMES[g.key][lang]} loading="lazy" decoding="async"
+                    className="absolute inset-0 w-full h-full object-cover pointer-events-none crisp-img"
+                    style={{ opacity: 1, borderRadius: 12 }} />
+                ) : (
+                  <div className="absolute inset-0 pointer-events-none flex items-center justify-center overflow-hidden"
+                    style={{ background: (g as { bg: string }).bg, borderRadius: 12 }}>
+                    <span className="absolute inset-0" style={{
+                      background: `radial-gradient(60% 50% at 50% 30%, ${(g as { glow: string }).glow}, transparent 70%)`,
+                    }} />
+                    <img src={`/symbols/${(g as { sym?: string }).sym ?? "coin"}.png`} alt="" width={46} height={46}
+                      className="idle-float" style={{ filter: "drop-shadow(0 6px 14px rgba(0,0,0,0.5))" }} />
+                  </div>
+                )}
                 {/* Matn o'qilishi uchun faqat pastdan yengil qoraytirish */}
                 <div className="absolute inset-0 pointer-events-none"
                   style={{ background: "linear-gradient(180deg,rgba(0,0,0,0) 40%,rgba(4,14,24,0.55) 70%,rgba(4,14,24,0.92) 100%)", borderRadius: 12 }} />

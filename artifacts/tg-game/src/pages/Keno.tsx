@@ -49,7 +49,6 @@ export default function Keno() {
       stopTick();
       setHits(hitCount);
       const mult = PAY[hitCount] ?? 0;
-      if (mult > 0) sfx.win(hitCount >= 4); else sfx.lose();
       const w = await settle(mult);
       setAmount(w); setWon(mult > 0); setBusy(false);
     }, result.length * 260 + 250);

@@ -47,7 +47,6 @@ export default function HiLo() {
         sfx.tile();
         setCard(nc); setNext(null); setMult(m => +(m * 1.65).toFixed(2));
       } else {
-        sfx.lose();
         setActive(false);
         const w = await settle(0);
         setAmount(w); setWon(false); setBusy(false);

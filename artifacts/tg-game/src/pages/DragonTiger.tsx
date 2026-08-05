@@ -44,7 +44,6 @@ export default function DragonTiger() {
     setTimeout(() =>{ setD(dv); sfx.reveal(); }, 350);
     setTimeout(() =>{ setT(tv); sfx.reveal(); }, 700);
     setTimeout(async () =>{
-      if (win) sfx.win(side === "tie"); else sfx.lose();
       const w = await settle(win ? PAY[side] : 0);
       setAmount(w); setWon(win); setBusy(false);
     }, 1050);

@@ -52,7 +52,6 @@ export default function Baccarat() {
       setTimeout(() =>{ sfx.card(); setBc(p => [...p, b[i]]); }, i * 300 + 150);
     });
     setTimeout(async () =>{
-      if (win) sfx.win(side === "tie"); else sfx.lose();
       const w = await settle(win ? PAY[side] : 0);
       setAmount(w); setWon(win); setBusy(false);
     }, 900);

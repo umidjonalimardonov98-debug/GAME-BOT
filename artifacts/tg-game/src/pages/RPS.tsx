@@ -33,7 +33,6 @@ export default function RPS() {
     setTimeout(async () =>{
       clearInterval(iv); stopTick();
       setBot(b);
-      if (win) sfx.win(); else sfx.lose();
       const w = await settle(win ? 1.9 : 0);
       setAmount(w); setWon(win); setBusy(false);
     }, 950);

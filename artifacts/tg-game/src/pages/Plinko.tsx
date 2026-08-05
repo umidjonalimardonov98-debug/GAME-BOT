@@ -64,7 +64,6 @@ export default function Plinko() {
       setBallPos(null);
       setLanded(target);
       const mult = mults[target];
-      if (mult > 0) sfx.win(mult >= 4); else sfx.lose();
       const w = await settle(mult);
       setAmount(w); setWon(mult > 0); setBusy(false);
     }, ROWS * 90 + 220));

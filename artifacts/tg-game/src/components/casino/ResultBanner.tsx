@@ -1,6 +1,5 @@
 import { useEffect, useRef } from "react";
 import Sym from "@/components/casino/Sym";
-import { sfx } from "@/lib/sound";
 import { MOTION } from "@/lib/motion";
 
 interface Props {
@@ -18,8 +17,6 @@ export default function ResultBanner({ win, text, amount }: Props) {
     if (last.current === win) return;
     last.current = win;
     try {
-      if (win) sfx.win?.();
-      else sfx.lose?.();
       (window as any).Telegram?.WebApp?.HapticFeedback?.notificationOccurred?.(win ? "success" : "error");
     } catch { /* ignore */ }
   }, [win]);

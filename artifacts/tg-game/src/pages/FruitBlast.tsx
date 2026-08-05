@@ -41,7 +41,6 @@ export default function FruitBlast() {
         do { res = [rnd(), rnd(), rnd()]; } while (res[0] === res[1] && res[1] === res[2]);
       }
       setCells(res);
-      if (win) sfx.win(); else sfx.lose();
       const w = await settle(win ? MULT : 0);
       setAmount(w); setWon(win); setBusy(false);
     }, 3000);

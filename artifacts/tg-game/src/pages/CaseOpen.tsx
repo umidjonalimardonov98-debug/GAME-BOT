@@ -50,7 +50,6 @@ export default function CaseOpen() {
     timer.current = setTimeout(async () =>{
       stopTick(); setSpin(false);
       const m = chosen.p.m;
-      if (m > 0) sfx.win(m >= 8); else sfx.lose();
       const w = await settle(m);
       setAmount(w); setWon(m > 0); setBusy(false);
     }, 1750);

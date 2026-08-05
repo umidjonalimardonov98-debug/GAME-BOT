@@ -41,7 +41,6 @@ export default function Thimbles() {
       const other = [0, 1, 2].filter(i => i !== pick);
       const res = win ? pick : other[Math.floor(Math.random() * other.length)];
       setBall(res);
-      if (win) sfx.win(); else sfx.lose();
       const w = await settle(win ? MULT : 0);
       setAmount(w); setWon(win); setBusy(false);
     }, 3000);

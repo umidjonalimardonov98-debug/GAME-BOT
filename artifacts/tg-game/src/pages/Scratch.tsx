@@ -54,7 +54,6 @@ export default function Scratch() {
     const next = [...open]; next[i] = true;
     setOpen(next);
     if (next.every(Boolean)) {
-      if (mult > 0) sfx.win(mult >= 5); else sfx.lose();
       const w = await settle(mult);
       setAmount(w); setWon(mult > 0); setBusy(false);
     }
