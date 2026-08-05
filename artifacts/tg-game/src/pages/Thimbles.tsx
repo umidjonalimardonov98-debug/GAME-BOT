@@ -60,7 +60,7 @@ export default function Thimbles() {
             return (
               <button key={i} disabled={busy} onClick={() => { setPick(i); sfx.select(); }}
                 className="flex flex-col items-center gap-2 active:scale-95 disabled:opacity-100"
-                style={{ transform: `translateX(${shift[i]}px)`, transition: "transform .18s ease-out" }}>
+                style={{ transform: `translateX(${shift[i]}px)`, transition: "transform .16s ease-out" }}>
                 <div className="rounded-t-full flex items-end justify-center"
                   style={{
                     width: 74, height: open && hasBall ? 30 : 92,
@@ -68,7 +68,7 @@ export default function Thimbles() {
                       ? "linear-gradient(160deg,#f7e59b,#d4af37 55%,#8a6b16)"
                       : "linear-gradient(160deg,#b91c1c,#7f1d1d)",
                     boxShadow: "0 10px 22px rgba(0,0,0,.45), inset 0 4px 10px rgba(255,255,255,.25)",
-                    transition: "height .35s",
+                    transition: "height .32s",
                   }} />
                 <div className="flex items-center justify-center" style={{ height: 30 }}>
                   {open && hasBall && <Sym n="gem" s={28} glow />}

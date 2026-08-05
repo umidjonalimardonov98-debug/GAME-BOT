@@ -104,7 +104,7 @@ export default function Dice() {
               background: gameState === "rolling"
                 ? "radial-gradient(ellipse at 50% 20%, rgba(255,240,180,0.3) 0%, transparent 62%)"
                 : "radial-gradient(ellipse at 50% 20%, rgba(255,240,180,0.13) 0%, transparent 62%)",
-              transition: "background 0.4s",
+              transition: "background 0.22s",
             }} />
 
             {/* oltin doira */}

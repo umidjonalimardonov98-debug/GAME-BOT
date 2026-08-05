@@ -770,6 +770,10 @@ export async function startBot() {
         ...(p("stats") ? [{ text: "👥 Foydalanuvchilar", callback_data: "admin_users" }] : []),
         ...(p("finance") ? [{ text: "⏳ Kutilayotganlar", callback_data: "admin_pending" }] : []),
       ]);
+      if (p("stats")) push([
+        { text: "🎮 O'yin statistikasi", callback_data: "admin_gamestat" },
+        { text: "🏆 TOP o'yinchilar", callback_data: "admin_top" },
+      ]);
       if (p("finance")) push([
         { text: "💸 Kutilayotgan yechimlar", callback_data: "admin_withdrawals" },
         { text: "📋 Barcha yechimlar", callback_data: "admin_all_withdrawals" },
@@ -2072,6 +2076,72 @@ export async function startBot() {
           { parse_mode: "HTML", reply_markup: { inline_keyboard: [[{ text: "🔙 Admin panel", callback_data: "admin_panel" }]] } }
         );
       } catch (err) { logger.error({ err }, "admin_stat xato"); }
+      return;
+    }
+
+    if (data === "admin_gamestat") {
+      if (!isAdmin) { await bot!.answerCallbackQuery(q.id, { text: "❌ Ruxsat yo'q" }); return; }
+      await bot!.answerCallbackQuery(q.id);
+      try {
+        const res: any = await db.execute(sql`
+          SELECT game,
+                 count(*) FILTER (WHERE type = 'bet')::int AS rounds,
+                 coalesce(sum(amount) FILTER (WHERE type = 'bet'), 0)::int AS wagered,
+                 coalesce(sum(amount) FILTER (WHERE type = 'win'), 0)::int AS paid
+          FROM transactions
+          WHERE game IS NOT NULL
+          GROUP BY game
+          ORDER BY wagered DESC
+          LIMIT 25`);
+        const rows: any[] = res.rows ?? res ?? [];
+        if (!rows.length) {
+          await bot!.sendMessage(chatId, "🎮 <b>O'YIN STATISTIKASI</b>\n\nHali o'yin o'ynalmagan.", { parse_mode: "HTML", reply_markup: { inline_keyboard: [[{ text: "🔙 Admin panel", callback_data: "admin_panel" }]] } });
+          return;
+        }
+        let totalW = 0, totalP = 0;
+        const lines = rows.map((r, i) => {
+          const w = Number(r.wagered) || 0, pd = Number(r.paid) || 0;
+          totalW += w; totalP += pd;
+          const rtp = w > 0 ? ((pd / w) * 100).toFixed(1) : "0.0";
+          return `${i + 1}. <b>${r.game}</b>\n   🎲 ${r.rounds} raund | 💰 ${fmt(w)}\n   🏆 To'langan: ${fmt(pd)} | RTP: <b>${rtp}%</b>\n   📈 Foyda: <b>${fmt(w - pd)} UZS</b>`;
+        }).join("\n\n");
+        const allRtp = totalW > 0 ? ((totalP / totalW) * 100).toFixed(1) : "0.0";
+        await bot!.sendMessage(chatId,
+          `🎮 <b>O'YIN STATISTIKASI</b>\n\n${lines}\n\n➖➖➖➖➖➖\n💰 Jami tikilgan: <b>${fmt(totalW)} UZS</b>\n🏆 Jami to'langan: <b>${fmt(totalP)} UZS</b>\n📊 Umumiy RTP: <b>${allRtp}%</b>\n📈 Sof foyda: <b>${fmt(totalW - totalP)} UZS</b>`,
+          { parse_mode: "HTML", reply_markup: { inline_keyboard: [[{ text: "🔙 Admin panel", callback_data: "admin_panel" }]] } });
+      } catch (err) { logger.error({ err }, "admin_gamestat xato"); }
+      return;
+    }
+
+    if (data === "admin_top") {
+      if (!isAdmin) { await bot!.answerCallbackQuery(q.id, { text: "❌ Ruxsat yo'q" }); return; }
+      await bot!.answerCallbackQuery(q.id);
+      try {
+        const top = await db.select({
+          telegramId: playersTable.telegramId,
+          firstName: playersTable.firstName,
+          username: playersTable.username,
+          wagered: playersTable.totalWagered,
+          won: playersTable.totalWon,
+          lost: playersTable.totalLost,
+          games: playersTable.gamesPlayed,
+        }).from(playersTable)
+          .where(sql`telegram_id <> 'demo_user'`)
+          .orderBy(desc(playersTable.totalWagered))
+          .limit(15);
+        if (!top.length) {
+          await bot!.sendMessage(chatId, "🏆 <b>TOP O'YINCHILAR</b>\n\nHali ma'lumot yo'q.", { parse_mode: "HTML", reply_markup: { inline_keyboard: [[{ text: "🔙 Admin panel", callback_data: "admin_panel" }]] } });
+          return;
+        }
+        const medal = ["🥇", "🥈", "🥉"];
+        const lines = top.map((pl, i) => {
+          const name = pl.username ? `@${pl.username}` : pl.firstName;
+          const net = (pl.lost ?? 0) - (pl.won ?? 0);
+          return `${medal[i] ?? `${i + 1}.`} ${name}\n   🆔 <code>${pl.telegramId}</code>\n   🎲 ${pl.games} o'yin | 💰 tikkan: ${fmt(pl.wagered ?? 0)}\n   📈 Bot foydasi: <b>${fmt(net)} UZS</b>`;
+        }).join("\n\n");
+        await bot!.sendMessage(chatId, `🏆 <b>TOP O'YINCHILAR</b>\n\n${lines}`,
+          { parse_mode: "HTML", reply_markup: { inline_keyboard: [[{ text: "🔙 Admin panel", callback_data: "admin_panel" }]] } });
+      } catch (err) { logger.error({ err }, "admin_top xato"); }
       return;
     }
 

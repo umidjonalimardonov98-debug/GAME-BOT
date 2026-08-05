@@ -42,7 +42,7 @@ export default function MoneyWheel() {
       if (realWin) sfx.win(); else sfx.lose();
       const w = await settle(realWin ? SECTORS[idx] : 0);
       setAmount(w); setWon(realWin); setBusy(false);
-    }, 3000);
+    }, 1700);
   };
 
   const gradient = `conic-gradient(${SECTORS.map((v, i) =>
@@ -68,7 +68,7 @@ export default function MoneyWheel() {
               style={{
                 width: 250, height: 250, background: gradient,
                 transform: `rotate(${angle}deg)`,
-                transition: "transform 3s cubic-bezier(0.12,0.62,0.14,1)",
+                transition: "transform 1.6s cubic-bezier(0.16,0.76,0.06,1)",
               }}>
               {SECTORS.map((v, i) => (
                 <span key={i} className="absolute font-black text-sm"

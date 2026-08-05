@@ -62,7 +62,7 @@ export default function FruitBlast() {
                 border: "1px solid rgba(255,255,255,.1)",
                 boxShadow: "inset 0 -12px 24px rgba(0,0,0,.5)",
                 transform: spin ? "translateY(-4px) scale(1.03)" : "none",
-                transition: "transform .12s",
+                transition: "transform .16s",
               }}>
               <Sym n={c} s={56} glow={!spin && won === true} className={spin ? "" : "idle-bob"} />
             </div>

@@ -118,7 +118,7 @@ export default function Spin() {
       setSpinning(false);
       if (free) { setCanFree(false); setNextSpinAt(nextSpinAtFromApi); }
       refresh();
-    }, 3600);
+    }, 1700);
   };
 
   const size = 288;
@@ -186,7 +186,7 @@ export default function Spin() {
                 height: size,
                 borderRadius: "50%",
                 overflow: "hidden",
-                transition: spinning ? "transform 3.6s cubic-bezier(0.16,0.74,0.02,1)":"none",
+                transition: spinning ? "transform 1.6s cubic-bezier(0.16,0.76,0.06,1)":"none",
                 transform: `rotate(${rotation}deg)`,
                 boxShadow: "inset 0 0 40px rgba(0,0,0,0.55)",
               }}

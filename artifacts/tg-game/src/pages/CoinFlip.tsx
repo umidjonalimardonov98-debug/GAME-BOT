@@ -51,7 +51,7 @@ export default function CoinFlip() {
               background: face === "h"?"linear-gradient(145deg,#f7e59b,#d4af37,#8a6b16)":"linear-gradient(145deg,#e5e7eb,#9ca3af,#4b5563)",
               boxShadow: "0 12px 30px rgba(0,0,0,0.45), inset 0 3px 8px rgba(255,255,255,0.4)",
               transform: spin ? "rotateY(180deg) scale(1.06)":"rotateY(0) scale(1)",
-              transition: "transform .18s",
+              transition: "transform .16s",
             }}>
             <Sym n={face === "h" ? "crown" : "gem"} s={74} className="idle-bob" />
           </div>

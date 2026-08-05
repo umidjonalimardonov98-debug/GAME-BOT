@@ -94,7 +94,7 @@ export default function Plinko() {
                           ? "radial-gradient(circle at 35% 30%,#fffbe6,#ffd766 60%,#b45309)"
                           : "radial-gradient(circle at 35% 30%,#eaf6ff,#8fc7f5 55%,#3f7fb5)",
                         boxShadow: active ? "0 0 14px #ffd766" : "0 1px 3px rgba(0,0,0,0.6)",
-                        transition: "background .12s, box-shadow .12s",
+                        transition: "background .16s, box-shadow .16s",
                       }} />
                     );
                   })}

@@ -53,7 +53,7 @@ export default function CaseOpen() {
       if (m > 0) sfx.win(m >= 8); else sfx.lose();
       const w = await settle(m);
       setAmount(w); setWon(m > 0); setBusy(false);
-    }, 2100);
+    }, 1750);
   };
 
   return (
@@ -69,7 +69,7 @@ export default function CaseOpen() {
           }} />
           <div className="flex" style={{
             transform: `translateX(calc(50% - ${offset + CELL / 2}px))`,
-            transition: spin ? "transform 2s cubic-bezier(0.12,0.72,0.12,1)":"none",
+            transition: spin ? "transform 1.6s cubic-bezier(0.16,0.76,0.06,1)":"none",
           }}>
             {strip.map((p, i) => (
               <div key={i} className="shrink-0 flex items-center justify-center rounded-xl mx-0.5"

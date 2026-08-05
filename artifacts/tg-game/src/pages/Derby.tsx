@@ -170,7 +170,7 @@ export default function Derby() {
 
                   {/* ot */}
                   <div className="absolute top-1/2 -translate-y-1/2 z-[5]"
-                    style={{ left: `calc(${6 + pos[i] * 0.84}% )`, transition: busy ? "none" : "left .4s ease" }}>
+                    style={{ left: `calc(${6 + pos[i] * 0.84}% )`, transition: busy ? "none" : "left .32s ease" }}>
                     <img src={h.img} alt={h.name[lang]} width={54} height={54} loading="lazy" draggable={false}
                       className={busy ? "gallop" : ""}
                       style={{ width: 54, height: 40, objectFit: "contain", filter: `drop-shadow(0 2px 6px rgba(0,0,0,.6))` }} />

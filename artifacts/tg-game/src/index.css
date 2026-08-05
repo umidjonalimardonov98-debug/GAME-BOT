@@ -568,3 +568,62 @@ button:not(:disabled):active { transform: scale(.955); }
 @media (prefers-reduced-motion: reduce) {
   .idle-float, .idle-bob, .idle-tilt, .idle-glow, .idle-flick { animation: none !important; }
 }
+
+/* ══════ YAGONA ANIMATSIYA RITMI (barcha o'yinlar bir xil) ══════ */
+:root {
+  --m-press: 160ms;
+  --m-base: 220ms;
+  --m-reveal: 320ms;
+  --m-spin: 1600ms;
+  --m-banner: 300ms;
+  --m-ease: cubic-bezier(.2,.8,.25,1);
+  --m-ease-spin: cubic-bezier(0.16,0.76,0.06,1);
+}
+
+@layer base {
+  .transition-all, .transition-transform, .transition-colors {
+    transition-duration: var(--m-base);
+    transition-timing-function: var(--m-ease);
+  }
+  button, [role="button"] {
+    transition: transform var(--m-press) var(--m-ease),
+                filter var(--m-press) var(--m-ease),
+                opacity var(--m-press) var(--m-ease);
+  }
+  button:active:not(:disabled), [role="button"]:active {
+    transform: scale(0.96);
+    filter: brightness(1.08);
+  }
+}
+
+/* natija banneri — hamma o'yinda bir xil */
+@keyframes bannerPop {
+  0%   { opacity: 0; transform: translateY(10px) scale(.96); }
+  60%  { opacity: 1; transform: translateY(0) scale(1.02); }
+  100% { opacity: 1; transform: translateY(0) scale(1); }
+}
+.fx-banner { animation: bannerPop var(--m-banner) var(--m-ease) both; }
+.fx-banner-shine {
+  position: absolute; inset: 0;
+  background: linear-gradient(105deg, transparent 35%, rgba(255,255,255,.28) 50%, transparent 65%);
+  transform: translateX(-120%);
+  animation: bannerShine 900ms var(--m-ease) 120ms 1;
+}
+@keyframes bannerShine { to { transform: translateX(120%); } }
+
+/* katak/karta ochilishi — hamma o'yinda bir xil */
+@keyframes fxReveal {
+  from { opacity: 0; transform: scale(.86) rotateX(35deg); }
+  to   { opacity: 1; transform: scale(1) rotateX(0); }
+}
+.fx-reveal { animation: fxReveal var(--m-reveal) var(--m-ease) both; }
+
+@keyframes fxPop { 0% { transform: scale(.9) } 55% { transform: scale(1.08) } 100% { transform: scale(1) } }
+.fx-pop { animation: fxPop var(--m-reveal) var(--m-ease) both; }
+
+@keyframes fxShake { 0%,100% { transform: translateX(0) } 25% { transform: translateX(-5px) } 75% { transform: translateX(5px) } }
+.fx-shake { animation: fxShake var(--m-reveal) var(--m-ease) both; }
+
+@media (prefers-reduced-motion: reduce) {
+  .fx-banner, .fx-reveal, .fx-pop, .fx-shake, .fx-banner-shine { animation: none !important; }
+}

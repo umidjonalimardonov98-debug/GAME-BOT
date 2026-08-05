@@ -179,7 +179,7 @@ export default function Parity() {
           </p>
 
           <div className="w-36 h-36 rounded-3xl flex items-center justify-center relative"
-            style={{ background: numBg, border: `3px solid ${numBorder}`, boxShadow: numShadow, transition: "background 0.2s, border-color 0.2s" }}>
+            style={{ background: numBg, border: `3px solid ${numBorder}`, boxShadow: numShadow, transition: "background 0.22s, border-color 0.22s" }}>
             <div className="absolute inset-0 rounded-3xl pointer-events-none"
               style={{ background: "linear-gradient(135deg,rgba(255,255,255,0.18) 0%,transparent 50%)" }} />
             <span className="relative font-black" style={{

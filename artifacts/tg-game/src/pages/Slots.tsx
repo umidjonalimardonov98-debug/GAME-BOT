@@ -105,7 +105,7 @@ export default function Slots() {
       setSaving(true);
       placeBet(player.telegramId, { amount: activeBet, game: "slots", won: mult > 0, winAmount: win })
         .then(() => refresh()).catch(() => {}).finally(() => setSaving(false));
-    }, 1150);
+    }, 1900);
   }, [player, activeBet, spinning]);
 
 
@@ -190,14 +190,14 @@ export default function Slots() {
                   background: "linear-gradient(180deg,#e8c257,#7a5a10)",
                   transformOrigin: "bottom center",
                   transform: lever ? "rotate(26deg)" : "rotate(0deg)",
-                  transition: "transform .35s cubic-bezier(.3,1.4,.5,1)",
+                  transition: "transform .32s cubic-bezier(.2,.8,.25,1)",
                 }} />
                 <div style={{
                   width: 20, height: 20, borderRadius: "50%", marginTop: -84,
                   background: "radial-gradient(circle at 32% 28%,#ff8b8b,#c0261f 60%,#6b0f0b)",
                   boxShadow: "0 3px 8px rgba(0,0,0,0.6)",
                   transform: lever ? "translateY(26px)" : "none",
-                  transition: "transform .35s cubic-bezier(.3,1.4,.5,1)",
+                  transition: "transform .32s cubic-bezier(.2,.8,.25,1)",
                 }} />
               </div>
             </div>

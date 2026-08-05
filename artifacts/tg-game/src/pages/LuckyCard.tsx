@@ -63,7 +63,7 @@ export default function LuckyCard() {
                   border: `2px solid ${pick === i ? "#f7e59b" : "rgba(255,255,255,.1)"}`,
                   boxShadow: pick === i ? "0 0 18px rgba(247,229,155,.45)" : "0 8px 18px rgba(0,0,0,.4)",
                   transform: flip ? "rotateY(180deg)" : "rotateY(0)",
-                  transition: "transform .5s, background .3s",
+                  transition: "transform .32s, background .22s",
                 }}>
                 {open ? <Sym n={isLucky ? "crown" : sym} s={44} glow={isLucky} /> : <Sym n="cardback" s={44} />}
               </button>

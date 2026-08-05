@@ -112,11 +112,19 @@ function noise(dur = 0.3, gain = 0.18, filterFrom = 900, filterTo = 180, delay =
 }
 
 let lastClick = 0;
+let lastOutcome = 0;
+/** bir natijaga bitta ovoz — takroriy chaqiruv o'tkazilmaydi */
+function outcomeGate() {
+  const now = Date.now();
+  if (now - lastOutcome < 500) return false;
+  lastOutcome = now;
+  return true;
+}
 
 export const sfx = {
   /** Tugma bosilishi — qisqa, quruq "tak" */
   click() {
-    return; // bosish/tiq-tiq ovozlari o'chirilgan
+    if (!enabled) return;
     const now = Date.now();
     if (now - lastClick < 40) return;
     lastClick = now;
@@ -127,7 +135,7 @@ export const sfx = {
   },
   /** Tanlov / toggle */
   select() {
-    return; // bosish/tiq-tiq ovozlari o'chirilgan
+    if (!enabled) return;
     tone({ freq: 660, to: 990, dur: 0.07, type: "sine", gain: 0.11 });
     tone({ freq: 1320, dur: 0.05, type: "sine", gain: 0.045, delay: 0.045 });
   },
@@ -144,12 +152,13 @@ export const sfx = {
   },
   /** Karta / plitka ochilishi */
   reveal() {
-    return; // bosish/tiq-tiq ovozlari o'chirilgan
+    if (!enabled) return;
     noise(0.12, 0.1, 2600, 800);
   },
   /** Yutuq — ko'tarilib boruvchi arpejio + tanga jarangi */
   win(big = false) {
     if (!enabled) return;
+    if (!outcomeGate()) return;
     // 1XBET uslubi: tanga sharqirashi + bayramona fanfara + yorqin shimmer
     const notes = big ? [523, 659, 784, 1047, 1319, 1568] : [523, 659, 784, 1047];
     notes.forEach((f, i) => {
@@ -174,6 +183,7 @@ export const sfx = {
   /** Yutqazish — pastga tushuvchi ohang */
   lose() {
     if (!enabled) return;
+    if (!outcomeGate()) return;
     // Yumshoq, "wah-wah" uslubidagi tushuvchi ohang (1XBET yutqazish signali)
     [392, 349, 294].forEach((f, i) =>
       tone({ freq: f, to: f * 0.94, dur: 0.26, type: "triangle", gain: 0.13, delay: i * 0.14 }),

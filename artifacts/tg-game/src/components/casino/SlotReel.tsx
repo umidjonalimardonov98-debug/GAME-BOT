@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from "react";
 import Sym from "./Sym";
+import { MOTION } from "@/lib/motion";
 
 /** Haqiqiy slot barabani — vertikal lenta aylanadi va belgi ustida to'xtaydi */
 
@@ -46,7 +47,7 @@ export default function SlotReel({ strip, target, spinning, idx, cell = 86 }: Pr
       <div
         style={{
           transform: `translateY(${-shift}px)`,
-          transition: `transform ${0.72 + idx * 0.19}s cubic-bezier(0.16,0.86,0.2,1.03)`,
+          transition: `transform ${MOTION.spin + idx * MOTION.stagger}ms ${MOTION.easeSpin}`,
         }}
       >
         {items.map((s, i) => (

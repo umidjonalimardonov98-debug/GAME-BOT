@@ -107,7 +107,7 @@ export default function Roulette() {
         winAmount: win,
       }).catch(() =>{});
       await refresh();
-    }, 3700);
+    }, 1750);
   }, [pick, player, spinning, bet, refresh]);
 
   const conic = `conic-gradient(${WHEEL.map((n, i) =>{
@@ -176,7 +176,7 @@ export default function Roulette() {
                 borderRadius: "50%",
                 background: conic,
                 transform: `rotate(${angle}deg)`,
-                transition: "transform 3.6s cubic-bezier(0.16,0.76,0.03,1)",
+                transition: "transform 1.6s cubic-bezier(0.16,0.76,0.06,1)",
                 boxShadow:
                   "inset 0 0 0 3px rgba(212,175,55,0.85), inset 0 0 34px rgba(0,0,0,0.75), 0 6px 18px rgba(0,0,0,0.5)",
               }}
@@ -247,7 +247,7 @@ export default function Roulette() {
                   borderRadius: "50%",
                   background: "radial-gradient(circle at 32% 28%,#ffffff,#d7d7d7 55%,#8b8b8b)",
                   boxShadow: "0 3px 7px rgba(0,0,0,0.7)",
-                  transition: "top 0.6s ease-out",
+                  transition: "top 0.32s ease-out",
                 }}
               />
             </div>
