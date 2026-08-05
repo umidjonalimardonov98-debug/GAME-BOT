@@ -42,7 +42,7 @@ export default function Baccarat() {
   const play = () =>{
     if (!canPlay) return;
     setBusy(true); setWon(null); setPc([]); setBc([]);
-    const win = riggedWin();
+    const win = riggedWin("baccarat");
     const winnerIdx = win ? (side === "player"? 0 : side ==="banker" ? 1 : 2)
       : (side === "player"? (Math.random() < 0.85 ? 1 : 2) : side ==="banker" ? (Math.random() < 0.85 ? 0 : 2) : (Math.random() < 0.5 ? 0 : 1));
     const { a, b } = handFor(winnerIdx);

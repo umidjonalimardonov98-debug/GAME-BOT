@@ -2,6 +2,7 @@ import TelegramBot from "node-telegram-bot-api";
 import { eq, and, isNull, sql, desc } from "drizzle-orm";
 import { db, playersTable, transactionsTable, depositRequestsTable, withdrawRequestsTable, promoCodesTable, gameSettingsTable, appSettingsTable } from "@workspace/db";
 import { logger } from "./lib/logger";
+import { ALL_GAMES, GAME_LABELS, DIFFICULTIES, DIFFICULTY_WIN_SUGGEST, nextDifficulty, type Difficulty } from "./lib/games-catalog";
 import {
   canSync, isAdminSync, getRoleSync, permForCallback, addAdmin, removeAdmin,
   listAdmins, isRole, ROLE_LABEL, startAdminCacheRefresh, type AdminRole,
@@ -378,6 +379,7 @@ const waitingForPromoCode = new Set<number>();                 // admin waiting 
 const waitingForPromoAmount = new Map<number, string>();       // admin -> code (waiting for amount)
 const waitingForPromoMaxUses = new Map<number, { code: string; amount: number }>(); // admin -> {code,amount}
 const waitingForNewAdminId = new Set<number>();                  // owner waiting to type new admin telegram id
+const waitingForMaxWin = new Map<number, string>();              // admin -> game key (waiting for max win amount)
 
 /** Moliya bilan shug'ullanadigan barcha adminlar (owner + finance) */
 const MAX_EXTRA_ADMINS = 2;
@@ -1145,6 +1147,7 @@ export async function startBot() {
       waitingForPromoAmount.delete(userId);
       waitingForPromoMaxUses.delete(userId);
       waitingForNewAdminId.delete(userId);
+      waitingForMaxWin.delete(userId);
       await bot!.sendMessage(chatId, "❌ Bekor qilindi.", { parse_mode: "HTML" });
       return;
     }
@@ -1254,6 +1257,22 @@ export async function startBot() {
           reply_markup: { inline_keyboard: [[{ text: "🔙 Admin panel", callback_data: "admin_panel" }]] }
         }
       );
+      return;
+    }
+
+    // Admin: max-win miqdorini kiritish
+    if (waitingForMaxWin.has(userId)) {
+      const game = waitingForMaxWin.get(userId)!;
+      waitingForMaxWin.delete(userId);
+      const raw = text.replace(/\s/g, "").toLowerCase();
+      const maxWin = raw === "0" || raw === "yoq" || raw === "cheklanmagan" ? null : Number(raw);
+      if (raw !== "0" && raw !== "yoq" && raw !== "cheklanmagan" && (!maxWin || isNaN(maxWin) || maxWin <= 0)) {
+        await bot!.sendMessage(chatId, "❌ Noto'g'ri miqdor. Raqam kiriting yoki cheklovni olib tashlash uchun 0 yozing.", { parse_mode: "HTML" });
+        return;
+      }
+      await db.insert(gameSettingsTable).values({ game, maxWin }).onConflictDoUpdate({ target: gameSettingsTable.game, set: { maxWin, updatedAt: new Date() } });
+      await bot!.sendMessage(chatId, `✅ Maksimal yutuq yangilandi: <b>${maxWin ? fmt(maxWin) + " UZS" : "cheklanmagan"}</b>`, { parse_mode: "HTML" });
+      await sendGameEditor(chatId, game);
       return;
     }
 
@@ -1596,7 +1615,76 @@ export async function startBot() {
   };
 
   // Callback handler
-  const cbQueryHandler = async (q: any) => {
+  
+async function getGameRow(game: string) {
+  const [row] = await db.select().from(gameSettingsTable).where(eq(gameSettingsTable.game, game));
+  return {
+    enabled: row?.enabled ?? true,
+    winChance: row?.winChance ?? 31,
+    refundChance: row?.refundChance ?? 6,
+    difficulty: (row?.difficulty as Difficulty) ?? "o'rta",
+    multiplier: row?.multiplier ?? 100,
+    maxWin: row?.maxWin ?? null,
+  };
+}
+
+async function sendGameList(chatId: number, page: number, editMessageId?: number) {
+  const PAGE_SIZE = 8;
+  const configured = await db.select().from(gameSettingsTable);
+  const status = new Map(configured.map((r) => [r.game, r.enabled]));
+  const totalPages = Math.max(1, Math.ceil(ALL_GAMES.length / PAGE_SIZE));
+  const p = Math.min(Math.max(page, 0), totalPages - 1);
+  const slice = ALL_GAMES.slice(p * PAGE_SIZE, p * PAGE_SIZE + PAGE_SIZE);
+  const keyboard: any[] = slice.map((g) => [{
+    text: `${status.get(g.key) === false ? "🔴" : "🟢"} ${g.label}`,
+    callback_data: `admin_gm_open_${g.key}`,
+  }]);
+  const nav: any[] = [];
+  if (p > 0) nav.push({ text: "⬅️ Oldingi", callback_data: `admin_gm_list_${p - 1}` });
+  nav.push({ text: `${p + 1}/${totalPages}`, callback_data: `admin_gm_list_${p}` });
+  if (p < totalPages - 1) nav.push({ text: "Keyingi ➡️", callback_data: `admin_gm_list_${p + 1}` });
+  keyboard.push(nav);
+  keyboard.push([{ text: "🛠 Hammasiga qo'llash", callback_data: "admin_gm_all" }]);
+  keyboard.push([{ text: "🔙 O'yin va dizayn sozlamalari", callback_data: "admin_game_settings" }]);
+  const text = `🎮 <b>O'YINLAR RO'YXATI</b> (${p + 1}/${totalPages})\n\nTahrirlash uchun o'yinni tanlang.`;
+  const opts = { chat_id: chatId, message_id: editMessageId, parse_mode: "HTML" as const, reply_markup: { inline_keyboard: keyboard } };
+  if (editMessageId) {
+    try { await bot!.editMessageText(text, opts); return; } catch {}
+  }
+  await bot!.sendMessage(chatId, text, { parse_mode: "HTML", reply_markup: { inline_keyboard: keyboard } });
+}
+
+async function sendGameEditor(chatId: number, game: string, editMessageId?: number) {
+  const label = GAME_LABELS[game] ?? game;
+  const cfg = await getGameRow(game);
+  const keyboard: any[] = [
+    [{ text: cfg.enabled ? "🟢 Yoqilgan (o'chirish)" : "🔴 O'chirilgan (yoqish)", callback_data: `admin_gm_toggle_${game}` }],
+    [
+      { text: "−5%", callback_data: `admin_gm_win_${game}_-5` },
+      { text: "−1%", callback_data: `admin_gm_win_${game}_-1` },
+      { text: `🎯 ${cfg.winChance}%`, callback_data: `admin_gm_noop` },
+      { text: "+1%", callback_data: `admin_gm_win_${game}_1` },
+      { text: "+5%", callback_data: `admin_gm_win_${game}_5` },
+    ],
+    [{ text: `⚙️ Qiyinlik: ${cfg.difficulty}`, callback_data: `admin_gm_diff_${game}` }],
+    [
+      { text: "−10%", callback_data: `admin_gm_mult_${game}_-10` },
+      { text: "−1%", callback_data: `admin_gm_mult_${game}_-1` },
+      { text: `✖️ x${(cfg.multiplier / 100).toFixed(2)}`, callback_data: `admin_gm_noop` },
+      { text: "+1%", callback_data: `admin_gm_mult_${game}_1` },
+      { text: "+10%", callback_data: `admin_gm_mult_${game}_10` },
+    ],
+    [{ text: `💰 Max yutuq: ${cfg.maxWin ? fmt(cfg.maxWin) + " UZS" : "cheklanmagan"} (o'zgartirish)`, callback_data: `admin_gm_maxwin_${game}` }],
+    [{ text: "🔙 O'yinlar ro'yxati", callback_data: "admin_gm_list_0" }],
+  ];
+  const text = `🎮 <b>${label}</b>\n\nO'yin: <code>${game}</code>\nYutish ehtimoli, qiyinlik, koeffitsiyent va maksimal yutuqni shu yerdan boshqaring.`;
+  if (editMessageId) {
+    try { await bot!.editMessageText(text, { chat_id: chatId, message_id: editMessageId, parse_mode: "HTML", reply_markup: { inline_keyboard: keyboard } }); return; } catch {}
+  }
+  await bot!.sendMessage(chatId, text, { parse_mode: "HTML", reply_markup: { inline_keyboard: keyboard } });
+}
+
+const cbQueryHandler = async (q: any) => {
     if (!q.message || !q.from) return;
     const chatId = q.message.chat.id;
     const data = q.data || "";
@@ -1973,26 +2061,128 @@ Miqdorni tanlang yoki o'zingiz kiriting:`,
     if (data === "admin_game_settings") {
       if (!hasPerm(q.from.id, "admins")) { await bot!.answerCallbackQuery(q.id, { text: "❌ Ruxsat yo'q" }); return; }
       await bot!.answerCallbackQuery(q.id);
-      const configured = await db.select().from(gameSettingsTable);
-      const status = new Map(configured.map(row => [row.game, row.enabled]));
-      const games = [["apple", "🍎 Olma"], ["dice", "🎲 Zar"], ["aviator", "✈️ Aviator"], ["spin", "🎡 Spin"], ["blackjack", "🃏 Blackjack"], ["slots", "🎰 Slot"], ["parity", "🔢 Toq-Juft"], ["mines", "💣 Mines"], ["roulette", "🎡 Ruletka"]] as const;
-      const keyboard = games.map(([key, label]) => [{ text: `${status.get(key) === false ? "🔴" : "🟢"} ${label}`, callback_data: `admin_game_toggle_${key}` }]);
-      keyboard.push([{ text: "🌙 Qora tema", callback_data: "admin_theme_dark" }, { text: "☀️ Oq tema", callback_data: "admin_theme_light" }]);
-      keyboard.push([{ text: "🖤 Toza qora", callback_data: "admin_theme_black" }]);
-      keyboard.push([{ text: "🖼 Oltin fonlar", callback_data: "admin_bg_gold" }, { text: "🎨 Oddiy fon", callback_data: "admin_bg_classic" }]);
-      keyboard.push([{ text: "🔙 Admin panel", callback_data: "admin_panel" }]);
-      await bot!.sendMessage(chatId, "🎮 <b>O'YIN VA DIZAYN SOZLAMALARI</b>\n\nO'yinni yoqish/o'chirish yoki barcha foydalanuvchilar uchun tema va fon uslubini tanlang.", { parse_mode: "HTML", reply_markup: { inline_keyboard: keyboard } });
+      const keyboard = [
+        [{ text: "📋 O'yinlar ro'yxati (yoqish/o'chirish, win%, qiyinlik, koeffitsiyent)", callback_data: "admin_gm_list_0" }],
+        [{ text: "🛠 Hammasiga qo'llash", callback_data: "admin_gm_all" }],
+        [{ text: "🌙 Qora tema", callback_data: "admin_theme_dark" }, { text: "☀️ Oq tema", callback_data: "admin_theme_light" }],
+        [{ text: "🖤 Toza qora", callback_data: "admin_theme_black" }],
+        [{ text: "🖼 Oltin fonlar", callback_data: "admin_bg_gold" }, { text: "🎨 Oddiy fon", callback_data: "admin_bg_classic" }],
+        [{ text: "🔙 Admin panel", callback_data: "admin_panel" }],
+      ];
+      await bot!.sendMessage(chatId, "🎮 <b>O'YIN VA DIZAYN SOZLAMALARI</b>\n\nHar bir o'yinning yutish foizi, qiyinligi va koeffitsiyentini alohida sozlashingiz mumkin, yoki dizaynni tanlang.", { parse_mode: "HTML", reply_markup: { inline_keyboard: keyboard } });
       return;
     }
 
-    if (data.startsWith("admin_game_toggle_")) {
-      if (!hasPerm(q.from.id, "admins")) { await bot!.answerCallbackQuery(q.id, { text: "❌ Ruxsat yo'q" }); return; }
-      const game = data.replace("admin_game_toggle_", "");
+    if (data === "admin_gm_noop") {
+      await bot!.answerCallbackQuery(q.id);
+      return;
+    }
+
+    if (data.startsWith("admin_gm_list_")) {
+      await bot!.answerCallbackQuery(q.id);
+      const page = Number(data.replace("admin_gm_list_", "")) || 0;
+      await sendGameList(chatId, page, q.message.message_id);
+      return;
+    }
+
+    if (data.startsWith("admin_gm_open_")) {
+      await bot!.answerCallbackQuery(q.id);
+      const game = data.replace("admin_gm_open_", "");
+      await sendGameEditor(chatId, game, q.message.message_id);
+      return;
+    }
+
+    if (data.startsWith("admin_gm_toggle_")) {
+      const game = data.replace("admin_gm_toggle_", "");
       const [current] = await db.select().from(gameSettingsTable).where(eq(gameSettingsTable.game, game));
       const enabled = !(current?.enabled ?? true);
       await db.insert(gameSettingsTable).values({ game, enabled }).onConflictDoUpdate({ target: gameSettingsTable.game, set: { enabled, updatedAt: new Date() } });
       await bot!.answerCallbackQuery(q.id, { text: enabled ? "✅ O'yin yoqildi" : "⛔ O'yin o'chirildi" });
-      await sendAdminMenu(chatId, q.from.id);
+      await sendGameEditor(chatId, game, q.message.message_id);
+      return;
+    }
+
+    if (data.startsWith("admin_gm_win_")) {
+      const rest = data.replace("admin_gm_win_", "");
+      const idx = rest.lastIndexOf("_");
+      const game = rest.slice(0, idx);
+      const delta = Number(rest.slice(idx + 1));
+      const [current] = await db.select().from(gameSettingsTable).where(eq(gameSettingsTable.game, game));
+      const winChance = Math.min(95, Math.max(1, (current?.winChance ?? 31) + delta));
+      await db.insert(gameSettingsTable).values({ game, winChance }).onConflictDoUpdate({ target: gameSettingsTable.game, set: { winChance, updatedAt: new Date() } });
+      await bot!.answerCallbackQuery(q.id, { text: `🎯 Win%: ${winChance}` });
+      await sendGameEditor(chatId, game, q.message.message_id);
+      return;
+    }
+
+    if (data.startsWith("admin_gm_mult_")) {
+      const rest = data.replace("admin_gm_mult_", "");
+      const idx = rest.lastIndexOf("_");
+      const game = rest.slice(0, idx);
+      const delta = Number(rest.slice(idx + 1));
+      const [current] = await db.select().from(gameSettingsTable).where(eq(gameSettingsTable.game, game));
+      const multiplier = Math.min(500, Math.max(10, (current?.multiplier ?? 100) + delta));
+      await db.insert(gameSettingsTable).values({ game, multiplier }).onConflictDoUpdate({ target: gameSettingsTable.game, set: { multiplier, updatedAt: new Date() } });
+      await bot!.answerCallbackQuery(q.id, { text: `✖️ Koeffitsiyent: x${(multiplier / 100).toFixed(2)}` });
+      await sendGameEditor(chatId, game, q.message.message_id);
+      return;
+    }
+
+    if (data.startsWith("admin_gm_diff_")) {
+      const game = data.replace("admin_gm_diff_", "");
+      const [current] = await db.select().from(gameSettingsTable).where(eq(gameSettingsTable.game, game));
+      const difficulty = nextDifficulty(current?.difficulty);
+      const winChance = DIFFICULTY_WIN_SUGGEST[difficulty];
+      await db.insert(gameSettingsTable).values({ game, difficulty, winChance }).onConflictDoUpdate({ target: gameSettingsTable.game, set: { difficulty, winChance, updatedAt: new Date() } });
+      await bot!.answerCallbackQuery(q.id, { text: `⚙️ Qiyinlik: ${difficulty} (win% ${winChance})` });
+      await sendGameEditor(chatId, game, q.message.message_id);
+      return;
+    }
+
+    if (data.startsWith("admin_gm_maxwin_")) {
+      const game = data.replace("admin_gm_maxwin_", "");
+      waitingForMaxWin.set(q.from.id, game);
+      await bot!.answerCallbackQuery(q.id);
+      await bot!.sendMessage(chatId, `💰 <b>${GAME_LABELS[game] ?? game}</b> uchun maksimal yutuq miqdorini kiriting (UZS).\n\nCheklovni olib tashlash uchun <code>0</code> yozing.\n\n<i>Bekor qilish uchun /cancel</i>`, { parse_mode: "HTML" });
+      return;
+    }
+
+    if (data === "admin_gm_all") {
+      await bot!.answerCallbackQuery(q.id);
+      const keyboard = [
+        [{ text: "🟢 Barchasiga: oson", callback_data: "admin_gm_allset_oson" }],
+        [{ text: "🟡 Barchasiga: o'rta", callback_data: "admin_gm_allset_o'rta" }],
+        [{ text: "🟠 Barchasiga: qiyin", callback_data: "admin_gm_allset_qiyin" }],
+        [{ text: "🔴 Barchasiga: juda qiyin", callback_data: "admin_gm_allset_juda qiyin" }],
+        [{ text: "➕5% win (barchasi)", callback_data: "admin_gm_alldelta_5" }, { text: "➖5% win (barchasi)", callback_data: "admin_gm_alldelta_-5" }],
+        [{ text: "🔙 O'yinlar ro'yxati", callback_data: "admin_gm_list_0" }],
+      ];
+      await bot!.sendMessage(chatId, "🛠 <b>HAMMASIGA QO'LLASH</b>\n\nQiyinlik darajasi yoki win% o'zgarishini barcha o'yinlarga bir vaqtda qo'llang.", { parse_mode: "HTML", reply_markup: { inline_keyboard: keyboard } });
+      return;
+    }
+
+    if (data.startsWith("admin_gm_allset_")) {
+      const difficulty = data.replace("admin_gm_allset_", "") as Difficulty;
+      const winChance = DIFFICULTY_WIN_SUGGEST[difficulty] ?? 31;
+      for (const g of ALL_GAMES) {
+        await db.insert(gameSettingsTable).values({ game: g.key, difficulty, winChance }).onConflictDoUpdate({ target: gameSettingsTable.game, set: { difficulty, winChance, updatedAt: new Date() } });
+      }
+      await bot!.answerCallbackQuery(q.id, { text: `✅ Barcha o'yinlarga qo'llandi: ${difficulty}`, show_alert: true });
+      await sendGameList(chatId, 0);
+      return;
+    }
+
+    if (data.startsWith("admin_gm_alldelta_")) {
+      const delta = Number(data.replace("admin_gm_alldelta_", ""));
+      const configured = await db.select().from(gameSettingsTable);
+      const byGame = new Map(configured.map((r) => [r.game, r]));
+      for (const g of ALL_GAMES) {
+        const current = byGame.get(g.key);
+        const winChance = Math.min(95, Math.max(1, (current?.winChance ?? 31) + delta));
+        await db.insert(gameSettingsTable).values({ game: g.key, winChance }).onConflictDoUpdate({ target: gameSettingsTable.game, set: { winChance, updatedAt: new Date() } });
+      }
+      await bot!.answerCallbackQuery(q.id, { text: `✅ Barcha o'yinlar win% ${delta > 0 ? "+" : ""}${delta}`, show_alert: true });
+      await sendGameList(chatId, 0);
       return;
     }
 

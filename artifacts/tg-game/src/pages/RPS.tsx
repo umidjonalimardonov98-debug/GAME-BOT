@@ -26,7 +26,7 @@ export default function RPS() {
   const play = () =>{
     if (!canPlay) return;
     setBusy(true); setWon(null); setBot(null);
-    const win = riggedWin();
+    const win = riggedWin("rps");
     const b = win ? (pick + 2) % 3 : (pick + 1) % 3;
     const stopTick = startTicker(80);
     const iv = setInterval(() => setRolling(r => (r + 1) % 3), 110);

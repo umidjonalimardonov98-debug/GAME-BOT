@@ -133,6 +133,7 @@ export function permForCallback(data: string): Perm | null {
   if (!data.startsWith("admin_") && data !== "broadcast_menu") return null;
 
   if (data.startsWith("admin_admins") || data.startsWith("admin_addadmin") || data.startsWith("admin_rmadmin")) return "admins";
+  if (data.startsWith("admin_gm_") || data === "admin_game_settings") return "admins";
 
   switch (data) {
     case "admin_panel":

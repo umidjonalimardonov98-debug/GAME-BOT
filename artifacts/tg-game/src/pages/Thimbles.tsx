@@ -28,7 +28,7 @@ export default function Thimbles() {
   const play = () => {
     if (!canPlay || pick === null) return;
     setBusy(true); setWon(null); setBall(null); setShuffling(true);
-    const win = riggedWin();
+    const win = riggedWin("thimbles");
     const stopTick = startTicker(80);
     sfx.spin();
     const iv = setInterval(() => setShift([

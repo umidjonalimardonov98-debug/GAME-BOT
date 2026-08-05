@@ -85,7 +85,7 @@ export default function Parity() {
     lockedExact.current = exactNum;
 
     // Uy foydasi: 69% yutqazish
-    const mustLose = riggedLose();
+    const mustLose = riggedLose("parity");
     const isWinNum = (n: number) =>
       betType === "small"? WIN_SMALL(n) : betType ==="big" ? WIN_BIG(n) : n === exactNum;
     let final = genFinal(lastResultRef.current);

@@ -8,6 +8,8 @@ import supportRouter from "./support";
 import voiceRoomRouter from "./voiceroom";
 import chatRouter from "./chat";
 import pvpRouter from "./pvp";
+import pvpBlackjackRouter from "./pvp-blackjack";
+import pvpPokerRouter from "./pvp-poker";
 
 const router: IRouter = Router();
 
@@ -20,5 +22,7 @@ router.use(supportRouter);
 router.use(voiceRoomRouter);
 router.use(chatRouter);
 router.use(pvpRouter);
+router.use(pvpBlackjackRouter);
+router.use(pvpPokerRouter);
 
 export default router;

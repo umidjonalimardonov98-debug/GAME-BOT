@@ -35,7 +35,7 @@ export default function HiLo() {
   const guess = async (hi: boolean) =>{
     if (!active) return;
     sfx.card();
-    const win = riggedWin();
+    const win = riggedWin("hilo");
     let f: number;
     if (win) f = hi ? Math.min(12, card.f + 1 + rnd(Math.max(1, 12 - card.f))) : Math.max(0, card.f - 1 - rnd(Math.max(1, card.f)));
     else f = hi ? Math.max(0, card.f - 1 - rnd(Math.max(1, card.f))) : Math.min(12, card.f + 1 + rnd(Math.max(1, 12 - card.f)));

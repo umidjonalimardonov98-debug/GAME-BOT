@@ -27,7 +27,7 @@ export default function GuessHand() {
   const play = () => {
     if (!canPlay || pick === null) return;
     setBusy(true); setWon(null); setCoinIn(null); setShaking(true);
-    const win = riggedWin();
+    const win = riggedWin("hands");
     const stopTick = startTicker(85);
     sfx.spin();
     setTimeout(async () => {

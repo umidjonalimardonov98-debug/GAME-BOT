@@ -65,7 +65,7 @@ export default function AppleOfFortune() {
     if (!player || player.balance < activeBet || activeBet < 2000) return;
     setGrid(generateGrid());
     setRevealed(Array.from({ length: ROWS }, () => Array(COLS).fill(false)));
-    setLoseRow(riggedLose() ? Math.floor(Math.random() * 3) : -1);
+    setLoseRow(riggedLose("apple") ? Math.floor(Math.random() * 3) : -1);
     setActiveRow(0); setCashOutAmount(0); setShowResult(false); setGameState("playing");
   };
 

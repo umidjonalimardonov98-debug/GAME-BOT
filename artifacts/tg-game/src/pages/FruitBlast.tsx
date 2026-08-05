@@ -29,7 +29,7 @@ export default function FruitBlast() {
   const play = () => {
     if (!canPlay) return;
     setBusy(true); setWon(null); setSpin(true);
-    const win = riggedWin();
+    const win = riggedWin("fruitblast");
     const stopTick = startTicker(70);
     sfx.spin();
     const iv = setInterval(() => setCells([rnd(), rnd(), rnd()]), 110);

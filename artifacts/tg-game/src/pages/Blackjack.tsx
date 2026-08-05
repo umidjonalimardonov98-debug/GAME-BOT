@@ -99,7 +99,7 @@ export default function Blackjack() {
     let dk = [...deck];
     while (calcHand(d) < 17) { d.push(dk.shift()!); }
     // Uy foydasi: 69% hollarda diler yutadigan qilib karta tanlanadi
-    if (riggedLose()) {
+    if (riggedLose("blackjack")) {
       const pt0 = calcHand(playerCards);
       if (pt0 <= 21 && calcHand(d) <= pt0) {
         const idx = dk.findIndex(c =>{

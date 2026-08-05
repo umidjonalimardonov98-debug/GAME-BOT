@@ -77,13 +77,13 @@ export default function History() {
           {loading && <p className="text-center py-12" style={{ color: ts.textSub }}>{u("loading")}</p>}
 
           {!loading && tab === "games" && visibleGames.map(row => (
-            <div key={row.id} className="flex items-center justify-between p-4 rounded-2xl pop-in"
+            <div key={row.id} className="grid grid-cols-[minmax(0,1fr)_auto] items-center gap-2 p-4 rounded-2xl pop-in"
               style={{ background: ts.card, border: `1px solid ${ts.cardBorder}` }}>
-              <div>
-                <p className="font-black text-sm" style={{ color: ts.text }}>{gameName(row.game)}</p>
-                <p className="text-xs mt-1" style={{ color: ts.textSub }}>{date(row.createdAt)}</p>
+              <div className="min-w-0">
+                <p className="font-black text-sm truncate" style={{ color: ts.text }}>{gameName(row.game)}</p>
+                <p className="text-xs mt-1 truncate" style={{ color: ts.textSub }}>{date(row.createdAt)}</p>
               </div>
-              <div className="text-right">
+              <div className="text-right shrink-0">
                 <p className="font-black" style={{ color: row.type === "win" ? "#39c46f" : "#f87171" }}>
                   {row.type === "win" ? "+" : "−"}{row.amount.toLocaleString()} UZS
                 </p>
@@ -95,13 +95,13 @@ export default function History() {
           ))}
 
           {!loading && tab === "withdrawals" && withdrawals.map(row => (
-            <div key={row.id} className="flex items-center justify-between p-4 rounded-2xl pop-in"
+            <div key={row.id} className="grid grid-cols-[minmax(0,1fr)_auto] items-center gap-2 p-4 rounded-2xl pop-in"
               style={{ background: ts.card, border: `1px solid ${ts.cardBorder}` }}>
-              <div>
-                <p className="font-black text-sm" style={{ color: ts.text }}>{row.cardNumber}</p>
-                <p className="text-xs mt-1" style={{ color: ts.textSub }}>{date(row.createdAt)}</p>
+              <div className="min-w-0">
+                <p className="font-black text-sm truncate" style={{ color: ts.text }}>{row.cardNumber}</p>
+                <p className="text-xs mt-1 truncate" style={{ color: ts.textSub }}>{date(row.createdAt)}</p>
               </div>
-              <div className="text-right">
+              <div className="text-right shrink-0">
                 <p className="font-black" style={{ color: GOLD.light }}>{row.amount.toLocaleString()} UZS</p>
                 <p className="text-xs font-bold"
                   style={{ color: row.status === "approved" ? "#39c46f" : row.status === "rejected" ? "#f87171" : "#fbbf24" }}>

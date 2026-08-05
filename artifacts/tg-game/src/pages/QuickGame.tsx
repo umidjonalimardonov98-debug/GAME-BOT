@@ -3,6 +3,7 @@ import { useLang } from "@/lib/lang-context";
 import { useTheme } from "@/lib/theme-context";
 import { useBet } from "@/lib/use-bet";
 import { riggedWin, rollOutcome } from "@/lib/odds";
+import SmartImage from "@/components/SmartImage";
 import { NEW_GAME_MAP, coverOf, type GameCfg } from "@/lib/new-games";
 import GameHeader from "@/components/GameHeader";
 import BetPanel from "@/components/casino/BetPanel";
@@ -734,7 +735,7 @@ function Game({ cfg }: { cfg: GameCfg }) {
     if (!canPlay) return;
     setBusy(true); setWon(null); setRevealed(false); setCrashed(false); setRefunded(false);
     // 50% yutuq · x1 pul qaytarish · qolgani yutqazish
-    const outcome = rollOutcome();
+    const outcome = rollOutcome(cfg.key);
     const win = outcome === "win";
     pending.current = { win, mult: win ? cfg.mult : outcome === "refund" ? 1 : 0 };
 
@@ -763,7 +764,7 @@ function Game({ cfg }: { cfg: GameCfg }) {
       if (!canPlay) return;
       setBusy(true); setWon(null); setCrashed(false);
     }
-    const safe = riggedWin() || step < 1;
+    const safe = riggedWin(cfg.key) || step < 1;
     if (!safe) {
       setCrashed(true);
       pending.current = { win: false, mult: 0 };
@@ -795,7 +796,7 @@ function Game({ cfg }: { cfg: GameCfg }) {
     <div className="min-h-screen flex flex-col relative" style={{ background: bg }}>
       {cover && (
         <>
-          <img src={cover} alt="" aria-hidden
+          <SmartImage src={cover} alt="" sizes="360px" loading="eager"
             className="fixed inset-0 w-full h-full object-cover pointer-events-none"
             style={{ opacity: 0.42, zIndex: 0 }} />
           <span className="fixed inset-0 pointer-events-none"
@@ -815,7 +816,7 @@ function Game({ cfg }: { cfg: GameCfg }) {
           }}>
           {cover && (
             <>
-              <img src={cover} alt="" aria-hidden loading="lazy"
+              <SmartImage src={cover} alt="" sizes="360px" loading="lazy"
                 className="absolute inset-0 w-full h-full object-cover pointer-events-none"
                 style={{ opacity: 0.34, filter: "saturate(1.15)" }} />
               <span className="absolute inset-0 pointer-events-none"

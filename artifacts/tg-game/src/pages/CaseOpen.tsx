@@ -85,7 +85,7 @@ export default function CaseOpen() {
   const play = () => {
     if (!canPlay) return;
     setBusy(true); setWon(null); setHit(null); setSpin(true); setOffset(0);
-    const out = rollOutcome();
+    const out = rollOutcome("case");
     const pool = PRIZES.map((p, i) => ({ p, i })).filter((x) =>
       out === "win" ? x.p.m > 1.05 : out === "refund" ? x.p.m > 1 && x.p.m < 1.6 : x.p.m === 0,
     );

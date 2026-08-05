@@ -24,7 +24,7 @@ export default function CoinFlip() {
   const play = () =>{
     if (!canPlay) return;
     setBusy(true); setWon(null); setSpin(true);
-    const win = riggedWin();
+    const win = riggedWin("coinflip");
     const stopTick = startTicker(70);
     sfx.spin();
     const iv = setInterval(() => setFace(f => (f === "h"?"t":"h")), 90);

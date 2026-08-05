@@ -14,7 +14,7 @@ type Phase = "idle"|"countdown"|"flying"|"done";
 // 80% small (1.1-1.7), 12% medium (1.7-3.5), 6% big (3.5-10), 2% huge (10-30)
 function randomCrash(): number {
   // Uy foydasi: 69% hollarda juda erta crash
-  if (riggedLose()) return parseFloat((1.01 + Math.random() * 0.24).toFixed(2));
+  if (riggedLose("aviator")) return parseFloat((1.01 + Math.random() * 0.24).toFixed(2));
   const r = Math.random();
   if (r < 0.80) return parseFloat((1.10 + Math.random() * 0.60).toFixed(2));
   if (r < 0.92) return parseFloat((1.70 + Math.random() * 1.80).toFixed(2));

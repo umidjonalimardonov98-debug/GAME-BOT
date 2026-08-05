@@ -5,6 +5,14 @@ export const gameSettingsTable = pgTable("game_settings", {
   game: text("game").notNull().unique(),
   enabled: boolean("enabled").notNull().default(true),
   winChance: integer("win_chance").notNull().default(31),
+  /** Yutqazgan raundlarning necha foizida pul qaytariladi (x1) */
+  refundChance: integer("refund_chance").notNull().default(6),
+  /** "oson" | "o'rta" | "qiyin" | "juda qiyin" */
+  difficulty: text("difficulty").notNull().default("o'rta"),
+  /** Koeffitsiyent multiplikatori, bazis punktlarda: 100 = x1.00 */
+  multiplier: integer("multiplier").notNull().default(100),
+  /** Maksimal yutuq miqdori (so'mda), null = cheklanmagan */
+  maxWin: integer("max_win"),
   backgroundUrl: text("background_url"),
   updatedAt: timestamp("updated_at").notNull().defaultNow(),
 });

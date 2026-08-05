@@ -3,7 +3,7 @@ import { usePlayer } from "@/lib/player-context";
 import { useLang } from "@/lib/lang-context";
 import { useTheme, pageBg, GAME_BG, GOLD } from "@/lib/theme-context";
 import { placeBet } from "@/lib/api";
-import { WIN_RATE } from "@/lib/odds";
+import { winRateFor } from "@/lib/odds";
 import { sfx, startTicker } from "@/lib/sound";
 import GameHeader from "@/components/GameHeader";
 import SlotColumn from "@/components/casino/SlotColumn";
@@ -62,7 +62,7 @@ export default function Slots() {
     setTimeout(() => setLever(false), 400);
     sfx?.click?.();
 
-    const res = spinEngine(lines, betPerLine, WIN_RATE);
+    const res = spinEngine(lines, betPerLine, winRateFor("slots"));
     setGrid(res.grid);
     const stopTick = startTicker(70);
 

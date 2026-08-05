@@ -86,7 +86,7 @@ export default function Roulette() {
     sfx.spin();
     // Uy foydasi: yutqaziladigan/yutuqli son oldindan tanlanadi, keyin shar
     // real fizika bilan aynan shu uyaga tushadi.
-    const outcome = rollOutcome();
+    const outcome = rollOutcome("roulette");
     outcomeRef.current = outcome;
     const num = randomWhere(WHEEL, (n) => (outcome === "win" ? BETS[pick].test(n) : !BETS[pick].test(n)));
     setSpinCmd({ id: ++spinIdRef.current, num });

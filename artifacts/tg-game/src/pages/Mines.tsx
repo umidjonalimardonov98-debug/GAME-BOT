@@ -67,7 +67,7 @@ export default function Mines() {
   const start = useCallback(() =>{
     if (!player || bet < 2000 || player.balance < bet || busy) return;
     setBombs(pickMines(mines));
-    setLoseAt(riggedLose() ? 1 + Math.floor(Math.random() * 3) : Number.POSITIVE_INFINITY);
+    setLoseAt(riggedLose("mines") ? 1 + Math.floor(Math.random() * 3) : Number.POSITIVE_INFINITY);
     setOpened([]);
     setBoom(null);
     setPrize(0);

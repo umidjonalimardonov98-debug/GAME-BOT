@@ -64,7 +64,7 @@ export default function Plinko() {
     if (!canPlay) return;
     setBusy(true);
     setWon(null);
-    const winning = riggedWin();
+    const winning = riggedWin("plinko");
     const idxs = mults.map((_, i) => i);
     const winIdx = idxs.filter((i) => mults[i] > 0);
     const loseIdx = idxs.filter((i) => mults[i] === 0);

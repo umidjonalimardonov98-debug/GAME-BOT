@@ -58,7 +58,7 @@ export default function LuckyCard() {
   const play = () => {
     if (!canPlay || pick === null) return;
     setBusy(true); setWon(null); setOpen([]);
-    const out = rollOutcome();
+    const out = rollOutcome("luckycard");
     const win = out === "win";
     const n = level.cards;
 

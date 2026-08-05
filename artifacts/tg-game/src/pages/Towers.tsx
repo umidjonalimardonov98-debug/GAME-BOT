@@ -33,7 +33,7 @@ export default function Towers() {
 
   const choose = async (col: number) =>{
     if (!active) return;
-    const safe = riggedWin() || level < 1; // birinchi bosqich yengilroq
+    const safe = riggedWin("towers") || level < 1; // birinchi bosqich yengilroq
     setPicked(p => ({ ...p, [level]: col }));
     if (!safe) {
       sfx.boom();

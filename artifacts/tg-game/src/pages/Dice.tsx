@@ -56,7 +56,7 @@ export default function Dice() {
     setGameState("rolling");
 
     // Uy foydasi: 69% yutqazish — natija oldindan aniqlanadi, zarlar shu yuzda to'xtaydi
-    const mustLose = riggedLose();
+    const mustLose = riggedLose("dice");
     const isWinSum = (s: number) =>
       (betType === "more"&& s > 7) || (betType ==="equal"&& s === 7) || (betType ==="less" && s < 7);
     let d1 = Math.ceil(Math.random() * 6);

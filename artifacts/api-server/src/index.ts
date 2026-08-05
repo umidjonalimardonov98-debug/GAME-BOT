@@ -2,6 +2,9 @@ import app from "./app";
 import { logger } from "./lib/logger";
 import { startBot } from "./bot";
 import { execSync } from "child_process";
+import { db } from "@workspace/db";
+import { sql } from "drizzle-orm";
+import { ensureGameSettingsColumns } from "./lib/games-catalog";
 
 const rawPort = process.env["PORT"];
 
@@ -32,6 +35,7 @@ async function runMigrations() {
   } catch (err) {
     logger.error({ err }, "Migration failed — continuing anyway");
   }
+  await ensureGameSettingsColumns(db, sql);
 }
 
 async function main() {

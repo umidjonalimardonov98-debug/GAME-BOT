@@ -34,7 +34,7 @@ export default function Keno() {
     if (!canPlay || picks.length !== PICKS) return;
     setBusy(true); setWon(null); setDrawn([]); setHits(0);
 
-    const win = riggedWin();
+    const win = riggedWin("keno");
     const hitCount = win ? (Math.random() < 0.8 ? 2 : Math.random() < 0.85 ? 3 : 4) : (Math.random() < 0.6 ? 0 : 1);
     const chosenHits = [...picks].sort(() => Math.random() - 0.5).slice(0, hitCount);
     const rest = Array.from({ length: TOTAL }, (_, i) => i + 1)

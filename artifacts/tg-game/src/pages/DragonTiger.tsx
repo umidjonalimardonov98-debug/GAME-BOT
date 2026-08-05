@@ -28,7 +28,7 @@ export default function DragonTiger() {
   const play = () =>{
     if (!canPlay) return;
     setBusy(true); setWon(null); setD(null); setT(null);
-    const win = riggedWin();
+    const win = riggedWin("dragontiger");
     const outcome: Side = win ? side
       : side === "tie"? (Math.random() < 0.5 ?"dragon":"tiger")
       : side === "dragon"? (Math.random() < 0.9 ?"tiger":"tie")

@@ -29,6 +29,7 @@ async function redeemPromo(telegramId: string, code: string) {
 
 import { NEW_GAMES, NEW_GAME_MAP, coverOf } from "@/lib/new-games";
 import GameArt from "@/components/casino/GameArt";
+import SmartImage from "@/components/SmartImage";
 
 const GAMES = [
   { key: "apple",       path: "/apple",       img: "/games/apple.jpg",       tag: "HOT",   tagColor: "#ef4444", bg: "linear-gradient(145deg,#064e3b,#1a7d43)", glow: "#1a7d4355" },
@@ -166,7 +167,8 @@ export default function Home() {
       {/* ─── PRO HERO BANNER (TEKIN O'YIN) ─── */}
       <div className="mx-4 mb-3 rounded-3xl relative overflow-hidden pro-sheen"
         style={{ aspectRatio: "16 / 8", border: `1px solid ${GOLD.border}`, boxShadow: "0 16px 44px rgba(0,0,0,0.5)" }}>
-        <img src="/banner-main.jpg" alt="" className="absolute inset-0 w-full h-full object-cover" />
+        <SmartImage src="/banner-main.jpg" alt="" loading="eager" fetchPriority="high"
+          sizes="360px" className="absolute inset-0 w-full h-full object-cover" />
         <div className="absolute inset-0"
           style={{ background: "linear-gradient(90deg, rgba(3,2,12,0.94) 0%, rgba(3,2,12,0.66) 52%, rgba(3,2,12,0.06) 100%)" }} />
         {/* oltin charx surati */}
@@ -247,6 +249,28 @@ export default function Home() {
           36 karta · haqiqiy odam bilan pul tikib · suzish qoidalari
         </p>
       </button>
+
+      {/* ─── PVP PRO ─── */}
+      <div className="grid grid-cols-2 gap-2 mx-4 mb-4">
+        {[
+          { path: "/pvp-blackjack", img: "/games/pvpblackjack.jpg", title: "BLACKJACK", sub: "1x1 · 21 ochko" },
+          { path: "/pvp-poker", img: "/games/pvppoker.jpg", title: "POKER", sub: "1x1 · Texas Hold'em" },
+        ].map((g) => (
+          <button key={g.path} onClick={() => nav(g.path)}
+            className="relative overflow-hidden rounded-2xl text-left active:scale-[0.98] transition-transform"
+            style={{ border: "1px solid rgba(247,201,72,0.45)", boxShadow: "0 6px 20px rgba(0,0,0,0.25)" }}>
+            <img src={g.img} alt={g.title} width={1024} height={1024} loading="lazy" decoding="async"
+              className="w-full h-24 object-cover" />
+            <div className="absolute inset-0" style={{ background: "linear-gradient(180deg,rgba(0,0,0,0.05),rgba(0,0,0,0.78))" }} />
+            <div className="absolute bottom-0 left-0 right-0 p-2 min-w-0">
+              <p className="font-black truncate" style={{ fontSize: 13, color: "#fff" }}>
+                PVP <span className="gold-text">{g.title}</span>
+              </p>
+              <p className="font-bold truncate" style={{ fontSize: 9, color: "rgba(255,255,255,0.75)" }}>{g.sub}</p>
+            </div>
+          </button>
+        ))}
+      </div>
 
       {/* ─── 4 ACTION BUTTONS ─── */}
       <div className="grid grid-cols-4 gap-2 mx-4 mb-4">
@@ -376,7 +400,8 @@ export default function Home() {
                 }}>
                 {/* Haqiqiy o'yin surati fon sifatida */}
                 {g.img ? (
-                  <img src={g.img} alt={GAME_NAMES[g.key][lang]} loading="lazy" decoding="async"
+                  <SmartImage src={g.img} alt={GAME_NAMES[g.key][lang]} loading="lazy" decoding="async"
+                    sizes="(max-width: 480px) 30vw, 160px"
                     className="absolute inset-0 w-full h-full object-cover pointer-events-none crisp-img"
                     style={{ opacity: 1, borderRadius: 12 }} />
                 ) : NEW_GAME_MAP[g.key] ? (

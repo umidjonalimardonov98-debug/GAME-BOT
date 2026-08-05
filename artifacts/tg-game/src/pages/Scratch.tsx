@@ -36,7 +36,7 @@ export default function Scratch() {
   const start = () => {
     if (!canPlay || busy) return;
     sfx.spin();
-    const out = rollOutcome();
+    const out = rollOutcome("scratch");
     const m = out === "win" ? MULTS[Math.floor(Math.random() * MULTS.length)] : out === "refund" ? 1 : 0;
     const target = SYM[Math.floor(Math.random() * SYM.length)];
     const arr: string[] = [];

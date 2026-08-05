@@ -155,7 +155,8 @@ export default function GlobalChat() {
             onChange={(e) => setText(e.target.value)}
             onKeyDown={(e) => { if (e.key === "Enter") send(); }}
             placeholder="Xabar yozing..."
-            className="flex-1 bg-transparent outline-none text-sm"
+            inputMode="text" autoCapitalize="off" autoCorrect="off" spellCheck={false}
+            className="flex-1 min-w-0 bg-transparent outline-none text-base"
             style={{ color: "#fff" }}
           />
           <button

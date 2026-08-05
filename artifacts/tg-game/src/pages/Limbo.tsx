@@ -28,7 +28,7 @@ export default function Limbo() {
   const play = () =>{
     if (!canPlay) return;
     setBusy(true); setWon(null); setFinal(null);
-    const win = riggedWin();
+    const win = riggedWin("limbo");
     const res = win
       ? +(tgt + Math.random() * Math.max(0.5, tgt * 0.6)).toFixed(2)
       : +(1 + Math.random() * (tgt - 1.01)).toFixed(2);

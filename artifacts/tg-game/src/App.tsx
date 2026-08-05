@@ -41,6 +41,8 @@ import NotFound from "@/pages/not-found";
 import QuickGame from "@/pages/QuickGame";
 import GlobalChat from "@/pages/GlobalChat";
 import PvpDurak from "@/pages/PvpDurak";
+import PvpBlackjack from "@/pages/PvpBlackjack";
+import PvpPoker from "@/pages/PvpPoker";
 import { NEW_GAMES } from "@/lib/new-games";
 import RoundBreakdown from "@/components/casino/RoundBreakdown";
 import GlobalWinFx from "@/components/casino/GlobalWinFx";
@@ -88,6 +90,8 @@ function Router() {
       <Route path="/derby" component={Derby} />
       <Route path="/moneywheel" component={MoneyWheel} />
       <Route path="/pvp" component={PvpDurak} />
+      <Route path="/pvp-blackjack" component={PvpBlackjack} />
+      <Route path="/pvp-poker" component={PvpPoker} />
       {NEW_GAMES.map((g) => (
         <Route key={g.key} path={g.path}>{() => <QuickGame gameKey={g.key} />}</Route>
       ))}

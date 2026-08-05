@@ -1,17 +1,49 @@
 import { Router, type IRouter } from "express";
 import { desc, sql } from "drizzle-orm";
 import { db, playersTable, gameSettingsTable, appSettingsTable } from "@workspace/db";
+import { ALL_GAMES } from "../lib/games-catalog";
 
 const router: IRouter = Router();
 
-const DEFAULT_GAMES = ["apple", "dice", "aviator", "spin", "blackjack", "slots", "parity", "mines", "roulette"];
+type GameConfig = {
+  enabled: boolean;
+  winChance: number;
+  refundChance: number;
+  difficulty: string;
+  multiplier: number;
+  maxWin: number | null;
+  backgroundUrl: string | null;
+};
+
+const DEFAULT_CONFIG: GameConfig = {
+  enabled: true,
+  winChance: 31,
+  refundChance: 6,
+  difficulty: "o'rta",
+  multiplier: 100,
+  maxWin: null,
+  backgroundUrl: null,
+};
 
 router.get("/game/config", async (_req, res): Promise<void> => {
   const [games, appSettings] = await Promise.all([db.select().from(gameSettingsTable), db.select().from(appSettingsTable)]);
-  const byGame: Record<string, { enabled: boolean; winChance: number; backgroundUrl: string | null }> = Object.fromEntries(
-    games.map(g => [g.game, { enabled: g.enabled, winChance: g.winChance, backgroundUrl: g.backgroundUrl }]),
+  const byGame: Record<string, GameConfig> = Object.fromEntries(
+    games.map((g) => [
+      g.game,
+      {
+        enabled: g.enabled,
+        winChance: g.winChance,
+        refundChance: g.refundChance ?? DEFAULT_CONFIG.refundChance,
+        difficulty: g.difficulty ?? DEFAULT_CONFIG.difficulty,
+        multiplier: g.multiplier ?? DEFAULT_CONFIG.multiplier,
+        maxWin: g.maxWin ?? null,
+        backgroundUrl: g.backgroundUrl,
+      },
+    ]),
   );
-  for (const game of DEFAULT_GAMES) if (!byGame[game]) byGame[game] = { enabled: true, winChance: 31, backgroundUrl: null };
+  // Katalogdagi barcha o'yinlar uchun (sozlanmagan bo'lsa ham) standart qiymatlar bilan to'ldiramiz
+  for (const { key } of ALL_GAMES) if (!byGame[key]) byGame[key] = { ...DEFAULT_CONFIG };
+
   res.json({ games: byGame, theme: Object.fromEntries(appSettings.map(s => [s.key, s.value])) });
 });
 

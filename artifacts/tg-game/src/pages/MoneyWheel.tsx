@@ -28,7 +28,7 @@ export default function MoneyWheel() {
   const play = () => {
     if (!canPlay || pick === null) return;
     setBusy(true); setWon(null);
-    const win = riggedWin();
+    const win = riggedWin("moneywheel");
     const options = SECTORS.map((v, i) => i).filter(i => (win ? SECTORS[i] === pick : SECTORS[i] !== pick));
     const idx = options[Math.floor(Math.random() * options.length)];
     const stopTick = startTicker(55);
