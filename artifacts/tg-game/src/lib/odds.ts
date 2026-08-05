@@ -3,9 +3,9 @@
  *
  * WIN_RATE — o'yinchining yutish ehtimoli (0..1). Barcha o'yinlar shu yerdan boshqariladi.
  */
-export const WIN_RATE = 0.5;
+export const WIN_RATE = 0.25;
 /** Yutqazgan raundlarning bir qismida pul qaytariladi (x1 koeffitsiyent) */
-export const REFUND_RATE = 0.12;
+export const REFUND_RATE = 0.06;
 export const LOSE_RATE = 1 - WIN_RATE;
 
 /** true bo'lsa — bu raund yutqaziladigan qilib belgilanadi */
@@ -33,7 +33,7 @@ export type Outcome = "win" | "refund" | "lose";
 
 /**
  * Bitta raund natijasi:
- *  - "win"    → o'yin koeffitsiyenti bo'yicha yutuq (50%)
+ *  - "win"    → o'yin koeffitsiyenti bo'yicha yutuq (25%)
  *  - "refund" → x1, tikilgan pul qaytariladi
  *  - "lose"   → yutqazish
  */

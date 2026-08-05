@@ -56,8 +56,8 @@ const G = (
 /** 35 ta yangi kazino o'yini — har biri boshqacha mexanika bilan */
 export const NEW_GAMES: GameCfg[] = [
   /* ── MINA MAYDONI ── */
-  G("minesfield",  "mines", "#ef4444", "#450a0a", ["gem", "bomb"], 1.35, 3, "grid",    "Mina Maydoni", "Минное Поле", "Mines Field"),
-  G("diamondmine", "mines", "#22d3ee", "#0c4a6e", ["gem", "bomb"], 1.75, 5, "stars",   "Olmos Koni", "Алмазная Шахта", "Diamond Mine"),
+  G("minesfield",  "mines", "#ef4444", "#450a0a", ["gem", "bomb"], 1.1, 3, "grid",    "Mina Maydoni", "Минное Поле", "Mines Field"),
+  G("diamondmine", "mines", "#22d3ee", "#0c4a6e", ["gem", "bomb"], 1.3, 5, "stars",   "Olmos Koni", "Алмазная Шахта", "Diamond Mine"),
 
   /* ── KRESH ── */
   G("rocketcrash", "crash", "#a855f7", "#0b1a2b", ["rocket"], 20, 0, "smoke",  "Raketa Kresh", "Ракета Краш", "Rocket Crash"),
@@ -72,11 +72,11 @@ export const NEW_GAMES: GameCfg[] = [
   G("goldroulette","roulette", "#f7c948", "#4a2c05", ["chip"], 3.2, 0, "rays",  "Oltin Ruletka", "Золотая Рулетка", "Gold Roulette"),
 
   /* ── KARTA: HI-LO ── */
-  G("hilostreak",  "hilo", "#25a55a", "#14532d", ["cardback"], 1.75, 4, "bubbles", "Hi-Lo Seriya", "Хай-Лоу Серия", "Hi-Lo Streak"),
-  G("kingsroad",   "hilo", "#f472b6", "#4a044e", ["crown"],    1.95, 5, "stars",   "Shoh Yo'li", "Дорога Королей", "King's Road"),
+  G("hilostreak",  "hilo", "#25a55a", "#14532d", ["cardback"], 1.1, 4, "bubbles", "Hi-Lo Seriya", "Хай-Лоу Серия", "Hi-Lo Streak"),
+  G("kingsroad",   "hilo", "#f472b6", "#4a044e", ["crown"],    1.3, 5, "stars",   "Shoh Yo'li", "Дорога Королей", "King's Road"),
 
   /* ── KARTA: URUSH ── */
-  G("casinowar",   "war", "#be123c", "#4c0519", ["cardback"], 2.0, 0, "rays",   "Kazino Urushi", "Казино Война", "Casino War"),
+  G("casinowar",   "war", "#be123c", "#4c0519", ["cardback"], 2.15, 0, "rays",   "Kazino Urushi", "Казино Война", "Casino War"),
   G("dragoncard",  "war", "#dc2626", "#1c1917", ["dragon"],   2.4, 0, "smoke",  "Ajdar Kartasi", "Карта Дракона", "Dragon Card"),
 
   /* ── PLINKO ── */
@@ -123,7 +123,7 @@ export const NEW_GAMES: GameCfg[] = [
   G("camelrace",   "race", "#f59e0b", "#451a03", ["target"], 5.6, 6, "smoke", "Tuya Poygasi", "Гонка Верблюдов", "Camel Race"),
 
   /* ── MINORA ── */
-  G("goldtower",   "climb", "#f7c948", "#78350f", ["coin", "bomb"], 2.2, 6, "grid", "Oltin Minora", "Золотая Башня", "Gold Tower"),
+  G("goldtower",   "climb", "#f7c948", "#78350f", ["coin", "bomb"], 1.3, 6, "grid", "Oltin Minora", "Золотая Башня", "Gold Tower"),
 
   /* ── NARD ── */
   G("nardgold",    "board", "#fbbf24", "#78350f", ["dice"], 2.4, 12, "rays", "Oltin Nard", "Золотые Нарды", "Golden Backgammon"),

@@ -168,7 +168,7 @@ router.get("/pvp/state", async (req, res) => {
   if (room.st.winner && !room.finished) await finish(room);
 
   const foe = room.players.find((p) => p.side !== me.side)!;
-  res.json({
+  return res.json({
     roomId: room.id,
     stake: room.stake,
     prize: Math.floor(room.stake * 2 * (1 - RAKE)),
@@ -195,7 +195,7 @@ router.post("/pvp/move", async (req, res) => {
 
   if (!r.ok) return res.status(400).json({ error: (r as any).error });
   if (room.st.winner) await finish(room);
-  res.json({ ok: true });
+  return res.json({ ok: true });
 });
 
 /** Taslim bo'lish — raqib yutadi */
@@ -207,7 +207,7 @@ router.post("/pvp/forfeit", async (req, res) => {
     room.st.log.push("Raqib taslim bo'ldi");
     await finish(room);
   }
-  res.json({ ok: true });
+  return res.json({ ok: true });
 });
 
 export default router;

@@ -74,7 +74,7 @@ export default function GameArt({ cfg }: { cfg: GameCfg }) {
         </g>
       )}
 
-      {engine === "pick" && (
+      {(engine as string) === "pick" && (
         <g>
           {[[24, 46], [66, 46], [24, 80], [66, 80]].map(([x, y], i) => (
             <g key={i}>

@@ -426,7 +426,7 @@ const VALS = ["6", "7", "8", "9", "10", "J", "Q", "K", "A"];
 const vIdx = (v: string) => VALS.indexOf(v);
 function HiLoGame({ cfg }: EProps) {
   const g = useGame(cfg);
-  const [card, setCard] = useState({ s: SUITS[0], v: "9" });
+  const [card, setCard] = useState<{ s: (typeof SUITS)[number]; v: string }>({ s: SUITS[0], v: "9" });
   const [next, setNext] = useState<{ s: (typeof SUITS)[number]; v: string } | null>(null);
   const [streak, setStreak] = useState(0);
   const [live, setLive] = useState(false);
@@ -704,44 +704,42 @@ function ScratchGame({ cfg }: EProps) {
       }
     }
     setCells(base); setOpen([]); setLive(true);
-    (start as any)._win = win;
-  };
-
-  const scratch = (i: number) => {
-    if (!live || open.includes(i)) return;
-    const next = [...open, i];
-    setOpen(next);
-    if (next.length === 9) {
-      setLive(false);
-      g.finish((start as any)._win ? cfg.mult : 0);
-    }
+    // AVTO-OCHISH: o'yinchi bosmaydi - kataklar o'zi tasodifiy tartibda ochiladi
+    const order = [...Array(9).keys()].sort(() => Math.random() - 0.5);
+    order.forEach((cell, k) => {
+      setTimeout(() => {
+        setOpen((prev) => [...prev, cell]);
+        if (k === 8) {
+          setLive(false);
+          g.finish(win ? cfg.mult : 0);
+        }
+      }, 260 + k * 240);
+    });
   };
 
   return (
     <Shell cfg={cfg} won={g.won} amount={g.amount} refund={g.refund}
-      hint={live ? "Kataklarni qiring — 3 ta bir xil belgi yutuq" : "Kartochka soting va qiring"}
+      hint={live ? "Kataklar ochilmoqda..." : "Kartochka oling - o'zi qiriladi"}
       footer={
         <>
           <Bet g={g} />
-          {live
-            ? <PlayButton label="HAMMASINI OCHISH" icon="star" onClick={() => { setOpen([...Array(9).keys()]); setLive(false); g.finish((start as any)._win ? cfg.mult : 0); }} />
-            : <PlayButton label="KARTOCHKA OLISH" icon={cfg.syms[0]} onClick={start} disabled={!g.canPlay} />}
+          <PlayButton label={live ? "OCHILMOQDA..." : "KARTOCHKA OLISH"} icon={cfg.syms[0]} onClick={start} disabled={!g.canPlay || live} />
         </>
       }>
       <div className="grid grid-cols-3 gap-2">
         {Array.from({ length: 9 }).map((_, i) => {
           const shown = open.includes(i);
           return (
-            <button key={i} onClick={() => scratch(i)} disabled={!live}
-              className="aspect-square rounded-xl flex items-center justify-center active:scale-95 transition-all"
+            <div key={i}
+              className="aspect-square rounded-xl flex items-center justify-center transition-all"
               style={{
                 background: shown
                   ? `linear-gradient(180deg,${cfg.c1}33,rgba(0,0,0,0.6))`
                   : "linear-gradient(135deg,#9ca3af,#4b5563 60%,#9ca3af)",
                 border: `1px solid ${shown ? cfg.c1 : "rgba(255,255,255,0.25)"}`,
               }}>
-              {shown ? <Sym n={cells[i]} s={30} /> : <span className="font-black text-[10px] text-white/70">QIRING</span>}
-            </button>
+              {shown ? <Sym n={cells[i]} s={30} className="idle-float" /> : <span className="font-black text-[10px] text-white/70">•••</span>}
+            </div>
           );
         })}
       </div>

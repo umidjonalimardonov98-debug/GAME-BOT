@@ -225,6 +225,29 @@ export default function Home() {
         </div>
       </div>
 
+      {/* ─── LIVE PVP ─── */}
+      <button onClick={() => nav("/pvp")}
+        className="mx-4 mb-4 rounded-3xl p-4 relative overflow-hidden text-left active:scale-[0.98] transition-transform pro-sheen"
+        style={{
+          background: "linear-gradient(120deg,#0a3b26,#126b46)",
+          border: "1px solid rgba(247,201,72,0.45)",
+          boxShadow: "0 8px 28px rgba(10,59,38,0.45)",
+        }}>
+        <div className="absolute -right-6 -bottom-8 opacity-25">
+          <img src="/symbols/cardback.png" alt="" width={120} height={120} />
+        </div>
+        <span className="inline-flex items-center gap-1.5 px-2 py-0.5 rounded-full font-black"
+          style={{ fontSize: 9, background: "rgba(239,68,68,0.9)", color: "#fff", letterSpacing: "0.12em" }}>
+          <span style={{ width: 6, height: 6, borderRadius: 99, background: "#fff" }} /> LIVE
+        </span>
+        <p className="font-black mt-1.5" style={{ fontSize: 20, color: "#fff" }}>
+          PVP <span className="gold-text">DURAK</span>
+        </p>
+        <p className="font-bold" style={{ fontSize: 10, color: "rgba(255,255,255,0.72)" }}>
+          36 karta · haqiqiy odam bilan pul tikib · suzish qoidalari
+        </p>
+      </button>
+
       {/* ─── 4 ACTION BUTTONS ─── */}
       <div className="grid grid-cols-4 gap-2 mx-4 mb-4">
         <button onClick={() => nav("/deposit")}

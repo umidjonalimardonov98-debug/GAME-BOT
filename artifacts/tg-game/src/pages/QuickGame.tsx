@@ -750,7 +750,7 @@ function Game({ cfg }: { cfg: GameCfg }) {
     } else if (cfg.engine === "board") {
       setTarget(win ? 0 : 1);
       setRunId((v) => v + 1);
-    } else if (cfg.engine === "pick") {
+    } else if ((cfg.engine as string) === "pick") {
       setTarget(win ? choice : (choice + 1 + rnd(cfg.n - 1)) % cfg.n);
       setShaking(true);
       later(() => { setShaking(false); setRevealed(true); later(onDone, 620); }, 1100);
@@ -830,7 +830,7 @@ function Game({ cfg }: { cfg: GameCfg }) {
           {cfg.engine === "wheel" && <WheelStage {...stageProps} />}
           {cfg.engine === "race" && <RaceStage {...stageProps} />}
           {cfg.engine === "board" && <BoardStage {...stageProps} />}
-          {cfg.engine === "pick" && (
+          {(cfg.engine as string) === "pick" && (
             <PickStage cfg={cfg} choice={choice} setChoice={setChoice}
               locked={busy} revealed={revealed} shaking={shaking} target={target} />
           )}
