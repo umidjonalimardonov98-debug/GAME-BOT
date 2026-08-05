@@ -17,7 +17,7 @@ type GameConfig = {
 
 const DEFAULT_CONFIG: GameConfig = {
   enabled: true,
-  winChance: 31,
+  winChance: 30,
   refundChance: 6,
   difficulty: "o'rta",
   multiplier: 100,

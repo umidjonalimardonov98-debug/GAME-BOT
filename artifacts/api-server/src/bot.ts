@@ -1,6 +1,6 @@
 import TelegramBot from "node-telegram-bot-api";
 import { eq, and, isNull, sql, desc } from "drizzle-orm";
-import { db, playersTable, transactionsTable, depositRequestsTable, withdrawRequestsTable, promoCodesTable, gameSettingsTable, appSettingsTable } from "@workspace/db";
+import { db, playersTable, transactionsTable, depositRequestsTable, withdrawRequestsTable, promoCodesTable, promoUsesTable, gameSettingsTable, appSettingsTable } from "@workspace/db";
 import { logger } from "./lib/logger";
 import { ALL_GAMES, GAME_LABELS, DIFFICULTIES, DIFFICULTY_WIN_SUGGEST, nextDifficulty, type Difficulty } from "./lib/games-catalog";
 import {
@@ -76,14 +76,14 @@ export async function notifyAdminsReferralGoal(referrerId: string) {
     await db.insert(appSettingsTable).values({ key, value: String(reached) })
       .onConflictDoUpdate({ target: appSettingsTable.key, set: { value: String(reached), updatedAt: new Date() } });
 
-    await notifyFinanceText(
+    await notifyPromoAdminsText(
       `\u{1F3AB} <b>REFERAL SOVRINI SO'ROVI</b>\n\n` +
       `\u{1F464} ${p?.firstName ?? "Foydalanuvchi"} (@${p?.username ?? "\u2014"})\n` +
       `\u{1F194} <code>${referrerId}</code>\n` +
       `\u{1F91D} Taklif qilganlar: <b>${count} ta</b>\n\n` +
       `Ushbu foydalanuvchi <b>${REFERRAL_GOAL} ta do'st</b> taklif qildi \u2014 unga <b>promokod</b> berish kerak.`,
       [
-        [{ text: "\u{1F3AB} Promokod yaratish", callback_data: "admin_promo_create" }],
+        [{ text: "\u{1F3AB} Shaxsiy promokod berish", callback_data: `admin_promo_ref_${referrerId}` }],
         [{ text: "\u2709\uFE0F Foydalanuvchiga yozish", callback_data: `refmsg_${referrerId}` }],
       ]
     );
@@ -424,7 +424,9 @@ const waitingForSendMsg = new Map<number, string>();           // admin -> targe
 const waitingForAddbalId = new Set<number>();                  // admin waiting to type userId for balance
 const waitingForAddbalAmount = new Map<number, string>();      // admin -> targetId (waiting for amount)
 const waitingForBanId = new Set<number>();                     // admin waiting to type userId for ban/unban
-const waitingForPromoCode = new Set<number>();                 // admin waiting to type promo code name
+const waitingForPromoCode = new Set<number>();
+const waitingForPromoPersonalId = new Set<number>();          // admin waiting to type target id for personal promo
+const waitingForPromoTarget = new Map<number, string>();      // admin -> shaxsiy promokod egasining telegram_id                 // admin waiting to type promo code name
 const waitingForPromoAmount = new Map<number, string>();       // admin -> code (waiting for amount)
 const waitingForPromoMaxUses = new Map<number, { code: string; amount: number }>(); // admin -> {code,amount}
 const waitingForNewAdminId = new Set<number>();                  // owner waiting to type new admin telegram id
@@ -495,6 +497,103 @@ export async function notifyAdminWithdraw(opts: {
 }
 
 function fmt(n: number) { return n.toLocaleString("uz-UZ"); }
+
+/** Promokod bera oladigan adminlar (bosh admin / owner) */
+async function promoAdminIds(): Promise<number[]> {
+  const ids = new Set<number>([...ADMIN_IDS]);
+  try {
+    const rows = await listAdmins();
+    for (const r of rows) {
+      if (!r.active) continue;
+      if (r.role === "owner") {
+        const n = Number(r.telegramId);
+        if (Number.isFinite(n) && n > 0) ids.add(n);
+      }
+    }
+  } catch (err) {
+    logger.error({ err }, "promoAdminIds xato");
+  }
+  return [...ids];
+}
+
+async function notifyPromoAdminsText(text: string, kb?: any[][]) {
+  const ids = await promoAdminIds();
+  for (const id of ids) {
+    try {
+      await bot!.sendMessage(id, text, { parse_mode: "HTML", ...(kb ? { reply_markup: { inline_keyboard: kb } } : {}) });
+    } catch (err) {
+      logger.error({ err, adminId: id }, "Bosh adminga xabar yuborilmadi");
+    }
+  }
+}
+
+/** Promokodni yaratish (shaxsiy yoki ommaviy) va tegishli foydalanuvchilarga yuborish */
+async function createAndAnnouncePromo(opts: {
+  adminChatId: number;
+  adminId: number;
+  code: string;
+  amount: number;
+  maxUses: number;
+  assignedTo?: string | null;
+  note?: string | null;
+}) {
+  const { adminChatId, adminId, code, amount } = opts;
+  const assignedTo = opts.assignedTo ? String(opts.assignedTo) : null;
+  const maxUses = assignedTo ? 1 : opts.maxUses;
+
+  await db.insert(promoCodesTable).values({
+    code, amount, maxUses,
+    assignedTo,
+    createdBy: String(adminId),
+    note: opts.note ?? null,
+  });
+
+  const backKb = { inline_keyboard: [
+    [{ text: "🎫 Promo Kodlar", callback_data: "admin_promo" }],
+    [{ text: "🔙 Admin panel", callback_data: "admin_panel" }],
+  ]};
+
+  if (assignedTo) {
+    // Shaxsiy promokod — faqat egasiga yuboriladi
+    let ok = true;
+    try {
+      await bot!.sendMessage(Number(assignedTo),
+        `🎁 <b>SIZGA SHAXSIY PROMOKOD!</b>\n\n` +
+        `🎫 Kod: <code>${code}</code>\n` +
+        `💰 Sovrin: <b>${fmt(amount)} UZS</b>\n` +
+        (opts.note ? `📝 ${opts.note}\n` : "") +
+        `\n🔒 Bu kod <b>faqat siz</b> uchun — boshqa hech kim ishlatolmaydi.\n` +
+        `⚡️ O'yin ichidagi "Promo" bo'limiga kiriting.`,
+        { parse_mode: "HTML" });
+    } catch { ok = false; }
+    await bot!.sendMessage(adminChatId,
+      `✅ <b>Shaxsiy promokod yaratildi</b>\n\n🎫 <code>${code}</code>\n💰 ${fmt(amount)} UZS\n👤 Egasi: <code>${assignedTo}</code>\n` +
+      (ok ? `📤 Foydalanuvchiga yuborildi.` : `⚠️ Foydalanuvchiga yuborilmadi (botni bloklagan bo'lishi mumkin).`),
+      { parse_mode: "HTML", reply_markup: backKb });
+    return;
+  }
+
+  await bot!.sendMessage(adminChatId,
+    `✅ <b>Promo Kod Yaratildi!</b>\n\n🎫 Kod: <code>${code}</code>\n💰 Miqdor: <b>${fmt(amount)} UZS</b>\n📊 Limit: <b>${maxUses}</b> marta\n\n📢 Hamma foydalanuvchilarga yuborilmoqda...`,
+    { parse_mode: "HTML" });
+
+  const allPlayers = await db.select({ telegramId: playersTable.telegramId }).from(playersTable);
+  const promoText =
+    `🎉 <b>YANGI PROMO KOD!</b>\n\n` +
+    `🎫 Kod: <code>${code}</code>\n` +
+    `💰 Sovrin: <b>${fmt(amount)} UZS</b>\n` +
+    `👥 Faqat dastlabki <b>${maxUses} ta</b> foydalanuvchiga!\n\n` +
+    `⚡️ Ulgurib qoling — kodni o'yin ichida "Promo" bo'limidan kiriting!`;
+  let sent = 0, failed = 0;
+  for (const pl of allPlayers) {
+    try { await bot!.sendMessage(Number(pl.telegramId), promoText, { parse_mode: "HTML" }); sent++; }
+    catch { failed++; }
+    await new Promise((r) => setTimeout(r, 35));
+  }
+  await bot!.sendMessage(adminChatId,
+    `✅ <b>Yuborish tugadi!</b>\n\n📤 Yuborildi: <b>${sent}</b>\n❌ Yuborilmadi: <b>${failed}</b>`,
+    { parse_mode: "HTML", reply_markup: backKb });
+}
 
 async function checkSub(userId: number): Promise<boolean> {
   if (!bot || !CHANNEL_ID) return true;
@@ -1196,6 +1295,8 @@ export async function startBot() {
       waitingForPromoCode.delete(userId);
       waitingForPromoAmount.delete(userId);
       waitingForPromoMaxUses.delete(userId);
+      waitingForPromoPersonalId.delete(userId);
+      waitingForPromoTarget.delete(userId);
       waitingForNewAdminId.delete(userId);
       waitingForMaxWin.delete(userId);
       await bot!.sendMessage(chatId, "❌ Bekor qilindi.", { parse_mode: "HTML" });
@@ -1394,6 +1495,23 @@ export async function startBot() {
       return;
     }
 
+    // Admin: shaxsiy promokod — foydalanuvchi ID si
+    if (waitingForPromoPersonalId.has(userId)) {
+      const targetId = text.replace(/\s/g, "");
+      if (!/^\d+$/.test(targetId)) {
+        await bot!.sendMessage(chatId, "❌ Noto'g'ri ID. Faqat raqam kiriting:\n<i>Bekor qilish: /cancel</i>", { parse_mode: "HTML" });
+        return;
+      }
+      waitingForPromoPersonalId.delete(userId);
+      waitingForPromoTarget.set(userId, targetId);
+      waitingForPromoCode.add(userId);
+      await bot!.sendMessage(chatId,
+        `🎁 Egasi: <code>${targetId}</code>\n\nKod nomini yuboring (A-Z, 0-9):\n\n<i>Bekor qilish: /cancel</i>`,
+        { parse_mode: "HTML" }
+      );
+      return;
+    }
+
     // Admin: promo creation — step 1: got code name
     if (waitingForPromoCode.has(userId)) {
       const code = text.toUpperCase().replace(/[^A-Z0-9]/g, "");
@@ -1419,6 +1537,19 @@ export async function startBot() {
         return;
       }
       waitingForPromoAmount.delete(userId);
+      const personalTarget = waitingForPromoTarget.get(userId);
+      if (personalTarget) {
+        waitingForPromoTarget.delete(userId);
+        try {
+          await createAndAnnouncePromo({
+            adminChatId: chatId, adminId: userId, code, amount, maxUses: 1,
+            assignedTo: personalTarget, note: `${REFERRAL_GOAL} ta referal sovrini`,
+          });
+        } catch {
+          await bot!.sendMessage(chatId, "❌ Xato: Bu kod allaqachon mavjud yoki boshqa xatolik yuz berdi.");
+        }
+        return;
+      }
       waitingForPromoMaxUses.set(userId, { code, amount });
       await bot!.sendMessage(chatId,
         `✅ Miqdor: <b>${fmt(amount)} UZS</b>\n\nBu kodni necha marta ishlatish mumkin? (raqam kiriting)`,
@@ -1437,38 +1568,7 @@ export async function startBot() {
       }
       waitingForPromoMaxUses.delete(userId);
       try {
-        await db.insert(promoCodesTable).values({ code, amount, maxUses });
-        await bot!.sendMessage(chatId,
-          `✅ <b>Promo Kod Yaratildi!</b>\n\n🎫 Kod: <code>${code}</code>\n💰 Miqdor: <b>${fmt(amount)} UZS</b>\n📊 Limit: <b>${maxUses}</b> marta\n\n📢 Hamma foydalanuvchilarga yuborilmoqda...`,
-          { parse_mode: "HTML" }
-        );
-
-        // Broadcast the new promo code to ALL users
-        const allPlayers = await db.select({ telegramId: playersTable.telegramId }).from(playersTable);
-        const promoText =
-          `🎉 <b>YANGI PROMO KOD!</b>\n\n` +
-          `🎫 Kod: <code>${code}</code>\n` +
-          `💰 Sovrin: <b>${fmt(amount)} UZS</b>\n` +
-          `👥 Faqat dastlabki <b>${maxUses} ta</b> foydalanuvchiga!\n\n` +
-          `⚡️ Ulgurib qoling — kodni o'yin ichida "Promo" bo'limidan kiriting!`;
-        let sent = 0, failed = 0;
-        for (const pl of allPlayers) {
-          try {
-            await bot!.sendMessage(Number(pl.telegramId), promoText, { parse_mode: "HTML" });
-            sent++;
-          } catch {
-            failed++;
-          }
-          await new Promise(r => setTimeout(r, 35));
-        }
-
-        await bot!.sendMessage(chatId,
-          `✅ <b>Yuborish tugadi!</b>\n\n📤 Yuborildi: <b>${sent}</b>\n❌ Yuborilmadi: <b>${failed}</b>`,
-          { parse_mode: "HTML", reply_markup: { inline_keyboard: [
-            [{ text: "🎫 Promo Kodlar", callback_data: "admin_promo" }],
-            [{ text: "🔙 Admin panel", callback_data: "admin_panel" }],
-          ]}}
-        );
+        await createAndAnnouncePromo({ adminChatId: chatId, adminId: userId, code, amount, maxUses });
       } catch {
         await bot!.sendMessage(chatId, `❌ Xato: Bu kod allaqachon mavjud yoki boshqa xatolik yuz berdi.`);
       }
@@ -1670,7 +1770,7 @@ async function getGameRow(game: string) {
   const [row] = await db.select().from(gameSettingsTable).where(eq(gameSettingsTable.game, game));
   return {
     enabled: row?.enabled ?? true,
-    winChance: row?.winChance ?? 31,
+    winChance: row?.winChance ?? 30,
     refundChance: row?.refundChance ?? 6,
     difficulty: (row?.difficulty as Difficulty) ?? "o'rta",
     multiplier: row?.multiplier ?? 100,
@@ -2158,7 +2258,7 @@ Miqdorni tanlang yoki o'zingiz kiriting:`,
       const game = rest.slice(0, idx);
       const delta = Number(rest.slice(idx + 1));
       const [current] = await db.select().from(gameSettingsTable).where(eq(gameSettingsTable.game, game));
-      const winChance = Math.min(95, Math.max(1, (current?.winChance ?? 31) + delta));
+      const winChance = Math.min(95, Math.max(1, (current?.winChance ?? 30) + delta));
       await db.insert(gameSettingsTable).values({ game, winChance }).onConflictDoUpdate({ target: gameSettingsTable.game, set: { winChance, updatedAt: new Date() } });
       await bot!.answerCallbackQuery(q.id, { text: `🎯 Win%: ${winChance}` });
       await sendGameEditor(chatId, game, q.message.message_id);
@@ -2213,7 +2313,7 @@ Miqdorni tanlang yoki o'zingiz kiriting:`,
 
     if (data.startsWith("admin_gm_allset_")) {
       const difficulty = data.replace("admin_gm_allset_", "") as Difficulty;
-      const winChance = DIFFICULTY_WIN_SUGGEST[difficulty] ?? 31;
+      const winChance = DIFFICULTY_WIN_SUGGEST[difficulty] ?? 30;
       for (const g of ALL_GAMES) {
         await db.insert(gameSettingsTable).values({ game: g.key, difficulty, winChance }).onConflictDoUpdate({ target: gameSettingsTable.game, set: { difficulty, winChance, updatedAt: new Date() } });
       }
@@ -2228,7 +2328,7 @@ Miqdorni tanlang yoki o'zingiz kiriting:`,
       const byGame = new Map(configured.map((r) => [r.game, r]));
       for (const g of ALL_GAMES) {
         const current = byGame.get(g.key);
-        const winChance = Math.min(95, Math.max(1, (current?.winChance ?? 31) + delta));
+        const winChance = Math.min(95, Math.max(1, (current?.winChance ?? 30) + delta));
         await db.insert(gameSettingsTable).values({ game: g.key, winChance }).onConflictDoUpdate({ target: gameSettingsTable.game, set: { winChance, updatedAt: new Date() } });
       }
       await bot!.answerCallbackQuery(q.id, { text: `✅ Barcha o'yinlar win% ${delta > 0 ? "+" : ""}${delta}`, show_alert: true });
@@ -2819,18 +2919,75 @@ Miqdorni tanlang yoki o'zingiz kiriting:`,
 
     // Admin: promo codes list
     if (data === "admin_promo") {
-      if (!isAdmin) { await bot!.answerCallbackQuery(q.id, { text: "❌ Ruxsat yo'q" }); return; }
+      if (!hasPerm(q.from.id, "promo")) { await bot!.answerCallbackQuery(q.id, { text: "❌ Ruxsat yo'q" }); return; }
       await bot!.answerCallbackQuery(q.id);
-      const codes = await db.select().from(promoCodesTable).orderBy(desc(promoCodesTable.id)).limit(20);
-      const lines = codes.length === 0 ? "Hali promo-kodlar yo'q" : codes.map(c =>
-        `🎫 <code>${c.code}</code> — ${fmt(c.amount)} UZS\n   Limit: ${c.usedCount}/${c.maxUses} | ${c.active ? "✅ Faol" : "❌ O'chirilgan"}`
+      const codes = await db.select().from(promoCodesTable).orderBy(desc(promoCodesTable.id)).limit(15);
+      const lines = codes.length === 0 ? "Hali promo-kodlar yo'q" : codes.map((c) =>
+        `🎫 <code>${c.code}</code> — ${fmt(c.amount)} UZS\n` +
+        `   ${c.assignedTo ? `🔒 Shaxsiy: <code>${c.assignedTo}</code>` : "🌐 Ommaviy"} | Ishlatildi: ${c.usedCount}/${c.maxUses} | ${c.active ? "✅ Faol" : "❌ Tugagan"}`
       ).join("\n\n");
+      const rows: any[][] = codes.map((c) => ([{ text: `👥 ${c.code} — kimlar oldi (${c.usedCount})`, callback_data: `admin_promo_uses_${c.id}` }]));
+      rows.push([{ text: "➕ Yangi Promo Kod (ommaviy)", callback_data: "admin_promo_create" }]);
+      rows.push([{ text: "🎁 Shaxsiy promokod berish", callback_data: "admin_promo_personal" }]);
+      rows.push([{ text: "🔙 Admin panel", callback_data: "admin_panel" }]);
       await bot!.sendMessage(chatId,
         `🎫 <b>PROMO KODLAR</b>\n\n${lines}`,
-        { parse_mode: "HTML", reply_markup: { inline_keyboard: [
-          [{ text: "➕ Yangi Promo Kod", callback_data: "admin_promo_create" }],
-          [{ text: "🔙 Admin panel", callback_data: "admin_panel" }],
-        ]}}
+        { parse_mode: "HTML", reply_markup: { inline_keyboard: rows } }
+      );
+      return;
+    }
+
+    // Promokodni kimlar ishlatgani
+    if (data.startsWith("admin_promo_uses_")) {
+      if (!hasPerm(q.from.id, "promo")) { await bot!.answerCallbackQuery(q.id, { text: "❌ Ruxsat yo'q" }); return; }
+      await bot!.answerCallbackQuery(q.id);
+      const codeId = Number(data.replace("admin_promo_uses_", ""));
+      const [promo] = await db.select().from(promoCodesTable).where(eq(promoCodesTable.id, codeId));
+      if (!promo) { await bot!.sendMessage(chatId, "❌ Promokod topilmadi."); return; }
+      const uses = await db.select().from(promoUsesTable).where(eq(promoUsesTable.codeId, codeId));
+      let body = "Hali hech kim ishlatmagan.";
+      if (uses.length) {
+        const parts: string[] = [];
+        let n = 1;
+        for (const u of uses) {
+          const [pl] = await db.select().from(playersTable).where(eq(playersTable.telegramId, String(u.telegramId)));
+          const when = new Date(u.createdAt).toLocaleString("uz-UZ");
+          parts.push(`${n++}. ${pl?.firstName ?? "Foydalanuvchi"}${pl?.username ? ` (@${pl.username})` : ""}\n   🆔 <code>${u.telegramId}</code> | 🕒 ${when}`);
+        }
+        body = parts.join("\n");
+      }
+      await bot!.sendMessage(chatId,
+        `👥 <b>${promo.code}</b> — kimlar oldi\n` +
+        `💰 ${fmt(promo.amount)} UZS | ${promo.usedCount}/${promo.maxUses}\n` +
+        (promo.assignedTo ? `🔒 Shaxsiy egasi: <code>${promo.assignedTo}</code>\n` : "🌐 Ommaviy kod\n") +
+        `\n${body}`,
+        { parse_mode: "HTML", reply_markup: { inline_keyboard: [[{ text: "🔙 Promo kodlar", callback_data: "admin_promo" }]] } }
+      );
+      return;
+    }
+
+    // Shaxsiy promokod: foydalanuvchi ID sini so'rash
+    if (data === "admin_promo_personal") {
+      if (!hasPerm(q.from.id, "promo")) { await bot!.answerCallbackQuery(q.id, { text: "❌ Ruxsat yo'q" }); return; }
+      await bot!.answerCallbackQuery(q.id);
+      waitingForPromoPersonalId.add(q.from.id);
+      await bot!.sendMessage(chatId,
+        `🎁 <b>Shaxsiy promokod</b>\n\nKimga berilsin? Foydalanuvchining Telegram ID sini yuboring:\n\n<i>Bekor qilish: /cancel</i>`,
+        { parse_mode: "HTML" }
+      );
+      return;
+    }
+
+    // Referal sovrini: to'g'ridan-to'g'ri shaxsiy promokod
+    if (data.startsWith("admin_promo_ref_")) {
+      if (!hasPerm(q.from.id, "promo")) { await bot!.answerCallbackQuery(q.id, { text: "❌ Faqat bosh admin promokod beradi" }); return; }
+      await bot!.answerCallbackQuery(q.id);
+      const targetId = data.replace("admin_promo_ref_", "");
+      waitingForPromoTarget.set(q.from.id, targetId);
+      waitingForPromoCode.add(q.from.id);
+      await bot!.sendMessage(chatId,
+        `🎁 <b>Shaxsiy promokod</b> — egasi: <code>${targetId}</code>\n\nKod nomini yuboring (A-Z, 0-9):\n\n<i>Masalan: REFEREE500</i>\n<i>Bekor qilish: /cancel</i>`,
+        { parse_mode: "HTML" }
       );
       return;
     }

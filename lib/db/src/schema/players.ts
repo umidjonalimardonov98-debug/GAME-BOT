@@ -45,6 +45,12 @@ export const promoCodesTable = pgTable("promo_codes", {
   maxUses: integer("max_uses").notNull().default(1),
   usedCount: integer("used_count").notNull().default(0),
   active: boolean("active").notNull().default(true),
+  /** null = hammaga ochiq, aks holda faqat shu telegram_id ishlatadi */
+  assignedTo: text("assigned_to"),
+  /** promokodni yaratgan admin telegram_id */
+  createdBy: text("created_by"),
+  /** izoh: masalan "5 ta referal sovrini" */
+  note: text("note"),
   createdAt: timestamp("created_at").notNull().defaultNow(),
 });
 

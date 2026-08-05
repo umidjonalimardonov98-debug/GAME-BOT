@@ -5,6 +5,7 @@ import { execSync } from "child_process";
 import { db } from "@workspace/db";
 import { sql } from "drizzle-orm";
 import { ensureGameSettingsColumns } from "./lib/games-catalog";
+import { ensureExtraSchema } from "./lib/schema-guard";
 
 const rawPort = process.env["PORT"];
 
@@ -36,6 +37,7 @@ async function runMigrations() {
     logger.error({ err }, "Migration failed — continuing anyway");
   }
   await ensureGameSettingsColumns(db, sql);
+  await ensureExtraSchema(db, sql);
 }
 
 async function main() {

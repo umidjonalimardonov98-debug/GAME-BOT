@@ -86,7 +86,7 @@ export type Difficulty = (typeof DIFFICULTIES)[number];
 /** Har bir qiyinlik darajasi taklif qiladigan yutish foizi (win %) */
 export const DIFFICULTY_WIN_SUGGEST: Record<Difficulty, number> = {
   "oson": 45,
-  "o'rta": 31,
+  "o'rta": 30,
   "qiyin": 18,
   "juda qiyin": 8,
 };
