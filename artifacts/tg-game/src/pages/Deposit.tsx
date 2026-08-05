@@ -8,7 +8,7 @@ import GameHeader from "@/components/GameHeader";
 import Sym from "@/components/casino/Sym";
 import { useU } from "@/lib/ui-i18n";
 
-const CARD = "5614683518277611";
+const CARD = "5614680577167758";
 const HOLDER = "Alimardonov Umidjon";
 const BONUS = 20;
 const MIN_DEPOSIT = 25_000;
