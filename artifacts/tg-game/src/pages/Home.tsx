@@ -27,7 +27,7 @@ async function redeemPromo(telegramId: string, code: string) {
 }
 
 
-import { NEW_GAMES, NEW_GAME_MAP } from "@/lib/new-games";
+import { NEW_GAMES, NEW_GAME_MAP, coverOf } from "@/lib/new-games";
 import GameArt from "@/components/casino/GameArt";
 
 const GAMES = [
@@ -60,7 +60,7 @@ const GAMES = [
   ...NEW_GAMES.map((g) => ({
     key: g.key,
     path: g.path,
-    img: "",
+    img: coverOf(g.key),
     sym: g.syms[0],
     tag: g.tag,
     tagColor: g.c1,
@@ -378,8 +378,16 @@ export default function Home() {
                   style={{ background: "linear-gradient(180deg,rgba(0,0,0,0) 40%,rgba(4,14,24,0.55) 70%,rgba(4,14,24,0.92) 100%)", borderRadius: 12 }} />
                 {/* Tag badge */}
                 <div className="absolute top-1 right-1">
-                  <span className="font-black px-1.5 py-0.5 rounded"
-                    style={{ background: "#1668e3", color: "#fff", fontSize: 9, letterSpacing: 0.3 }}>
+                  <span className="font-black px-1.5 py-0.5 rounded-md"
+                    style={{
+                      background: `linear-gradient(145deg,${g.tagColor},rgba(0,0,0,0.55))`,
+                      color: "#0b1020",
+                      fontSize: 9,
+                      letterSpacing: 0.3,
+                      border: "1px solid rgba(255,255,255,0.45)",
+                      textShadow: "0 1px 0 rgba(255,255,255,0.35)",
+                      boxShadow: `0 2px 10px ${g.tagColor}66`,
+                    }}>
                     {g.tag}
                   </span>
                 </div>

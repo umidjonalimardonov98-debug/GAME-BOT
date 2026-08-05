@@ -11,10 +11,11 @@ import { useU } from "@/lib/ui-i18n";
 const CARD = "5614683518277611";
 const HOLDER = "Alimardonov Umidjon";
 const BONUS = 20;
+const MIN_DEPOSIT = 25_000;
 
 const PRESETS = [
-  { base: 10_000,  bonus: 2_000   },
   { base: 25_000,  bonus: 5_000   },
+  { base: 35_000,  bonus: 7_000   },
   { base: 50_000,  bonus: 10_000  },
   { base: 100_000, bonus: 20_000  },
   { base: 250_000, bonus: 50_000  },
@@ -55,7 +56,7 @@ export default function Deposit() {
 
   const handleSend = async () =>{
     if (!player) { setError("Foydalanuvchi topilmadi"); return; }
-    if (!amount || amount < 1000) { setError("Kamida 1 000 UZS kiriting"); return; }
+    if (!amount || amount < MIN_DEPOSIT) { setError("Minimal depozit: 25 000 UZS"); return; }
     setError(""); setLoading(true);
     try {
       await createDepositRequest(player.telegramId, amount);
@@ -126,12 +127,12 @@ export default function Deposit() {
         <div>
           <p className="text-xs font-black tracking-widest mb-2" style={{ color: ts.textSub }}>{t.manualAmount}</p>
           <div className="relative">
-            <input type="number" placeholder="100 000 UZS..."
+            <input type="number" placeholder="Minimal 25 000 UZS"
               value={custom}
               onChange={(e) =>{ setCustom(e.target.value); setSelected(null); }}
               className="w-full rounded-2xl px-4 py-3.5 text-base font-bold focus:outline-none"
               style={{ background: ts.input, border: `1px solid ${ts.inputBorder}`, color: ts.text }} />
-            {amount && amount >= 1000 && (
+            {amount && amount >= MIN_DEPOSIT && (
               <span className="absolute right-4 top-1/2 -translate-y-1/2 text-xs font-black"style={{ color:"#34d399" }}>
                 +{fmtFull(bonusAmt)} bonus
               </span>
@@ -139,6 +140,7 @@ export default function Deposit() {
           </div>
         </div>
 
+        <p className="text-xs font-bold" style={{ color: "#fbbf24" }}>Minimal depozit: 25 000 UZS</p>
         <p className="text-xs" style={{ color: ts.textSub }}>{t.chooseAmount}:</p>
 
         {/* Presets */}
@@ -163,7 +165,7 @@ export default function Deposit() {
         </div>
 
         {/* Summary */}
-        {amount && amount >= 1000 && (
+        {amount && amount >= MIN_DEPOSIT && (
           <div className="rounded-2xl px-4 py-3.5"
             style={{ background: isLight ? "rgba(22,104,227,0.08)":"rgba(22,104,227,0.1)", border: "1px solid rgba(22,104,227,0.25)" }}>
             <div className="flex justify-between text-sm mb-1.5">
@@ -214,7 +216,7 @@ export default function Deposit() {
           </div>
         ) : (
           <button onClick={handleSend}
-            disabled={loading || !amount || amount < 1000}
+            disabled={loading || !amount || amount < MIN_DEPOSIT}
             className="w-full rounded-2xl font-black text-base flex items-center justify-center gap-2 active:scale-95 transition-all disabled:opacity-40"
             style={{
               background: "linear-gradient(145deg, #2563eb, #1668e3)",

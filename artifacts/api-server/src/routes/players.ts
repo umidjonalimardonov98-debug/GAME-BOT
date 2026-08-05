@@ -103,6 +103,11 @@ router.post("/players/:telegramId/deposit-request", async (req, res): Promise<vo
   const [player] = await db.select().from(playersTable).where(eq(playersTable.telegramId, params.data.telegramId));
   if (!player) { res.status(404).json({ error: "Player not found" }); return; }
 
+  if (body.data.amount < 25_000) {
+    res.status(400).json({ error: "Minimal depozit: 25 000 UZS" });
+    return;
+  }
+
   const bonus = Math.floor(body.data.amount * 0.2);
   const [req2] = await db.insert(depositRequestsTable).values({
     playerId: player.id,

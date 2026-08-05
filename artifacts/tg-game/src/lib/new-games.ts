@@ -122,3 +122,30 @@ export const NEW_GAMES: GameCfg[] = [
 export const NEW_GAME_MAP: Record<string, GameCfg> = Object.fromEntries(
   NEW_GAMES.map((g) => [g.key, g]),
 );
+
+/* ─────────── Har bir o'yin uchun haqiqiy surat (public/games/new/*.jpg) ─────────── */
+const COVERS: Record<string, string> = {
+  goldenpharaoh: "pharaoh", book: "book", fruitcocktail: "fruit", crazymonkey: "jungle",
+  resident: "resident", sweetbonanza: "candy", hotluck: "hot777", diamondrush: "diamond",
+  treasurebox: "treasure", luckygift: "gift", magicdoors: "doors", goldenegg: "egg",
+  piratechest: "pirate", clovers: "clover", cardhunt: "cardhunt", bombsquad: "bomb",
+  vipwheel: "wheelgold", neonwheel: "wheelneon", megawheel: "wheelgold",
+  dograce: "dograce", carrace: "carrace", rocketrace: "rocketrace",
+  goldtower: "goldtower", gemladder: "gemladder",
+  nard: "nard", nardgold: "nardgold", nardblitz: "nard", nardsultan: "nardgold",
+  dicewar: "nard", dominotable: "domino", checkers: "checkers", caravan: "caravan",
+  appleking: "apple", appletree: "apple", goldenapple: "goldenapple",
+  dragoncave: "dragon", tigerluck: "tiger", tickethunt: "ticket",
+  trophyroom: "trophy", moneybags: "moneybags",
+  emirslots: "pharaoh", silkroad: "silkroad", neonvegas: "neonvegas",
+  melonparty: "melon", skytreasure: "sky", bellfever: "bell",
+  sultanwheel: "wheelgold", emeraldwheel: "wheelemerald",
+  camelrace: "camelrace", dronerace: "dronerace",
+  sandtower: "sandtower", skyladder: "gemladder",
+};
+
+/** o'yin muqovasi surati (bosh sahifa katakchasi va o'yin foni uchun) */
+export function coverOf(key: string): string {
+  const f = COVERS[key];
+  return f ? `/games/new/${f}.jpg` : "";
+}

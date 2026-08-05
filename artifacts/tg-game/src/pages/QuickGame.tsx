@@ -3,7 +3,7 @@ import { useLang } from "@/lib/lang-context";
 import { useTheme } from "@/lib/theme-context";
 import { useBet } from "@/lib/use-bet";
 import { riggedWin, rollOutcome } from "@/lib/odds";
-import { NEW_GAME_MAP, type GameCfg } from "@/lib/new-games";
+import { NEW_GAME_MAP, coverOf, type GameCfg } from "@/lib/new-games";
 import GameHeader from "@/components/GameHeader";
 import BetPanel from "@/components/casino/BetPanel";
 import PlayButton from "@/components/casino/PlayButton";
@@ -536,9 +536,9 @@ function PickStage({ cfg, choice, setChoice, locked, revealed, shaking, target }
               <div className="absolute inset-0 rounded-2xl flex items-center justify-center"
                 style={{
                   backfaceVisibility: "hidden",
-                  background: choice === i
-                    ? `linear-gradient(160deg,#f7c948,${cfg.c2})`
-                    : `linear-gradient(160deg,${cfg.c2},#070b13)`,
+                  backgroundImage: `linear-gradient(160deg,${choice === i ? "rgba(247,201,72,0.55)" : "rgba(6,10,18,0.55)"},rgba(4,7,13,0.85)), url(${coverOf(cfg.key)})`,
+                  backgroundSize: "cover",
+                  backgroundPosition: "center",
                   border: `1.5px solid ${choice === i ? "#f7c948" : "rgba(247,201,72,0.28)"}`,
                   boxShadow: choice === i ? "0 0 22px rgba(247,201,72,0.45)" : "none",
                 }}>
@@ -783,25 +783,47 @@ function Game({ cfg }: { cfg: GameCfg }) {
     onDone();
   };
 
+  const cover = coverOf(cfg.key);
   const bg = `radial-gradient(120% 100% at 50% 0%, ${cfg.c1}33 0%, transparent 60%), linear-gradient(160deg, ${cfg.c2} 0%, #05080f 100%)`;
   const stageProps: StageProps = {
     cfg, runId, target, choice, setChoice, locked: busy, onDone,
   };
 
   return (
-    <div className="min-h-screen flex flex-col" style={{ background: bg }}>
+    <div className="min-h-screen flex flex-col relative" style={{ background: bg }}>
+      {cover && (
+        <>
+          <img src={cover} alt="" aria-hidden
+            className="fixed inset-0 w-full h-full object-cover pointer-events-none"
+            style={{ opacity: 0.42, zIndex: 0 }} />
+          <span className="fixed inset-0 pointer-events-none"
+            style={{ zIndex: 0, background: `linear-gradient(180deg, rgba(3,6,12,0.55) 0%, ${cfg.c2}99 55%, rgba(3,6,12,0.92) 100%)` }} />
+        </>
+      )}
+      <div className="relative" style={{ zIndex: 1 }}>
       <GameHeader icon={cfg.syms[0]} title={cfg.name[lang]} subtitle={`x${cfg.mult}`} />
 
-      <div className="flex-1 px-4 pb-8 flex flex-col gap-4 items-center">
+      </div>
+      <div className="flex-1 px-4 pb-8 flex flex-col gap-4 items-center relative" style={{ zIndex: 1 }}>
         <div className="w-full rounded-3xl p-3 relative overflow-hidden"
           style={{
             background: ts.card,
             border: "1px solid rgba(247,201,72,0.32)",
             boxShadow: "0 14px 44px rgba(247,201,72,0.14)",
           }}>
+          {cover && (
+            <>
+              <img src={cover} alt="" aria-hidden loading="lazy"
+                className="absolute inset-0 w-full h-full object-cover pointer-events-none"
+                style={{ opacity: 0.34, filter: "saturate(1.15)" }} />
+              <span className="absolute inset-0 pointer-events-none"
+                style={{ background: "radial-gradient(120% 90% at 50% 0%, rgba(0,0,0,0.28), rgba(3,6,12,0.86))" }} />
+            </>
+          )}
           <span className="absolute inset-x-0 top-0 h-[2px]"
             style={{ background: "linear-gradient(90deg,transparent,#f7c948,transparent)" }} />
 
+          <div className="relative">
           {cfg.engine === "reel" && <ReelStage {...stageProps} />}
           {cfg.engine === "wheel" && <WheelStage {...stageProps} />}
           {cfg.engine === "race" && <RaceStage {...stageProps} />}
@@ -813,6 +835,7 @@ function Game({ cfg }: { cfg: GameCfg }) {
           {cfg.engine === "climb" && (
             <ClimbStage cfg={cfg} step={step} alive={!crashed} crashed={crashed} />
           )}
+          </div>
         </div>
 
         {cfg.engine === "climb" && step > 0 && (

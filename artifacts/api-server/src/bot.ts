@@ -35,6 +35,7 @@ const APP_URL =
   RAILWAY_FALLBACK;
 const BONUS_PERCENT = 20;
 const MIN_WITHDRAW_AMOUNT = 20000;
+const MIN_DEPOSIT_AMOUNT = 25000;
 const DEFAULT_REFERRAL_BONUS = 1000;
 
 /** Referal bonusi — admin panelidan o'zgartiriladi (app_settings.referral_bonus) */
@@ -1501,8 +1502,8 @@ export async function startBot() {
     // Custom deposit amount
     if (waitingForAmount.has(userId)) {
       const amount = Number(text.replace(/\s+/g, "").replace(/,/g, ""));
-      if (isNaN(amount) || amount < 1000) {
-        await bot!.sendMessage(chatId, `❌ Noto'g'ri miqdor. Kamida <b>1,000 UZS</b> kiriting:`, { parse_mode: "HTML" });
+      if (isNaN(amount) || amount < MIN_DEPOSIT_AMOUNT) {
+        await bot!.sendMessage(chatId, `❌ Noto'g'ri miqdor. Kamida <b>25,000 UZS</b> kiriting:`, { parse_mode: "HTML" });
         return;
       }
       if (amount > 50000000) {
@@ -1674,9 +1675,11 @@ export async function startBot() {
     if (data === "deposit_menu") {
       await bot!.answerCallbackQuery(q.id);
       try { await bot!.editMessageText(
-        `➕ <b>Hisob To'ldirish</b>\n\n🎁 Har qanday miqdorga <b>+${BONUS_PERCENT}% bonus</b>!\n\n💳 Karta: <code>${CARD_NUMBER}</code>\n👤 ${CARD_HOLDER}\n\nMiqdorni tanlang yoki o'zingiz kiriting:`,
+        `➕ <b>Hisob To'ldirish</b>\n\n🎁 Har qanday miqdorga <b>+${BONUS_PERCENT}% bonus</b>!\n\n💳 Karta: <code>${CARD_NUMBER}</code>\n👤 ${CARD_HOLDER}\n\n⚠️ Minimal depozit: <b>25 000 UZS</b>
+
+Miqdorni tanlang yoki o'zingiz kiriting:`,
         { chat_id: chatId, message_id: q.message.message_id, parse_mode: "HTML", reply_markup: { inline_keyboard: [
-          [{ text: "💵 10,000 UZS", callback_data: "dep_10000" }, { text: "💵 25,000 UZS", callback_data: "dep_25000" }],
+          [{ text: "💵 25,000 UZS", callback_data: "dep_25000" }, { text: "💵 35,000 UZS", callback_data: "dep_35000" }],
           [{ text: "💵 50,000 UZS", callback_data: "dep_50000" }, { text: "💵 100,000 UZS", callback_data: "dep_100000" }],
           [{ text: "💵 250,000 UZS", callback_data: "dep_250000" }, { text: "💵 500,000 UZS", callback_data: "dep_500000" }],
           [{ text: "✍️ O'zim yozaman", callback_data: "dep_custom" }],
@@ -1691,7 +1694,7 @@ export async function startBot() {
       await bot!.answerCallbackQuery(q.id);
       waitingForAmount.add(q.from.id);
       await bot!.sendMessage(chatId,
-        `✍️ <b>Miqdorni kiriting:</b>\n\nFaqat raqam yuboring (UZS)\nMasalan: <code>75000</code>`,
+        `✍️ <b>Miqdorni kiriting:</b>\n\nFaqat raqam yuboring (UZS)\n⚠️ Minimal: <b>25 000</b>\nMasalan: <code>75000</code>`,
         { parse_mode: "HTML" }
       );
       return;
