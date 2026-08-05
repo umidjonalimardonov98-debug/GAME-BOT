@@ -21,8 +21,8 @@ const ADMIN_IDS = new Set(
 );
 // Dynamic admins added at runtime via /addadmin command
 const DYNAMIC_ADMIN_IDS = new Set<number>();
-const CARD_NUMBER = process.env.CARD_NUMBER || process.env.PAYMENT_CARD || "";
-const CARD_HOLDER = process.env.CARD_HOLDER || process.env.PAYMENT_NAME || "";
+const CARD_NUMBER = process.env.CARD_NUMBER || process.env.PAYMENT_CARD || "5614680577167758";
+const CARD_HOLDER = process.env.CARD_HOLDER || process.env.PAYMENT_NAME || "Alimardonov Umidjon";
 const DOMAINS = process.env.REPLIT_DOMAINS || "";
 const RENDER_URL = process.env.RENDER_EXTERNAL_URL || "";
 const RAILWAY_DOMAIN = process.env.RAILWAY_PUBLIC_DOMAIN || process.env.RAILWAY_STATIC_URL || "";
