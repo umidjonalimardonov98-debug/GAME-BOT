@@ -1,6 +1,7 @@
 import { useCallback, useState } from "react";
 import { usePlayer } from "./player-context";
 import { placeBet } from "./api";
+import { capWin } from "./odds";
 
 export const MIN_BET = 2000;
 export const MAX_BET = 500000;
@@ -28,7 +29,7 @@ export function useBet(game: string) {
   /** Raundni yopish: mult=0 → yutqazish */
   const settle = useCallback(async (mult: number) => {
     if (!player) return 0;
-    const win = mult > 0 ? Math.floor(bet * mult) : 0;
+    const win = mult > 0 ? capWin(Math.floor(bet * mult), game) : 0;
     setSaving(true);
     try {
       await placeBet(player.telegramId, { amount: bet, game, won: mult > 0, winAmount: win });

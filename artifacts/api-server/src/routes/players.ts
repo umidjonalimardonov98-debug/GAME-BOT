@@ -1,6 +1,6 @@
 import { Router, type IRouter } from "express";
 import { eq, desc, sql } from "drizzle-orm";
-import { db, playersTable, transactionsTable, withdrawRequestsTable, depositRequestsTable } from "@workspace/db";
+import { db, playersTable, transactionsTable, withdrawRequestsTable, depositRequestsTable, gameSettingsTable } from "@workspace/db";
 import {
   SyncPlayerBody,
   GetPlayerParams,
@@ -212,7 +212,13 @@ router.post("/players/:telegramId/bet", async (req, res): Promise<void> => {
     return;
   }
 
-  const { amount, game, won, winAmount } = body.data;
+  const { amount, game, won } = body.data;
+  // Admin belgilagan maksimal yutuq (maxWin) — server tomonda ham cheklanadi
+  let winAmount = body.data.winAmount;
+  if (won && game) {
+    const [gs] = await db.select().from(gameSettingsTable).where(eq(gameSettingsTable.game, game));
+    if (gs?.maxWin && gs.maxWin > 0) winAmount = Math.min(winAmount, gs.maxWin);
+  }
   let newBalance: number;
   let netChange: number;
 

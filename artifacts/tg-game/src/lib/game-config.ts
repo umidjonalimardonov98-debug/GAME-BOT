@@ -19,7 +19,7 @@ export type GameConfig = {
 
 export const DEFAULT_GAME_CONFIG: GameConfig = {
   enabled: true,
-  winChance: 31,
+  winChance: 40,
   refundChance: 6,
   difficulty: "o'rta",
   multiplier: 100,

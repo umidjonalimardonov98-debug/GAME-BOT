@@ -1770,7 +1770,7 @@ async function getGameRow(game: string) {
   const [row] = await db.select().from(gameSettingsTable).where(eq(gameSettingsTable.game, game));
   return {
     enabled: row?.enabled ?? true,
-    winChance: row?.winChance ?? 30,
+    winChance: row?.winChance ?? 40,
     refundChance: row?.refundChance ?? 6,
     difficulty: (row?.difficulty as Difficulty) ?? "o'rta",
     multiplier: row?.multiplier ?? 100,
@@ -2258,7 +2258,7 @@ Miqdorni tanlang yoki o'zingiz kiriting:`,
       const game = rest.slice(0, idx);
       const delta = Number(rest.slice(idx + 1));
       const [current] = await db.select().from(gameSettingsTable).where(eq(gameSettingsTable.game, game));
-      const winChance = Math.min(95, Math.max(1, (current?.winChance ?? 30) + delta));
+      const winChance = Math.min(95, Math.max(1, (current?.winChance ?? 40) + delta));
       await db.insert(gameSettingsTable).values({ game, winChance }).onConflictDoUpdate({ target: gameSettingsTable.game, set: { winChance, updatedAt: new Date() } });
       await bot!.answerCallbackQuery(q.id, { text: `🎯 Win%: ${winChance}` });
       await sendGameEditor(chatId, game, q.message.message_id);
@@ -2313,7 +2313,7 @@ Miqdorni tanlang yoki o'zingiz kiriting:`,
 
     if (data.startsWith("admin_gm_allset_")) {
       const difficulty = data.replace("admin_gm_allset_", "") as Difficulty;
-      const winChance = DIFFICULTY_WIN_SUGGEST[difficulty] ?? 30;
+      const winChance = DIFFICULTY_WIN_SUGGEST[difficulty] ?? 40;
       for (const g of ALL_GAMES) {
         await db.insert(gameSettingsTable).values({ game: g.key, difficulty, winChance }).onConflictDoUpdate({ target: gameSettingsTable.game, set: { difficulty, winChance, updatedAt: new Date() } });
       }
@@ -2328,7 +2328,7 @@ Miqdorni tanlang yoki o'zingiz kiriting:`,
       const byGame = new Map(configured.map((r) => [r.game, r]));
       for (const g of ALL_GAMES) {
         const current = byGame.get(g.key);
-        const winChance = Math.min(95, Math.max(1, (current?.winChance ?? 30) + delta));
+        const winChance = Math.min(95, Math.max(1, (current?.winChance ?? 40) + delta));
         await db.insert(gameSettingsTable).values({ game: g.key, winChance }).onConflictDoUpdate({ target: gameSettingsTable.game, set: { winChance, updatedAt: new Date() } });
       }
       await bot!.answerCallbackQuery(q.id, { text: `✅ Barcha o'yinlar win% ${delta > 0 ? "+" : ""}${delta}`, show_alert: true });

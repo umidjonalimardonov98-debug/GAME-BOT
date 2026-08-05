@@ -4,7 +4,7 @@ export const gameSettingsTable = pgTable("game_settings", {
   id: serial("id").primaryKey(),
   game: text("game").notNull().unique(),
   enabled: boolean("enabled").notNull().default(true),
-  winChance: integer("win_chance").notNull().default(30),
+  winChance: integer("win_chance").notNull().default(40),
   /** Yutqazgan raundlarning necha foizida pul qaytariladi (x1) */
   refundChance: integer("refund_chance").notNull().default(6),
   /** "oson" | "o'rta" | "qiyin" | "juda qiyin" */

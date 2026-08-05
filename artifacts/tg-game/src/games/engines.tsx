@@ -2,7 +2,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useLang } from "@/lib/lang-context";
 import { useTheme } from "@/lib/theme-context";
 import { useBet } from "@/lib/use-bet";
-import { rollOutcome, riggedWin } from "@/lib/odds";
+import { rollOutcome, riggedWin, winMult } from "@/lib/odds";
 import { coverOf, type GameCfg } from "@/lib/new-games";
 import GameHeader from "@/components/GameHeader";
 import BetPanel from "@/components/casino/BetPanel";
@@ -509,7 +509,7 @@ function WarGame({ cfg }: EProps) {
       setMe({ s: SUITS[rnd(4)], v: a });
       setFoe({ s: SUITS[rnd(4)], v: b });
       setDeal(false);
-      g.finish(out === "win" ? cfg.mult : out === "refund" ? 1 : 0);
+      g.finish(out === "win" ? winMult(cfg.mult, cfg.key) : out === "refund" ? 1 : 0);
     }, 900);
   };
 
@@ -637,7 +637,7 @@ function KenoGame({ cfg }: EProps) {
     const iv = window.setInterval(() => {
       i++;
       setDrawn(res.slice(0, i));
-      if (i >= res.length) { clearInterval(iv); g.finish(win ? cfg.mult : 0); }
+      if (i >= res.length) { clearInterval(iv); g.finish(win ? winMult(cfg.mult, cfg.key) : 0); }
     }, 200);
   };
 
@@ -711,7 +711,7 @@ function ScratchGame({ cfg }: EProps) {
         setOpen((prev) => [...prev, cell]);
         if (k === 8) {
           setLive(false);
-          g.finish(win ? cfg.mult : 0);
+          g.finish(win ? winMult(cfg.mult, cfg.key) : 0);
         }
       }, 260 + k * 240);
     });
@@ -772,7 +772,7 @@ function Match3Game({ cfg }: EProps) {
       }
       setGrid(ng); setPop(hit); setCombo(r);
       window.setTimeout(() => setPop([]), 420);
-      if (r >= rounds) { g.finish(win ? cfg.mult : 0); return; }
+      if (r >= rounds) { g.finish(win ? winMult(cfg.mult, cfg.key) : 0); return; }
       window.setTimeout(step, 620);
     };
     step();
@@ -827,7 +827,7 @@ function BingoGame({ cfg }: EProps) {
     const iv = window.setInterval(() => {
       i++;
       setBalls(res.slice(0, i));
-      if (i >= res.length) { clearInterval(iv); g.finish(win ? cfg.mult : 0); }
+      if (i >= res.length) { clearInterval(iv); g.finish(win ? winMult(cfg.mult, cfg.key) : 0); }
     }, 190);
   };
 
@@ -883,7 +883,7 @@ function LottoGame({ cfg }: EProps) {
     const iv = window.setInterval(() => {
       i++;
       setOut(res.slice(0, i));
-      if (i >= NEED) { clearInterval(iv); g.finish(win ? cfg.mult : 0); }
+      if (i >= NEED) { clearInterval(iv); g.finish(win ? winMult(cfg.mult, cfg.key) : 0); }
     }, 420);
   };
 
@@ -959,7 +959,7 @@ function MemoryGame({ cfg }: EProps) {
         if (match) {
           const nd = [...done, a, b];
           setDone(nd);
-          if (nd.length === deck.length) { setLive(false); g.finish(cfg.mult); }
+          if (nd.length === deck.length) { setLive(false); g.finish(winMult(cfg.mult, cfg.key)); }
         } else if (t >= PAIRS + 2) {
           setLive(false); g.finish(0);
         }
@@ -1010,7 +1010,7 @@ function FishingGame({ cfg }: EProps) {
         if (l <= 1) {
           window.clearInterval(iv);
           setLive(false);
-          g.finish(winRef.current && hitsRef.current >= NEED ? cfg.mult : 0);
+          g.finish(winRef.current && hitsRef.current >= NEED ? winMult(cfg.mult, cfg.key) : 0);
           return 0;
         }
         return l - 1;
@@ -1039,7 +1039,7 @@ function FishingGame({ cfg }: EProps) {
     window.setTimeout(() => setTargets((ts) => ts.map((t) => (t.id === id ? { ...t, hit: false, x: rnd(90), y: 10 + rnd(70) } : t))), 350);
     if (h >= NEED) {
       setLive(false);
-      g.finish(winRef.current ? cfg.mult : 0);
+      g.finish(winRef.current ? winMult(cfg.mult, cfg.key) : 0);
     }
   };
 
@@ -1191,7 +1191,7 @@ function ReelGame({ cfg }: EProps) {
       setSpinning((s) => s.filter((x) => x !== c));
     }
     if (hitCols >= 3) setLine(Array.from({ length: hitCols }, (_, c) => row * COLS + c));
-    g.finish(outcome === "win" ? cfg.mult : outcome === "refund" ? 1 : 0);
+    g.finish(outcome === "win" ? winMult(cfg.mult, cfg.key) : outcome === "refund" ? 1 : 0);
   };
 
   return (
@@ -1247,7 +1247,7 @@ function RaceGame({ cfg }: EProps) {
     }
     setPos((p) => p.map((v, i) => (i === win ? 100 : Math.min(94, v))));
     setWinner(win);
-    g.finish(outcome === "win" ? cfg.mult : outcome === "refund" ? 1 : 0);
+    g.finish(outcome === "win" ? winMult(cfg.mult, cfg.key) : outcome === "refund" ? 1 : 0);
   };
 
   return (
@@ -1405,7 +1405,7 @@ function BoardGame({ cfg }: EProps) {
       await sleep(520);
     }
     setRolling(false);
-    g.finish(outcome === "win" ? cfg.mult : outcome === "refund" ? 1 : 0);
+    g.finish(outcome === "win" ? winMult(cfg.mult, cfg.key) : outcome === "refund" ? 1 : 0);
   };
 
   const sum = (p: [number, number]) => p[0] + p[1];

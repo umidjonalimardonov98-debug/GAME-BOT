@@ -8,7 +8,7 @@ import { getGameConfig } from "@/lib/game-config";
  * agar konfiguratsiya hali yuklanmagan yoki o'yin sozlanmagan bo'lsa, shu
  * standart qiymatlar ishlatiladi.
  */
-export const WIN_RATE = 0.25;
+export const WIN_RATE = 0.4;
 /** Yutqazgan raundlarning bir qismida pul qaytariladi (x1 koeffitsiyent) */
 export const REFUND_RATE = 0.06;
 export const LOSE_RATE = 1 - WIN_RATE;
@@ -70,4 +70,33 @@ export function rollOutcome(gameKey?: string): Outcome {
   if (r < winRate) return "win";
   if (r < winRate + refundRate) return "refund";
   return "lose";
+}
+
+/**
+ * Yutuq koeffitsiyentini og'irlik bilan tanlash.
+ *
+ * Muammo: ilgari yutgan raund darhol o'yinning MAKSIMAL koeffitsiyentini
+ * berardi. Endi koeffitsiyent tasodifiy, lekin kuchli tarzda KICHIK
+ * qiymatlarga egilgan; maksimalga juda kam hollarda (~1%) chiqadi.
+ *
+ * @param maxMult o'yinning maksimal koeffitsiyenti (cfg.mult)
+ * @param gameKey admin sozlagan multiplikator/maxWin uchun (ixtiyoriy)
+ */
+export function winMult(maxMult: number, gameKey?: string): number {
+  const scale = gameKey ? multiplierFor(gameKey) : 1;
+  const max = Math.max(1.05, maxMult * (scale > 0 ? scale : 1));
+  // ~1% hollarda to'liq maksimal koeffitsiyent
+  if (Math.random() < 0.01) return Number(max.toFixed(2));
+  // pow(r, 3.4) — natijalar 0 ga yaqin to'planadi => kichik koeffitsiyentlar
+  const frac = Math.pow(Math.random(), 3.4);
+  const raw = 1.05 + frac * (max - 1.05);
+  const val = Math.min(max * 0.9, raw);
+  return Number(Math.max(1.05, val).toFixed(2));
+}
+
+/** Admin belgilagan maksimal yutuq (maxWin) bo'yicha yutuqni cheklash */
+export function capWin(amount: number, gameKey?: string): number {
+  if (!gameKey) return amount;
+  const cap = getGameConfig(gameKey).maxWin;
+  return cap && cap > 0 ? Math.min(amount, cap) : amount;
 }
