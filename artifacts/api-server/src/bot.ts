@@ -313,33 +313,58 @@ export async function sendLiveChatVoiceFromApp(opts: { telegramId: string; audio
   const uid = Number(opts.telegramId);
   if (!Number.isFinite(uid) || uid <= 0) return { ok: false, error: "Noto'g'ri foydalanuvchi" };
   if (!bot) return { ok: false, error: "Bot ishga tushmagan" };
-  let adminId = liveChatUserToAdmin.get(uid);
-  if (!adminId) {
-    // Suhbat hali ochilmagan bo'lsa — ovozni baribir adminlarga yetkazamiz
-    const admins = await financeAdminIds();
-    adminId = admins[0];
-    if (!adminId) return { ok: false, error: "Hozir admin mavjud emas" };
+
+  // Kimlarga yuboramiz: suhbatdagi admin, bo'lmasa barcha adminlar
+  let targets: number[] = [];
+  const paired = liveChatUserToAdmin.get(uid);
+  if (paired) targets = [paired];
+  else {
+    try { targets = await financeAdminIds(); } catch { targets = []; }
+    if (!targets.length) return { ok: false, error: "Hozir admin mavjud emas" };
     try { await requestLiveChat(uid, "O'yinchi", ""); } catch {}
   }
+
   const raw = String(opts.audioBase64 || "").replace(/^data:[^,]+,/, "");
   if (!raw) return { ok: false, error: "Ovoz bo'sh" };
   let buf: Buffer;
   try { buf = Buffer.from(raw, "base64"); } catch { return { ok: false, error: "Ovoz o'qilmadi" }; }
-  if (!buf.length || buf.length > 10 * 1024 * 1024) return { ok: false, error: "Ovoz hajmi mos emas" };
-  const isOgg = (opts.mime || "").includes("ogg");
-  try {
-    const caption = `\u{1F464} Foydalanuvchi (${uid}) \u{1F3A4} ovozli xabar`;
-    if (isOgg) {
-      await bot.sendVoice(adminId, buf, { caption, reply_markup: LIVE_CHAT_END_KB }, { filename: "voice.ogg", contentType: "audio/ogg" });
-    } else {
-      await bot.sendAudio(adminId, buf, { caption, reply_markup: LIVE_CHAT_END_KB }, { filename: "voice.webm", contentType: opts.mime || "audio/webm" });
-    }
-  } catch {
-    return { ok: false, error: "Adminga yetkazilmadi" };
-  }
+  if (!buf.length || buf.length > 12 * 1024 * 1024) return { ok: false, error: "Ovoz hajmi mos emas" };
+
   const secs = Math.max(1, Math.round(opts.seconds || 0));
+  const mime = (opts.mime || "audio/webm").toLowerCase();
+  const isOgg = mime.includes("ogg") || mime.includes("opus");
+  const caption = `\u{1F464} Foydalanuvchi (${uid}) \u{1F3A4} ovozli xabar \u00B7 ${secs}s`;
+
+  let delivered = 0;
+  let lastErr = "";
+  for (const adminId of targets) {
+    // 1) voice, 2) audio, 3) document — biri ishlashi shart
+    const attempts: Array<() => Promise<any>> = isOgg
+      ? [
+          () => bot!.sendVoice(adminId, buf, { caption, reply_markup: LIVE_CHAT_END_KB }, { filename: "voice.ogg", contentType: "audio/ogg" }),
+          () => bot!.sendAudio(adminId, buf, { caption, reply_markup: LIVE_CHAT_END_KB }, { filename: "voice.ogg", contentType: "audio/ogg" }),
+          () => bot!.sendDocument(adminId, buf, { caption, reply_markup: LIVE_CHAT_END_KB }, { filename: "voice.ogg", contentType: "audio/ogg" }),
+        ]
+      : [
+          () => bot!.sendAudio(adminId, buf, { caption, reply_markup: LIVE_CHAT_END_KB }, { filename: "voice.webm", contentType: mime || "audio/webm" }),
+          () => bot!.sendVoice(adminId, buf, { caption, reply_markup: LIVE_CHAT_END_KB }, { filename: "voice.ogg", contentType: "audio/ogg" }),
+          () => bot!.sendDocument(adminId, buf, { caption, reply_markup: LIVE_CHAT_END_KB }, { filename: "voice.webm", contentType: mime || "audio/webm" }),
+        ];
+    let sent = false;
+    for (const run of attempts) {
+      try { await run(); sent = true; break; }
+      catch (e: any) { lastErr = e?.response?.body?.description || e?.message || String(e); }
+    }
+    if (sent) delivered++;
+  }
+
+  if (!delivered) {
+    console.error("[live-chat voice] yuborilmadi:", lastErr);
+    return { ok: false, error: `Adminga yetkazilmadi: ${lastErr || "noma'lum xato"}` };
+  }
+
   pushLiveChatMsg(uid, "user", `\u{1F3A4} Ovozli xabar (${secs}s)`);
-  return { ok: true };
+  return { ok: true, delivered };
 }
 const waitingForRefPrice = new Set<number>();                  // admin waiting to type new referral bonus
 const waitingForBroadcast = new Set<number>();                  // adminId waiting to type broadcast message
