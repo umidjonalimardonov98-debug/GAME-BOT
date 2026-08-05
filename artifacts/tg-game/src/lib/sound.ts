@@ -157,6 +157,7 @@ export const sfx = {
   },
   /** Yutuq — ko'tarilib boruvchi arpejio + tanga jarangi */
   win(big = false) {
+    return; // yutuq ovozi o'chirilgan
     if (!enabled) return;
     if (!outcomeGate()) return;
     // 1XBET uslubi: tanga sharqirashi + bayramona fanfara + yorqin shimmer
@@ -182,6 +183,7 @@ export const sfx = {
   },
   /** Yutqazish — pastga tushuvchi ohang */
   lose() {
+    return; // yutqazish ovozi o'chirilgan
     if (!enabled) return;
     if (!outcomeGate()) return;
     // Yumshoq, "wah-wah" uslubidagi tushuvchi ohang (1XBET yutqazish signali)
@@ -193,6 +195,7 @@ export const sfx = {
   },
   /** Cashout / pul olish */
   cash() {
+    return; // yutuq ovozi o'chirilgan
     if (!enabled) return;
     [880, 1175, 1568, 2093].forEach((f, i) => tone({ freq: f, dur: 0.16, type: "sine", gain: 0.17, delay: i * 0.055 }));
     for (let i = 0; i < 6; i++) {
@@ -202,6 +205,7 @@ export const sfx = {
   },
   /** Portlash (mina, crash) */
   boom() {
+    return; // yutqazish ovozi o'chirilgan
     if (!enabled) return;
     noise(0.5, 0.28, 500, 60);
     tone({ freq: 120, to: 40, dur: 0.45, type: "sawtooth", gain: 0.2 });

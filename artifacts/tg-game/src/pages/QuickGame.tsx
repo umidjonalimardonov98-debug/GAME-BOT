@@ -2,8 +2,7 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import { useLang } from "@/lib/lang-context";
 import { useTheme } from "@/lib/theme-context";
 import { useBet } from "@/lib/use-bet";
-import { riggedWin } from "@/lib/odds";
-import { sfx } from "@/lib/sound";
+import { riggedWin, rollOutcome } from "@/lib/odds";
 import { NEW_GAME_MAP, type GameCfg } from "@/lib/new-games";
 import GameHeader from "@/components/GameHeader";
 import BetPanel from "@/components/casino/BetPanel";
@@ -568,7 +567,124 @@ function PickStage({ cfg, choice, setChoice, locked, revealed, shaking, target }
   );
 }
 
+
+/* ─────────── 6. BOARD: Nard — zar tashlab bosqichma-bosqich yurish ─────────── */
+function BoardStage({ cfg, runId, target, onDone }: StageProps) {
+  const H = 240;
+  const CELLS = 12;
+  const st = useRef({
+    running: false, done: false, t: 0, nextRoll: 0,
+    me: 0, foe: 0, dice: [1, 1] as [number, number], spin: 0, turn: 0,
+  });
+  const doneRef = useRef(onDone);
+  doneRef.current = onDone;
+
+  useEffect(() => {
+    if (!runId) return;
+    const s = st.current;
+    s.running = true; s.done = false; s.t = 0; s.nextRoll = 0;
+    s.me = 0; s.foe = 0; s.turn = 0; s.spin = 0;
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [runId]);
+
+  const ref = useCanvas((ctx, w, h, dt) => {
+    const s = st.current;
+    ctx.clearRect(0, 0, w, h);
+
+    if (s.running) {
+      s.t += dt;
+      s.spin += dt * 16;
+      if (s.t >= s.nextRoll) {
+        s.nextRoll = s.t + 0.62;
+        const winning = target === 0; // 0 → o'yinchi g'olib
+        const meFirst = s.turn % 2 === 0;
+        const a = 1 + rnd(6), b = 1 + rnd(6);
+        s.dice = [a, b];
+        const stepAmt = Math.max(1, Math.round((a + b) / 2));
+        if (meFirst) s.me = Math.min(CELLS, s.me + (winning ? stepAmt : Math.max(1, stepAmt - 1)));
+        else s.foe = Math.min(CELLS, s.foe + (winning ? Math.max(1, stepAmt - 1) : stepAmt));
+        s.turn++;
+        if ((winning && s.me >= CELLS) || (!winning && s.foe >= CELLS)) {
+          if (winning) s.me = CELLS; else s.foe = CELLS;
+          s.running = false;
+          if (!s.done) { s.done = true; doneRef.current(); }
+        }
+      }
+    }
+
+    // nard taxtasi
+    const pad = 12, bw = w - pad * 2, bh = 132, by = 22;
+    roundRect(ctx, pad, by, bw, bh, 14);
+    const wood = ctx.createLinearGradient(pad, by, pad + bw, by + bh);
+    wood.addColorStop(0, "#3b2410");
+    wood.addColorStop(0.5, cfg.c2);
+    wood.addColorStop(1, "#20130a");
+    ctx.fillStyle = wood; ctx.fill();
+    ctx.strokeStyle = "rgba(247,201,72,0.5)"; ctx.lineWidth = 2; ctx.stroke();
+
+    // uchburchak nuqtalar
+    const cw = bw / CELLS;
+    for (let i = 0; i < CELLS; i++) {
+      for (const topRow of [true, false]) {
+        ctx.beginPath();
+        const x = pad + i * cw;
+        if (topRow) { ctx.moveTo(x, by + 4); ctx.lineTo(x + cw, by + 4); ctx.lineTo(x + cw / 2, by + bh / 2 - 6); }
+        else { ctx.moveTo(x, by + bh - 4); ctx.lineTo(x + cw, by + bh - 4); ctx.lineTo(x + cw / 2, by + bh / 2 + 6); }
+        ctx.closePath();
+        ctx.fillStyle = i % 2 ? "rgba(247,201,72,0.20)" : "rgba(255,255,255,0.06)";
+        ctx.fill();
+      }
+    }
+
+    // toshlar (siz — oltin, raqib — kumush)
+    const drawStone = (cell: number, y: number, gold: boolean) => {
+      const x = pad + Math.min(cell, CELLS - 1) * cw + cw / 2;
+      ctx.beginPath(); ctx.arc(x, y, 11, 0, Math.PI * 2);
+      const g = ctx.createRadialGradient(x - 4, y - 5, 2, x, y, 12);
+      g.addColorStop(0, gold ? "#fff6cf" : "#e6ecf5");
+      g.addColorStop(1, gold ? "#b45309" : "#64748b");
+      ctx.fillStyle = g; ctx.fill();
+      ctx.strokeStyle = "rgba(0,0,0,0.35)"; ctx.lineWidth = 1; ctx.stroke();
+    };
+    drawStone(s.me, by + bh / 2 - 22, true);
+    drawStone(s.foe, by + bh / 2 + 22, false);
+
+    // zarlar
+    const dy = by + bh + 18;
+    s.dice.forEach((d, i) => {
+      const dx = w / 2 - 34 + i * 40;
+      ctx.save();
+      ctx.translate(dx + 14, dy + 14);
+      if (s.running) ctx.rotate(Math.sin(s.spin + i) * 0.22);
+      roundRect(ctx, -14, -14, 28, 28, 7);
+      ctx.fillStyle = "#fff6e6"; ctx.fill();
+      ctx.strokeStyle = "rgba(0,0,0,0.25)"; ctx.stroke();
+      ctx.fillStyle = "#1a1204";
+      const pips: Record<number, [number, number][]> = {
+        1: [[0, 0]], 2: [[-6, -6], [6, 6]], 3: [[-6, -6], [0, 0], [6, 6]],
+        4: [[-6, -6], [6, -6], [-6, 6], [6, 6]],
+        5: [[-6, -6], [6, -6], [0, 0], [-6, 6], [6, 6]],
+        6: [[-6, -7], [6, -7], [-6, 0], [6, 0], [-6, 7], [6, 7]],
+      };
+      for (const [px, py] of pips[d] ?? []) {
+        ctx.beginPath(); ctx.arc(px, py, 2.6, 0, Math.PI * 2); ctx.fill();
+      }
+      ctx.restore();
+    });
+
+    ctx.fillStyle = "rgba(255,255,255,0.75)";
+    ctx.font = "bold 11px Inter, sans-serif";
+    ctx.fillText(`SIZ ${s.me}/${CELLS}`, pad, 14);
+    ctx.textAlign = "right";
+    ctx.fillText(`RAQIB ${s.foe}/${CELLS}`, w - pad, 14);
+    ctx.textAlign = "left";
+  }, H);
+
+  return <canvas ref={ref} style={{ width: "100%", height: H, display: "block" }} />;
+}
+
 /* ═══════════════════════ ASOSIY ═══════════════════════ */
+
 
 export default function QuickGame({ gameKey }: { gameKey: string }) {
   const cfg = NEW_GAME_MAP[gameKey];
@@ -591,6 +707,7 @@ function Game({ cfg }: { cfg: GameCfg }) {
   const [step, setStep] = useState(0);
   const [cashMult, setCashMult] = useState(1);
   const [crashed, setCrashed] = useState(false);
+  const [refunded, setRefunded] = useState(false);
   const pending = useRef<{ win: boolean; mult: number } | null>(null);
   const timers = useRef<number[]>([]);
   useEffect(() => () => timers.current.forEach(clearTimeout), []);
@@ -603,19 +720,21 @@ function Game({ cfg }: { cfg: GameCfg }) {
     if (!p) return;
     pending.current = null;
     later(async () => {
-      const w = await settle(p.win ? p.mult : 0);
+      const w = await settle(p.win ? p.mult : p.mult === 1 ? 1 : 0);
       setAmount(w);
-      setWon(p.win);
+      setRefunded(!p.win && p.mult === 1);
+      setWon(p.win || p.mult === 1);
       setBusy(false);
-      if (p.win) sfx.cash(); else sfx.boom();
     }, RESULT_DELAY);
   }, [settle, setBusy]);
 
   const start = () => {
     if (!canPlay) return;
-    setBusy(true); setWon(null); setRevealed(false); setCrashed(false);
-    const win = riggedWin();
-    pending.current = { win, mult: cfg.mult };
+    setBusy(true); setWon(null); setRevealed(false); setCrashed(false); setRefunded(false);
+    // 50% yutuq · x1 pul qaytarish · qolgani yutqazish
+    const outcome = rollOutcome();
+    const win = outcome === "win";
+    pending.current = { win, mult: win ? cfg.mult : outcome === "refund" ? 1 : 0 };
 
     if (cfg.engine === "reel") {
       setTarget(win ? rnd(cfg.syms.length) : -1);
@@ -625,6 +744,9 @@ function Game({ cfg }: { cfg: GameCfg }) {
       setRunId((v) => v + 1);
     } else if (cfg.engine === "race") {
       setTarget(win ? choice : (choice + 1 + rnd(cfg.n - 1)) % cfg.n);
+      setRunId((v) => v + 1);
+    } else if (cfg.engine === "board") {
+      setTarget(win ? 0 : 1);
       setRunId((v) => v + 1);
     } else if (cfg.engine === "pick") {
       setTarget(win ? choice : (choice + 1 + rnd(cfg.n - 1)) % cfg.n);
@@ -683,6 +805,7 @@ function Game({ cfg }: { cfg: GameCfg }) {
           {cfg.engine === "reel" && <ReelStage {...stageProps} />}
           {cfg.engine === "wheel" && <WheelStage {...stageProps} />}
           {cfg.engine === "race" && <RaceStage {...stageProps} />}
+          {cfg.engine === "board" && <BoardStage {...stageProps} />}
           {cfg.engine === "pick" && (
             <PickStage cfg={cfg} choice={choice} setChoice={setChoice}
               locked={busy} revealed={revealed} shaking={shaking} target={target} />
@@ -720,7 +843,11 @@ function Game({ cfg }: { cfg: GameCfg }) {
           <PlayButton label="O'YNASH" onClick={start} disabled={!canPlay || saving} />
         )}
 
-        <ResultBanner win={won} amount={amount} text={won ? "YUTDINGIZ!" : "OMAD KEYINGI SAFAR"} />
+        <ResultBanner
+          win={won}
+          amount={amount}
+          text={refunded ? "PUL QAYTARILDI (x1)" : won ? "YUTDINGIZ!" : "OMAD KEYINGI SAFAR"}
+        />
       </div>
     </div>
   );

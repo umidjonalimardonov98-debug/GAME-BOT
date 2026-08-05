@@ -1,6 +1,6 @@
 import type { Lang } from "./i18n";
 
-export type Engine = "pick" | "reel" | "wheel" | "race" | "climb";
+export type Engine = "pick" | "reel" | "wheel" | "race" | "climb" | "board";
 
 export type GameCfg = {
   key: string;
@@ -77,6 +77,46 @@ export const NEW_GAMES: GameCfg[] = [
 
   G("goldtower",     "climb", "#f7c948", "#78350f", ["coin", "bomb"], 2.2, 6, "grid",  "Oltin Minora", "Золотая Башня", "Gold Tower"),
   G("gemladder",     "climb", "#22d3ee", "#1e1b4b", ["gem", "skull"], 2.2, 6, "stars", "Olmos Narvon", "Алмазная Лестница", "Gem Ladder"),
+
+  /* ─── NARD / TAXTA o'yinlari (zar bilan bosqichma-bosqich) ─── */
+  G("nard",          "board", "#f7c948", "#5b3a16", ["dice"], 2.0, 12, "smoke",  "Nard", "Нарды", "Backgammon"),
+  G("nardgold",      "board", "#fbbf24", "#78350f", ["dice"], 2.4, 12, "rays",   "Oltin Nard", "Золотые Нарды", "Golden Backgammon"),
+  G("nardblitz",     "board", "#22d3ee", "#0f172a", ["dice"], 2.2, 12, "grid",   "Nard Blits", "Нарды Блиц", "Backgammon Blitz"),
+  G("nardsultan",    "board", "#a855f7", "#2e1065", ["dice"], 2.6, 12, "stars",  "Sulton Nardi", "Нарды Султана", "Sultan's Backgammon"),
+  G("dicewar",       "board", "#ef4444", "#450a0a", ["dice"], 2.3, 12, "smoke",  "Zar Jangi", "Битва Кубиков", "Dice War"),
+  G("dominotable",   "board", "#e2e8f0", "#1f2937", ["chip"], 2.2, 12, "grid",   "Domino Stol", "Домино", "Domino Table"),
+  G("checkers",      "board", "#16a34a", "#14532d", ["chip"], 2.1, 12, "bubbles","Shashka", "Шашки", "Checkers"),
+  G("caravan",       "board", "#f59e0b", "#7c2d12", ["coin"], 2.5, 12, "smoke",  "Karvon Yo'li", "Путь Каравана", "Caravan Road"),
+
+  /* ─── OLMA uslubidagi tanlov o'yinlari ─── */
+  G("appleking",     "pick",  "#22c55e", "#14532d", ["apple", "bomb"], 3.0, 4, "bubbles","Olma Shohi", "Король Яблок", "Apple King"),
+  G("appletree",     "pick",  "#84cc16", "#1a2e05", ["apple", "skull"], 4.0, 5, "rays",  "Olma Daraxti", "Яблоня", "Apple Tree"),
+  G("goldenapple",   "pick",  "#facc15", "#713f12", ["apple", "bomb"], 5.0, 6, "stars", "Oltin Olma", "Золотое Яблоко", "Golden Apple"),
+  G("dragoncave",    "pick",  "#dc2626", "#1c1917", ["dragon", "gem"], 4.2, 5, "smoke", "Ajdar G'ori", "Пещера Дракона", "Dragon Cave"),
+  G("tigerluck",     "pick",  "#f97316", "#431407", ["tiger", "coin"], 3.6, 4, "rays",  "Yo'lbars Omadi", "Удача Тигра", "Tiger Luck"),
+  G("tickethunt",    "pick",  "#38bdf8", "#082f49", ["ticket"], 3.2, 4, "grid",  "Chipta Ovi", "Охота за Билетом", "Ticket Hunt"),
+  G("trophyroom",    "pick",  "#fbbf24", "#3f2d00", ["trophy"], 4.6, 5, "stars", "Kubok Xonasi", "Зал Трофеев", "Trophy Room"),
+  G("moneybags",     "pick",  "#10b981", "#022c22", ["money"], 3.4, 4, "bubbles","Pul Qoplari", "Мешки Денег", "Money Bags"),
+
+  /* ─── Yangi barabanlar ─── */
+  G("emirslots",     "reel",  "#f7c948", "#6b3f0c", ["crown", "coin", "gem", "star", "seven"], 10, 3, "rays",   "Amir Slotlari", "Слоты Эмира", "Emir Slots"),
+  G("silkroad",      "reel",  "#f472b6", "#4a044e", ["gem", "coin1", "chest", "star", "crown"], 11, 3, "smoke", "Ipak Yo'li", "Шёлковый Путь", "Silk Road"),
+  G("neonvegas",     "reel",  "#22d3ee", "#111827", ["seven", "bell", "star", "coin", "gem"], 12, 3, "stars",  "Neon Vegas", "Неон Вегас", "Neon Vegas"),
+  G("melonparty",    "reel",  "#4ade80", "#14532d", ["melon", "grape", "lemon", "orange", "cherry"], 8, 3, "bubbles", "Qovun Bazmi", "Дынная Вечеринка", "Melon Party"),
+  G("skytreasure",   "reel",  "#60a5fa", "#0b1a2b", ["plane", "coin", "gem", "star", "crown"], 9, 3, "grid",   "Osmon Xazinasi", "Небесное Сокровище", "Sky Treasure"),
+  G("bellfever",     "reel",  "#fb7185", "#4c0519", ["bell", "seven", "coin", "cherry", "star"], 10, 3, "rays", "Qo'ng'iroq Isitmasi", "Колокольная Лихорадка", "Bell Fever"),
+
+  /* ─── Yangi g'ildiraklar ─── */
+  G("sultanwheel",   "wheel", "#fbbf24", "#7c2d12", ["wheel"], 7.5, 9,  "rays",  "Sulton G'ildiragi", "Колесо Султана", "Sultan Wheel"),
+  G("emeraldwheel",  "wheel", "#34d399", "#064e3b", ["wheel"], 9.5, 11, "bubbles","Zumrad G'ildirak", "Изумрудное Колесо", "Emerald Wheel"),
+
+  /* ─── Yangi poygalar ─── */
+  G("camelrace",     "race",  "#f59e0b", "#451a03", ["target"], 5.6, 6, "smoke", "Tuya Poygasi", "Гонка Верблюдов", "Camel Race"),
+  G("dronerace",     "race",  "#38bdf8", "#0f172a", ["rocket"], 6.8, 8, "grid",  "Dron Poygasi", "Гонка Дронов", "Drone Race"),
+
+  /* ─── Yangi minoralar ─── */
+  G("sandtower",     "climb", "#f59e0b", "#78350f", ["coin", "bomb"], 2.3, 7, "smoke", "Qum Minorasi", "Песчаная Башня", "Sand Tower"),
+  G("skyladder",     "climb", "#a78bfa", "#1e1b4b", ["gem", "skull"], 2.4, 7, "stars", "Osmon Narvoni", "Небесная Лестница", "Sky Ladder"),
 ];
 
 export const NEW_GAME_MAP: Record<string, GameCfg> = Object.fromEntries(

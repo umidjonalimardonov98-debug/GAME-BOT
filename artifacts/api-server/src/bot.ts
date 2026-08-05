@@ -480,7 +480,7 @@ const userMenuMsgId = new Map<number, number>();
 function mainMenuKeyboard(isAdmin: boolean): any[][] {
   const kb: any[][] = [
     [{ text: "🎰  O'YINNI BOSHLASH  🎰", web_app: { url: APP_URL } }],
-    [{ text: "💰 Balansim", callback_data: "balance" }, { text: "📋 Qoidalar", callback_data: "howto" }],
+    [{ text: "💰 Balansim", callback_data: "balance" }],
     [{ text: "💳 Hisob To'ldirish", callback_data: "deposit_menu" }, { text: "💸 Pul Yechish", callback_data: "withdraw_menu" }],
     [{ text: "🤝 Referal", callback_data: "referral_menu" }, { text: "🆘 Yordam", callback_data: "help_menu" }],
     [{ text: "💬  ADMIN BILAN JONLI SUHBAT  💬", callback_data: "live_chat" }],

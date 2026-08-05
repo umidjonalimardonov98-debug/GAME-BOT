@@ -30,7 +30,7 @@ export default function RouletteWheel({ size, spin, onSettled, onTick }: Props) 
     rot: 0, rotV: 0,
     ballA: 0, ballV: 0, ballR: 1, targetR: 1,
     phase: "idle" as "idle" | "spin" | "drop" | "settle" | "done",
-    num: 0, t: 0, bounce: 0, flash: 0, lastTick: 0,
+    num: 0, t: 0, bounce: 0, flash: 0, lastTick: 0, settleT: 0,
   });
 
   useEffect(() => {
@@ -49,6 +49,7 @@ export default function RouletteWheel({ size, spin, onSettled, onTick }: Props) 
     s.ballR = 0.93;
     s.targetR = 0.93;
     s.t = 0;
+    s.settleT = 0;
     s.flash = 0;
     partRef.current = [];
   }, [spin]);
@@ -66,7 +67,8 @@ export default function RouletteWheel({ size, spin, onSettled, onTick }: Props) 
     } else {
       s.t += dt;
       s.rot += s.rotV * dt;
-      s.rotV = Math.max(0.35, s.rotV - 0.62 * dt);          // g'ildirak sekinlashadi
+      if (s.phase === "settle" || s.phase === "done") s.rotV = Math.max(0, s.rotV - 1.2 * dt);
+      else s.rotV = Math.max(0.35, s.rotV - 0.62 * dt);      // g'ildirak sekinlashadi
 
       if (s.phase === "spin") {
         s.ballA += s.ballV * dt;
@@ -91,11 +93,16 @@ export default function RouletteWheel({ size, spin, onSettled, onTick }: Props) 
         const idx = WHEEL.indexOf(s.num);
         const pocketA = s.rot + (idx + 0.5) * SEG;
         let diff = ((pocketA - s.ballA + Math.PI) % (Math.PI * 2) + Math.PI * 2) % (Math.PI * 2) - Math.PI;
-        s.ballA += diff * clamp(dt * 3.6, 0, 1) + s.rotV * dt * 0.35;
+        s.settleT += dt;
+        // shar uyaga tez va ishonchli o'tiradi (g'ildirak bilan birga aylanadi)
+        s.ballA += diff * clamp(dt * 6.5, 0, 1) + s.rotV * dt;
         s.targetR = 0.615;
         s.ballR += (s.targetR - s.ballR) * clamp(dt * 3, 0, 1);
         s.bounce = Math.max(0, s.bounce - dt * 1.6);
-        if (Math.abs(diff) < 0.03 && s.rotV <= 0.42) {
+        // g'ildirakni ham to'liq to'xtatamiz
+        s.rotV = Math.max(0, s.rotV - 0.85 * dt);
+        // aniq o'tirdi YOKI 2.6s ichida majburiy o'tiradi (cheksiz aylanish bo'lmasin)
+        if ((Math.abs(diff) < 0.05 && s.rotV < 0.25) || s.settleT > 2.6) {
           s.ballA = pocketA;
           s.phase = "done";
           s.flash = 1;

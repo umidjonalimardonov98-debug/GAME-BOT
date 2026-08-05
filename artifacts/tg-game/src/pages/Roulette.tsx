@@ -2,7 +2,7 @@ import { useState, useCallback, useEffect, useRef } from "react";
 import { usePlayer } from "@/lib/player-context";
 import { useTheme, pageBg, GAME_BG } from "@/lib/theme-context";
 import { placeBet } from "@/lib/api";
-import { riggedLose, randomWhere } from "@/lib/odds";
+import { rollOutcome, randomWhere } from "@/lib/odds";
 import GameHeader from "@/components/GameHeader";
 import TableFrame from "@/components/casino/TableFrame";
 import RouletteWheel from "@/components/casino/RouletteWheel";
@@ -62,6 +62,7 @@ export default function Roulette() {
   const [history, setHistory] = useState<number[]>([]);
   const [spinCmd, setSpinCmd] = useState<{ id: number; num: number } | null>(null);
   const spinIdRef = useRef(0);
+  const outcomeRef = useRef<"win" | "refund" | "lose">("lose");
   const tickRef = useRef(0);
 
   const bet = Math.max(Number(betInput) || 0, 0);
@@ -85,22 +86,32 @@ export default function Roulette() {
     sfx.spin();
     // Uy foydasi: yutqaziladigan/yutuqli son oldindan tanlanadi, keyin shar
     // real fizika bilan aynan shu uyaga tushadi.
-    const mustLose = riggedLose();
-    const num = randomWhere(WHEEL, (n) => (mustLose ? !BETS[pick].test(n) : BETS[pick].test(n)));
+    const outcome = rollOutcome();
+    outcomeRef.current = outcome;
+    const num = randomWhere(WHEEL, (n) => (outcome === "win" ? BETS[pick].test(n) : !BETS[pick].test(n)));
     setSpinCmd({ id: ++spinIdRef.current, num });
   }, [pick, player, spinning, bet]);
 
   const onSettled = useCallback(async (num: number) => {
     if (!pick || !player) return;
     const won = BETS[pick].test(num);
-    const win = won ? Math.floor(bet * BETS[pick].mult) : 0;
+    // x1 — pul qaytarish rejimi (yutqazgan raundlarning bir qismi)
+    const refund = !won && outcomeRef.current === "refund";
+    const win = won ? Math.floor(bet * BETS[pick].mult) : refund ? bet : 0;
     setResult(num);
     setPrize(win);
     setHistory((h) => [num, ...h].slice(0, 12));
     setSpinning(false);
-    await placeBet(player.telegramId, { amount: bet, game: "roulette", won, winAmount: win }).catch(() => {});
+    await placeBet(player.telegramId, { amount: bet, game: "roulette", won: win > 0, winAmount: win }).catch(() => {});
     await refresh();
   }, [pick, player, bet, refresh]);
+
+  // Xavfsizlik: g'ildirak biror sababdan to'xtamasa — natija majburiy yopiladi
+  useEffect(() => {
+    if (!spinning || !spinCmd) return;
+    const t = window.setTimeout(() => { if (spinning) onSettled(spinCmd.num); }, 15000);
+    return () => clearTimeout(t);
+  }, [spinning, spinCmd, onSettled]);
 
   const onTick = useCallback(() => {
     const now = performance.now();
@@ -136,7 +147,11 @@ export default function Roulette() {
 
           {result !== null && !spinning && (
             <p className="font-black text-xl"style={{ color: prize > 0 ?"#39c46f":"#f87171" }}>
-              {prize > 0 ? ` +${prize.toLocaleString()} UZS` : u("youLose")}
+              {prize > 0
+                ? prize === bet
+                  ? `Pul qaytarildi: ${prize.toLocaleString()} UZS`
+                  : ` +${prize.toLocaleString()} UZS`
+                : u("youLose")}
             </p>
           )}
 
