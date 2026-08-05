@@ -349,29 +349,68 @@ export default function Home() {
         </div>
       </div>
 
-      {/* ─── PROMO INPUT ─── */}
+      {/* ─── PROMO INPUT (to'liq ekran modal) ─── */}
       {tab === "promo" && showPromo && (
-        <div className="mx-4 mb-4 rounded-2xl p-4"
-          style={{ background: "rgba(16,185,129,0.08)", border: "1px solid rgba(16,185,129,0.25)" }}>
-          <p className="text-xs font-bold mb-2"style={{ color:"#34d399" }}>{t.enterPromo}</p>
-          <div className="flex gap-2">
-            <input value={promoCode} onChange={e => setPromoCode(e.target.value.toUpperCase())}
-              placeholder="PROMO123" maxLength={20}
-              className="flex-1 min-w-0 rounded-xl px-3 py-2.5 font-black text-base outline-none uppercase"
+        <div
+          className="fixed inset-0 z-[100] flex items-start justify-center overflow-y-auto p-4"
+          style={{
+            background: "rgba(4,10,20,0.82)",
+            backdropFilter: "blur(10px)",
+            paddingTop: "calc(env(safe-area-inset-top,0px) + 18vh)",
+            paddingBottom: "calc(env(safe-area-inset-bottom,0px) + 24px)",
+          }}
+          onClick={() => { setShowPromo(false); setTab("games"); setPromoMsg(""); }}
+        >
+          <div
+            onClick={(e) => e.stopPropagation()}
+            className="w-full max-w-sm rounded-3xl p-5"
+            style={{
+              background: isDark ? "#0d1c2e" : "#ffffff",
+              border: "1px solid rgba(16,185,129,0.35)",
+              boxShadow: "0 24px 60px rgba(0,0,0,0.55)",
+            }}
+          >
+            <div className="flex items-center justify-between mb-3">
+              <p className="text-sm font-black" style={{ color: "#34d399" }}>{t.enterPromo}</p>
+              <button
+                onClick={() => { setShowPromo(false); setTab("games"); setPromoMsg(""); }}
+                className="w-8 h-8 rounded-full font-black active:scale-95"
+                style={{ background: "rgba(255,255,255,0.10)", color: TEXT_SUB }}
+              >
+                ✕
+              </button>
+            </div>
+            <input
+              autoFocus
+              value={promoCode}
+              onChange={(e) => setPromoCode(e.target.value.toUpperCase())}
+              onKeyDown={(e) => { if (e.key === "Enter") handlePromo(); }}
+              placeholder="PROMO123"
+              maxLength={20}
+              className="w-full rounded-2xl px-4 py-3.5 font-black text-lg outline-none uppercase text-center tracking-widest"
               inputMode="text" autoCapitalize="characters" autoCorrect="off" spellCheck={false}
-              style={{ background: "rgba(255,255,255,0.08)", border: "1px solid rgba(255,255,255,0.15)", color: TEXT }} />
-            <button onClick={handlePromo}
-              className="shrink-0 px-4 py-2.5 rounded-xl font-black text-sm active:scale-95"
-              style={{ background: "linear-gradient(180deg,#39c46f,#25a55a)", color: "white" }}>
+              style={{
+                background: isDark ? "rgba(255,255,255,0.08)" : "rgba(0,0,0,0.05)",
+                border: "1px solid rgba(255,255,255,0.18)",
+                color: TEXT,
+              }}
+            />
+            <button
+              onClick={handlePromo}
+              className="w-full mt-3 py-3.5 rounded-2xl font-black text-base active:scale-95"
+              style={{ background: "linear-gradient(180deg,#39c46f,#25a55a)", color: "white" }}
+            >
               {u("apply")}
             </button>
+            {promoMsg && (
+              <p className="text-sm mt-3 font-bold text-center" style={{ color: promoMsg.startsWith("") ? "#39c46f" : "#f87171" }}>{promoMsg}</p>
+            )}
           </div>
-          {promoMsg && <p className="text-xs mt-2 font-bold" style={{ color: promoMsg.startsWith("") ? "#39c46f":"#f87171" }}>{promoMsg}</p>}
         </div>
       )}
 
       {/* ─── GAME GRID (5 columns, 1win uslubi) ─── */}
-      {tab === "games" && (
+      {(tab === "games" || showPromo) && (
         <div className="px-4 pb-24">
           <div className="flex items-center justify-between mb-3">
             <p className="text-xs font-black tracking-widest uppercase" style={{ color: TEXT_SUB }}>{t.games}</p>
