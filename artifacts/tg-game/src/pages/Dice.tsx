@@ -77,7 +77,7 @@ export default function Dice() {
       setSaving(true);
       await placeBet(player.telegramId, { amount: activeBet, game: "dice", won: win, winAmount: winPrize }).catch(() =>{});
       await refresh(); setSaving(false);
-    }, 1500);
+    }, 3000);
   }, [betType, activeBet, player, refresh]);
 
 

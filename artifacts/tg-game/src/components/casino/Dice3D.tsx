@@ -39,9 +39,11 @@ interface Props {
   size?: number;
   /** ikkinchi zar boshqacha aylansin */
   seed?: number;
+  /** aylanish davomiyligi (ms) */
+  duration?: number;
 }
 
-export default function Dice3D({ value, rolling, size = 88, seed = 0 }: Props) {
+export default function Dice3D({ value, rolling, size = 88, seed = 0, duration = 3000 }: Props) {
   const clamp = (v: number) => Math.max(1, Math.min(6, Math.round(v) || 1));
   const [rot, setRot] = useState<[number, number]>(() => SHOW[clamp(value)]);
   const [spinning, setSpinning] = useState(false);
@@ -57,21 +59,22 @@ export default function Dice3D({ value, rolling, size = 88, seed = 0 }: Props) {
     if (timer.current) clearTimeout(timer.current);
 
     if (rolling) {
-      // BITTA uzluksiz aylanish: zar darrov yakuniy yuzga qarab aylanadi.
-      // (Ilgari to'xtash paytida yana bir marta aylanardi — endi yo'q.)
+      // MUHIM: burchak har safar TO'PLANADI. Aks holda yangi qiymat eskisi bilan
+      // bir xil bo'lsa transform o'zgarmay qolib, zar umuman aylanmasdi
+      // (shu sabab "bitta zar aylanib, ikkinchisi qotib turardi").
       setSpinning(true);
-      const turnsX = 3 + (seed % 2);
-      const turnsY = 4;
-      spins.current += turnsX;
-      setRot([tx + 360 * turnsX * dir, ty + 360 * turnsY]);
-      timer.current = setTimeout(() => setSpinning(false), 1400);
+      const turnsX = 5 + (seed % 2);
+      const turnsY = 6 + (seed % 2);
+      spins.current += 1;
+      const base = 360 * spins.current * (5 + seed);
+      setRot([tx + (base + 360 * turnsX) * dir, ty + base + 360 * turnsY]);
+      timer.current = setTimeout(() => setSpinning(false), duration);
     } else {
-      // to'xtaganda hech narsa qayta aylanmaydi — yuz allaqachon to'g'ri turibdi
       setSpinning(false);
     }
 
     return () => { if (timer.current) clearTimeout(timer.current); };
-  }, [value, rolling, seed]);
+  }, [value, rolling, seed, duration]);
 
 
   const s = size;
@@ -79,6 +82,7 @@ export default function Dice3D({ value, rolling, size = 88, seed = 0 }: Props) {
     <div
       className={rolling ? "dice-scene dice-bounce" : "dice-scene"}
       style={{
+        animationDuration: rolling ? `${duration}ms` : undefined,
         width: s,
         height: s,
         perspective: s * 4.5,

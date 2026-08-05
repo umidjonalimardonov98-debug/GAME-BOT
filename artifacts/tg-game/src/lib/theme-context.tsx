@@ -126,6 +126,13 @@ export const GAME_BG = {
   caseopen: "/bg/luck.jpg",
   coinflip: "/bg/luck.jpg",
   rps: "/bg/luck.jpg",
+  // yangi o'yinlar
+  thimbles: "/bg/luck.jpg",
+  luckycard: "/bg/cards.jpg",
+  hands: "/bg/luck.jpg",
+  fruitblast: "/bg/slots.jpg",
+  derby: "/bg/crash.jpg",
+  moneywheel: "/bg/spin.jpg",
 } as const;
 
 

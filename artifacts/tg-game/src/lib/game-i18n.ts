@@ -61,4 +61,10 @@ export const GAME_NAMES: Record<string, L3> = {
   scratch:    { uz: "Chizib Ochish", ru: "Скретч-карта", en: "Scratch Card" },
   dragontiger:{ uz: "Ajdar-Yo'lbars", ru: "Дракон-Тигр", en: "Dragon Tiger" },
   rps:        { uz: "Tosh-Qaychi", ru: "Камень-Ножницы", en: "Rock-Paper-Scissors" },
+  thimbles:   { uz: "Stakanchalar", ru: "Напёрстки", en: "Thimbles" },
+  luckycard:  { uz: "Omadli Karta", ru: "Счастливая карта", en: "Lucky Card" },
+  hands:      { uz: "Qaysi Qo'lda", ru: "Угадай руку", en: "Guess Which Hand" },
+  fruitblast: { uz: "Mevalar", ru: "Фрукты", en: "Fruit Blast" },
+  derby:      { uz: "Ot Poygasi", ru: "Скачки", en: "Derby Racing" },
+  moneywheel: { uz: "Pul G'ildiragi", ru: "Колесо денег", en: "Money Wheel" },
 };

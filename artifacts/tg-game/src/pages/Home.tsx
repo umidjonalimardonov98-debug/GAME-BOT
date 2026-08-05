@@ -48,6 +48,12 @@ const GAMES = [
   { key: "scratch",     path: "/scratch",     img: "/games/scratch.jpg",     tag: "x10",   tagColor: "#fda4af", bg: "linear-gradient(145deg,#500724,#9d174d)", glow: "#9d174d55" },
   { key: "dragontiger", path: "/dragontiger", img: "/games/dragontiger.jpg", tag: "x9",    tagColor: "#fb923c", bg: "linear-gradient(145deg,#450a0a,#b91c1c)", glow: "#b91c1c55" },
   { key: "rps",         path: "/rps",         img: "/games/rps.jpg",         tag: "x1.9",  tagColor: "#93c5fd", bg: "linear-gradient(145deg,#1e3a8a,#2563eb)", glow: "#2563eb55" },
+  { key: "thimbles",    path: "/thimbles",    img: "/games/thimbles.jpg",    tag: "NEW",   tagColor: "#39c46f", bg: "linear-gradient(145deg,#7f1d1d,#dc2626)", glow: "#dc262655" },
+  { key: "luckycard",   path: "/luckycard",   img: "/games/luckycard.jpg",   tag: "x3.5",  tagColor: "#fcd34d", bg: "linear-gradient(145deg,#0b1f3d,#123a6b)", glow: "#123a6b55" },
+  { key: "hands",       path: "/hands",       img: "/games/hands.jpg",       tag: "NEW",   tagColor: "#39c46f", bg: "linear-gradient(145deg,#713f12,#ca8a04)", glow: "#ca8a0455" },
+  { key: "fruitblast",  path: "/fruitblast",  img: "/games/fruitblast.jpg",  tag: "x2.9",  tagColor: "#f472b6", bg: "linear-gradient(145deg,#500724,#be123c)", glow: "#be123c55" },
+  { key: "derby",       path: "/derby",       img: "/games/derby.jpg",       tag: "x3.6",  tagColor: "#34d399", bg: "linear-gradient(145deg,#064e3b,#059669)", glow: "#05966955" },
+  { key: "moneywheel",  path: "/moneywheel",  img: "/games/moneywheel.jpg",  tag: "x40",   tagColor: "#fbbf24", bg: "linear-gradient(145deg,#0d4fb0,#1668e3)", glow: "#1668e355" },
 ];
 
 export default function Home() {

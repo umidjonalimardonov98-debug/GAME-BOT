@@ -32,6 +32,12 @@ import CaseOpen from "@/pages/CaseOpen";
 import Scratch from "@/pages/Scratch";
 import DragonTiger from "@/pages/DragonTiger";
 import RPS from "@/pages/RPS";
+import Thimbles from "@/pages/Thimbles";
+import LuckyCard from "@/pages/LuckyCard";
+import GuessHand from "@/pages/GuessHand";
+import FruitBlast from "@/pages/FruitBlast";
+import Derby from "@/pages/Derby";
+import MoneyWheel from "@/pages/MoneyWheel";
 import NotFound from "@/pages/not-found";
 import RoundBreakdown from "@/components/casino/RoundBreakdown";
 import GlobalWinFx from "@/components/casino/GlobalWinFx";
@@ -72,6 +78,12 @@ function Router() {
       <Route path="/scratch" component={Scratch} />
       <Route path="/dragontiger" component={DragonTiger} />
       <Route path="/rps" component={RPS} />
+      <Route path="/thimbles" component={Thimbles} />
+      <Route path="/luckycard" component={LuckyCard} />
+      <Route path="/hands" component={GuessHand} />
+      <Route path="/fruitblast" component={FruitBlast} />
+      <Route path="/derby" component={Derby} />
+      <Route path="/moneywheel" component={MoneyWheel} />
       <Route component={NotFound} />
     </Switch>
   );
