@@ -93,7 +93,7 @@ export const NEW_GAMES: GameCfg[] = [
 
   /* ── KASKAD ── */
   G("crystalblast","match3", "#22d3ee", "#0e2a47", ["gem", "star", "coin", "crown", "seven"], 10, 5, "stars",   "Kristall Portlash", "Кристальный Взрыв", "Crystal Blast"),
-  G("fruitcascade","match3", "#e11d48", "#4c0519", ["cherry", "lemon", "grape", "melon", "orange"], 8, 5, "bubbles", "Meva Kaskadi", "Фруктовый Каскад", "Fruit Cascade"),
+  G("royalcascade","match3", "#e11d48", "#4c0519", ["gem", "crown", "coin", "seven", "star"], 8, 5, "bubbles", "Shohona Kaskad", "Королевский Каскад", "Royal Cascade"),
 
   /* ── BINGO ── */
   G("bingo75",     "bingo", "#38bdf8", "#082f49", ["chip"], 9,  5, "grid",    "Bingo 75", "Бинго 75", "Bingo 75"),
@@ -117,7 +117,7 @@ export const NEW_GAMES: GameCfg[] = [
 
   /* ── 5x3 BARABAN ── */
   G("goldenpharaoh","reel", "#f7c948", "#b45309", ["crown", "gem", "coin", "seven", "star"], 12, 5, "rays",  "Oltin Fir'avn", "Золотой Фараон", "Golden Pharaoh"),
-  G("sweetbonanza", "reel", "#db2777", "#4c1d95", ["cherry", "grape", "strawberry", "melon", "gem"], 14, 5, "bubbles", "Shirin Bonanza", "Сладкая Бонанза", "Sweet Bonanza"),
+  G("diamondbonanza", "reel", "#db2777", "#4c1d95", ["gem", "chest", "money", "coin1", "trophy"], 14, 5, "bubbles", "Olmos Bonanza", "Алмазная Бонанза", "Diamond Bonanza"),
 
   /* ── POYGA ── */
   G("camelrace",   "race", "#f59e0b", "#451a03", ["target"], 5.6, 6, "smoke", "Tuya Poygasi", "Гонка Верблюдов", "Camel Race"),
@@ -144,13 +144,13 @@ const COVERS: Record<string, string> = {
   plinkogold: "goldtower", plinkoneon: "neonvegas",
   keno40: "ticket", turbokeno: "doors",
   silvercard: "treasure", goldcard: "goldenapple",
-  crystalblast: "diamond", fruitcascade: "fruit",
+  crystalblast: "diamond", royalcascade: "treasure",
   bingo75: "domino", speedbingo: "checkers",
   lottodrum: "gift", megalotto: "moneybags",
   memorypairs: "book", secretpairs: "pirate",
   fishhunt: "sky", pearlhunt: "gemladder",
   vipwheel: "wheelgold", neonwheel: "wheelneon",
-  goldenpharaoh: "pharaoh", sweetbonanza: "candy",
+  goldenpharaoh: "pharaoh", diamondbonanza: "diamond",
   camelrace: "camelrace", goldtower: "goldtower", nardgold: "nardgold",
 };
 

@@ -1068,11 +1068,380 @@ function FishingGame({ cfg }: EProps) {
   );
 }
 
+/* ════════════════ 15. RAQAMLI G'ILDIRAK ════════════════ */
+function WheelGame({ cfg }: EProps) {
+  const g = useGame(cfg);
+  const N = Math.max(6, cfg.n || 8);
+  /** har bir sektorning ko'rinadigan koeffitsiyenti */
+  const segs = useMemo(() => {
+    const top = cfg.mult;
+    const base = [0, 1, 1.5, 2, 3, 5];
+    return Array.from({ length: N }, (_, i) =>
+      i === 0 ? top : i === N - 1 ? Number((top / 2).toFixed(1)) : base[i % base.length],
+    );
+  }, [N, cfg.mult]);
+  const [deg, setDeg] = useState(0);
+  const [pick, setPick] = useState<number | null>(null);
+
+  const step = 360 / N;
+
+  const spin = async () => {
+    if (!g.canPlay) return;
+    g.begin();
+    setPick(null);
+    const outcome = rollOutcome();
+    // yutuq bo'lsa — koeffitsiyenti 1 dan katta sektor, aks holda 0 li sektor
+    const winIdx = segs.findIndex((m) => m >= cfg.mult);
+    const oneIdx = segs.findIndex((m) => m === 1);
+    const zeroIdx = segs.findIndex((m) => m === 0);
+    const idx = outcome === "win" ? (winIdx < 0 ? 0 : winIdx)
+      : outcome === "refund" ? (oneIdx < 0 ? 1 : oneIdx)
+        : (zeroIdx < 0 ? N - 2 : zeroIdx);
+    const turns = 6 + rnd(3);
+    setDeg((d) => d + turns * 360 + ((360 - (idx * step + step / 2)) - (d % 360) + 360) % 360);
+    await sleep(4200);
+    setPick(idx);
+    const m = segs[idx];
+    g.finish(outcome === "win" ? m : outcome === "refund" ? 1 : 0);
+  };
+
+  const R = 46;
+  return (
+    <Shell cfg={cfg} won={g.won} amount={g.amount} refund={g.refund}
+      hint={pick !== null ? `Sektor: x${segs[pick]}` : `${N} sektor · eng yuqori x${cfg.mult}`}
+      footer={<><Bet g={g} /><PlayButton label="AYLANTIRISH" icon="wheel" onClick={spin} disabled={!g.canPlay || g.busy} /></>}>
+      <div className="relative w-full aspect-square max-w-[320px] mx-auto">
+        {/* ko'rsatkich */}
+        <div className="absolute left-1/2 -translate-x-1/2 z-10" style={{ top: -2 }}>
+          <div style={{ width: 0, height: 0, borderLeft: "10px solid transparent", borderRight: "10px solid transparent", borderTop: "18px solid #f7c948", filter: "drop-shadow(0 2px 4px rgba(0,0,0,.6))" }} />
+        </div>
+        <svg viewBox="0 0 100 100" className="w-full h-full"
+          style={{ transform: `rotate(${deg}deg)`, transition: "transform 4.1s cubic-bezier(.12,.72,.03,1)" }}>
+          <circle cx="50" cy="50" r="49" fill="#0b0e17" stroke="#f7c948" strokeWidth="1.5" />
+          {segs.map((m, i) => {
+            const a0 = (i * step - 90) * (Math.PI / 180);
+            const a1 = ((i + 1) * step - 90) * (Math.PI / 180);
+            const x0 = 50 + R * Math.cos(a0), y0 = 50 + R * Math.sin(a0);
+            const x1 = 50 + R * Math.cos(a1), y1 = 50 + R * Math.sin(a1);
+            const mid = (i * step + step / 2 - 90) * (Math.PI / 180);
+            const tx = 50 + R * 0.68 * Math.cos(mid), ty = 50 + R * 0.68 * Math.sin(mid);
+            const hot = m >= cfg.mult;
+            return (
+              <g key={i}>
+                <path d={`M50 50 L${x0} ${y0} A${R} ${R} 0 0 1 ${x1} ${y1} Z`}
+                  fill={m === 0 ? "#141a26" : hot ? cfg.c1 : i % 2 ? "#1e293b" : "#334155"}
+                  stroke="rgba(247,201,72,.45)" strokeWidth="0.4" />
+                <text x={tx} y={ty} textAnchor="middle" dominantBaseline="middle"
+                  fontSize="7" fontWeight="900"
+                  fill={m === 0 ? "#64748b" : hot ? "#1a1204" : "#f7c948"}
+                  transform={`rotate(${i * step + step / 2} ${tx} ${ty})`}>
+                  {m === 0 ? "0" : `x${m}`}
+                </text>
+              </g>
+            );
+          })}
+          <circle cx="50" cy="50" r="9" fill="url(#wg-hub)" stroke="#f7c948" strokeWidth="1" />
+          <defs>
+            <radialGradient id="wg-hub">
+              <stop offset="0%" stopColor="#fff3c4" />
+              <stop offset="100%" stopColor="#8a5a09" />
+            </radialGradient>
+          </defs>
+        </svg>
+      </div>
+    </Shell>
+  );
+}
+
+/* ════════════════ 16. 5x3 BARABAN (chiziqli slot) ════════════════ */
+function ReelGame({ cfg }: EProps) {
+  const g = useGame(cfg);
+  const COLS = 5, ROWS = 3;
+  const syms = cfg.syms.length ? cfg.syms : ["gem", "coin", "star", "crown", "seven"];
+  const [grid, setGrid] = useState<string[]>(() =>
+    Array.from({ length: COLS * ROWS }, () => syms[rnd(syms.length)]));
+  const [spinning, setSpinning] = useState<number[]>([]);
+  const [line, setLine] = useState<number[]>([]);
+
+  const spin = async () => {
+    if (!g.canPlay) return;
+    g.begin(); setLine([]);
+    const outcome = rollOutcome();
+    const target = [...grid];
+    const winSym = syms[rnd(syms.length)];
+    const row = 1; // markaziy chiziq
+    for (let c = 0; c < COLS; c++) {
+      for (let r = 0; r < ROWS; r++) target[r * COLS + c] = syms[rnd(syms.length)];
+    }
+    const hitCols = outcome === "win" ? COLS : outcome === "refund" ? 3 : 2;
+    for (let c = 0; c < hitCols; c++) target[row * COLS + c] = winSym;
+    if (hitCols < COLS) target[row * COLS + hitCols] = syms.filter((s) => s !== winSym)[0] ?? winSym;
+
+    for (let c = 0; c < COLS; c++) {
+      setSpinning((s) => [...s, c]);
+      // eslint-disable-next-line no-await-in-loop
+      await sleep(240);
+    }
+    for (let c = 0; c < COLS; c++) {
+      // eslint-disable-next-line no-await-in-loop
+      await sleep(320);
+      setGrid((prev) => {
+        const nx = [...prev];
+        for (let r = 0; r < ROWS; r++) nx[r * COLS + c] = target[r * COLS + c];
+        return nx;
+      });
+      setSpinning((s) => s.filter((x) => x !== c));
+    }
+    if (hitCols >= 3) setLine(Array.from({ length: hitCols }, (_, c) => row * COLS + c));
+    g.finish(outcome === "win" ? cfg.mult : outcome === "refund" ? 1 : 0);
+  };
+
+  return (
+    <Shell cfg={cfg} won={g.won} amount={g.amount} refund={g.refund}
+      hint="Markaziy chiziqda 3+ bir xil belgi — yutuq"
+      footer={<><Bet g={g} /><PlayButton label="AYLANTIRISH" icon="seven" onClick={spin} disabled={!g.canPlay || g.busy} /></>}>
+      <div className="grid grid-cols-5 gap-1.5">
+        {grid.map((s, i) => {
+          const col = i % COLS;
+          const isSpin = spinning.includes(col);
+          const isWin = line.includes(i);
+          return (
+            <div key={i}
+              className="aspect-square rounded-xl flex items-center justify-center overflow-hidden"
+              style={{
+                background: isWin ? "linear-gradient(180deg,#f7c948,#a16207)" : "linear-gradient(180deg,#111827,#0b0e17)",
+                border: `1px solid ${isWin ? "#fff3c4" : "rgba(247,201,72,.22)"}`,
+                boxShadow: isWin ? "0 0 16px rgba(247,201,72,.55)" : "inset 0 2px 6px rgba(0,0,0,.6)",
+              }}>
+              <div style={{
+                transition: "transform .18s linear",
+                transform: isSpin ? "translateY(-8px)" : "none",
+                filter: isSpin ? "blur(3px)" : "none",
+              }}>
+                <Sym n={s} s={30} glow={isWin} />
+              </div>
+            </div>
+          );
+        })}
+      </div>
+    </Shell>
+  );
+}
+
+/* ════════════════ 17. POYGA ════════════════ */
+function RaceGame({ cfg }: EProps) {
+  const g = useGame(cfg);
+  const N = Math.max(3, cfg.n || 5);
+  const [choice, setChoice] = useState(0);
+  const [pos, setPos] = useState<number[]>(() => new Array(N).fill(0));
+  const [winner, setWinner] = useState<number | null>(null);
+
+  const start = async () => {
+    if (!g.canPlay) return;
+    g.begin(); setWinner(null); setPos(new Array(N).fill(0));
+    const outcome = rollOutcome();
+    const win = outcome === "win" ? choice : (choice + 1 + rnd(N - 1)) % N;
+    const speed = Array.from({ length: N }, (_, i) => (i === win ? 1 : 0.72 + Math.random() * 0.2));
+    for (let t = 0; t < 26; t++) {
+      // eslint-disable-next-line no-await-in-loop
+      await sleep(110);
+      setPos((p) => p.map((v, i) => Math.min(100, v + speed[i] * (3 + Math.random() * 3))));
+    }
+    setPos((p) => p.map((v, i) => (i === win ? 100 : Math.min(94, v))));
+    setWinner(win);
+    g.finish(outcome === "win" ? cfg.mult : outcome === "refund" ? 1 : 0);
+  };
+
+  return (
+    <Shell cfg={cfg} won={g.won} amount={g.amount} refund={g.refund}
+      hint={winner === null ? `Chopqichni tanlang · x${cfg.mult}` : `G'olib: №${winner + 1}`}
+      footer={<><Bet g={g} /><PlayButton label="POYGA" icon="trophy" onClick={start} disabled={!g.canPlay || g.busy} /></>}>
+      <div className="flex flex-col gap-2">
+        {Array.from({ length: N }).map((_, i) => {
+          const mine = choice === i;
+          return (
+            <button key={i} onClick={() => !g.busy && setChoice(i)} disabled={g.busy}
+              className="relative h-10 rounded-xl overflow-hidden text-left"
+              style={{
+                background: mine ? "linear-gradient(90deg,rgba(247,201,72,.22),rgba(11,14,23,.9))" : "rgba(11,14,23,.85)",
+                border: `1px solid ${mine ? "#f7c948" : "rgba(247,201,72,.2)"}`,
+              }}>
+              <span className="absolute left-2 top-1/2 -translate-y-1/2 text-[11px] font-black" style={{ color: mine ? "#f7c948" : "#94a3b8" }}>
+                №{i + 1}
+              </span>
+              <span className="absolute inset-y-0 right-1 w-[2px]" style={{ background: winner === i ? "#f7c948" : "rgba(148,163,184,.35)" }} />
+              <span className="absolute top-1/2 -translate-y-1/2"
+                style={{ left: `calc(26px + ${pos[i] * 0.72}%)`, transition: "left .12s linear" }}>
+                <Sym n={cfg.syms[0] ?? "target"} s={26} glow={winner === i} />
+              </span>
+            </button>
+          );
+        })}
+      </div>
+    </Shell>
+  );
+}
+
+/* ════════════════ 18. MINORA (bosqichli) ════════════════ */
+function ClimbGame({ cfg }: EProps) {
+  const g = useGame(cfg);
+  const FLOORS = Math.max(4, cfg.n || 6);
+  const DOORS = 3;
+  const [floor, setFloor] = useState(0);
+  const [live, setLive] = useState(false);
+  const [bad, setBad] = useState<number | null>(null);
+  const mult = Number((1 + floor * (cfg.mult - 1)).toFixed(2));
+
+  const start = () => { if (!g.canPlay) return; g.begin(); setFloor(0); setBad(null); setLive(true); };
+
+  const tap = (d: number) => {
+    if (!live) return;
+    const safe = riggedWin() || floor < 1;
+    if (!safe) {
+      setBad(d); setLive(false); setFloor(0);
+      g.finish(0);
+      return;
+    }
+    const nf = floor + 1;
+    setFloor(nf);
+    if (nf >= FLOORS) { setLive(false); g.finish(Number((1 + nf * (cfg.mult - 1)).toFixed(2))); }
+  };
+  const cash = () => { if (!live || floor < 1) return; setLive(false); setFloor(0); g.finish(mult); };
+
+  return (
+    <Shell cfg={cfg} won={g.won} amount={g.amount} refund={g.refund}
+      hint={live ? `${floor + 1}/${FLOORS} qavat · x${mult}` : `${FLOORS} qavat · har qavatda 1 ta xavf`}
+      footer={
+        <>
+          <Bet g={g} />
+          {live
+            ? <PlayButton label={`OLISH ${fmt(Math.floor(g.bet * mult))}`} icon="coin" onClick={cash} color="linear-gradient(180deg,#f7c948,#a16207)" />
+            : <PlayButton label="BOSHLASH" icon="chest" onClick={start} disabled={!g.canPlay} />}
+        </>
+      }>
+      <div className="flex flex-col-reverse gap-1.5">
+        {Array.from({ length: FLOORS }).map((_, f) => {
+          const done = f < floor;
+          const active = live && f === floor;
+          const fm = Number((1 + (f + 1) * (cfg.mult - 1)).toFixed(2));
+          return (
+            <div key={f} className="flex items-center gap-1.5">
+              <span className="w-10 text-[10px] font-black text-right" style={{ color: active ? "#f7c948" : "#64748b" }}>x{fm}</span>
+              <div className="flex-1 grid grid-cols-3 gap-1.5">
+                {Array.from({ length: DOORS }).map((_, d) => (
+                  <button key={d} onClick={() => active && tap(d)} disabled={!active}
+                    className="h-9 rounded-lg flex items-center justify-center active:scale-95 transition"
+                    style={{
+                      background: bad === d && f === 0 && !live ? "linear-gradient(180deg,#ef4444,#7f1d1d)"
+                        : done ? "linear-gradient(180deg,#22c55e,#14532d)"
+                          : active ? "linear-gradient(180deg,#1f2937,#0b0e17)" : "rgba(15,23,42,.6)",
+                      border: `1px solid ${active ? "#f7c948" : "rgba(247,201,72,.16)"}`,
+                      opacity: active || done ? 1 : 0.45,
+                    }}>
+                    {done ? <Sym n={cfg.syms[0] ?? "coin"} s={20} /> : active ? <Sym n="question" s={18} /> : null}
+                  </button>
+                ))}
+              </div>
+            </div>
+          );
+        })}
+      </div>
+    </Shell>
+  );
+}
+
+/* ════════════════ 19. NARD DUELI (zarlar) ════════════════ */
+const BPIPS: Record<number, number[]> = {
+  1: [4], 2: [0, 8], 3: [0, 4, 8], 4: [0, 2, 6, 8], 5: [0, 2, 4, 6, 8], 6: [0, 2, 3, 5, 6, 8],
+};
+function BoardDie({ v, rolling }: { v: number; rolling?: boolean }) {
+  return (
+    <div className="grid grid-cols-3 gap-[2px] p-1.5 rounded-xl"
+      style={{
+        width: 52, height: 52,
+        background: "linear-gradient(160deg,#fffdf5,#d8cfb4)",
+        boxShadow: "inset 0 -3px 6px rgba(0,0,0,.25), 0 4px 12px rgba(0,0,0,.5)",
+        transform: rolling ? "rotate(12deg) scale(.94)" : "none",
+        transition: "transform .12s linear",
+      }}>
+      {Array.from({ length: 9 }).map((_, i) => (
+        <span key={i} className="rounded-full" style={{
+          width: 10, height: 10,
+          background: BPIPS[v]?.includes(i) ? "#12161f" : "transparent",
+        }} />
+      ))}
+    </div>
+  );
+}
+
+function BoardGame({ cfg }: EProps) {
+  const g = useGame(cfg);
+  const [me, setMe] = useState<[number, number]>([1, 1]);
+  const [op, setOp] = useState<[number, number]>([1, 1]);
+  const [rolling, setRolling] = useState(false);
+  const [score, setScore] = useState<[number, number]>([0, 0]);
+
+  const play = async () => {
+    if (!g.canPlay) return;
+    g.begin(); setRolling(true); setScore([0, 0]);
+    const outcome = rollOutcome();
+    let mine = 0, theirs = 0;
+    // 3 raunddan g'olibi natijaga mos bo'lishi uchun oldindan belgilanadi
+    const wins = outcome === "win" ? [true, false, true] : [false, true, false];
+    for (let round = 0; round < 3; round++) {
+      for (let t = 0; t < 8; t++) {
+        // eslint-disable-next-line no-await-in-loop
+        await sleep(70);
+        setMe([1 + rnd(6), 1 + rnd(6)]);
+        setOp([1 + rnd(6), 1 + rnd(6)]);
+      }
+      const winRound = wins[round];
+      const a = winRound ? 4 + rnd(3) : 1 + rnd(3);
+      const b = winRound ? 1 + rnd(3) : 4 + rnd(3);
+      const c = winRound ? 4 + rnd(3) : 2 + rnd(2);
+      const d = winRound ? 2 + rnd(2) : 4 + rnd(3);
+      setMe([a, c]); setOp([b, d]);
+      if (winRound) mine += 1; else theirs += 1;
+      setScore([mine, theirs]);
+      // eslint-disable-next-line no-await-in-loop
+      await sleep(520);
+    }
+    setRolling(false);
+    g.finish(outcome === "win" ? cfg.mult : outcome === "refund" ? 1 : 0);
+  };
+
+  const sum = (p: [number, number]) => p[0] + p[1];
+  return (
+    <Shell cfg={cfg} won={g.won} amount={g.amount} refund={g.refund}
+      hint={`3 raund · yig'indisi katta bo'lgan g'olib · x${cfg.mult}`}
+      footer={<><Bet g={g} /><PlayButton label="ZAR TASHLASH" icon="dice" onClick={play} disabled={!g.canPlay || g.busy} /></>}>
+      <div className="flex flex-col gap-3 items-center py-2">
+        <div className="w-full flex items-center justify-between px-2">
+          <span className="text-[11px] font-black" style={{ color: "#f7c948" }}>SIZ {score[0]}</span>
+          <span className="text-[11px] font-black" style={{ color: "#94a3b8" }}>{score[1]} RAQIB</span>
+        </div>
+        <div className="w-full flex items-center justify-center gap-3 py-2 rounded-2xl"
+          style={{ background: "linear-gradient(180deg,rgba(34,197,94,.12),rgba(11,14,23,.85))", border: "1px solid rgba(247,201,72,.22)" }}>
+          <BoardDie v={me[0]} rolling={rolling} /><BoardDie v={me[1]} rolling={rolling} />
+          <span className="text-lg font-black" style={{ color: "#f7c948" }}>{sum(me)}</span>
+        </div>
+        <span className="text-[10px] font-black tracking-widest" style={{ color: "#64748b" }}>VS</span>
+        <div className="w-full flex items-center justify-center gap-3 py-2 rounded-2xl"
+          style={{ background: "linear-gradient(180deg,rgba(239,68,68,.12),rgba(11,14,23,.85))", border: "1px solid rgba(148,163,184,.22)" }}>
+          <BoardDie v={op[0]} rolling={rolling} /><BoardDie v={op[1]} rolling={rolling} />
+          <span className="text-lg font-black" style={{ color: "#f87171" }}>{sum(op)}</span>
+        </div>
+      </div>
+    </Shell>
+  );
+}
+
 /* ════════════════ dispatcher ════════════════ */
 
 export const NEW_ENGINE_SET = new Set([
   "mines", "crash", "sicbo", "roulette", "hilo", "war", "plinko",
   "keno", "scratch", "match3", "bingo", "lotto", "memory", "fishing",
+  "wheel", "reel", "race", "climb", "board",
 ]);
 
 export default function NewEngineGame({ cfg }: EProps) {
@@ -1091,6 +1460,11 @@ export default function NewEngineGame({ cfg }: EProps) {
     case "lotto": return <LottoGame cfg={cfg} />;
     case "memory": return <MemoryGame cfg={cfg} />;
     case "fishing": return <FishingGame cfg={cfg} />;
+    case "wheel": return <WheelGame cfg={cfg} />;
+    case "reel": return <ReelGame cfg={cfg} />;
+    case "race": return <RaceGame cfg={cfg} />;
+    case "climb": return <ClimbGame cfg={cfg} />;
+    case "board": return <BoardGame cfg={cfg} />;
     default: return null;
   }
 }
