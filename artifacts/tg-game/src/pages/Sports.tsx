@@ -3,6 +3,7 @@ import { useLocation } from "wouter";
 import { usePlayer } from "@/lib/player-context";
 import { useTheme, GOLD, XGREEN } from "@/lib/theme-context";
 import GameHeader from "@/components/GameHeader";
+import MatchStats from "@/components/MatchStats";
 import Odometer from "@/components/casino/Odometer";
 import { sfx } from "@/lib/sound";
 import {
@@ -108,6 +109,7 @@ export default function Sports() {
 
   const [openFixture, setOpenFixture] = useState<string | null>(null);
   const [markets, setMarkets] = useState<{ market: string; selections: SportOdd[] }[]>([]);
+  const [statsFor, setStatsFor] = useState<string | null>(null);
   const [marketsLoading, setMarketsLoading] = useState(false);
 
   const [slip, setSlip] = useState<Pick[]>([]);
@@ -410,10 +412,33 @@ export default function Sports() {
                     </button>
                   </div>
 
-                  {/* barcha marketlar */}
+                  {/* barcha marketlar + statistika */}
                   {openFixture === fx.id && (
                     <div className="px-3 pb-3" style={{ borderTop: `1px solid ${BORDER}` }}>
-                      {marketsLoading ? (
+                      <div className="flex gap-1.5 pt-2.5">
+                        <button onClick={() => { sfx.click?.(); setStatsFor(null); }}
+                          className="flex-1 py-1.5 rounded-xl text-[10px] font-black active:scale-95"
+                          style={{
+                            background: statsFor !== fx.id ? XGREEN.grad : "rgba(255,255,255,0.05)",
+                            color: statsFor !== fx.id ? "#fff" : SUB,
+                            border: `1px solid ${statsFor !== fx.id ? "rgba(255,255,255,0.2)" : BORDER}`,
+                          }}>
+                          KOEFFITSIENTLAR
+                        </button>
+                        <button onClick={() => { sfx.click?.(); setStatsFor(fx.id); }}
+                          className="flex-1 py-1.5 rounded-xl text-[10px] font-black active:scale-95"
+                          style={{
+                            background: statsFor === fx.id ? XGREEN.grad : "rgba(255,255,255,0.05)",
+                            color: statsFor === fx.id ? "#fff" : SUB,
+                            border: `1px solid ${statsFor === fx.id ? "rgba(255,255,255,0.2)" : BORDER}`,
+                          }}>
+                          📊 STATISTIKA
+                        </button>
+                      </div>
+
+                      {statsFor === fx.id ? (
+                        <MatchStats fixtureId={fx.id} live={fx.isLive} />
+                      ) : marketsLoading ? (
                         <p className="text-[10px] py-3 text-center" style={{ color: SUB }}>Yuklanmoqda…</p>
                       ) : !markets.length ? (
                         <p className="text-[10px] py-3 text-center" style={{ color: SUB }}>Market topilmadi</p>
