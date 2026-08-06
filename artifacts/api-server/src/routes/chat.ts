@@ -5,18 +5,18 @@ import { isAdminSync } from "../lib/admins";
 
 /**
  * Ommaviy chat — barcha o'yinchilar bir-birini ko'radi.
- * Xabarlar bazada saqlanadi (server qayta ishga tushsa ham yo'qolmaydi)
- * va 1 soatdan keyin avtomatik o'chadi.
+ * Matn, rasm va ovozli xabar. Xabarlar bazada saqlanadi va 10 soatdan keyin o'chadi.
  */
 
-const TTL_MS = 60 * 60 * 1000; // 1 soat
+const TTL_MS = 10 * 60 * 60 * 1000; // 10 soat
+const MAX_MEDIA = 700_000; // ~700KB data URL
 
 /** oxirgi yozgan vaqt — spam himoyasi */
 const lastSend = new Map<string, number>();
 
 let lastCleanup = 0;
 async function cleanup() {
-  if (Date.now() - lastCleanup < 30_000) return;
+  if (Date.now() - lastCleanup < 60_000) return;
   lastCleanup = Date.now();
   try {
     await db.delete(chatMessagesTable).where(lt(chatMessagesTable.createdAt, new Date(Date.now() - TTL_MS)));
@@ -25,13 +25,22 @@ async function cleanup() {
   }
 }
 
-function shape(m: { id: number; telegramId: string; name: string; username: string | null; text: string; admin: boolean; createdAt: Date }, me: string) {
+type Row = {
+  id: number; telegramId: string; name: string; username: string | null;
+  text: string; admin: boolean; createdAt: Date;
+  kind?: string | null; media?: string | null; replyTo?: string | null;
+};
+
+function shape(m: Row, me: string) {
   return {
     id: m.id,
     userId: m.telegramId,
     name: m.name,
     username: m.username,
     text: m.text,
+    kind: m.kind || "text",
+    media: m.media || null,
+    replyTo: m.replyTo || null,
     admin: m.admin,
     at: new Date(m.createdAt).getTime(),
     mine: m.telegramId === me,
@@ -52,10 +61,10 @@ router.get("/chat/feed", async (req, res) => {
       .from(chatMessagesTable)
       .where(and(gt(chatMessagesTable.id, since), gte(chatMessagesTable.createdAt, fresh)))
       .orderBy(desc(chatMessagesTable.id))
-      .limit(80);
+      .limit(60);
     const list = rows.reverse().map((m) => shape(m as any, me));
     const [{ cnt } = { cnt: 0 }] = (await db
-      .select({ cnt: sql<number>`count(*)::int` })
+      .select({ cnt: sql<number>`count(distinct telegram_id)::int` })
       .from(chatMessagesTable)
       .where(gte(chatMessagesTable.createdAt, fresh))) as any[];
     res.json({
@@ -68,18 +77,24 @@ router.get("/chat/feed", async (req, res) => {
   }
 });
 
-/** Xabar yuborish */
+/** Xabar yuborish — matn, rasm yoki ovoz */
 router.post("/chat/send", async (req, res) => {
   try {
     await cleanup();
-    const { telegramId, name, username, text } = req.body ?? {};
+    const { telegramId, name, username, text, kind, media, replyTo } = req.body ?? {};
     const id = String(telegramId ?? "").trim();
-    const body = String(text ?? "").trim().slice(0, 300);
+    const type = ["text", "photo", "voice"].includes(String(kind)) ? String(kind) : "text";
+    const body = String(text ?? "").trim().slice(0, 500);
+    const data = media ? String(media) : null;
+
     if (!id) return res.status(400).json({ error: "telegramId kerak" });
-    if (!body) return res.status(400).json({ error: "Xabar bo'sh" });
+    if (type === "text" && !body) return res.status(400).json({ error: "Xabar bo'sh" });
+    if (type !== "text" && !data) return res.status(400).json({ error: "Fayl yo'q" });
+    if (data && data.length > MAX_MEDIA) return res.status(413).json({ error: "Fayl juda katta (maks ~500KB)" });
+    if (data && !/^data:(image|audio)\//.test(data)) return res.status(400).json({ error: "Noto'g'ri fayl" });
 
     const prev = lastSend.get(id) ?? 0;
-    if (Date.now() - prev < 1200) return res.status(429).json({ error: "Sekinroq yozing" });
+    if (Date.now() - prev < 900) return res.status(429).json({ error: "Sekinroq yozing" });
     lastSend.set(id, Date.now());
 
     const [row] = await db
@@ -89,6 +104,9 @@ router.post("/chat/send", async (req, res) => {
         name: String(name || "O'yinchi").slice(0, 32),
         username: username ? String(username).slice(0, 32) : null,
         text: body,
+        kind: type,
+        media: data,
+        replyTo: replyTo ? String(replyTo).slice(0, 120) : null,
         admin: isAdminSync(id),
       })
       .returning();

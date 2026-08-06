@@ -50,6 +50,8 @@ import RoundBreakdown from "@/components/casino/RoundBreakdown";
 import GlobalWinFx from "@/components/casino/GlobalWinFx";
 import LiveBg from "@/components/casino/LiveBg";
 import { usePlayer } from "@/lib/player-context";
+import PvpHub from "@/pages/PvpHub";
+import Duel from "@/pages/Duel";
 
 const queryClient = new QueryClient({
   defaultOptions: { queries: { retry: 1, staleTime: 30000 } },
@@ -58,6 +60,8 @@ const queryClient = new QueryClient({
 function Router() {
   return (
     <Switch>
+      <Route path="/live" component={PvpHub} />
+      <Route path="/duel/:key">{(p:any) => <Duel gameKey={p.key} />}</Route>
       <Route path="/" component={Home} />
       <Route path="/apple" component={AppleOfFortune} />
       <Route path="/dice" component={Dice} />

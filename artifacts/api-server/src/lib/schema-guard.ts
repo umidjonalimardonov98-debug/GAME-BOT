@@ -33,6 +33,11 @@ export async function ensureExtraSchema(
   `);
   await run(sql`CREATE INDEX IF NOT EXISTS chat_messages_created_at_idx ON chat_messages (created_at)`);
 
+  // Ommaviy chat: rasm/ovozli xabar va javob berish ustunlari
+  await run(sql`ALTER TABLE chat_messages ADD COLUMN IF NOT EXISTS kind text NOT NULL DEFAULT 'text'`);
+  await run(sql`ALTER TABLE chat_messages ADD COLUMN IF NOT EXISTS media text`);
+  await run(sql`ALTER TABLE chat_messages ADD COLUMN IF NOT EXISTS reply_to text`);
+
   // O'yin sozlamalari: yangi standart yutish foizi 30%
   await run(sql`ALTER TABLE game_settings ALTER COLUMN win_chance SET DEFAULT 30`);
 }
