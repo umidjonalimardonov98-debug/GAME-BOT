@@ -208,26 +208,3 @@ export async function getResults(fixture_id: string[]): Promise<{ data: any[] }>
   );
   return { data: batches.flatMap((b) => b.data ?? []) };
 }
-
-/** O'yinchilar statistikasi (Statistics API) — 5 tadan bo'lib */
-export async function getPlayerResults(fixture_id: string[]): Promise<{ data: any[] }> {
-  const ids = [...new Set(fixture_id.filter(Boolean))];
-  if (!ids.length) return { data: [] };
-  const batches = await Promise.all(
-    chunk(ids).map((part) =>
-      opticGet<{ data: any[] }>("/fixtures/player-results", { fixture_id: part }, 20_000).catch(() => ({
-        data: [] as any[],
-      })),
-    ),
-  );
-  return { data: batches.flatMap((b) => b.data ?? []) };
-}
-
-/** Ikki jamoa o'rtasidagi oxirgi uchrashuvlar */
-export function getHeadToHead(team1_id: string, team2_id: string) {
-  return opticGet<{ data: any[] }>(
-    "/fixtures/results/head-to-head",
-    { team1_id, team2_id },
-    5 * 60_000,
-  );
-}
