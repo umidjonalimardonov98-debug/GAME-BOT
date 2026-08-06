@@ -357,6 +357,24 @@ router.get("/players/:telegramId/referral", async (req, res): Promise<void> => {
     const count = p?.referralCount ?? 0;
     const username = await getBotUsername();
     const bonus = await getReferralBonusPublic();
+    const friendsRows = await db
+      .select({
+        username: playersTable.username,
+        firstName: playersTable.firstName,
+        lastName: playersTable.lastName,
+        photoUrl: playersTable.photoUrl,
+        createdAt: playersTable.createdAt,
+      })
+      .from(playersTable)
+      .where(eq(playersTable.referredBy, telegramId))
+      .orderBy(desc(playersTable.createdAt))
+      .limit(200);
+    const friends = friendsRows.map((f) => ({
+      username: f.username ?? null,
+      name: [f.firstName, f.lastName].filter(Boolean).join(" ").trim() || (f.username ? `@${f.username}` : "Foydalanuvchi"),
+      photoUrl: f.photoUrl ?? null,
+      joinedAt: f.createdAt ? new Date(f.createdAt).toISOString() : null,
+    }));
     if (count >= REFERRAL_GOAL) { notifyAdminsReferralGoal(telegramId).catch(() => {}); }
     res.json({
       count,
@@ -365,6 +383,7 @@ router.get("/players/:telegramId/referral", async (req, res): Promise<void> => {
       botUsername: username,
       link: username ? `https://t.me/${username}?start=ref_${telegramId}` : "",
       completed: count >= REFERRAL_GOAL,
+      friends,
     });
   } catch {
     res.status(500).json({ error: "referral info failed" });
