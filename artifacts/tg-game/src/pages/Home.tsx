@@ -10,7 +10,7 @@ import ThemeSwitcher from "@/components/ThemeSwitcher";
 import LangSwitcher from "@/components/LangSwitcher";
 import SoundToggle from "@/components/SoundToggle";
 import Odometer from "@/components/casino/Odometer";
-import { Wallet, Banknote, Gift, Ticket, Home as HomeIcon, History, MessageCircle, BookOpen, Trophy } from "lucide-react";
+import { Wallet, Banknote, Gift, Ticket, Home as HomeIcon, History, MessageCircle, BookOpen, Trophy, Swords } from "lucide-react";
 
 const BASE = "/api";
 
@@ -537,6 +537,20 @@ export default function Home() {
         }}>
         <Gift size={16} color="#1a1204" />
         <span className="text-xs font-black" style={{ color: "#1a1204" }}>REFERAL</span>
+      </button>
+
+      {/* LIVE PVP — qizil-oltin tugma */}
+      <button onClick={() => nav("/live")}
+        className="absolute left-1/2 z-40 flex items-center gap-1.5 px-4 py-2.5 rounded-2xl active:scale-95 transition-all pvp-pulse"
+        style={{
+          bottom: "calc(100% + 10px)",
+          transform: "translateX(-50%)",
+          background: "linear-gradient(145deg,#ff4d4d,#8b0f0f)",
+          border: "1px solid rgba(255,214,140,0.85)",
+          boxShadow: "0 10px 28px rgba(255,77,77,0.45)",
+        }}>
+        <Swords size={16} color="#fff6cf" />
+        <span className="text-xs font-black" style={{ color: "#fff6cf" }}>LIVE PVP</span>
       </button>
 
       {/* Ommaviy chat — oltin tugma */}
