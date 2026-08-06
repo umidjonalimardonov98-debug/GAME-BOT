@@ -58,7 +58,13 @@ export function openBotChat(username?: string) {
 
 function applyViewportHeight() {
   const wa = window.Telegram?.WebApp;
-  const h = wa?.viewportStableHeight || wa?.viewportHeight || window.innerHeight;
+  const cand = [
+    wa?.viewportStableHeight,
+    wa?.viewportHeight,
+    window.visualViewport?.height,
+    window.innerHeight,
+  ].filter((v): v is number => typeof v === "number" && v > 200);
+  const h = cand.length ? Math.min(...cand) : window.innerHeight;
   document.documentElement.style.setProperty("--app-vh", `${Math.round(h)}px`);
 }
 

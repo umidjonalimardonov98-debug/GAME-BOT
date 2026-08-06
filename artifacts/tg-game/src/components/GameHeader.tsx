@@ -61,13 +61,14 @@ export default function GameHeader({ title, icon, subtitle, hideTheme }: Props) 
       </div>
 
       {/* Balans */}
-      <div className="text-right shrink-0 mr-1">
+      <div className="text-right shrink-0 mr-1 max-w-[92px] overflow-hidden">
         <p className="text-[9px] font-bold tracking-wider" style={{ color: ts.textSub }}>
           {t.balanceLabel.toUpperCase()}
         </p>
         <Odometer
           value={player?.balance ?? 0}
-          className="font-black text-xs"
+          compact
+          className="font-black text-xs whitespace-nowrap"
           style={{ color: "#ffcf4a" }}
         />
       </div>

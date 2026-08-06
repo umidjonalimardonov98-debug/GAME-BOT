@@ -4,6 +4,15 @@ import { useEffect, useRef, useState } from "react";
  * 1XBET uslubidagi raqam sanagichi — balans/yutuq o'zgarganda
  * raqamlar tez aylanib yangi qiymatga chiqadi.
  */
+function fmt(n: number, compact: boolean) {
+  if (!compact) return n.toLocaleString();
+  const a = Math.abs(n);
+  if (a >= 1_000_000_000) return (n / 1_000_000_000).toFixed(2) + "B";
+  if (a >= 1_000_000) return (n / 1_000_000).toFixed(2) + "M";
+  if (a >= 100_000) return Math.round(n / 1000) + "K";
+  return n.toLocaleString();
+}
+
 export default function Odometer({
   value,
   duration = 700,
@@ -11,6 +20,7 @@ export default function Odometer({
   style,
   prefix = "",
   suffix = "",
+  compact = false,
 }: {
   value: number;
   duration?: number;
@@ -18,6 +28,8 @@ export default function Odometer({
   style?: React.CSSProperties;
   prefix?: string;
   suffix?: string;
+  /** katta sonlarni qisqartirib ko'rsatadi: 1 234 567 -> 1.23M */
+  compact?: boolean;
 }) {
   const [shown, setShown] = useState(value);
   const from = useRef(value);
@@ -47,7 +59,7 @@ export default function Odometer({
   return (
     <span className={className} style={{ fontVariantNumeric: "tabular-nums", ...style }}>
       {prefix}
-      <span className={up ? "odo-up" : undefined}>{shown.toLocaleString()}</span>
+      <span className={up ? "odo-up" : undefined}>{fmt(shown, compact)}</span>
       {suffix}
     </span>
   );

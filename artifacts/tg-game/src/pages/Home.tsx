@@ -129,35 +129,35 @@ export default function Home() {
     <div className="min-h-screen flex flex-col"style={{ background: pageBg(theme, GAME_BG.home), fontFamily:"'Inter', system-ui, sans-serif" }}>
 
       {/* ─── TOP HEADER ─── */}
-      <div className="flex items-center justify-between px-4 pt-4 pb-2">
+      <div className="flex items-center gap-2 px-3 pt-4 pb-2 w-full max-w-full overflow-hidden">
         {/* Avatar + name */}
-        <div className="flex items-center gap-2.5">
+        <div className="flex items-center gap-2 min-w-0 flex-1">
           <div className="w-10 h-10 rounded-full overflow-hidden flex items-center justify-center text-white font-black text-lg flex-shrink-0"
             style={{ background: "linear-gradient(135deg,#1668e3,#0d4fb0)", border: "2px solid rgba(47,143,255,0.5)" }}>
             {avatar ? <img src={avatar} className="w-full h-full object-cover" /> : initials}
           </div>
-          <div>
-            <p className="font-black text-sm leading-tight" style={{ color: TEXT }}>
+          <div className="min-w-0">
+            <p className="font-black text-sm leading-tight truncate" style={{ color: TEXT }}>
               {loading ? "...": player?.firstName ?? u("player")}
             </p>
-            <p className="text-xs"style={{ color: TEXT_SUB }}>@{player?.username ??"player"}</p>
+            <p className="text-xs truncate"style={{ color: TEXT_SUB }}>@{player?.username ??"player"}</p>
           </div>
         </div>
 
         {/* Mavzu (kichik suratcha) + til + balans */}
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-1.5 shrink-0">
           <ThemeSwitcher />
           <SoundToggle />
           <LangSwitcher />
 
           {/* Tanga balansi */}
-          <div className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-2xl"
+          <div className="flex items-center gap-1 px-2 py-1.5 rounded-2xl shrink-0"
             style={{ background: GOLD.soft, border: `1px solid ${GOLD.border}`, boxShadow: `0 6px 18px ${GOLD.glow}` }}>
             <img src="/symbols/coin.png" alt="" width={16} height={16} style={{ filter: "drop-shadow(0 0 6px rgba(255,207,74,.6))" }} />
             {loading ? (
               <span className="font-black text-sm" style={{ color: GOLD.light }}>...</span>
             ) : (
-              <Odometer value={player?.balance ?? 0} className="font-black text-sm" style={{ color: GOLD.light }} />
+              <Odometer value={player?.balance ?? 0} compact className="font-black text-xs whitespace-nowrap" style={{ color: GOLD.light }} />
             )}
           </div>
         </div>
@@ -411,7 +411,7 @@ export default function Home() {
 
       {/* ─── GAME GRID (5 columns, 1win uslubi) ─── */}
       {(tab === "games" || showPromo) && (
-        <div className="px-4 pb-24">
+        <div className="px-4 pb-20">
           <div className="flex items-center justify-between mb-3">
             <p className="text-xs font-black tracking-widest uppercase" style={{ color: TEXT_SUB }}>{t.games}</p>
             <button onClick={() => nav("/leaderboard")}
@@ -491,7 +491,7 @@ export default function Home() {
 
       {/* ─── BRAND FOOTER (pastdagi havola) ─── */}
       {tab === "games" && (
-        <div className="px-4 pb-24 -mt-20">
+        <div className="px-4 pb-20 -mt-20">
           <div className="rounded-3xl px-4 py-4 relative overflow-hidden pro-sheen"
             style={{
               background: isDark
@@ -524,8 +524,34 @@ export default function Home() {
         </div>
       )}
 
-      {/* ─── BOTTOM NAV ─── */}
-      <div className="fixed bottom-0 inset-x-0 z-50"
+      {/* ─── BOTTOM DOCK (doim ko'rinadi, qimirlamaydi) ─── */}
+      <div className="sticky bottom-0 z-50 mt-auto">
+      {/* Referal — oltin tugma */}
+      <button onClick={() => nav("/referral")}
+        className="absolute left-4 z-40 flex items-center gap-1.5 px-3.5 py-2.5 rounded-2xl active:scale-95 transition-all"
+        style={{
+          bottom: "calc(100% + 10px)",
+          background: "linear-gradient(145deg,#f7c948,#b45309)",
+          border: "1px solid rgba(255,246,207,0.7)",
+          boxShadow: "0 10px 28px rgba(247,201,72,0.45)",
+        }}>
+        <Gift size={16} color="#1a1204" />
+        <span className="text-xs font-black" style={{ color: "#1a1204" }}>REFERAL</span>
+      </button>
+
+      {/* Ommaviy chat — oltin tugma */}
+      <button onClick={() => nav("/chat")}
+        className="absolute right-4 z-40 flex items-center gap-1.5 px-3.5 py-2.5 rounded-2xl active:scale-95 transition-all"
+        style={{
+          bottom: "calc(100% + 10px)",
+          background: "linear-gradient(145deg,#f7c948,#b45309)",
+          border: "1px solid rgba(255,246,207,0.7)",
+          boxShadow: "0 10px 28px rgba(247,201,72,0.45)",
+        }}>
+        <MessageCircle size={16} color="#1a1204" />
+        <span className="text-xs font-black" style={{ color: "#1a1204" }}>CHAT</span>
+      </button>
+        <div className="inset-x-0"
         style={{
           background: isDark ? "rgba(10,23,38,0.97)" : "rgba(255,255,255,0.97)",
           borderTop: `1px solid ${isDark ? "rgba(255,255,255,0.08)":"rgba(22,104,227,0.15)"}`,
@@ -573,31 +599,7 @@ export default function Home() {
           </button>
         </div>
       </div>
-      {/* Referal — oltin tugma */}
-      <button onClick={() => nav("/referral")}
-        className="fixed left-4 z-40 flex items-center gap-1.5 px-3.5 py-2.5 rounded-2xl active:scale-95 transition-all"
-        style={{
-          bottom: 92,
-          background: "linear-gradient(145deg,#f7c948,#b45309)",
-          border: "1px solid rgba(255,246,207,0.7)",
-          boxShadow: "0 10px 28px rgba(247,201,72,0.45)",
-        }}>
-        <Gift size={16} color="#1a1204" />
-        <span className="text-xs font-black" style={{ color: "#1a1204" }}>REFERAL</span>
-      </button>
-
-      {/* Ommaviy chat — oltin tugma */}
-      <button onClick={() => nav("/chat")}
-        className="fixed right-4 z-40 flex items-center gap-1.5 px-3.5 py-2.5 rounded-2xl active:scale-95 transition-all"
-        style={{
-          bottom: 92,
-          background: "linear-gradient(145deg,#f7c948,#b45309)",
-          border: "1px solid rgba(255,246,207,0.7)",
-          boxShadow: "0 10px 28px rgba(247,201,72,0.45)",
-        }}>
-        <MessageCircle size={16} color="#1a1204" />
-        <span className="text-xs font-black" style={{ color: "#1a1204" }}>CHAT</span>
-      </button>
+      </div>
 
     </div>
   );
