@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useState } from "react";
 import { useLocation } from "wouter";
 import { usePlayer } from "@/lib/player-context";
-import { ArrowLeft, Copy, Check, Share2, Gift, ClipboardList, Lock, User } from "lucide-react";
+import { ArrowLeft, Copy, Check, Share2, Gift, ClipboardList, Lock } from "lucide-react";
 
 type RefInfo = {
   count: number;
@@ -10,6 +10,12 @@ type RefInfo = {
   bonus: number;
   botUsername: string;
   completed: boolean;
+};
+
+const GREEN = {
+  grad: "linear-gradient(180deg,#b9f6c8 0%,#39c46f 40%,#1e9e52 72%,#0d6b34 100%)",
+  glow: "rgba(57,196,111,0.45)",
+  main: "#4ade80",
 };
 
 const G = {
@@ -44,9 +50,15 @@ export default function Referral() {
   }, [player?.telegramId]);
 
   const count = info?.count ?? 0;
-  const target = info?.target ?? 5;
+  const step = info?.target ?? 5;
   const link = info?.link ?? "";
-  const pct = Math.min(100, (count / target) * 100);
+  // Bosqichlar: 1-5, 6-10, 11-15 ... to'lgani bilan avtomatik keyingisi ochiladi
+  const tier = Math.floor(count / step);
+  const stageStart = tier * step + 1;
+  const stageEnd = stageStart + step - 1;
+  const inStage = count - tier * step; // 0..step-1
+  const pct = Math.min(100, (inStage / step) * 100);
+  const completedTiers = tier;
 
   const coins = useMemo(
     () => Array.from({ length: 14 }, (_, i) => ({
@@ -133,7 +145,7 @@ export default function Referral() {
               TAKLIF QILING
             </h1>
             <p className="mt-2 font-bold" style={{ fontSize: 12.5, color: "rgba(255,255,255,.82)" }}>
-              {target} ta do'st taklif qiling va<br />
+              Har {step} ta do'st uchun<br />
               <span style={{ color: G.main }}>NOMALUM</span> summali promokod oling!
             </p>
           </div>
@@ -149,10 +161,15 @@ export default function Referral() {
             backdropFilter: "blur(6px)",
           }}>
             <div className="flex items-center justify-between gap-3">
-              <p className="font-bold" style={{ fontSize: 14, color: "rgba(255,255,255,.9)" }}>Taklif qilingan do'stlar</p>
+              <div className="min-w-0">
+                <p className="font-bold" style={{ fontSize: 14, color: "rgba(255,255,255,.9)" }}>Taklif qilingan do'stlar</p>
+                <p className="font-bold mt-0.5" style={{ fontSize: 11, color: GREEN.main }}>
+                  {stageStart}-{stageEnd} bosqich{completedTiers > 0 ? ` • ${completedTiers} ta promokod ochildi` : ""}
+                </p>
+              </div>
               <div className="px-3 py-1.5 rounded-xl font-black shrink-0" style={{
                 fontSize: 15, color: "#1a1204", background: G.grad, boxShadow: `0 6px 18px ${G.glow}`,
-              }}>{count} / {target}</div>
+              }}>{count} / {stageEnd}</div>
             </div>
 
             {/* steps */}
@@ -160,25 +177,26 @@ export default function Referral() {
               <div className="absolute left-[10%] right-[10%] rounded-full" style={{ top: 21, height: 3, background: "rgba(255,255,255,.14)" }} />
               <div className="absolute left-[10%] rounded-full ref-anim" style={{
                 top: 21, height: 3, width: `${(80 * pct) / 100}%`,
-                background: G.grad, boxShadow: `0 0 12px ${G.glow}`, transition: "width .6s cubic-bezier(.22,1,.36,1)",
+                background: GREEN.grad, boxShadow: `0 0 12px ${GREEN.glow}`, transition: "width .6s cubic-bezier(.22,1,.36,1)",
               }} />
               <div className="grid grid-cols-5 relative">
-                {Array.from({ length: target }, (_, i) => {
-                  const done = i < count;
+                {Array.from({ length: step }, (_, i) => {
+                  const num = stageStart + i;
+                  const done = num <= count;
                   return (
                     <div key={i} className="flex flex-col items-center gap-1.5">
                       <div className="rounded-full flex items-center justify-center ref-anim"
                         style={{
                           width: 44, height: 44,
-                          background: done ? G.grad : "rgba(255,255,255,.08)",
-                          border: `1px solid ${done ? "rgba(255,240,190,.8)" : "rgba(255,255,255,.14)"}`,
-                          boxShadow: done ? `0 8px 20px ${G.glow}` : "none",
-                          animation: done && i === count - 1 ? "refPulse 1.8s ease-out infinite" : undefined,
+                          background: done ? GREEN.grad : "rgba(255,255,255,.08)",
+                          border: `1px solid ${done ? "rgba(190,255,214,.85)" : "rgba(255,255,255,.14)"}`,
+                          boxShadow: done ? `0 8px 20px ${GREEN.glow}` : "none",
+                          animation: done && num === count ? "refPulse 1.8s ease-out infinite" : undefined,
                         }}>
-                        {done ? <User size={20} color="#1a1204" /> : <Lock size={17} color="rgba(255,255,255,.45)" />}
+                        {done ? <Check size={20} color="#04240f" /> : <Lock size={17} color="rgba(255,255,255,.45)" />}
                       </div>
-                      <span className="font-bold" style={{ fontSize: 10, color: done ? G.main : "rgba(255,255,255,.42)" }}>
-                        {i + 1} do'st
+                      <span className="font-bold" style={{ fontSize: 10, color: done ? GREEN.main : "rgba(255,255,255,.42)" }}>
+                        {num} do'st
                       </span>
                     </div>
                   );
@@ -194,9 +212,9 @@ export default function Referral() {
                 <Gift size={20} color="#1a1204" />
               </div>
               <p className="font-bold leading-snug" style={{ fontSize: 12, color: "rgba(255,255,255,.9)" }}>
-                {info?.completed
-                  ? <>✅ {target} ta do'st to'ldi! Admin sizga <span style={{ color: G.main }}>promokod</span> yuboradi.</>
-                  : <>{target} ta do'st taklif qiling va <span style={{ color: G.main }}>NOMALUM</span> summali promokod oling!</>}
+                {completedTiers > 0
+                  ? <>✅ {completedTiers * step} ta do'st to'ldi! Admin sizga <span style={{ color: GREEN.main }}>{completedTiers} ta promokod</span> yuboradi. Keyingi bosqich: {stageStart}-{stageEnd}.</>
+                  : <>{step} ta do'st taklif qiling va <span style={{ color: G.main }}>NOMALUM</span> summali promokod oling!</>}
               </p>
             </div>
 
@@ -249,7 +267,8 @@ export default function Referral() {
                 {[
                   "Do'stingiz botga sizning havolangiz orqali kirishi kerak.",
                   "Har bir haqiqiy do'st hisobga olinadi.",
-                  `${target} ta do'st taklif qilganingizdan so'ng, admin promokod yuboradi.`,
+                  `Har ${step} ta do'st uchun bitta promokod: 1-${step}, ${step + 1}-${step * 2}, ${step * 2 + 1}-${step * 3} va hokazo.`,
+                  "Bosqich to'lganda keyingisi avtomatik ochiladi, to'lgan do'stlar yashil bo'lib qoladi.",
                   "Promokod summasi nomalum bo'ladi.",
                 ].map((r, i) => (
                   <li key={i} className="flex gap-2" style={{ fontSize: 11.5, color: "rgba(255,255,255,.82)" }}>
