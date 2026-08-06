@@ -10,7 +10,15 @@
 
 const BASE = "https://api.opticodds.com/api/v3";
 
-export const OPTIC_ENABLED = () => Boolean(process.env["OPTICODDS_API_KEY"]);
+/**
+ * Litsenziya kaliti. Railway env (OPTICODDS_API_KEY / OPTIC_API_KEY) birinchi,
+ * bo'lmasa loyihaning o'z kaliti ishlatiladi — sport bo'limi hamma joyda ishlashi uchun.
+ */
+const FALLBACK_KEY = "68024782-ed09-4ddf-8a2f-4c424df09272";
+export const OPTIC_KEY = (): string =>
+  process.env["OPTICODDS_API_KEY"] || process.env["OPTIC_API_KEY"] || FALLBACK_KEY;
+
+export const OPTIC_ENABLED = () => Boolean(OPTIC_KEY());
 
 export const SPORTSBOOKS = (): string[] =>
   (process.env["OPTIC_SPORTSBOOKS"] || "bet365,Pinnacle,DraftKings")
@@ -58,7 +66,7 @@ export async function opticGet<T = any>(
   params: Record<string, string | number | boolean | string[] | undefined> = {},
   ttlMs = 15_000,
 ): Promise<T> {
-  const key = process.env["OPTICODDS_API_KEY"];
+  const key = OPTIC_KEY();
   if (!key) throw new OpticError("OPTICODDS_API_KEY sozlanmagan", 503);
 
   const qs = new URLSearchParams();

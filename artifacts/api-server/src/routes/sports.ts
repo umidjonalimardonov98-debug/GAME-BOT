@@ -56,7 +56,7 @@ function pickOdds(odds: OpticOdd[]) {
     if (typeof o.price !== "number" || o.price <= 1) continue;
     const k = `${o.market}|${o.name}`;
     const cur = best.get(k);
-    if (!cur || o.price < cur.price) best.set(k, o);
+    if (!cur || o.price > cur.price) best.set(k, o);
   }
   return [...best.values()].map((o) => ({
     market: o.market,

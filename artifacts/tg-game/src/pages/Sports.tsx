@@ -3,6 +3,7 @@ import { useLocation } from "wouter";
 import { usePlayer } from "@/lib/player-context";
 import { useTheme, GOLD, XGREEN } from "@/lib/theme-context";
 import GameHeader from "@/components/GameHeader";
+import Odometer from "@/components/casino/Odometer";
 import { sfx } from "@/lib/sound";
 import {
   getSportCatalog,
@@ -24,9 +25,14 @@ type Pick = {
   price: number;
 };
 
-const CARD = "rgba(255,255,255,0.045)";
-const BORDER = "rgba(255,255,255,0.10)";
-const SUB = "rgba(255,255,255,0.55)";
+const CARD = "linear-gradient(160deg,rgba(255,255,255,0.07),rgba(255,255,255,0.025))";
+const BORDER = "rgba(255,255,255,0.09)";
+const SUB = "rgba(255,255,255,0.56)";
+
+/** Sport logolari — emoji emas, rasm (bor bo'lsa) */
+const SPORT_IMG: Record<string, string> = {
+  soccer: "/symbols/ball-soccer.png",
+};
 
 const SPORT_ICONS: Record<string, string> = {
   soccer: "⚽", basketball: "🏀", football: "🏈", baseball: "⚾", hockey: "🏒",
@@ -34,12 +40,56 @@ const SPORT_ICONS: Record<string, string> = {
   cricket: "🏏", darts: "🎯", golf: "⛳", table_tennis: "🏓",
 };
 
+/** Futbolning top ligalari — birinchi bo'lib chiqadi */
+const TOP_LEAGUES = [
+  "england_-_premier_league",
+  "spain_-_la_liga",
+  "italy_-_serie_a",
+  "germany_-_bundesliga",
+  "france_-_ligue_1",
+  "uefa_-_champions_league",
+  "uefa_-_europa_league",
+  "uzbekistan_-_super_league",
+  "turkey_-_super_lig",
+  "netherlands_-_eredivisie",
+];
+
+const STAKES = [5000, 10000, 25000, 50000, 100000];
+
 const fmt = (n: number) => n.toLocaleString("ru-RU");
 
 function timeLabel(iso: string) {
   const d = new Date(iso);
   if (Number.isNaN(d.getTime())) return "";
   return d.toLocaleString("uz-UZ", { day: "2-digit", month: "2-digit", hour: "2-digit", minute: "2-digit" });
+}
+
+/** 1 / X / 2 tanlovlarini ajratib olamiz */
+function mainRow(fx: SportFixture): { key: string; label: string; odd: SportOdd | null }[] {
+  const ml = fx.odds.filter((o) => /moneyline|1x2|match winner/i.test(o.market));
+  const find = (pred: (o: SportOdd) => boolean) => ml.find(pred) ?? null;
+  return [
+    { key: "1", label: "1", odd: find((o) => o.name === fx.home.name) },
+    { key: "X", label: "X", odd: find((o) => /^draw$/i.test(o.name)) },
+    { key: "2", label: "2", odd: find((o) => o.name === fx.away.name) },
+  ];
+}
+
+function TeamLogo({ logo, name }: { logo: string | null; name: string }) {
+  const [bad, setBad] = useState(false);
+  if (!logo || bad) {
+    return (
+      <div className="w-7 h-7 rounded-full flex items-center justify-center shrink-0 font-black"
+        style={{ background: GOLD.soft, border: `1px solid ${GOLD.border}`, fontSize: 10, color: GOLD.light }}>
+        {name.slice(0, 2).toUpperCase()}
+      </div>
+    );
+  }
+  return (
+    <img src={logo} alt="" width={28} height={28} onError={() => setBad(true)}
+      className="w-7 h-7 object-contain shrink-0"
+      style={{ filter: "drop-shadow(0 2px 6px rgba(0,0,0,0.5))" }} />
+  );
 }
 
 export default function Sports() {
@@ -72,16 +122,23 @@ export default function Sports() {
   useEffect(() => {
     getSportCatalog()
       .then((c) => {
-        setSports(c.sports ?? []);
+        const list = c.sports ?? [];
+        // futbol birinchi
+        list.sort((a, b) => (a.id === "soccer" ? -1 : b.id === "soccer" ? 1 : 0));
+        setSports(list);
         setLeagues(c.leagues ?? []);
       })
       .catch((e) => setErr(e.message));
   }, []);
 
-  const sportLeagues = useMemo(
-    () => leagues.filter((l) => l.sport === sport).slice(0, 40),
-    [leagues, sport],
-  );
+  const sportLeagues = useMemo(() => {
+    const list = leagues.filter((l) => l.sport === sport);
+    const rank = (id: string) => {
+      const i = TOP_LEAGUES.indexOf(id);
+      return i === -1 ? 99 : i;
+    };
+    return list.sort((a, b) => rank(a.id) - rank(b.id)).slice(0, 40);
+  }, [leagues, sport]);
 
   // o'yinlar
   useEffect(() => {
@@ -89,15 +146,13 @@ export default function Sports() {
     let alive = true;
     setLoading(true);
     setErr(null);
-    getSportFixtures({ sport, league: league || undefined, live: tab === "live" })
-      .then((r) => { if (alive) setFixtures(r.fixtures ?? []); })
-      .catch((e) => { if (alive) { setErr(e.message); setFixtures([]); } })
-      .finally(() => { if (alive) setLoading(false); });
-    const t = setInterval(() => {
+    const load = () =>
       getSportFixtures({ sport, league: league || undefined, live: tab === "live" })
         .then((r) => { if (alive) setFixtures(r.fixtures ?? []); })
-        .catch(() => {});
-    }, tab === "live" ? 20000 : 60000);
+        .catch((e) => { if (alive) { setErr(e.message); setFixtures([]); } })
+        .finally(() => { if (alive) setLoading(false); });
+    load();
+    const t = setInterval(load, tab === "live" ? 20000 : 60000);
     return () => { alive = false; clearInterval(t); };
   }, [sport, league, tab]);
 
@@ -108,6 +163,7 @@ export default function Sports() {
   }, [tab, player?.telegramId]);
 
   const openMarkets = (id: string) => {
+    sfx.click?.();
     if (openFixture === id) { setOpenFixture(null); return; }
     setOpenFixture(id);
     setMarketsLoading(true);
@@ -163,15 +219,36 @@ export default function Sports() {
     }
   };
 
+  const goldBtn = (active: boolean) => ({
+    background: active ? GOLD.grad : CARD,
+    color: active ? "#1a1204" : SUB,
+    border: `1px solid ${active ? "rgba(255,246,207,0.65)" : BORDER}`,
+    boxShadow: active ? `0 8px 22px ${GOLD.glow}` : "none",
+  });
+
   return (
     <div className="min-h-screen flex flex-col" style={{ background: ts.bg }}>
-      <GameHeader title="SPORT" subtitle="Jonli koeffitsientlar" />
+      <GameHeader title="SPORT" subtitle="Jonli koeffitsientlar · OpticOdds" />
+
+      {/* ─── 2 BO'LIM: O'YINLAR / SPORT ─── */}
+      <div className="flex gap-2 px-3 pt-3">
+        <button onClick={() => { sfx.click?.(); nav("/"); }}
+          className="flex-1 py-2.5 rounded-2xl font-black text-xs active:scale-95 transition-all"
+          style={goldBtn(false)}>
+          🎰 O'YINLAR
+        </button>
+        <button
+          className="flex-1 py-2.5 rounded-2xl font-black text-xs pro-sheen"
+          style={goldBtn(true)}>
+          ⚽ SPORT
+        </button>
+      </div>
 
       {/* tablar */}
       <div className="flex gap-2 px-3 py-2.5">
         {([["line", "LINIYA"], ["live", "LIVE"], ["bets", "KUPONLARIM"]] as const).map(([k, t]) => (
-          <button key={k} onClick={() => setTab(k)}
-            className="flex-1 py-2 rounded-xl text-xs font-black active:scale-95 transition-all"
+          <button key={k} onClick={() => { sfx.click?.(); setTab(k); }}
+            className="flex-1 py-2 rounded-xl text-[11px] font-black active:scale-95 transition-all"
             style={{
               background: tab === k ? XGREEN.grad : CARD,
               color: tab === k ? "#fff" : SUB,
@@ -186,15 +263,14 @@ export default function Sports() {
         <>
           {/* sportlar */}
           <div className="flex gap-2 px-3 pb-2 overflow-x-auto no-scrollbar">
-            {(sports.length ? sports : [{ id: "soccer", name: "Soccer" }]).map((s) => (
-              <button key={s.id} onClick={() => { setSport(s.id); setLeague(""); }}
-                className="shrink-0 px-3 py-1.5 rounded-xl text-xs font-bold active:scale-95"
-                style={{
-                  background: sport === s.id ? GOLD.grad ?? "linear-gradient(145deg,#f7c948,#b45309)" : CARD,
-                  color: sport === s.id ? "#1a1204" : SUB,
-                  border: `1px solid ${sport === s.id ? "rgba(255,246,207,0.6)" : BORDER}`,
-                }}>
-                {SPORT_ICONS[s.id] ?? "🏆"} {s.name}
+            {(sports.length ? sports : [{ id: "soccer", name: "Futbol" }]).map((s) => (
+              <button key={s.id} onClick={() => { sfx.click?.(); setSport(s.id); setLeague(""); }}
+                className="shrink-0 px-3 py-1.5 rounded-xl text-[11px] font-bold active:scale-95 flex items-center gap-1"
+                style={goldBtn(sport === s.id)}>
+                {SPORT_IMG[s.id]
+                  ? <img src={SPORT_IMG[s.id]} alt="" width={14} height={14} onError={(e) => { (e.currentTarget as HTMLImageElement).style.display = "none"; }} />
+                  : <span>{SPORT_ICONS[s.id] ?? "🏆"}</span>}
+                {s.id === "soccer" ? "FUTBOL" : s.name}
               </button>
             ))}
           </div>
@@ -203,14 +279,14 @@ export default function Sports() {
           {sportLeagues.length > 0 && (
             <div className="flex gap-2 px-3 pb-2 overflow-x-auto no-scrollbar">
               <button onClick={() => setLeague("")}
-                className="shrink-0 px-3 py-1 rounded-lg text-[11px] font-bold"
-                style={{ background: !league ? "rgba(22,104,227,0.25)" : CARD, color: !league ? "#fff" : SUB, border: `1px solid ${BORDER}` }}>
-                Barchasi
+                className="shrink-0 px-3 py-1 rounded-lg text-[10px] font-bold"
+                style={{ background: !league ? GOLD.soft : CARD, color: !league ? GOLD.light : SUB, border: `1px solid ${!league ? GOLD.border : BORDER}` }}>
+                BARCHASI
               </button>
               {sportLeagues.map((l) => (
                 <button key={l.id} onClick={() => setLeague(l.id)}
-                  className="shrink-0 px-3 py-1 rounded-lg text-[11px] font-bold"
-                  style={{ background: league === l.id ? "rgba(22,104,227,0.25)" : CARD, color: league === l.id ? "#fff" : SUB, border: `1px solid ${BORDER}` }}>
+                  className="shrink-0 px-3 py-1 rounded-lg text-[10px] font-bold whitespace-nowrap"
+                  style={{ background: league === l.id ? GOLD.soft : CARD, color: league === l.id ? GOLD.light : SUB, border: `1px solid ${league === l.id ? GOLD.border : BORDER}` }}>
                   {l.name}
                 </button>
               ))}
@@ -219,7 +295,7 @@ export default function Sports() {
         </>
       )}
 
-      <div className="flex-1 px-3 pb-40">
+      <div className="flex-1 px-3 pb-44">
         {tab === "bets" ? (
           <div className="flex flex-col gap-2 pt-1">
             {!bets.length && <p className="text-center text-xs py-10" style={{ color: SUB }}>Hozircha kupon yo'q</p>}
@@ -247,93 +323,129 @@ export default function Sports() {
                   </div>
                 ))}
                 <div className="flex items-center justify-between mt-2 pt-2" style={{ borderTop: `1px solid ${BORDER}` }}>
-                  <span className="text-[11px]" style={{ color: SUB }}>Tikim: <b style={{ color: "#fff" }}>{fmt(b.stake)}</b></span>
-                  <span className="text-[11px]" style={{ color: SUB }}>
-                    {b.status === "won" ? "Yutuq" : "Mumkin"}: <b style={{ color: GOLD.light }}>{fmt(b.status === "won" ? b.payout : b.potentialWin)}</b>
+                  <span className="text-[10px] font-bold" style={{ color: SUB }}>Tikim: {fmt(b.stake)} · Kf: {(b.totalOdds / 100).toFixed(2)}</span>
+                  <span className="text-[12px] font-black" style={{ color: b.status === "won" ? "#34d399" : GOLD.light }}>
+                    {b.status === "won" ? `+${fmt(b.payout ?? 0)}` : fmt(b.potentialWin)} UZS
                   </span>
                 </div>
               </div>
             ))}
           </div>
         ) : loading ? (
-          <div className="flex flex-col gap-2 pt-2">
-            {[0, 1, 2, 3].map((i) => (
+          <div className="flex flex-col gap-2 pt-1">
+            {[0, 1, 2, 3, 4].map((i) => (
               <div key={i} className="h-24 rounded-2xl animate-pulse" style={{ background: "rgba(255,255,255,0.05)" }} />
             ))}
           </div>
         ) : err ? (
-          <div className="rounded-2xl p-4 mt-4 text-center" style={{ background: CARD, border: `1px solid ${BORDER}` }}>
-            <p className="text-sm font-bold mb-1" style={{ color: "#fff" }}>Sport bo'limi hozircha mavjud emas</p>
-            <p className="text-[11px]" style={{ color: SUB }}>{err}</p>
+          <div className="rounded-2xl p-4 text-center mt-4" style={{ background: CARD, border: `1px solid ${BORDER}` }}>
+            <p className="text-xs font-bold" style={{ color: "#f87171" }}>{err}</p>
+            <p className="text-[10px] mt-1" style={{ color: SUB }}>Keyinroq qayta urinib ko'ring</p>
           </div>
         ) : !fixtures.length ? (
-          <p className="text-center text-xs py-10" style={{ color: SUB }}>Bu ligada hozircha o'yin yo'q</p>
+          <p className="text-center text-xs py-10" style={{ color: SUB }}>
+            {tab === "live" ? "Hozir jonli o'yin yo'q" : "Bu ligada o'yin topilmadi"}
+          </p>
         ) : (
           <div className="flex flex-col gap-2 pt-1">
-            {fixtures.map((f) => {
-              const main = f.odds.filter((o) => o.market === "Moneyline").slice(0, 3);
-              const shown = main.length ? main : f.odds.slice(0, 3);
+            {fixtures.map((fx) => {
+              const row = mainRow(fx);
+              const extra = Math.max(0, fx.odds.length - row.filter((r) => r.odd).length);
               return (
-                <div key={f.id} className="rounded-2xl p-3" style={{ background: CARD, border: `1px solid ${BORDER}` }}>
-                  <div className="flex items-center justify-between mb-2">
-                    <span className="text-[10px] font-bold" style={{ color: SUB }}>{f.league}</span>
-                    <span className="text-[10px] font-black" style={{ color: f.isLive ? "#ef4444" : SUB }}>
-                      {f.isLive ? "● LIVE" : timeLabel(f.startDate)}
+                <div key={fx.id} className="rounded-2xl overflow-hidden"
+                  style={{ background: CARD, border: `1px solid ${BORDER}`, boxShadow: "0 8px 24px rgba(0,0,0,0.35)" }}>
+                  {/* liga + vaqt */}
+                  <div className="flex items-center justify-between px-3 pt-2.5">
+                    <span className="text-[9px] font-black truncate max-w-[62%]" style={{ color: GOLD.light, letterSpacing: "0.08em" }}>
+                      {fx.league?.toUpperCase()}
                     </span>
+                    {fx.isLive ? (
+                      <span className="text-[9px] font-black px-1.5 py-0.5 rounded-md live-pulse"
+                        style={{ background: "rgba(239,68,68,0.2)", color: "#f87171" }}>● LIVE</span>
+                    ) : (
+                      <span className="text-[9px] font-bold" style={{ color: SUB }}>{timeLabel(fx.startDate)}</span>
+                    )}
                   </div>
-                  <button onClick={() => openMarkets(f.id)} className="w-full text-left">
-                    <p className="text-sm font-black leading-tight" style={{ color: "#fff" }}>{f.home.name}</p>
-                    <p className="text-sm font-black leading-tight" style={{ color: "#fff" }}>{f.away.name}</p>
+
+                  {/* jamoalar */}
+                  <button onClick={() => openMarkets(fx.id)} className="w-full px-3 py-2 text-left active:opacity-80">
+                    <div className="flex items-center gap-2 mb-1">
+                      <TeamLogo logo={fx.home.logo} name={fx.home.name} />
+                      <span className="text-[12px] font-bold truncate" style={{ color: "#fff" }}>{fx.home.name}</span>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <TeamLogo logo={fx.away.logo} name={fx.away.name} />
+                      <span className="text-[12px] font-bold truncate" style={{ color: "#fff" }}>{fx.away.name}</span>
+                    </div>
                   </button>
 
-                  <div className="grid grid-cols-3 gap-2 mt-2.5">
-                    {shown.map((o) => {
-                      const on = inSlip(f.id, o.market, o.name);
+                  {/* 1 X 2 */}
+                  <div className="flex gap-1.5 px-3 pb-2.5">
+                    {row.map((r) => {
+                      const active = r.odd ? inSlip(fx.id, r.odd.market, r.odd.name) : false;
                       return (
-                        <button key={o.name} onClick={() => toggle(f, o)}
-                          className="py-2 rounded-xl active:scale-95 transition-all"
+                        <button key={r.key}
+                          disabled={!r.odd}
+                          onClick={() => r.odd && toggle(fx, r.odd)}
+                          className="flex-1 py-2 rounded-xl active:scale-95 transition-all"
                           style={{
-                            background: on ? XGREEN.grad : "rgba(255,255,255,0.06)",
-                            border: `1px solid ${on ? "rgba(255,255,255,0.25)" : BORDER}`,
+                            background: active ? GOLD.grad : "rgba(255,255,255,0.05)",
+                            border: `1px solid ${active ? "rgba(255,246,207,0.65)" : BORDER}`,
+                            opacity: r.odd ? 1 : 0.4,
+                            boxShadow: active ? `0 6px 18px ${GOLD.glow}` : "none",
                           }}>
-                          <p className="text-[9px] truncate px-1" style={{ color: on ? "rgba(255,255,255,0.8)" : SUB }}>{o.name}</p>
-                          <p className="text-sm font-black" style={{ color: on ? "#fff" : GOLD.light }}>{o.price.toFixed(2)}</p>
+                          <p className="text-[9px] font-black" style={{ color: active ? "rgba(26,18,4,0.7)" : SUB }}>{r.label}</p>
+                          <p className="text-[13px] font-black" style={{ color: active ? "#1a1204" : GOLD.light }}>
+                            {r.odd ? r.odd.price.toFixed(2) : "—"}
+                          </p>
                         </button>
                       );
                     })}
-                    {!shown.length && <p className="col-span-3 text-[11px] text-center py-2" style={{ color: SUB }}>Koeffitsient yo'q</p>}
+                    <button onClick={() => openMarkets(fx.id)}
+                      className="px-3 rounded-xl active:scale-95"
+                      style={{ background: "rgba(255,255,255,0.05)", border: `1px solid ${BORDER}` }}>
+                      <p className="text-[11px] font-black" style={{ color: GOLD.light }}>
+                        {openFixture === fx.id ? "−" : `+${extra || ""}`}
+                      </p>
+                    </button>
                   </div>
 
-                  <button onClick={() => openMarkets(f.id)}
-                    className="w-full mt-2 text-[10px] font-bold py-1.5 rounded-lg"
-                    style={{ color: GOLD.light, background: "rgba(247,201,72,0.08)" }}>
-                    {openFixture === f.id ? "YOPISH" : "BARCHA MARKETLAR →"}
-                  </button>
-
-                  {openFixture === f.id && (
-                    <div className="mt-2 flex flex-col gap-2">
-                      {marketsLoading && <p className="text-[11px] text-center py-2" style={{ color: SUB }}>Yuklanmoqda…</p>}
-                      {markets.map((m) => (
-                        <div key={m.market}>
-                          <p className="text-[10px] font-black mb-1" style={{ color: SUB }}>{m.market.toUpperCase()}</p>
-                          <div className="grid grid-cols-2 gap-1.5">
-                            {m.selections.slice(0, 12).map((o) => {
-                              const on = inSlip(f.id, o.market, o.name);
-                              return (
-                                <button key={o.name} onClick={() => toggle(f, o)}
-                                  className="flex items-center justify-between px-2 py-1.5 rounded-lg active:scale-95"
-                                  style={{
-                                    background: on ? XGREEN.grad : "rgba(255,255,255,0.05)",
-                                    border: `1px solid ${on ? "rgba(255,255,255,0.25)" : BORDER}`,
-                                  }}>
-                                  <span className="text-[10px] truncate pr-1" style={{ color: on ? "#fff" : SUB }}>{o.name}</span>
-                                  <span className="text-[11px] font-black" style={{ color: on ? "#fff" : GOLD.light }}>{o.price.toFixed(2)}</span>
-                                </button>
-                              );
-                            })}
+                  {/* barcha marketlar */}
+                  {openFixture === fx.id && (
+                    <div className="px-3 pb-3" style={{ borderTop: `1px solid ${BORDER}` }}>
+                      {marketsLoading ? (
+                        <p className="text-[10px] py-3 text-center" style={{ color: SUB }}>Yuklanmoqda…</p>
+                      ) : !markets.length ? (
+                        <p className="text-[10px] py-3 text-center" style={{ color: SUB }}>Market topilmadi</p>
+                      ) : (
+                        markets.map((g) => (
+                          <div key={g.market} className="pt-2.5">
+                            <p className="text-[9px] font-black mb-1.5" style={{ color: GOLD.light, letterSpacing: "0.08em" }}>
+                              {g.market.toUpperCase()}
+                            </p>
+                            <div className="grid grid-cols-2 gap-1.5">
+                              {g.selections.map((o, i) => {
+                                const active = inSlip(fx.id, o.market, o.name);
+                                return (
+                                  <button key={`${o.name}-${i}`} onClick={() => toggle(fx, o)}
+                                    className="flex items-center justify-between px-2.5 py-2 rounded-xl active:scale-95 transition-all"
+                                    style={{
+                                      background: active ? GOLD.grad : "rgba(255,255,255,0.05)",
+                                      border: `1px solid ${active ? "rgba(255,246,207,0.65)" : BORDER}`,
+                                    }}>
+                                    <span className="text-[10px] font-bold truncate pr-1" style={{ color: active ? "#1a1204" : "rgba(255,255,255,0.8)" }}>
+                                      {o.name}
+                                    </span>
+                                    <span className="text-[11px] font-black" style={{ color: active ? "#1a1204" : GOLD.light }}>
+                                      {o.price.toFixed(2)}
+                                    </span>
+                                  </button>
+                                );
+                              })}
+                            </div>
                           </div>
-                        </div>
-                      ))}
+                        ))
+                      )}
                     </div>
                   )}
                 </div>
@@ -343,84 +455,80 @@ export default function Sports() {
         )}
       </div>
 
-      {msg && (
-        <div className="fixed left-3 right-3 bottom-28 z-[60] rounded-2xl px-4 py-3 text-center text-xs font-black"
-          style={{ background: "rgba(10,23,38,0.97)", border: `1px solid ${BORDER}`, color: "#fff" }}>
-          {msg}
-        </div>
-      )}
-
-      {/* KUPON */}
+      {/* ─── KUPON (bet slip) ─── */}
       {slip.length > 0 && (
-        <div className="fixed inset-x-0 bottom-0 z-50"
+        <div className="fixed bottom-0 left-0 right-0 z-50"
           style={{
-            background: "rgba(10,23,38,0.98)",
-            borderTop: `1px solid ${GOLD.border ?? "rgba(247,201,72,0.4)"}`,
-            paddingBottom: "env(safe-area-inset-bottom,0px)",
-            backdropFilter: "blur(18px)",
+            background: "linear-gradient(180deg,rgba(6,10,18,0.96),rgba(3,6,12,0.99))",
+            borderTop: `1px solid ${GOLD.border}`,
+            boxShadow: `0 -14px 40px rgba(0,0,0,0.6)`,
           }}>
           <button onClick={() => setSlipOpen((v) => !v)} className="w-full flex items-center justify-between px-4 py-2.5">
-            <span className="text-xs font-black" style={{ color: GOLD.light }}>
-              KUPON · {slip.length} ta · {totalOdds.toFixed(2)}
+            <span className="text-[11px] font-black" style={{ color: GOLD.light }}>
+              KUPON · {slip.length} {slip.length > 1 ? "(EKSPRESS)" : "(ORDINAR)"}
             </span>
-            <span className="text-xs font-black" style={{ color: "#fff" }}>{slipOpen ? "▼" : "▲"}</span>
+            <span className="text-[11px] font-black" style={{ color: "#fff" }}>
+              Kf {totalOdds.toFixed(2)} · {slipOpen ? "▾" : "▴"}
+            </span>
           </button>
 
           {slipOpen && (
-            <div className="px-4 pb-3 max-h-[46vh] overflow-y-auto">
-              {slip.map((s, i) => (
-                <div key={i} className="flex items-center justify-between py-1.5" style={{ borderBottom: `1px solid ${BORDER}` }}>
-                  <div className="min-w-0 pr-2">
-                    <p className="text-[11px] font-bold truncate" style={{ color: "#fff" }}>{s.selection}</p>
-                    <p className="text-[9px] truncate" style={{ color: SUB }}>{s.market} · {s.fixtureLabel}</p>
+            <div className="px-4 pb-4">
+              <div className="max-h-40 overflow-y-auto no-scrollbar mb-2">
+                {slip.map((s, i) => (
+                  <div key={i} className="flex items-center justify-between py-1.5"
+                    style={{ borderBottom: `1px solid ${BORDER}` }}>
+                    <div className="min-w-0 pr-2">
+                      <p className="text-[11px] font-bold truncate" style={{ color: "#fff" }}>{s.selection}</p>
+                      <p className="text-[9px] truncate" style={{ color: SUB }}>{s.market} · {s.fixtureLabel}</p>
+                    </div>
+                    <div className="flex items-center gap-2 shrink-0">
+                      <span className="text-[11px] font-black" style={{ color: GOLD.light }}>{s.price.toFixed(2)}</span>
+                      <button onClick={() => setSlip((p) => p.filter((x) => x !== s))}
+                        className="w-6 h-6 rounded-lg font-black text-[11px]"
+                        style={{ background: "rgba(239,68,68,0.18)", color: "#f87171" }}>×</button>
+                    </div>
                   </div>
-                  <div className="flex items-center gap-2">
-                    <span className="text-[11px] font-black" style={{ color: GOLD.light }}>{s.price.toFixed(2)}</span>
-                    <button onClick={() => setSlip((p) => p.filter((x) => x !== s))}
-                      className="text-[11px] font-black px-1.5" style={{ color: "#ef4444" }}>✕</button>
-                  </div>
-                </div>
-              ))}
+                ))}
+              </div>
 
-              <div className="flex gap-1.5 mt-2.5">
-                {[5000, 10000, 25000, 50000].map((v) => (
-                  <button key={v} onClick={() => setStake(v)}
-                    className="flex-1 py-1.5 rounded-lg text-[10px] font-black"
-                    style={{ background: stake === v ? "rgba(247,201,72,0.2)" : "rgba(255,255,255,0.06)", color: stake === v ? GOLD.light : SUB, border: `1px solid ${BORDER}` }}>
+              <div className="flex gap-1.5 mb-2 overflow-x-auto no-scrollbar">
+                {STAKES.map((v) => (
+                  <button key={v} onClick={() => { sfx.click?.(); setStake(v); }}
+                    className="shrink-0 px-3 py-1.5 rounded-xl text-[10px] font-black active:scale-95"
+                    style={goldBtn(stake === v)}>
                     {fmt(v)}
                   </button>
                 ))}
               </div>
 
-              <input
-                type="number"
-                inputMode="numeric"
-                value={stake}
-                onChange={(e) => setStake(Math.max(0, Math.floor(Number(e.target.value) || 0)))}
-                className="w-full mt-2 px-3 py-2.5 rounded-xl text-sm font-black outline-none"
-                style={{ background: "rgba(255,255,255,0.06)", border: `1px solid ${BORDER}`, color: "#fff" }}
-              />
-
-              <div className="flex items-center justify-between mt-2">
-                <span className="text-[11px]" style={{ color: SUB }}>Umumiy koef: <b style={{ color: "#fff" }}>{totalOdds.toFixed(2)}</b></span>
-                <span className="text-[11px]" style={{ color: SUB }}>Mumkin yutuq: <b style={{ color: GOLD.light }}>{fmt(potential)}</b></span>
+              <div className="flex items-center justify-between mb-2">
+                <span className="text-[10px] font-bold" style={{ color: SUB }}>Mumkin yutuq</span>
+                <span className="text-[15px] font-black" style={{ color: GOLD.light }}>
+                  <Odometer value={potential} /> UZS
+                </span>
               </div>
 
-              <div className="flex gap-2 mt-2.5">
+              {msg && <p className="text-[11px] font-bold text-center mb-2" style={{ color: msg.startsWith("✅") ? "#34d399" : "#f87171" }}>{msg}</p>}
+
+              <div className="flex gap-2">
                 <button onClick={() => { setSlip([]); setSlipOpen(false); }}
-                  className="px-4 py-3 rounded-2xl text-xs font-black"
+                  className="px-4 py-3 rounded-2xl text-[11px] font-black active:scale-95"
                   style={{ background: "rgba(255,255,255,0.06)", color: SUB, border: `1px solid ${BORDER}` }}>
                   TOZALASH
                 </button>
-                <button onClick={submit} disabled={placing || stake < 1000}
-                  className="flex-1 py-3 rounded-2xl text-sm font-black active:scale-95 transition-all disabled:opacity-50"
-                  style={{ background: XGREEN.grad, color: "#fff", boxShadow: XGREEN.shadow }}>
-                  {placing ? "YUBORILMOQDA…" : `TIKISH · ${fmt(stake)}`}
+                <button onClick={submit} disabled={placing}
+                  className="flex-1 py-3 rounded-2xl text-[12px] font-black active:scale-95 pro-sheen"
+                  style={{
+                    background: GOLD.grad,
+                    color: "#1a1204",
+                    border: "1px solid rgba(255,246,207,0.7)",
+                    boxShadow: `0 10px 28px ${GOLD.glow}`,
+                    opacity: placing ? 0.6 : 1,
+                  }}>
+                  {placing ? "YUBORILMOQDA…" : `TIKISH · ${fmt(stake)} UZS`}
                 </button>
               </div>
-              <p className="text-[9px] text-center mt-2" style={{ color: SUB }}>
-                Balans: {fmt(player?.balance ?? 0)} · min 1 000
-              </p>
             </div>
           )}
         </div>

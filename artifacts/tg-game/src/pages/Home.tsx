@@ -199,22 +199,37 @@ export default function Home() {
         </div>
       </div>
 
+      {/* ─── 2 BO'LIM: O'YINLAR / SPORT ─── */}
+      <div className="flex gap-2 mx-4 mb-3">
+        <div className="flex-1 py-2.5 rounded-2xl text-center font-black pro-sheen"
+          style={{ fontSize: 12, background: GOLD.grad, color: "#1a1204", border: "1px solid rgba(255,246,207,0.65)", boxShadow: `0 8px 22px ${GOLD.glow}` }}>
+          🎰 O'YINLAR
+        </div>
+        <button onClick={() => nav("/sports")}
+          className="flex-1 py-2.5 rounded-2xl text-center font-black active:scale-95 transition-transform"
+          style={{ fontSize: 12, background: "rgba(255,255,255,0.06)", color: "rgba(255,255,255,0.66)", border: `1px solid ${GOLD.border}` }}>
+          ⚽ SPORT
+        </button>
+      </div>
+
       {/* ─── SPORT (jonli koeffitsientlar) ─── */}
       <button onClick={() => nav("/sports")}
         className="mx-4 mb-3 rounded-3xl relative overflow-hidden active:scale-[0.98] transition-transform flex items-center gap-3 px-4 py-3.5 pro-sheen"
         style={{
-          background: "linear-gradient(135deg,#0b3d2e,#12855f)",
-          border: "1px solid rgba(52,211,153,0.45)",
-          boxShadow: "0 12px 32px rgba(18,133,95,0.35)",
+          background: "linear-gradient(135deg,#160f02,#3d2a06 55%,#6b4a0c)",
+          border: `1px solid ${GOLD.border}`,
+          boxShadow: `0 12px 32px ${GOLD.glow}`,
         }}>
-        <span style={{ fontSize: 26 }}>⚽</span>
+        <img src="/symbols/ball-soccer.png" alt="" width={34} height={34} loading="lazy"
+          style={{ filter: "drop-shadow(0 4px 12px rgba(0,0,0,0.55))" }} />
         <div className="flex-1 text-left">
-          <p className="font-black leading-none" style={{ fontSize: 15, color: "#fff" }}>SPORT · LIVE STAVKA</p>
-          <p className="font-bold mt-1" style={{ fontSize: 10, color: "rgba(255,255,255,0.72)" }}>
+          <p className="font-black leading-none gold-text" style={{ fontSize: 15 }}>SPORT · LIVE STAVKA</p>
+          <p className="font-bold mt-1" style={{ fontSize: 10, color: "rgba(255,255,255,0.7)" }}>
             Futbol · Basketbol · Tennis — real koeffitsientlar
           </p>
         </div>
-        <span className="px-2 py-1 rounded-lg font-black" style={{ fontSize: 9, background: "rgba(255,255,255,0.16)", color: "#fff" }}>YANGI</span>
+        <span className="px-2 py-1 rounded-lg font-black live-pulse"
+          style={{ fontSize: 9, background: "rgba(239,68,68,0.22)", color: "#f87171" }}>● LIVE</span>
       </button>
 
       {/* ─── BALANCE CARD ─── */}
@@ -576,12 +591,17 @@ export default function Home() {
           backdropFilter: "blur(20px)",
           paddingBottom: "env(safe-area-inset-bottom,0px)",
         }}>
-        <div className="grid grid-cols-6 items-end px-1 py-2">
+        <div className="grid grid-cols-7 items-end px-1 py-2">
           <button onClick={() => setTab("games")}
             className="flex flex-col items-center gap-1 px-0 py-2 rounded-2xl active:scale-95 transition-all"
             style={{ background: tab === "games"?"rgba(22,104,227,0.12)":"transparent" }}>
             <HomeIcon size={20} color={tab === "games" ? ACCENT : TEXT_SUB} />
             <span className="text-xs font-bold"style={{ color: tab ==="games" ? ACCENT : TEXT_SUB, fontSize: 9 }}>{u("navHome")}</span>
+          </button>
+          <button onClick={() => nav("/sports")}
+            className="flex flex-col items-center gap-1 px-0 py-2 rounded-2xl active:scale-95 transition-all">
+            <img src="/symbols/ball-soccer.png" alt="" width={20} height={20} loading="lazy" />
+            <span className="text-xs font-bold" style={{ color: GOLD.light, fontSize: 9 }}>SPORT</span>
           </button>
           <button onClick={() => nav("/history")}
             className="flex flex-col items-center gap-1 px-0 py-2 rounded-2xl active:scale-95 transition-all">
