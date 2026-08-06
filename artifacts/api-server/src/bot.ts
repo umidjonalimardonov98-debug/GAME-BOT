@@ -1,5 +1,6 @@
 import TelegramBot from "node-telegram-bot-api";
 import { eq, and, isNull, sql, desc } from "drizzle-orm";
+import { getLiveSettings, setLiveSetting, RULE_PRESETS } from "./lib/live-settings";
 import { db, playersTable, transactionsTable, depositRequestsTable, withdrawRequestsTable, promoCodesTable, promoUsesTable, gameSettingsTable, appSettingsTable } from "@workspace/db";
 import { logger } from "./lib/logger";
 import { ALL_GAMES, GAME_LABELS, DIFFICULTIES, DIFFICULTY_WIN_SUGGEST, nextDifficulty, type Difficulty } from "./lib/games-catalog";
@@ -430,6 +431,7 @@ const waitingForPromoTarget = new Map<number, string>();      // admin -> shaxsi
 const waitingForPromoAmount = new Map<number, string>();       // admin -> code (waiting for amount)
 const waitingForPromoMaxUses = new Map<number, { code: string; amount: number }>(); // admin -> {code,amount}
 const waitingForNewAdminId = new Set<number>();                  // owner waiting to type new admin telegram id
+const waitingForLiveText = new Map<number, "live_banner_title" | "live_banner_sub">(); // admin -> live banner maydoni
 const waitingForMaxWin = new Map<number, string>();              // admin -> game key (waiting for max win amount)
 
 /** Moliya bilan shug'ullanadigan barcha adminlar (owner + finance) */
@@ -762,6 +764,31 @@ export function getBotStatus() {
   };
 }
 
+/** LIVE PVP admin menyusi — yoqish/o'chirish, taymer, qoidalar, banner matnlari */
+async function sendLiveMenu(chatId: number, messageId?: number) {
+  const s = await getLiveSettings();
+  const caption =
+    `🔴 <b>LIVE PVP SOZLAMALARI</b>\n\n` +
+    `Holat: <b>${s.enabled ? "✅ yoqilgan" : "⛔ o'chirilgan"}</b>\n` +
+    `Raund taymeri: <b>${s.timerMs === 0 ? "o'yin standarti" : s.timerMs / 1000 + " soniya"}</b>\n\n` +
+    `📜 <b>Qoidalar matni:</b>\n<i>${s.rules}</i>\n\n` +
+    `🏷 <b>Banner:</b>\n<b>${s.bannerTitle}</b>\n<i>${s.bannerSub}</i>`;
+  const keyboard = [
+    [{ text: s.enabled ? "⛔ LIVE o'yinlarni o'chirish" : "✅ LIVE o'yinlarni yoqish", callback_data: "admin_live_toggle" }],
+    [{ text: `⏱ Taymer: ${s.timerMs === 0 ? "standart" : s.timerMs / 1000 + "s"} (o'zgartirish)`, callback_data: "admin_live_timer" }],
+    RULE_PRESETS.map((r) => ({ text: `📜 ${r.label}`, callback_data: `admin_live_rules_${r.id}` })),
+    [{ text: "🏷 Banner sarlavhasi", callback_data: "admin_live_btitle" }, { text: "🏷 Banner tavsifi", callback_data: "admin_live_bsub" }],
+    [{ text: "🔙 Admin panel", callback_data: "admin_panel" }],
+  ];
+  if (messageId) {
+    try {
+      await bot!.editMessageText(caption, { chat_id: chatId, message_id: messageId, parse_mode: "HTML", reply_markup: { inline_keyboard: keyboard } });
+      return;
+    } catch { /* edit bo'lmasa yangi xabar */ }
+  }
+  await bot!.sendMessage(chatId, caption, { parse_mode: "HTML", reply_markup: { inline_keyboard: keyboard } });
+}
+
 export async function handleWebhookUpdate(body: any) {
   if (!body) return;
   logger.info({ updateId: body.update_id, hasMsg: !!body.message, hasCb: !!body.callback_query, handlers: _textHandlers.length, hasCbH: !!_cbHandler, hasMsgH: !!_msgHandler }, "webhook update");
@@ -941,6 +968,7 @@ export async function startBot() {
         ...(p("promo") ? [{ text: "🎫 Promo Kodlar", callback_data: "admin_promo" }] : []),
       ]);
       if (p("admins")) push([{ text: "🎮 O'yin va tema sozlamalari", callback_data: "admin_game_settings" }]);
+      if (p("admins")) push([{ text: "🔴 LIVE PVP sozlamalari", callback_data: "admin_live" }]);
       if (p("finance") || p("admins")) push([{ text: "🤝 Referal narxi", callback_data: "admin_ref_price" }]);
       // Faqat egasi (owner) adminlarni boshqaradi
       if (p("admins")) push([{ text: "👑 Adminlar", callback_data: "admin_admins" }]);
@@ -1301,6 +1329,7 @@ export async function startBot() {
       waitingForPromoTarget.delete(userId);
       waitingForNewAdminId.delete(userId);
       waitingForMaxWin.delete(userId);
+      waitingForLiveText.delete(userId);
       await bot!.sendMessage(chatId, "❌ Bekor qilindi.", { parse_mode: "HTML" });
       return;
     }
@@ -1410,6 +1439,21 @@ export async function startBot() {
           reply_markup: { inline_keyboard: [[{ text: "🔙 Admin panel", callback_data: "admin_panel" }]] }
         }
       );
+      return;
+    }
+
+    // Admin: LIVE banner matnini kiritish
+    if (waitingForLiveText.has(userId)) {
+      const key = waitingForLiveText.get(userId)!;
+      const value = text.trim().slice(0, 120);
+      if (!value) {
+        await bot!.sendMessage(chatId, "❌ Matn bo'sh. Qayta yozing.\n<i>Bekor qilish: /cancel</i>", { parse_mode: "HTML" });
+        return;
+      }
+      waitingForLiveText.delete(userId);
+      await setLiveSetting(key, value);
+      await bot!.sendMessage(chatId, `✅ Banner matni yangilandi:\n<b>${value}</b>`, { parse_mode: "HTML" });
+      await sendLiveMenu(chatId);
       return;
     }
 
@@ -2207,6 +2251,54 @@ Miqdorni tanlang yoki o'zingiz kiriting:`,
       if (!isAdmin) { await bot!.answerCallbackQuery(q.id, { text: "❌ Ruxsat yo'q" }); return; }
       await bot!.answerCallbackQuery(q.id);
       await sendAdminMenu(chatId, q.from.id);
+      return;
+    }
+
+    if (data === "admin_live") {
+      if (!hasPerm(q.from.id, "admins")) { await bot!.answerCallbackQuery(q.id, { text: "❌ Ruxsat yo'q" }); return; }
+      await bot!.answerCallbackQuery(q.id);
+      await sendLiveMenu(chatId);
+      return;
+    }
+
+    if (data === "admin_live_toggle") {
+      if (!hasPerm(q.from.id, "admins")) { await bot!.answerCallbackQuery(q.id, { text: "❌ Ruxsat yo'q" }); return; }
+      const cur = await getLiveSettings();
+      await setLiveSetting("live_enabled", cur.enabled ? "0" : "1");
+      await bot!.answerCallbackQuery(q.id, { text: cur.enabled ? "⛔ LIVE o'chirildi" : "✅ LIVE yoqildi" });
+      await sendLiveMenu(chatId, q.message.message_id);
+      return;
+    }
+
+    if (data === "admin_live_timer") {
+      if (!hasPerm(q.from.id, "admins")) { await bot!.answerCallbackQuery(q.id, { text: "❌ Ruxsat yo'q" }); return; }
+      const cur = await getLiveSettings();
+      const steps = [0, 10_000, 12_000, 15_000, 20_000, 25_000, 30_000];
+      const next = steps[(steps.indexOf(cur.timerMs) + 1 + steps.length) % steps.length]!;
+      await setLiveSetting("live_timer_ms", String(next));
+      await bot!.answerCallbackQuery(q.id, { text: next === 0 ? "⏱ O'yin standart taymeri" : `⏱ ${next / 1000} soniya` });
+      await sendLiveMenu(chatId, q.message.message_id);
+      return;
+    }
+
+    if (data.startsWith("admin_live_rules_")) {
+      if (!hasPerm(q.from.id, "admins")) { await bot!.answerCallbackQuery(q.id, { text: "❌ Ruxsat yo'q" }); return; }
+      const preset = RULE_PRESETS.find((r) => r.id === data.replace("admin_live_rules_", ""));
+      if (preset) await setLiveSetting("live_rules", preset.text);
+      await bot!.answerCallbackQuery(q.id, { text: preset ? `📜 Qoidalar: ${preset.label}` : "Topilmadi" });
+      await sendLiveMenu(chatId, q.message.message_id);
+      return;
+    }
+
+    if (data === "admin_live_btitle" || data === "admin_live_bsub") {
+      if (!hasPerm(q.from.id, "admins")) { await bot!.answerCallbackQuery(q.id, { text: "❌ Ruxsat yo'q" }); return; }
+      waitingForLiveText.set(q.from.id, data === "admin_live_btitle" ? "live_banner_title" : "live_banner_sub");
+      await bot!.answerCallbackQuery(q.id);
+      await bot!.sendMessage(chatId,
+        data === "admin_live_btitle"
+          ? "🏷 LIVE banner <b>sarlavhasini</b> yozing (maks 120 belgi).\n\n<i>Bekor qilish: /cancel</i>"
+          : "🏷 LIVE banner <b>tavsifini</b> yozing (maks 120 belgi).\n\n<i>Bekor qilish: /cancel</i>",
+        { parse_mode: "HTML" });
       return;
     }
 

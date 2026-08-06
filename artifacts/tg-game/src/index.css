@@ -679,12 +679,14 @@ button:not(:disabled):active { transform: scale(.955); }
 @keyframes lfxSway  { 0%,100% { transform: scale(1.12) translate(-2%, 1%) } 50% { transform: scale(1.12) translate(2%, -1%) } }
 @keyframes lfxPulse { 0%,100% { transform: scale(1.02); filter: saturate(1) } 50% { transform: scale(1.09); filter: saturate(1.35) } }
 
-.lfx-zoom  > img { animation: lfxZoom  7s ease-in-out infinite; }
-.lfx-panx  > img { animation: lfxPanX  9s ease-in-out infinite; }
-.lfx-pany  > img { animation: lfxPanY  9s ease-in-out infinite; }
-.lfx-tilt  > img { animation: lfxTilt  6s ease-in-out infinite; }
-.lfx-sway  > img { animation: lfxSway  8s ease-in-out infinite; }
-.lfx-pulse > img { animation: lfxPulse 5s ease-in-out infinite; }
+/* --lfx-scale: ekran/qurilma profiliga qarab animatsiya tezligi (screen.ts -> fxStyle) */
+.lfx { --lfx-scale: 1; }
+.lfx-zoom  > img { animation: lfxZoom  calc(7s * var(--lfx-scale)) ease-in-out infinite; }
+.lfx-panx  > img { animation: lfxPanX  calc(9s * var(--lfx-scale)) ease-in-out infinite; }
+.lfx-pany  > img { animation: lfxPanY  calc(9s * var(--lfx-scale)) ease-in-out infinite; }
+.lfx-tilt  > img { animation: lfxTilt  calc(6s * var(--lfx-scale)) ease-in-out infinite; }
+.lfx-sway  > img { animation: lfxSway  calc(8s * var(--lfx-scale)) ease-in-out infinite; }
+.lfx-pulse > img { animation: lfxPulse calc(5s * var(--lfx-scale)) ease-in-out infinite; }
 
 /* yorug'lik yugurishi */
 .lfx::after {

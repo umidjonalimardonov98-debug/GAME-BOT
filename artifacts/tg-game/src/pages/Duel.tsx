@@ -6,6 +6,9 @@ import { sfx } from "@/lib/sound";
 import GameHeader from "@/components/GameHeader";
 import { Send, Flag, Users } from "lucide-react";
 import { imgFx, symFx } from "@/lib/live-fx";
+import { subscribeDuelState } from "@/lib/live-stream";
+import { useLiveConfig } from "@/lib/live-config";
+import { useScreenProfile, fxStyle, imgProps } from "@/lib/screen";
 
 /**
  * DUEL — universal 1x1 PVP sahifasi.
@@ -32,6 +35,8 @@ type State = {
   winner: "me" | "foe" | "draw" | null;
   chat: { n: number; name: string; text: string; emoji: boolean; at: number }[];
   chatLast: number;
+  timer?: number;
+  rake?: number;
 };
 
 const api = (p: string, body?: unknown) =>
@@ -59,29 +64,46 @@ export default function Duel({ gameKey }: { gameKey: string }) {
   const [err, setErr] = useState("");
   const [msg, setMsg] = useState("");
   const [chat, setChat] = useState<State["chat"]>([]);
-  const chatSince = useRef(0);
   const poll = useRef<ReturnType<typeof setInterval> | null>(null);
+  /** real-time oqimni to'xtatish funksiyasi */
+  const unsub = useRef<null | (() => void)>(null);
+  const [transport, setTransport] = useState<"sse" | "poll">("poll");
+  /** bet slip — tasdiqlash oynasi */
+  const [slip, setSlip] = useState<number | null>(null);
+  const [joining, setJoining] = useState(false);
+  const { cfg } = useLiveConfig();
+  const scr = useScreenProfile();
 
   useEffect(() => {
     api("/duel/list").then((d) => {
       setStakes(d.stakes ?? []);
       setDef((d.games ?? []).find((g: Def) => g.key === gameKey) ?? null);
     }).catch(() => {});
-    return () => { if (poll.current) clearInterval(poll.current); };
+    return () => { if (poll.current) clearInterval(poll.current); unsub.current?.(); };
   }, [gameKey]);
 
   /* ── matchmaking ── */
   const join = async (stake: number) => {
-    if (!player) return;
-    setErr("");
+    if (!player) { setErr("Profil yuklanmadi. Mini appni qayta oching."); return; }
+    if (!cfg.enabled) { setErr("LIVE o'yinlar vaqtincha o'chirilgan."); return; }
+    if ((player.balance ?? 0) < stake) {
+      setErr(`Balans yetarli emas. Kerak: ${stake.toLocaleString()} UZS, sizda: ${(player.balance ?? 0).toLocaleString()} UZS.`);
+      return;
+    }
+    setErr(""); setJoining(true);
     try {
       const r = await api("/duel/queue", {
         telegramId: player.telegramId, name: player.firstName ?? "O'yinchi", game: gameKey, stake,
       });
       sfx.select();
+      setSlip(null);
       if (r.status === "matched") start(r.roomId);
       else { setStatus("waiting"); waitLoop(stake); }
-    } catch (e) { setErr((e as Error).message); }
+    } catch (e) {
+      setErr((e as Error).message || "Tikish qabul qilinmadi. Qayta urinib ko'ring.");
+    } finally {
+      setJoining(false);
+    }
   };
 
   const waitLoop = (stake: number) => {
@@ -103,28 +125,38 @@ export default function Duel({ gameKey }: { gameKey: string }) {
     setStatus("idle");
   };
 
+  /** Real-time: SSE oqimi (uzilsa polling) — taymer va natija o'zi yangilanadi */
   const start = (rid: string) => {
-    setRoomId(rid); setStatus("playing"); setChat([]); chatSince.current = 0;
+    setRoomId(rid); setStatus("playing"); setChat([]); setErr("");
     if (poll.current) clearInterval(poll.current);
-    poll.current = setInterval(() => tick(rid), 900);
-    tick(rid);
+    unsub.current?.();
+    let done = false;
+    unsub.current = subscribeDuelState<State>(
+      { roomId: rid, telegramId: player!.telegramId },
+      {
+        onTransport: setTransport,
+        onState: (s) => {
+          setSt(s);
+          if (s.chat?.length) setChat((p) => [...p, ...s.chat].slice(-40));
+          if (s.winner && !done) {
+            done = true;
+            if (s.winner === "me") sfx.win(true); else if (s.winner === "foe") sfx.lose();
+            refresh();
+          }
+        },
+        onError: (m) => setErr(m),
+        onClosed: () => { /* xona yopildi — natija allaqachon ko'rsatilgan */ },
+      },
+    );
   };
 
+  /** Serverga harakat yuborgandan keyin holatni darhol tortib olish */
   const tick = async (rid: string) => {
     if (!player) return;
     try {
-      const s: State = await api(`/duel/state?telegramId=${player.telegramId}&roomId=${rid}&chatSince=${chatSince.current}`);
+      const s: State = await api(`/duel/state?telegramId=${player.telegramId}&roomId=${rid}&chatSince=0`);
       setSt(s);
-      if (s.chat?.length) {
-        chatSince.current = s.chatLast;
-        setChat((p) => [...p, ...s.chat].slice(-40));
-      }
-      if (s.winner) {
-        if (poll.current) clearInterval(poll.current);
-        if (s.winner === "me") sfx.win(true); else if (s.winner === "foe") sfx.lose();
-        refresh();
-      }
-    } catch { /* xona yopilgan */ }
+    } catch { /* oqim o'zi yangilaydi */ }
   };
 
   const submit = async (value: number, picks?: number[]) => {
@@ -161,7 +193,45 @@ export default function Duel({ gameKey }: { gameKey: string }) {
       <GameHeader title={def.title.toUpperCase()} subtitle={def.sub} />
 
       {status === "idle" && (
-        <Lobby def={def} stakes={stakes} onJoin={join} err={err} ts={ts} onBack={() => nav("/live")} />
+        <Lobby def={def} stakes={stakes.length ? stakes : cfg.stakes} onJoin={(s: number) => { sfx.click(); setErr(""); setSlip(s); }}
+          err={err} ts={ts} onBack={() => nav("/live")} rules={cfg.rules} enabled={cfg.enabled} scr={scr} rake={cfg.rake} />
+      )}
+
+      {/* BET SLIP — tikishni tasdiqlash */}
+      {slip !== null && (
+        <div className="fixed inset-0 z-50 flex items-end justify-center" style={{ background: "rgba(0,0,0,0.62)" }}
+          onClick={() => !joining && setSlip(null)}>
+          <div className="w-full rounded-t-3xl p-4" onClick={(e) => e.stopPropagation()}
+            style={{ maxWidth: 480, background: ts.card, border: `1px solid ${GOLD.border}` }}>
+            <p className="font-black text-center" style={{ fontSize: 14, color: GOLD.light, letterSpacing: "0.08em" }}>TIKISHNI TASDIQLANG</p>
+            <p className="text-center font-bold mt-0.5" style={{ fontSize: 11, color: ts.textSub }}>{def.title} · 1x1 LIVE</p>
+
+            <div className="mt-3 rounded-2xl p-3" style={{ background: "rgba(0,0,0,0.28)", border: `1px solid ${ts.cardBorder}` }}>
+              <Row k="Tikish summasi" v={`${slip.toLocaleString()} UZS`} />
+              <Row k="Koeffitsiyent" v={`x${(2 * (1 - (cfg.rake ?? 0.08))).toFixed(2)}`} />
+              <Row k="Taxminiy yutuq" v={`${Math.floor(slip * 2 * (1 - (cfg.rake ?? 0.08))).toLocaleString()} UZS`} good />
+              <Row k="Durangda" v="pul qaytariladi" />
+              <Row k="Balansingiz" v={`${(player?.balance ?? 0).toLocaleString()} UZS`} />
+              <Row k="Tikishdan keyin" v={`${Math.max(0, (player?.balance ?? 0) - slip).toLocaleString()} UZS`} />
+            </div>
+
+            <p className="mt-2 font-bold" style={{ fontSize: 10, color: ts.textSub }}>📜 {cfg.rules}</p>
+            {err && (
+              <p className="mt-2 rounded-xl px-3 py-2 font-black" style={{ fontSize: 11, color: "#ff9b9b", background: "rgba(239,68,68,0.12)", border: "1px solid rgba(239,68,68,0.4)" }}>⚠️ {err}</p>
+            )}
+
+            <div className="flex gap-2 mt-3">
+              <button disabled={joining} onClick={() => setSlip(null)}
+                className="flex-1 py-3 rounded-2xl font-black active:scale-95 transition disabled:opacity-50"
+                style={{ background: ts.btnSecondary, color: ts.btnSecondaryText }}>Bekor qilish</button>
+              <button disabled={joining} onClick={() => join(slip)}
+                className="flex-[1.4] py-3 rounded-2xl font-black active:scale-95 transition disabled:opacity-50"
+                style={{ background: GOLD.grad, color: "#1a1200" }}>
+                {joining ? "Yuborilmoqda..." : "TIKISH VA O'YNASH"}
+              </button>
+            </div>
+          </div>
+        </div>
       )}
 
       {status === "waiting" && (
@@ -183,6 +253,12 @@ export default function Duel({ gameKey }: { gameKey: string }) {
 
       {status === "playing" && st && (
         <>
+          <div className="mx-4 mt-2 flex items-center justify-between">
+            <span className="font-black px-2 py-0.5 rounded-full" style={{ fontSize: 9, color: transport === "sse" ? "#34d399" : "#fbbf24", background: "rgba(0,0,0,0.35)" }}>
+              {transport === "sse" ? "⚡ real-time" : "🔄 zaxira rejim"}
+            </span>
+            {err && <span className="font-bold" style={{ fontSize: 9, color: "#ff9b9b" }}>{err}</span>}
+          </div>
           <Scoreboard st={st} def={def} me={player?.firstName ?? "Siz"} ts={ts} />
           <Arena def={def} st={st} onSubmit={submit} />
           {st.winner && (
@@ -198,7 +274,7 @@ export default function Duel({ gameKey }: { gameKey: string }) {
                 {st.winner === "me" ? `+${st.prize.toLocaleString()} UZS` : st.winner === "draw" ? "Pul qaytarildi" : `-${st.stake.toLocaleString()} UZS`}
               </p>
               <div className="flex gap-2 justify-center mt-4">
-                <button onClick={() => { setStatus("idle"); setSt(null); }}
+                <button onClick={() => { unsub.current?.(); unsub.current = null; setStatus("idle"); setSt(null); }}
                   className="px-5 py-2.5 rounded-2xl font-black active:scale-95 transition"
                   style={{ background: GOLD.grad, color: "#1a1200" }}>Yana o'ynash</button>
                 <button onClick={() => nav("/live")}
@@ -246,14 +322,28 @@ export default function Duel({ gameKey }: { gameKey: string }) {
 }
 
 /* ─────────── LOBBY ─────────── */
-function Lobby({ def, stakes, onJoin, err, ts, onBack }: any) {
+/** Tikish slipi qatori */
+function Row({ k, v, good }: { k: string; v: string; good?: boolean }) {
+  const { ts } = useTheme();
+  return (
+    <div className="flex items-center justify-between py-1">
+      <span className="font-bold" style={{ fontSize: 11, color: ts.textSub }}>{k}</span>
+      <span className="font-black" style={{ fontSize: 12, color: good ? "#34d399" : ts.text }}>{v}</span>
+    </div>
+  );
+}
+
+function Lobby({ def, stakes, onJoin, err, ts, onBack, rules, enabled = true, scr, rake = 0.08 }: any) {
+  const mult = 2 * (1 - rake);
   return (
     <div className="px-4 pt-3">
       {/* O'yin surati — to'liq va jonli */}
       <div className="rounded-3xl overflow-hidden relative mb-4 mx-auto"
         style={{ border: `1px solid ${GOLD.border}`, maxWidth: 340, boxShadow: "0 14px 40px rgba(0,0,0,0.45)" }}>
-        <div className={`lfx ${imgFx(def.key)} w-full`} style={{ aspectRatio: "1 / 1" }}>
-          <img src={def.img} alt={def.title} />
+        <div className={`lfx ${imgFx(def.key)} w-full`}
+          style={{ aspectRatio: "1 / 1", ...(scr ? fxStyle(scr) : null) }}>
+          <img src={def.img} alt={def.title} {...(scr ? imgProps(scr, true) : null)}
+            style={{ width: "100%", height: "100%", objectFit: "cover" }} />
         </div>
         <div className="absolute inset-0" style={{ background: "linear-gradient(180deg,rgba(0,0,0,0.06) 50%,rgba(0,0,0,0.88))" }} />
         <span className={`absolute left-1/2 -translate-x-1/2 ${symFx(def.key)}`}
@@ -272,13 +362,13 @@ function Lobby({ def, stakes, onJoin, err, ts, onBack }: any) {
           <p className="font-black" style={{ fontSize: 11, color: GOLD.light, letterSpacing: "0.1em" }}>TIKISH MIQDORI</p>
           <span className="font-bold px-2 py-0.5 rounded-full"
             style={{ fontSize: 9, color: "#34d399", background: "rgba(16,185,129,0.12)", border: "1px solid rgba(16,185,129,0.35)" }}>
-            g'olibga 92%
+            g'olibga {Math.round((1 - rake) * 100)}%
           </span>
         </div>
         <div className="grid grid-cols-2 gap-2">
           {stakes.map((s: number, i: number) => (
-            <button key={s} onClick={() => onJoin(s)}
-              className={`rounded-2xl active:scale-95 transition ${i === stakes.length - 1 && stakes.length % 2 === 1 ? "col-span-2" : ""}`}
+            <button key={s} disabled={!enabled} onClick={() => onJoin(s)}
+              className={`rounded-2xl active:scale-95 transition disabled:opacity-40 ${i === stakes.length - 1 && stakes.length % 2 === 1 ? "col-span-2" : ""}`}
               style={{
                 background: "linear-gradient(160deg,rgba(255,255,255,0.06),rgba(0,0,0,0.25))",
                 border: `1px solid ${GOLD.border}`,
@@ -289,12 +379,25 @@ function Lobby({ def, stakes, onJoin, err, ts, onBack }: any) {
                 <span className="font-bold" style={{ fontSize: 10, color: "rgba(255,255,255,0.55)" }}>UZS</span>
               </span>
               <span className="block text-center font-bold mt-0.5" style={{ fontSize: 9, color: "#34d399" }}>
-                + {Math.floor(s * 2 * 0.92).toLocaleString()}
+                + {Math.floor(s * mult).toLocaleString()}
               </span>
             </button>
           ))}
         </div>
       </div>
+
+      {!enabled && (
+        <p className="text-center mt-3 rounded-2xl px-3 py-2 font-black" style={{ fontSize: 11, color: "#fbbf24", background: "rgba(251,191,36,0.12)", border: "1px solid rgba(251,191,36,0.35)" }}>
+          ⏸ LIVE o'yinlar vaqtincha o'chirilgan. Keyinroq urinib ko'ring.
+        </p>
+      )}
+
+      {rules && (
+        <div className="mt-3 rounded-3xl p-3" style={{ background: ts.card, border: `1px solid ${GOLD.border}` }}>
+          <p className="font-black" style={{ fontSize: 10, color: GOLD.light, letterSpacing: "0.1em" }}>📜 QOIDALAR</p>
+          <p className="font-bold mt-1" style={{ fontSize: 11, color: ts.textSub, lineHeight: 1.5 }}>{rules}</p>
+        </div>
+      )}
 
       {err && <p className="text-center mt-3 text-sm font-bold" style={{ color: "#ff6b6b" }}>{err}</p>}
       <button onClick={onBack} className="w-full mt-4 mb-4 py-3 rounded-2xl font-black active:scale-95 transition"

@@ -4,6 +4,8 @@ import { useTheme, pageBg, GOLD } from "@/lib/theme-context";
 import GameHeader from "@/components/GameHeader";
 import { sfx } from "@/lib/sound";
 import { imgFx, symFx } from "@/lib/live-fx";
+import { useLiveConfig } from "@/lib/live-config";
+import { useScreenProfile, fxStyle, imgProps } from "@/lib/screen";
 
 /** LIVE ZONA — barcha haqiqiy odamlar bilan o'ynaladigan o'yinlar shu yerda */
 
@@ -16,6 +18,8 @@ const CLASSIC = [
 ];
 
 export default function PvpHub() {
+  const { cfg } = useLiveConfig();
+  const scr = useScreenProfile();
   const [, nav] = useLocation();
   const { theme, ts } = useTheme();
   const [games, setGames] = useState<G[]>([]);
@@ -53,7 +57,7 @@ export default function PvpHub() {
     <div className="min-h-screen pb-10" style={{ background: pageBg(theme) }}>
       <GameHeader title="LIVE PVP ARENA" subtitle="Haqiqiy odamlar bilan pul tikib o'ynang" />
 
-      {/* Banner */}
+      {/* Banner — matnlar admin paneldan boshqariladi */}
       <div className="mx-4 mt-3 mb-4 rounded-3xl p-4 relative overflow-hidden"
         style={{ background: "linear-gradient(120deg,#0a3b26,#126b46)", border: `1px solid ${GOLD.border}`, boxShadow: "0 8px 28px rgba(10,59,38,0.45)" }}>
         <span className="inline-flex items-center gap-1.5 px-2 py-0.5 rounded-full font-black"
@@ -61,10 +65,10 @@ export default function PvpHub() {
           <span className="live-dot" style={{ width: 6, height: 6, borderRadius: 99, background: "#fff" }} /> LIVE
         </span>
         <p className="font-black mt-1.5" style={{ fontSize: 20, color: "#fff" }}>
-          ODAM <span className="gold-text">vs</span> ODAM
+          {cfg.bannerTitle}
         </p>
         <p className="font-bold" style={{ fontSize: 10, color: "rgba(255,255,255,0.75)" }}>
-          Tezkor matchmaking · o'yin ichida chat · g'olib bankni oladi
+          {cfg.bannerSub}
         </p>
         <p className="font-black mt-2" style={{ fontSize: 11, color: "#7CFFB2" }}>
           🟢 Hozir arenada: {online} o'yinchi
@@ -78,8 +82,8 @@ export default function PvpHub() {
           <button key={g.path} onClick={() => go(g.path)}
             className="relative overflow-hidden rounded-2xl text-left active:scale-[0.97] transition-transform"
             style={{ border: `1px solid ${GOLD.border}`, boxShadow: "0 6px 20px rgba(0,0,0,0.28)" }}>
-            <div className={`lfx ${imgFx(["durak", "blackjack", "poker"][i]!)} w-full`} style={{ aspectRatio: "1 / 1" }}>
-              <img src={g.img} alt={g.title} loading="lazy" decoding="async" />
+            <div className={`lfx ${imgFx(["durak", "blackjack", "poker"][i]!)} w-full`} style={{ aspectRatio: "1 / 1", ...fxStyle(scr) }}>
+              <img src={g.img} alt={g.title} {...imgProps(scr, i === 0)} style={{ width: "100%", height: "100%", objectFit: "cover" }} />
             </div>
             <div className="absolute inset-0" style={{ background: "linear-gradient(180deg,rgba(0,0,0,0.05),rgba(0,0,0,0.82))" }} />
             <span className={`absolute top-1.5 left-1.5 ${symFx(["durak", "blackjack", "poker"][i]!)}`} style={{ fontSize: 16 }}>{g.emoji}</span>
@@ -123,8 +127,8 @@ export default function PvpHub() {
           <button key={g.key} onClick={() => go(`/duel/${g.key}`)}
             className="relative overflow-hidden rounded-2xl text-left active:scale-[0.97] transition-transform"
             style={{ border: `1px solid ${GOLD.border}`, boxShadow: "0 6px 20px rgba(0,0,0,0.28)" }}>
-            <div className={`lfx ${imgFx(g.key)} w-full`} style={{ aspectRatio: "1 / 1" }}>
-              <img src={g.img} alt={g.title} loading="lazy" decoding="async" />
+            <div className={`lfx ${imgFx(g.key)} w-full`} style={{ aspectRatio: "1 / 1", ...fxStyle(scr) }}>
+              <img src={g.img} alt={g.title} {...imgProps(scr)} style={{ width: "100%", height: "100%", objectFit: "cover" }} />
             </div>
             <div className="absolute inset-0" style={{ background: "linear-gradient(180deg,rgba(0,0,0,0.04) 45%,rgba(0,0,0,0.85))" }} />
             <span className="absolute top-1.5 left-1.5 px-1.5 py-0.5 rounded-full font-black"

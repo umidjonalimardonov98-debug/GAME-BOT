@@ -14,12 +14,52 @@ const MAX_MEDIA = 700_000; // ~700KB data URL
 /** oxirgi yozgan vaqt — spam himoyasi */
 const lastSend = new Map<string, number>();
 
+let archiveReady = false;
+/** Arxiv jadvali — o'chirilgan xabarlar yo'qolmasin (audit uchun) */
+async function ensureArchive() {
+  if (archiveReady) return;
+  await db.execute(sql`
+    CREATE TABLE IF NOT EXISTS chat_messages_archive (
+      id integer PRIMARY KEY,
+      telegram_id text NOT NULL,
+      name text NOT NULL,
+      username text,
+      text text NOT NULL,
+      kind text,
+      media text,
+      reply_to text,
+      admin boolean NOT NULL DEFAULT false,
+      created_at timestamp NOT NULL,
+      archived_at timestamp NOT NULL DEFAULT now()
+    )
+  `);
+  archiveReady = true;
+}
+
 let lastCleanup = 0;
+/**
+ * 10 soatlik siyosat: muddati o'tgan xabarlar avval arxivga ko'chiriladi,
+ * keyin faol jadvaldan o'chadi. Foydalanuvchi faqat 10 soat ichidagini ko'radi.
+ */
 async function cleanup() {
   if (Date.now() - lastCleanup < 60_000) return;
   lastCleanup = Date.now();
+  const cutoff = new Date(Date.now() - TTL_MS);
   try {
-    await db.delete(chatMessagesTable).where(lt(chatMessagesTable.createdAt, new Date(Date.now() - TTL_MS)));
+    await ensureArchive();
+    // media (data URL) arxivda saqlanmaydi — joy tejaladi
+    await db.execute(sql`
+      INSERT INTO chat_messages_archive
+        (id, telegram_id, name, username, text, kind, media, reply_to, admin, created_at)
+      SELECT id, telegram_id, name, username, text, kind, NULL, reply_to, admin, created_at
+      FROM chat_messages WHERE created_at < ${cutoff}
+      ON CONFLICT (id) DO NOTHING
+    `);
+  } catch {
+    // arxiv ishlamasa ham tozalash davom etadi
+  }
+  try {
+    await db.delete(chatMessagesTable).where(lt(chatMessagesTable.createdAt, cutoff));
   } catch {
     // jadval hali yaratilmagan bo'lishi mumkin
   }
@@ -43,11 +83,17 @@ function shape(m: Row, me: string) {
     replyTo: m.replyTo || null,
     admin: m.admin,
     at: new Date(m.createdAt).getTime(),
+    expiresAt: new Date(m.createdAt).getTime() + TTL_MS,
     mine: m.telegramId === me,
   };
 }
 
 const router: IRouter = Router();
+
+/** Saqlash siyosati — mijoz "xabarlar 10 soat saqlanadi" deb ko'rsatadi */
+router.get("/chat/policy", (_req, res) => {
+  res.json({ ttlMs: TTL_MS, ttlHours: TTL_MS / 3_600_000, archived: true });
+});
 
 /** Yangi xabarlar oqimi */
 router.get("/chat/feed", async (req, res) => {
@@ -71,6 +117,7 @@ router.get("/chat/feed", async (req, res) => {
       messages: list,
       lastId: list.length ? list[list.length - 1]!.id : since,
       total: Number(cnt ?? 0),
+      ttlMs: TTL_MS,
     });
   } catch {
     res.json({ messages: [], lastId: since, total: 0 });

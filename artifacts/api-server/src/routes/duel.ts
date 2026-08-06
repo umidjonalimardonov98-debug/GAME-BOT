@@ -2,6 +2,7 @@ import { Router, type IRouter } from "express";
 import { eq } from "drizzle-orm";
 import { db, playersTable, transactionsTable } from "@workspace/db";
 import { DUELS, DUEL_MAP, resolveRound, autoSubmission, type Submission } from "../lib/duel";
+import { getLiveSettings } from "../lib/live-settings";
 
 /**
  * DUEL API — 1x1 haqiqiy odamlar bilan o'ynaladigan barcha PVP o'yinlari.
@@ -40,6 +41,22 @@ const byPlayer = new Map<string, string>();
 const queue = new Map<string, { telegramId: string; name: string; at: number }>();
 
 const rid = () => Math.random().toString(36).slice(2, 9);
+
+/** Admin paneldagi taymer (0 = har o'yinning o'z taymeri). Fon rejimda yangilanadi. */
+let cfgTimerMs = 0;
+let cfgEnabled = true;
+async function syncLiveCfg() {
+  try {
+    const s = await getLiveSettings();
+    cfgTimerMs = s.timerMs;
+    cfgEnabled = s.enabled;
+  } catch { /* standart qiymatlar */ }
+}
+void syncLiveCfg();
+setInterval(() => void syncLiveCfg(), 10_000).unref?.();
+
+/** Raund vaqti — admin qiymati bo'lsa u ustun */
+const roundTimer = (def: { timer: number }) => (cfgTimerMs > 0 ? cfgTimerMs : def.timer);
 
 async function money(telegramId: string, amount: number, type: "win" | "loss" | "refund", game: string) {
   const [p] = await db.select().from(playersTable).where(eq(playersTable.telegramId, telegramId));
@@ -112,7 +129,7 @@ function tick(room: Room) {
       if (a === b && room.round < def.rounds + 3) {
         // sudden death — qo'shimcha raund
         room.phase = "play";
-        room.deadline = now + def.timer;
+        room.deadline = now + roundTimer(def);
         return;
       }
       room.winner = a === b ? -1 : a > b ? 0 : 1;
@@ -121,7 +138,7 @@ function tick(room: Room) {
       void payout(room);
     } else {
       room.phase = "play";
-      room.deadline = now + def.timer;
+      room.deadline = now + roundTimer(def);
     }
   }
 }
@@ -158,6 +175,9 @@ router.post("/duel/queue", async (req, res) => {
     const def = DUEL_MAP.get(game);
     if (!telegramId) return res.status(400).json({ error: "telegramId kerak" });
     if (!def) return res.status(400).json({ error: "O'yin topilmadi" });
+    await syncLiveCfg();
+    if (!cfgEnabled)
+      return res.status(503).json({ error: "LIVE o'yinlar vaqtincha o'chirilgan. Keyinroq urinib ko'ring." });
     if (!STAKES.includes(stake)) return res.status(400).json({ error: "Noto'g'ri tikish" });
 
     const cur = byPlayer.get(telegramId);
@@ -188,7 +208,7 @@ router.post("/duel/queue", async (req, res) => {
           { telegramId, name, side: 1, score: 0 },
         ],
         round: 0, phase: "play",
-        deadline: Date.now() + def.timer + 2500,
+        deadline: Date.now() + roundTimer(def) + 2500,
         revealUntil: 0,
         subs: [null, null], last: null, history: [], chat: [], chatN: 0,
         winner: null, createdAt: Date.now(), paid: false,
@@ -220,23 +240,22 @@ function ctx(req: any) {
   return { telegramId, room, me };
 }
 
-router.get("/duel/state", (req, res) => {
-  const { room, me } = ctx(req);
-  if (!room || !me) return res.status(404).json({ error: "Xona topilmadi" });
+function buildState(room: Room, me: P, since: number) {
   tick(room);
   const def = DUEL_MAP.get(room.game)!;
   const foe = room.players.find((p) => p.side !== me.side)!;
   const mine = me.side;
-  const since = Number(req.query.chatSince ?? 0) || 0;
 
-  res.json({
+  return {
     roomId: room.id,
     game: room.game,
     stake: room.stake,
     prize: Math.floor(room.stake * 2 * (1 - RAKE)),
+    rake: RAKE,
     rounds: def.rounds,
     round: room.round,
     phase: room.phase,
+    timer: roundTimer(def),
     msLeft: Math.max(0, (room.phase === "play" ? room.deadline : room.revealUntil) - Date.now()),
     myScore: me.score,
     foeScore: foe.score,
@@ -250,7 +269,70 @@ router.get("/duel/state", (req, res) => {
     winner: room.phase === "done" ? (room.winner === -1 ? "draw" : room.winner === mine ? "me" : "foe") : null,
     chat: room.chat.filter((c) => c.n > since),
     chatLast: room.chatN,
+    at: Date.now(),
+  };
+}
+
+router.get("/duel/state", (req, res) => {
+  const { room, me } = ctx(req);
+  if (!room || !me) return res.status(404).json({ error: "Xona topilmadi" });
+  const since = Number(req.query.chatSince ?? 0) || 0;
+  res.json(buildState(room, me, since));
+});
+
+/**
+ * REAL-TIME oqim (SSE) — pul tikish natijasi, taymer va raund holati
+ * so'rovsiz, o'zi yangilanadi. Mijoz uzilsa polling'ga qaytadi.
+ */
+router.get("/duel/stream", (req, res) => {
+  const { room, me } = ctx(req);
+  if (!room || !me) return res.status(404).json({ error: "Xona topilmadi" });
+
+  res.writeHead(200, {
+    "Content-Type": "text/event-stream",
+    "Cache-Control": "no-cache, no-transform",
+    Connection: "keep-alive",
+    "X-Accel-Buffering": "no",
   });
+  res.write("retry: 3000\n\n");
+
+  let chatSince = Number(req.query.chatSince ?? 0) || 0;
+  let lastSig = "";
+  let closed = false;
+
+  const send = (event: string, data: unknown) => {
+    if (closed) return;
+    res.write(`event: ${event}\ndata: ${JSON.stringify(data)}\n\n`);
+  };
+
+  const push = (force = false) => {
+    const live = rooms.get(room.id);
+    if (!live) { send("closed", { reason: "Xona yopildi" }); return stop(); }
+    const player = live.players.find((p) => p.telegramId === me.telegramId);
+    if (!player) { send("closed", { reason: "O'yinchi topilmadi" }); return stop(); }
+    const state = buildState(live, player, chatSince);
+    if (state.chat.length) chatSince = state.chatLast;
+    // Taymer har sekund, qolgan holat faqat o'zgarganda ketadi
+    const sig = JSON.stringify({ ...state, msLeft: 0, at: 0 });
+    if (force || sig !== lastSig || state.phase === "play") {
+      lastSig = sig;
+      send("state", state);
+    }
+  };
+
+  const iv = setInterval(() => push(), 700);
+  const hb = setInterval(() => { if (!closed) res.write(": hb\n\n"); }, 15_000);
+  push(true);
+
+  function stop() {
+    if (closed) return;
+    closed = true;
+    clearInterval(iv);
+    clearInterval(hb);
+    res.end();
+  }
+
+  req.on("close", stop);
 });
 
 router.post("/duel/submit", (req, res) => {
@@ -287,6 +369,22 @@ router.post("/duel/forfeit", async (req, res) => {
     await payout(room);
   }
   res.json({ ok: true });
+});
+
+/** LIVE zona konfiguratsiyasi — admin paneldan boshqariladi */
+router.get("/live/config", async (_req, res) => {
+  const s = await getLiveSettings();
+  cfgTimerMs = s.timerMs;
+  cfgEnabled = s.enabled;
+  res.json({
+    enabled: s.enabled,
+    timerMs: s.timerMs,
+    rules: s.rules,
+    bannerTitle: s.bannerTitle,
+    bannerSub: s.bannerSub,
+    rake: RAKE,
+    stakes: STAKES,
+  });
 });
 
 export default router;
