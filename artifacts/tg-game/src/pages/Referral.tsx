@@ -1,7 +1,9 @@
 import { useEffect, useMemo, useState } from "react";
 import { useLocation } from "wouter";
 import { usePlayer } from "@/lib/player-context";
-import { ArrowLeft, Copy, Check, Share2, Gift, ClipboardList, Lock } from "lucide-react";
+import { ArrowLeft, Copy, Check, Share2, Gift, ClipboardList, Lock, Users } from "lucide-react";
+
+type RefFriend = { username: string | null; name: string; photoUrl: string | null; joinedAt: string | null };
 
 type RefInfo = {
   count: number;
@@ -10,6 +12,7 @@ type RefInfo = {
   bonus: number;
   botUsername: string;
   completed: boolean;
+  friends?: RefFriend[];
 };
 
 const GREEN = {
@@ -59,6 +62,11 @@ export default function Referral() {
   const inStage = count - tier * step; // 0..step-1
   const pct = Math.min(100, (inStage / step) * 100);
   const completedTiers = tier;
+  const remaining = step - inStage; // shu bosqichda yana nechta do'st kerak
+  // eng eskidan yangiga — 1-do'st, 2-do'st ... tartibida
+  const friends = useMemo<RefFriend[]>(() => [...(info?.friends ?? [])].reverse(), [info?.friends]);
+  const friendAt = (num: number): RefFriend | undefined => friends[num - 1];
+  const label = (f?: RefFriend) => (f ? (f.username ? `@${f.username}` : f.name) : "");
 
   const coins = useMemo(
     () => Array.from({ length: 14 }, (_, i) => ({
@@ -185,7 +193,7 @@ export default function Referral() {
                   const done = num <= count;
                   return (
                     <div key={i} className="flex flex-col items-center gap-1.5">
-                      <div className="rounded-full flex items-center justify-center ref-anim"
+                      <div className="rounded-full flex items-center justify-center ref-anim relative overflow-visible"
                         style={{
                           width: 44, height: 44,
                           background: done ? GREEN.grad : "rgba(255,255,255,.08)",
@@ -193,10 +201,22 @@ export default function Referral() {
                           boxShadow: done ? `0 8px 20px ${GREEN.glow}` : "none",
                           animation: done && num === count ? "refPulse 1.8s ease-out infinite" : undefined,
                         }}>
-                        {done ? <Check size={20} color="#04240f" /> : <Lock size={17} color="rgba(255,255,255,.45)" />}
+                        {done ? (
+                          friendAt(num)?.photoUrl ? (
+                            <img src={friendAt(num)!.photoUrl!} alt={label(friendAt(num))} className="w-full h-full rounded-full object-cover" />
+                          ) : (
+                            <Check size={20} color="#04240f" />
+                          )
+                        ) : <Lock size={17} color="rgba(255,255,255,.45)" />}
+                        {done ? (
+                          <span className="absolute -bottom-0.5 -right-0.5 rounded-full flex items-center justify-center"
+                            style={{ width: 16, height: 16, background: GREEN.grad, border: "1px solid rgba(4,36,15,.6)" }}>
+                            <Check size={10} color="#04240f" />
+                          </span>
+                        ) : null}
                       </div>
-                      <span className="font-bold" style={{ fontSize: 10, color: done ? GREEN.main : "rgba(255,255,255,.42)" }}>
-                        {num} do'st
+                      <span className="font-bold w-full px-0.5 truncate text-center" style={{ fontSize: 9.5, color: done ? GREEN.main : "rgba(255,255,255,.42)" }}>
+                        {done ? (label(friendAt(num)) || `${num}-do'st`) : `${num} do'st`}
                       </span>
                     </div>
                   );
@@ -215,6 +235,10 @@ export default function Referral() {
                 {completedTiers > 0
                   ? <>✅ {completedTiers * step} ta do'st to'ldi! Admin sizga <span style={{ color: GREEN.main }}>{completedTiers} ta promokod</span> yuboradi. Keyingi bosqich: {stageStart}-{stageEnd}.</>
                   : <>{step} ta do'st taklif qiling va <span style={{ color: G.main }}>NOMALUM</span> summali promokod oling!</>}
+                {" "}
+                <span style={{ color: remaining === 1 ? "#ffd166" : "rgba(255,255,255,.7)" }}>
+                  {remaining === 1 ? "Yana atigi 1 ta do'st qoldi! 🔥" : `Yana ${remaining} ta do'st qoldi.`}
+                </span>
               </p>
             </div>
 
@@ -248,6 +272,60 @@ export default function Referral() {
               style={{ background: G.grad, color: "#1a1204", boxShadow: `0 12px 28px ${G.glow}`, fontSize: 14 }}>
               <Share2 size={18} /> DO'STLARGA ULASHISH
             </button>
+          </div>
+        </div>
+
+        {/* DO'STLAR RO'YXATI */}
+        <div className="px-4 mt-3">
+          <div className="rounded-3xl p-4" style={{
+            background: "linear-gradient(160deg, rgba(38,25,6,.86), rgba(14,10,4,.9))",
+            border: `1px solid ${G.border}`, boxShadow: "0 16px 40px rgba(0,0,0,.5)",
+          }}>
+            <div className="flex items-center gap-2.5 mb-3">
+              <div className="w-9 h-9 rounded-2xl flex items-center justify-center shrink-0"
+                style={{ background: G.grad, boxShadow: `0 8px 20px ${G.glow}` }}>
+                <Users size={18} color="#1a1204" />
+              </div>
+              <p className="font-black flex-1" style={{ fontSize: 14, color: "#fff" }}>Taklif qilgan do'stlaringiz</p>
+              <span className="px-2.5 py-1 rounded-lg font-black" style={{ fontSize: 11, color: "#04240f", background: GREEN.grad }}>
+                {friends.length}
+              </span>
+            </div>
+
+            {friends.length === 0 ? (
+              <p className="text-center py-4 font-bold" style={{ fontSize: 12, color: "rgba(255,255,255,.55)" }}>
+                Hozircha do'st yo'q — havolangizni ulashing 👆
+              </p>
+            ) : (
+              <div className="space-y-2">
+                {friends.map((f, i) => {
+                  const done = i + 1 <= completedTiers * step;
+                  return (
+                    <div key={i} className="flex items-center gap-3 rounded-2xl px-3 py-2.5" style={{
+                      background: "rgba(255,255,255,.05)",
+                      border: `1px solid ${done ? "rgba(57,196,111,.4)" : G.border}`,
+                    }}>
+                      <div className="rounded-full flex items-center justify-center shrink-0 overflow-hidden"
+                        style={{ width: 38, height: 38, background: done ? GREEN.grad : G.grad, boxShadow: `0 6px 16px ${done ? GREEN.glow : G.glow}` }}>
+                        {f.photoUrl
+                          ? <img src={f.photoUrl} alt={label(f)} className="w-full h-full object-cover" />
+                          : <span className="font-black" style={{ fontSize: 15, color: "#1a1204" }}>{(f.name || "?").charAt(0).toUpperCase()}</span>}
+                      </div>
+                      <div className="min-w-0 flex-1">
+                        <p className="font-black truncate" style={{ fontSize: 13, color: "#fff" }}>{f.name}</p>
+                        <p className="font-bold truncate" style={{ fontSize: 11, color: f.username ? G.main : "rgba(255,255,255,.5)" }}>
+                          {f.username ? `@${f.username}` : "username yo'q"}
+                        </p>
+                      </div>
+                      <span className="font-black shrink-0 px-2 py-1 rounded-lg" style={{
+                        fontSize: 10, color: done ? "#04240f" : "rgba(255,255,255,.7)",
+                        background: done ? GREEN.grad : "rgba(255,255,255,.08)",
+                      }}>{i + 1}-do'st</span>
+                    </div>
+                  );
+                })}
+              </div>
+            )}
           </div>
         </div>
 
