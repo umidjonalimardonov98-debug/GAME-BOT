@@ -17,6 +17,13 @@ declare global {
         openTelegramLink?: (url: string) => void;
         close?: () => void;
         ready?: () => void;
+        disableVerticalSwipes?: () => void;
+        enableClosingConfirmation?: () => void;
+        setHeaderColor?: (c: string) => void;
+        viewportStableHeight?: number;
+        viewportHeight?: number;
+        isExpanded?: boolean;
+        onEvent?: (ev: string, cb: () => void) => void;
         BackButton?: {
           show: () => void;
           hide: () => void;
@@ -49,7 +56,21 @@ export function openBotChat(username?: string) {
   else window.open(url, "_blank");
 }
 
+function applyViewportHeight() {
+  const wa = window.Telegram?.WebApp;
+  const h = wa?.viewportStableHeight || wa?.viewportHeight || window.innerHeight;
+  document.documentElement.style.setProperty("--app-vh", `${Math.round(h)}px`);
+}
+
 export function initTelegramApp() {
-  window.Telegram?.WebApp?.expand?.();
-  window.Telegram?.WebApp?.ready?.();
+  const wa = window.Telegram?.WebApp;
+  wa?.ready?.();
+  // To'liq (fullscreen) emas — oddiy kengaytirilgan holat
+  wa?.expand?.();
+  // Pastga/tepaga surganda mini app yopilib/qimirlab ketmasin
+  wa?.disableVerticalSwipes?.();
+  applyViewportHeight();
+  wa?.onEvent?.("viewportChanged", applyViewportHeight);
+  window.addEventListener("resize", applyViewportHeight);
+  window.addEventListener("orientationchange", applyViewportHeight);
 }

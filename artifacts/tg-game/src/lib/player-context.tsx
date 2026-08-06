@@ -16,6 +16,7 @@ export interface Player {
   totalDeposited: number;
   wagerRequirement: number;
   totalWagered: number;
+  banned?: boolean;
 }
 
 interface PlayerContextType {

@@ -39,6 +39,7 @@ import FruitBlast from "@/pages/FruitBlast";
 import Derby from "@/pages/Derby";
 import MoneyWheel from "@/pages/MoneyWheel";
 import NotFound from "@/pages/not-found";
+import Banned from "@/pages/Banned";
 import QuickGame from "@/pages/QuickGame";
 import GlobalChat from "@/pages/GlobalChat";
 import PvpDurak from "@/pages/PvpDurak";
@@ -48,6 +49,7 @@ import { NEW_GAMES } from "@/lib/new-games";
 import RoundBreakdown from "@/components/casino/RoundBreakdown";
 import GlobalWinFx from "@/components/casino/GlobalWinFx";
 import LiveBg from "@/components/casino/LiveBg";
+import { usePlayer } from "@/lib/player-context";
 
 const queryClient = new QueryClient({
   defaultOptions: { queries: { retry: 1, staleTime: 30000 } },
@@ -102,6 +104,23 @@ function Router() {
   );
 }
 
+function AppBody() {
+  const { player } = usePlayer();
+  // Ban qilingan foydalanuvchi o'yinga ham kira olmaydi
+  if (player?.banned) return <Banned />;
+  return (
+    <>
+      <WouterRouter base={import.meta.env.BASE_URL.replace(/\/$/, "")}>
+        <LiveBg />
+        <Router />
+      </WouterRouter>
+      <RoundBreakdown />
+      <GlobalWinFx />
+      <Toaster />
+    </>
+  );
+}
+
 function App() {
 
   return (
@@ -109,13 +128,7 @@ function App() {
       <LangProvider>
         <ThemeProvider>
           <PlayerProvider>
-            <WouterRouter base={import.meta.env.BASE_URL.replace(/\/$/, "")}>
-              <LiveBg />
-              <Router />
-            </WouterRouter>
-            <RoundBreakdown />
-            <GlobalWinFx />
-            <Toaster />
+            <AppBody />
           </PlayerProvider>
         </ThemeProvider>
       </LangProvider>

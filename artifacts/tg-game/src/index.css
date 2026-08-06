@@ -51,10 +51,28 @@
 
 @layer base {
   * { @apply border-border; box-sizing: border-box; }
+  html, body {
+    width: 100%;
+    max-width: 100%;
+    overflow-x: hidden;
+    overscroll-behavior: none;
+  }
   body {
     @apply bg-background text-foreground font-sans antialiased;
-    min-height: 100vh;
+    /* Telegram mini app: sahifa o'zi scroll qilmaydi -> fixed elementlar qimirlamaydi */
+    position: fixed;
+    inset: 0;
+    height: var(--app-vh, 100dvh);
+    overflow: hidden;
+    touch-action: pan-y;
+  }
+  #root {
+    height: var(--app-vh, 100dvh);
+    width: 100%;
+    overflow-y: auto;
     overflow-x: hidden;
+    -webkit-overflow-scrolling: touch;
+    overscroll-behavior-y: contain;
   }
 }
 
@@ -246,6 +264,7 @@
 
 /* Silliq scroll va mobil tap kechikishini yo'qotish */
 html { scroll-behavior: smooth; }
+:root { --app-vh: 100dvh; }
 button, [role="button"], a {
   touch-action: manipulation;
   -webkit-tap-highlight-color: transparent;
@@ -627,3 +646,6 @@ button:not(:disabled):active { transform: scale(.955); }
 @media (prefers-reduced-motion: reduce) {
   .fx-banner, .fx-reveal, .fx-pop, .fx-shake, .fx-banner-shine { animation: none !important; }
 }
+
+/* Telegram viewport balandligi bo'yicha ekran balandligi */
+.min-h-screen { min-height: var(--app-vh, 100dvh); }

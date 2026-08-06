@@ -102,6 +102,7 @@ router.post("/players/:telegramId/deposit-request", async (req, res): Promise<vo
 
   const [player] = await db.select().from(playersTable).where(eq(playersTable.telegramId, params.data.telegramId));
   if (!player) { res.status(404).json({ error: "Player not found" }); return; }
+  if (player.banned) { res.status(403).json({ error: "Ban qilingansiz" }); return; }
 
   if (body.data.amount < 25_000) {
     res.status(400).json({ error: "Minimal depozit: 25 000 UZS" });
@@ -137,6 +138,7 @@ router.post("/players/:telegramId/withdraw", async (req, res): Promise<void> => 
 
   const [player] = await db.select().from(playersTable).where(eq(playersTable.telegramId, params.data.telegramId));
   if (!player) { res.status(404).json({ error: "Player not found" }); return; }
+  if (player.banned) { res.status(403).json({ error: "Ban qilingansiz" }); return; }
 
   if (player.totalDeposited <= 0) {
     res.status(400).json({ error: "Pul yechish uchun avval depozit qilishingiz kerak" });
@@ -205,6 +207,7 @@ router.post("/players/:telegramId/bet", async (req, res): Promise<void> => {
 
   const [player] = await db.select().from(playersTable).where(eq(playersTable.telegramId, params.data.telegramId));
   if (!player) { res.status(404).json({ error: "Player not found" }); return; }
+  if (player.banned) { res.status(403).json({ error: "Ban qilingansiz" }); return; }
   const adminInfinite = isAdminTelegramId(params.data.telegramId);
   if (adminInfinite) player.balance = await keepAdminBalance(player.telegramId, player.balance);
   if (!adminInfinite && player.balance < body.data.amount) {
@@ -344,6 +347,7 @@ function formatPlayer(p: typeof playersTable.$inferSelect) {
     totalDeposited: p.totalDeposited,
     wagerRequirement: p.wagerRequirement,
     totalWagered: p.totalWagered,
+    banned: p.banned,
     createdAt: p.createdAt.toISOString(),
     updatedAt: p.updatedAt.toISOString(),
   };
