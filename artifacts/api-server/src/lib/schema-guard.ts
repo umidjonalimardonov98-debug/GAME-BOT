@@ -33,26 +33,6 @@ export async function ensureExtraSchema(
   `);
   await run(sql`CREATE INDEX IF NOT EXISTS chat_messages_created_at_idx ON chat_messages (created_at)`);
 
-  // Sport tikishlari (OpticOdds)
-  await run(sql`
-    CREATE TABLE IF NOT EXISTS sports_bets (
-      id serial PRIMARY KEY,
-      player_id integer NOT NULL REFERENCES players(id),
-      telegram_id text NOT NULL,
-      bet_type text NOT NULL DEFAULT 'single',
-      stake integer NOT NULL,
-      total_odds integer NOT NULL,
-      potential_win integer NOT NULL,
-      status text NOT NULL DEFAULT 'pending',
-      payout integer NOT NULL DEFAULT 0,
-      selections jsonb NOT NULL,
-      created_at timestamp NOT NULL DEFAULT now(),
-      settled_at timestamp
-    )
-  `);
-  await run(sql`CREATE INDEX IF NOT EXISTS sports_bets_tg_idx ON sports_bets (telegram_id)`);
-  await run(sql`CREATE INDEX IF NOT EXISTS sports_bets_status_idx ON sports_bets (status)`);
-
   // O'yin sozlamalari: yangi standart yutish foizi 30%
   await run(sql`ALTER TABLE game_settings ALTER COLUMN win_chance SET DEFAULT 30`);
 }

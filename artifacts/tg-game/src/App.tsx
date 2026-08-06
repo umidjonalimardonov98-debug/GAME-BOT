@@ -6,7 +6,6 @@ import { LangProvider } from "@/lib/lang-context";
 import { ThemeProvider } from "@/lib/theme-context";
 import Referral from "@/pages/Referral";
 import Home from "@/pages/Home";
-import Sports from "@/pages/Sports";
 import AppleOfFortune from "@/pages/AppleOfFortune";
 import Dice from "@/pages/Dice";
 import Aviator from "@/pages/Aviator";
@@ -60,7 +59,6 @@ function Router() {
   return (
     <Switch>
       <Route path="/" component={Home} />
-      <Route path="/sports" component={Sports} />
       <Route path="/apple" component={AppleOfFortune} />
       <Route path="/dice" component={Dice} />
       <Route path="/aviator" component={Aviator} />
