@@ -6,6 +6,7 @@ import { db } from "@workspace/db";
 import { sql } from "drizzle-orm";
 import { ensureGameSettingsColumns } from "./lib/games-catalog";
 import { ensureExtraSchema } from "./lib/schema-guard";
+import { startSportsSettlement } from "./routes/sports";
 
 const rawPort = process.env["PORT"];
 
@@ -54,6 +55,8 @@ async function main() {
   } else {
     logger.info("Bot disabled in development");
   }
+
+  startSportsSettlement();
 
   app.listen(port, (err) => {
     if (err) {

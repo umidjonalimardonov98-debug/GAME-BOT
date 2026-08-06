@@ -199,6 +199,24 @@ export default function Home() {
         </div>
       </div>
 
+      {/* ─── SPORT (jonli koeffitsientlar) ─── */}
+      <button onClick={() => nav("/sports")}
+        className="mx-4 mb-3 rounded-3xl relative overflow-hidden active:scale-[0.98] transition-transform flex items-center gap-3 px-4 py-3.5 pro-sheen"
+        style={{
+          background: "linear-gradient(135deg,#0b3d2e,#12855f)",
+          border: "1px solid rgba(52,211,153,0.45)",
+          boxShadow: "0 12px 32px rgba(18,133,95,0.35)",
+        }}>
+        <span style={{ fontSize: 26 }}>⚽</span>
+        <div className="flex-1 text-left">
+          <p className="font-black leading-none" style={{ fontSize: 15, color: "#fff" }}>SPORT · LIVE STAVKA</p>
+          <p className="font-bold mt-1" style={{ fontSize: 10, color: "rgba(255,255,255,0.72)" }}>
+            Futbol · Basketbol · Tennis — real koeffitsientlar
+          </p>
+        </div>
+        <span className="px-2 py-1 rounded-lg font-black" style={{ fontSize: 9, background: "rgba(255,255,255,0.16)", color: "#fff" }}>YANGI</span>
+      </button>
+
       {/* ─── BALANCE CARD ─── */}
       <div className="mx-4 rounded-3xl p-4 mb-3 relative overflow-hidden pro-sheen"
         style={{

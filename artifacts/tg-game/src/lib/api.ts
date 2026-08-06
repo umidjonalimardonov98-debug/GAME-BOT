@@ -106,3 +106,65 @@ export async function getGameStats() {
   if (!res.ok) return null;
   return res.json();
 }
+
+// ─── SPORT (OpticOdds) ───────────────────────────────────────────────
+export type SportOdd = {
+  market: string;
+  marketId: string;
+  name: string;
+  points: number | null;
+  line: string | null;
+  isMain: boolean;
+  price: number;
+};
+
+export type SportFixture = {
+  id: string;
+  startDate: string;
+  status: string;
+  isLive: boolean;
+  sport: string;
+  league: string;
+  label: string;
+  home: { name: string; logo: string | null };
+  away: { name: string; logo: string | null };
+  odds: SportOdd[];
+};
+
+async function sportJson(path: string) {
+  const res = await fetch(`${BASE}${path}`);
+  const data = await res.json().catch(() => ({}));
+  if (!res.ok) throw new Error(data?.message || data?.error || "Sport xatosi");
+  return data;
+}
+
+export function getSportCatalog(): Promise<{ sports: { id: string; name: string }[]; leagues: { id: string; name: string; sport: string }[] }> {
+  return sportJson("/sports/catalog");
+}
+
+export function getSportFixtures(p: { sport?: string; league?: string; live?: boolean }): Promise<{ fixtures: SportFixture[] }> {
+  const q = new URLSearchParams();
+  if (p.sport) q.set("sport", p.sport);
+  if (p.league) q.set("league", p.league);
+  if (p.live) q.set("live", "true");
+  return sportJson(`/sports/fixtures?${q.toString()}`);
+}
+
+export function getSportFixture(id: string): Promise<{ fixture: SportFixture; markets: { market: string; selections: SportOdd[] }[] }> {
+  return sportJson(`/sports/fixture/${id}`);
+}
+
+export async function placeSportBet(telegramId: string, stake: number, selections: unknown[]) {
+  const res = await fetch(`${BASE}/sports/bet`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ telegramId, stake, selections }),
+  });
+  const data = await res.json().catch(() => ({}));
+  if (!res.ok) throw new Error(data?.error || data?.message || "Tikish amalga oshmadi");
+  return data;
+}
+
+export function getSportBets(telegramId: string): Promise<{ bets: any[] }> {
+  return sportJson(`/sports/bets/${telegramId}`);
+}

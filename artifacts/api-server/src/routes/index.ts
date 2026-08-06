@@ -10,6 +10,7 @@ import chatRouter from "./chat";
 import pvpRouter from "./pvp";
 import pvpBlackjackRouter from "./pvp-blackjack";
 import pvpPokerRouter from "./pvp-poker";
+import sportsRouter from "./sports";
 
 const router: IRouter = Router();
 
@@ -24,5 +25,6 @@ router.use(chatRouter);
 router.use(pvpRouter);
 router.use(pvpBlackjackRouter);
 router.use(pvpPokerRouter);
+router.use(sportsRouter);
 
 export default router;
