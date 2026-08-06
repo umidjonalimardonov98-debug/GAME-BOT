@@ -151,23 +151,39 @@ export function getActiveFixtures(p: { sport?: string; league?: string; is_live?
   return opticGet<{ data: OpticFixture[] }>("/fixtures/active", p, 30_000);
 }
 
-/** Koeffitsientlar (decimal formatda) */
-export function getFixtureOdds(p: {
+/** ID larni bo'laklarga bo'lish (OpticOdds: bitta so'rovda maks 5 ta id) */
+const MAX_IDS = 5;
+function chunk<T>(arr: T[], size = MAX_IDS): T[][] {
+  const out: T[][] = [];
+  for (let i = 0; i < arr.length; i += size) out.push(arr.slice(i, i + size));
+  return out;
+}
+
+/** Koeffitsientlar (decimal formatda) — 5 tadan bo'lib so'raladi */
+export async function getFixtureOdds(p: {
   fixture_id: string[];
   market?: string[];
   is_main?: boolean;
-}) {
-  return opticGet<{ data: OpticFixtureOdds[] }>(
-    "/fixtures/odds",
-    {
-      fixture_id: p.fixture_id,
-      sportsbook: SPORTSBOOKS(),
-      market: p.market,
-      is_main: p.is_main,
-      odds_format: "DECIMAL",
-    },
-    10_000,
+}): Promise<{ data: OpticFixtureOdds[] }> {
+  const ids = [...new Set(p.fixture_id.filter(Boolean))];
+  if (!ids.length) return { data: [] };
+
+  const batches = await Promise.all(
+    chunk(ids).map((part) =>
+      opticGet<{ data: OpticFixtureOdds[] }>(
+        "/fixtures/odds",
+        {
+          fixture_id: part,
+          sportsbook: SPORTSBOOKS(),
+          market: p.market,
+          is_main: p.is_main,
+          odds_format: "DECIMAL",
+        },
+        10_000,
+      ).catch(() => ({ data: [] as OpticFixtureOdds[] })),
+    ),
   );
+  return { data: batches.flatMap((b) => b.data ?? []) };
 }
 
 /** Bet hisob-kitobi (settlement) */
@@ -179,7 +195,16 @@ export function gradeBet(p: { fixture_id: string; market: string; name: string }
   );
 }
 
-/** Natijalar (jonli hisob) */
-export function getResults(fixture_id: string[]) {
-  return opticGet<{ data: any[] }>("/fixtures/results", { fixture_id }, 15_000);
+/** Natijalar (jonli hisob) — 5 tadan bo'lib so'raladi */
+export async function getResults(fixture_id: string[]): Promise<{ data: any[] }> {
+  const ids = [...new Set(fixture_id.filter(Boolean))];
+  if (!ids.length) return { data: [] };
+  const batches = await Promise.all(
+    chunk(ids).map((part) =>
+      opticGet<{ data: any[] }>("/fixtures/results", { fixture_id: part }, 15_000).catch(() => ({
+        data: [] as any[],
+      })),
+    ),
+  );
+  return { data: batches.flatMap((b) => b.data ?? []) };
 }
