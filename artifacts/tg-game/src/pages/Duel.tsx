@@ -5,6 +5,7 @@ import { useTheme, pageBg, GOLD } from "@/lib/theme-context";
 import { sfx } from "@/lib/sound";
 import GameHeader from "@/components/GameHeader";
 import { Send, Flag, Users } from "lucide-react";
+import { imgFx, symFx } from "@/lib/live-fx";
 
 /**
  * DUEL — universal 1x1 PVP sahifasi.
@@ -172,7 +173,7 @@ export default function Duel({ gameKey }: { gameKey: string }) {
           <div className="flex justify-center gap-1.5 mt-4">
             {[0, 1, 2].map((i) => (
               <span key={i} className="w-2.5 h-2.5 rounded-full"
-                style={{ background: GOLD.text, animation: `pulse 1s ${i * 0.15}s infinite` }} />
+                style={{ background: GOLD.light, animation: `pulse 1s ${i * 0.15}s infinite` }} />
             ))}
           </div>
           <button onClick={cancel} className="mt-5 px-5 py-2.5 rounded-2xl font-black active:scale-95 transition"
@@ -220,7 +221,7 @@ export default function Duel({ gameKey }: { gameKey: string }) {
               {chat.length === 0 && <p className="text-[11px] font-bold" style={{ color: ts.textSub }}>Raqib bilan yozishing 💬</p>}
               {chat.map((c) => (
                 <p key={c.n} className="text-[11px] font-bold" style={{ color: "#fff" }}>
-                  <span style={{ color: GOLD.text }}>{c.name}:</span> <span style={{ fontSize: c.emoji ? 16 : 11 }}>{c.text}</span>
+                  <span style={{ color: GOLD.light }}>{c.name}:</span> <span style={{ fontSize: c.emoji ? 16 : 11 }}>{c.text}</span>
                 </p>
               ))}
             </div>
@@ -248,30 +249,55 @@ export default function Duel({ gameKey }: { gameKey: string }) {
 function Lobby({ def, stakes, onJoin, err, ts, onBack }: any) {
   return (
     <div className="px-4 pt-3">
-      <div className="rounded-3xl overflow-hidden relative mb-4" style={{ border: `1px solid ${GOLD.border}` }}>
-        <img src={def.img} alt={def.title} className="w-full h-36 object-cover" />
-        <div className="absolute inset-0" style={{ background: "linear-gradient(180deg,rgba(0,0,0,0.1),rgba(0,0,0,0.82))" }} />
-        <div className="absolute bottom-0 p-3">
-          <p className="font-black text-xl" style={{ color: "#fff" }}>{def.emoji} {def.title}</p>
-          <p className="font-bold text-[11px]" style={{ color: "rgba(255,255,255,0.8)" }}>{def.rule}</p>
+      {/* O'yin surati — to'liq va jonli */}
+      <div className="rounded-3xl overflow-hidden relative mb-4 mx-auto"
+        style={{ border: `1px solid ${GOLD.border}`, maxWidth: 340, boxShadow: "0 14px 40px rgba(0,0,0,0.45)" }}>
+        <div className={`lfx ${imgFx(def.key)} w-full`} style={{ aspectRatio: "1 / 1" }}>
+          <img src={def.img} alt={def.title} />
+        </div>
+        <div className="absolute inset-0" style={{ background: "linear-gradient(180deg,rgba(0,0,0,0.06) 50%,rgba(0,0,0,0.88))" }} />
+        <span className={`absolute left-1/2 -translate-x-1/2 ${symFx(def.key)}`}
+          style={{ top: "38%", fontSize: 54, filter: "drop-shadow(0 8px 22px rgba(0,0,0,0.8))" }}>{def.emoji}</span>
+        <div className="absolute bottom-0 left-0 right-0 p-3">
+          <p className="font-black text-xl" style={{ color: "#fff" }}>{def.title}</p>
+          <p className="font-bold text-[11px]" style={{ color: "rgba(255,255,255,0.82)" }}>{def.rule}</p>
         </div>
         <span className="absolute top-2 right-2 px-2 py-0.5 rounded-full font-black"
           style={{ fontSize: 9, background: "rgba(16,185,129,0.9)", color: "#fff" }}>{def.live} 🟢 online</span>
       </div>
 
-      <p className="font-black mb-2" style={{ fontSize: 12, color: GOLD.text, letterSpacing: "0.08em" }}>TIKISH MIQDORI</p>
-      <div className="grid grid-cols-2 gap-2">
-        {stakes.map((s: number) => (
-          <button key={s} onClick={() => onJoin(s)}
-            className="py-3.5 rounded-2xl font-black active:scale-95 transition"
-            style={{ background: GOLD.grad, color: "#1a1200", boxShadow: "0 6px 18px rgba(0,0,0,0.3)" }}>
-            {s.toLocaleString()} UZS
-            <span className="block text-[9px] font-bold opacity-70">g'olibga {Math.floor(s * 2 * 0.92).toLocaleString()}</span>
-          </button>
-        ))}
+      {/* TIKISH MIQDORI — toza, bir xil o'lchamli kartalar */}
+      <div className="rounded-3xl p-3" style={{ background: ts.card, border: `1px solid ${GOLD.border}` }}>
+        <div className="flex items-center justify-between mb-2.5">
+          <p className="font-black" style={{ fontSize: 11, color: GOLD.light, letterSpacing: "0.1em" }}>TIKISH MIQDORI</p>
+          <span className="font-bold px-2 py-0.5 rounded-full"
+            style={{ fontSize: 9, color: "#34d399", background: "rgba(16,185,129,0.12)", border: "1px solid rgba(16,185,129,0.35)" }}>
+            g'olibga 92%
+          </span>
+        </div>
+        <div className="grid grid-cols-2 gap-2">
+          {stakes.map((s: number, i: number) => (
+            <button key={s} onClick={() => onJoin(s)}
+              className={`rounded-2xl active:scale-95 transition ${i === stakes.length - 1 && stakes.length % 2 === 1 ? "col-span-2" : ""}`}
+              style={{
+                background: "linear-gradient(160deg,rgba(255,255,255,0.06),rgba(0,0,0,0.25))",
+                border: `1px solid ${GOLD.border}`,
+                padding: "12px 10px",
+              }}>
+              <span className="flex items-center justify-center gap-1.5">
+                <span className="font-black" style={{ fontSize: 15, color: GOLD.light }}>{s.toLocaleString()}</span>
+                <span className="font-bold" style={{ fontSize: 10, color: "rgba(255,255,255,0.55)" }}>UZS</span>
+              </span>
+              <span className="block text-center font-bold mt-0.5" style={{ fontSize: 9, color: "#34d399" }}>
+                + {Math.floor(s * 2 * 0.92).toLocaleString()}
+              </span>
+            </button>
+          ))}
+        </div>
       </div>
+
       {err && <p className="text-center mt-3 text-sm font-bold" style={{ color: "#ff6b6b" }}>{err}</p>}
-      <button onClick={onBack} className="w-full mt-4 py-2.5 rounded-2xl font-bold"
+      <button onClick={onBack} className="w-full mt-4 mb-4 py-3 rounded-2xl font-black active:scale-95 transition"
         style={{ background: ts.btnSecondary, color: ts.btnSecondaryText }}>← LIVE arenaga qaytish</button>
     </div>
   );
@@ -285,7 +311,7 @@ function Scoreboard({ st, def, me, ts }: any) {
       <div className="flex items-center justify-between">
         <Side name={me} score={st.myScore} ok={st.submitted} mine />
         <div className="text-center">
-          <p className="font-black" style={{ fontSize: 10, color: GOLD.text }}>
+          <p className="font-black" style={{ fontSize: 10, color: GOLD.light }}>
             RAUND {Math.min(st.round + 1, st.rounds)} / {st.rounds}
           </p>
           <p className="font-black text-2xl" style={{ color: "#fff" }}>{sec}s</p>
@@ -312,7 +338,7 @@ function Side({ name, score, ok, mine }: { name: string; score: number; ok: bool
         {(name || "?").slice(0, 2).toUpperCase()}
       </div>
       <p className="font-black truncate mt-1" style={{ fontSize: 11, color: "#fff" }}>{name}</p>
-      <p className="font-black text-lg" style={{ color: GOLD.text }}>{score}</p>
+      <p className="font-black text-lg" style={{ color: GOLD.light }}>{score}</p>
       <p className="font-bold" style={{ fontSize: 8, color: ok ? "#34d399" : "rgba(255,255,255,0.4)" }}>
         {ok ? "✓ tayyor" : "kutilmoqda"}
       </p>
@@ -489,7 +515,7 @@ function ClickArena({ locked, onSubmit }: any) {
 
   return (
     <div className="mx-4 mt-3 rounded-3xl p-5 text-center" style={shell}>
-      <p className="font-black text-4xl" style={{ color: GOLD.text }}>{n}</p>
+      <p className="font-black text-4xl" style={{ color: GOLD.light }}>{n}</p>
       <p className="font-bold mb-3" style={{ fontSize: 11, color: "rgba(255,255,255,0.7)" }}>{left} soniya qoldi</p>
       {!run ? (
         <button disabled={locked} onClick={() => { nRef.current = 0; setN(0); setLeft(10); setRun(true); }}

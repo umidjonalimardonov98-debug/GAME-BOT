@@ -3,6 +3,7 @@ import { useLocation } from "wouter";
 import { useTheme, pageBg, GOLD } from "@/lib/theme-context";
 import GameHeader from "@/components/GameHeader";
 import { sfx } from "@/lib/sound";
+import { imgFx, symFx } from "@/lib/live-fx";
 
 /** LIVE ZONA — barcha haqiqiy odamlar bilan o'ynaladigan o'yinlar shu yerda */
 
@@ -71,16 +72,19 @@ export default function PvpHub() {
       </div>
 
       {/* Karta o'yinlari */}
-      <p className="mx-4 mb-2 font-black" style={{ fontSize: 12, color: GOLD.text, letterSpacing: "0.1em" }}>KARTA STOLLARI</p>
+      <p className="mx-4 mb-2 font-black" style={{ fontSize: 12, color: GOLD.light, letterSpacing: "0.1em" }}>KARTA STOLLARI</p>
       <div className="grid grid-cols-3 gap-2 mx-4 mb-5">
-        {CLASSIC.map((g) => (
+        {CLASSIC.map((g, i) => (
           <button key={g.path} onClick={() => go(g.path)}
             className="relative overflow-hidden rounded-2xl text-left active:scale-[0.97] transition-transform"
             style={{ border: `1px solid ${GOLD.border}`, boxShadow: "0 6px 20px rgba(0,0,0,0.28)" }}>
-            <img src={g.img} alt={g.title} loading="lazy" decoding="async" className="w-full h-20 object-cover" />
-            <div className="absolute inset-0" style={{ background: "linear-gradient(180deg,rgba(0,0,0,0.05),rgba(0,0,0,0.8))" }} />
+            <div className={`lfx ${imgFx(["durak", "blackjack", "poker"][i]!)} w-full`} style={{ aspectRatio: "1 / 1" }}>
+              <img src={g.img} alt={g.title} loading="lazy" decoding="async" />
+            </div>
+            <div className="absolute inset-0" style={{ background: "linear-gradient(180deg,rgba(0,0,0,0.05),rgba(0,0,0,0.82))" }} />
+            <span className={`absolute top-1.5 left-1.5 ${symFx(["durak", "blackjack", "poker"][i]!)}`} style={{ fontSize: 16 }}>{g.emoji}</span>
             <div className="absolute bottom-0 left-0 right-0 p-1.5">
-              <p className="font-black truncate" style={{ fontSize: 11, color: "#fff" }}>{g.emoji} {g.title}</p>
+              <p className="font-black truncate" style={{ fontSize: 11, color: "#fff" }}>{g.title}</p>
               <p className="font-bold truncate" style={{ fontSize: 8, color: "rgba(255,255,255,0.72)" }}>{g.sub}</p>
             </div>
           </button>
@@ -88,7 +92,7 @@ export default function PvpHub() {
       </div>
 
       {/* Duel o'yinlari */}
-      <p className="mx-4 mb-2 font-black" style={{ fontSize: 12, color: GOLD.text, letterSpacing: "0.1em" }}>1x1 DUELLAR</p>
+      <p className="mx-4 mb-2 font-black" style={{ fontSize: 12, color: GOLD.light, letterSpacing: "0.1em" }}>1x1 DUELLAR</p>
       {loading && (
         <div className="grid grid-cols-2 gap-2.5 mx-4">
           {[0, 1, 2, 3].map((i) => (
@@ -119,16 +123,20 @@ export default function PvpHub() {
           <button key={g.key} onClick={() => go(`/duel/${g.key}`)}
             className="relative overflow-hidden rounded-2xl text-left active:scale-[0.97] transition-transform"
             style={{ border: `1px solid ${GOLD.border}`, boxShadow: "0 6px 20px rgba(0,0,0,0.28)" }}>
-            <img src={g.img} alt={g.title} loading="lazy" decoding="async" className="w-full h-24 object-cover" />
-            <div className="absolute inset-0" style={{ background: "linear-gradient(180deg,rgba(0,0,0,0.06),rgba(0,0,0,0.82))" }} />
+            <div className={`lfx ${imgFx(g.key)} w-full`} style={{ aspectRatio: "1 / 1" }}>
+              <img src={g.img} alt={g.title} loading="lazy" decoding="async" />
+            </div>
+            <div className="absolute inset-0" style={{ background: "linear-gradient(180deg,rgba(0,0,0,0.04) 45%,rgba(0,0,0,0.85))" }} />
             <span className="absolute top-1.5 left-1.5 px-1.5 py-0.5 rounded-full font-black"
               style={{ fontSize: 8, background: "rgba(239,68,68,0.92)", color: "#fff" }}>1x1</span>
             {g.live > 0 && (
               <span className="absolute top-1.5 right-1.5 px-1.5 py-0.5 rounded-full font-black"
                 style={{ fontSize: 8, background: "rgba(16,185,129,0.92)", color: "#fff" }}>{g.live} 🟢</span>
             )}
+            <span className={`absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 ${symFx(g.key)}`}
+              style={{ fontSize: 34, filter: "drop-shadow(0 6px 16px rgba(0,0,0,0.75))" }}>{g.emoji}</span>
             <div className="absolute bottom-0 left-0 right-0 p-2">
-              <p className="font-black truncate" style={{ fontSize: 12, color: "#fff" }}>{g.emoji} {g.title}</p>
+              <p className="font-black truncate" style={{ fontSize: 12, color: "#fff" }}>{g.title}</p>
               <p className="font-bold truncate" style={{ fontSize: 9, color: "rgba(255,255,255,0.75)" }}>{g.sub}</p>
             </div>
           </button>

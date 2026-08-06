@@ -18,7 +18,7 @@ type Msg = {
 const hhmm = (t: number) =>
   new Date(t).toLocaleTimeString("uz-UZ", { hour: "2-digit", minute: "2-digit" });
 
-/** Ommaviy chat — hamma bir-birini ko'radi, xabarlar 1 soat turadi */
+/** Ommaviy chat — hamma bir-birini ko'radi, xabarlar 10 soat turadi */
 export default function GlobalChat() {
   const [, nav] = useLocation();
   const { player } = usePlayer();
@@ -97,7 +97,7 @@ export default function GlobalChat() {
         <div className="flex-1">
           <p className="font-black text-base" style={{ color: "#f7c948" }}>OMMAVIY CHAT</p>
           <p className="text-[11px]" style={{ color: "rgba(255,255,255,0.5)" }}>
-            Xabarlar 1 soat saqlanadi
+            Xabarlar 10 soat saqlanadi
           </p>
         </div>
         <div className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-xl"

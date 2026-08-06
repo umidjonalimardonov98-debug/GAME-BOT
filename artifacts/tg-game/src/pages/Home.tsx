@@ -83,6 +83,15 @@ export default function Home() {
   const [claiming, setClaiming] = useState(false);
   const [claimMsg, setClaimMsg] = useState("");
   const [enabledGames, setEnabledGames] = useState<Record<string, boolean>>({});
+  const [cols, setCols] = useState<number>(3);
+  useEffect(() => {
+    const saved = Number(localStorage.getItem("gridCols") || 0);
+    if (saved >= 3 && saved <= 5) { setCols(saved); return; }
+    // avtomatik: ekran kengligiga qarab qulay ustunlar soni
+    const w = window.innerWidth;
+    setCols(w >= 620 ? 5 : w >= 460 ? 4 : 3);
+  }, []);
+  const setColsSaved = (n: number) => { setCols(n); localStorage.setItem("gridCols", String(n)); };
   useEffect(() =>{ getGameConfig().then(config =>{
     if (!config?.games) return;
     setEnabledGames(Object.fromEntries(Object.entries(config.games).map(([key, value]) => [key, (value as { enabled?: boolean }).enabled !== false])));
@@ -227,50 +236,39 @@ export default function Home() {
         </div>
       </div>
 
-      {/* ─── LIVE PVP ─── */}
-      <button onClick={() => nav("/pvp")}
-        className="mx-4 mb-4 rounded-3xl p-4 relative overflow-hidden text-left active:scale-[0.98] transition-transform pro-sheen"
+      {/* ─── LIVE PvP ARENA ─── */}
+      <button onClick={() => nav("/live")}
+        className="mx-4 mb-4 rounded-3xl relative overflow-hidden text-left active:scale-[0.98] transition-transform"
         style={{
-          background: "linear-gradient(120deg,#0a3b26,#126b46)",
-          border: "1px solid rgba(247,201,72,0.45)",
-          boxShadow: "0 8px 28px rgba(10,59,38,0.45)",
+          border: `1px solid ${GOLD.border}`,
+          boxShadow: "0 14px 38px rgba(0,0,0,0.45)",
+          minHeight: 132,
+          background: "linear-gradient(120deg,#12060b,#3a0d16 45%,#0a3b26)",
         }}>
-        <div className="absolute -right-6 -bottom-8 opacity-25">
-          <img src="/symbols/cardback.png" alt="" width={120} height={120} />
+        <div className="lfx lfx-panx absolute inset-0" style={{ opacity: 0.42 }}>
+          <img src="/games/pvppoker.jpg" alt="" loading="lazy" decoding="async" />
         </div>
-        <span className="inline-flex items-center gap-1.5 px-2 py-0.5 rounded-full font-black"
-          style={{ fontSize: 9, background: "rgba(239,68,68,0.9)", color: "#fff", letterSpacing: "0.12em" }}>
-          <span style={{ width: 6, height: 6, borderRadius: 99, background: "#fff" }} /> LIVE
-        </span>
-        <p className="font-black mt-1.5" style={{ fontSize: 20, color: "#fff" }}>
-          PVP <span className="gold-text">DURAK</span>
-        </p>
-        <p className="font-bold" style={{ fontSize: 10, color: "rgba(255,255,255,0.72)" }}>
-          36 karta · haqiqiy odam bilan pul tikib · suzish qoidalari
-        </p>
-      </button>
+        <div className="absolute inset-0" style={{ background: "linear-gradient(100deg,rgba(6,4,10,0.92) 30%,rgba(6,4,10,0.35))" }} />
 
-      {/* ─── PVP PRO ─── */}
-      <div className="grid grid-cols-2 gap-2 mx-4 mb-4">
-        {[
-          { path: "/pvp-blackjack", img: "/games/pvpblackjack.jpg", title: "BLACKJACK", sub: "1x1 · 21 ochko" },
-          { path: "/pvp-poker", img: "/games/pvppoker.jpg", title: "POKER", sub: "1x1 · Texas Hold'em" },
-        ].map((g) => (
-          <button key={g.path} onClick={() => nav(g.path)}
-            className="relative overflow-hidden rounded-2xl text-left active:scale-[0.98] transition-transform"
-            style={{ border: "1px solid rgba(247,201,72,0.45)", boxShadow: "0 6px 20px rgba(0,0,0,0.25)" }}>
-            <img src={g.img} alt={g.title} width={1024} height={1024} loading="lazy" decoding="async"
-              className="w-full h-24 object-cover" />
-            <div className="absolute inset-0" style={{ background: "linear-gradient(180deg,rgba(0,0,0,0.05),rgba(0,0,0,0.78))" }} />
-            <div className="absolute bottom-0 left-0 right-0 p-2 min-w-0">
-              <p className="font-black truncate" style={{ fontSize: 13, color: "#fff" }}>
-                PVP <span className="gold-text">{g.title}</span>
-              </p>
-              <p className="font-bold truncate" style={{ fontSize: 9, color: "rgba(255,255,255,0.75)" }}>{g.sub}</p>
-            </div>
-          </button>
-        ))}
-      </div>
+        <div className="relative p-4">
+          <span className="inline-flex items-center gap-1.5 px-2 py-0.5 rounded-full font-black"
+            style={{ fontSize: 9, background: "rgba(239,68,68,0.92)", color: "#fff", letterSpacing: "0.14em" }}>
+            <span className="live-dot" style={{ width: 6, height: 6, borderRadius: 99, background: "#fff" }} /> LIVE
+          </span>
+          <p className="font-black mt-2 leading-none" style={{ fontSize: 26, color: "#fff", letterSpacing: "0.02em" }}>
+            LIVE <span className="gold-text">PvP</span>
+          </p>
+          <p className="font-bold mt-1.5" style={{ fontSize: 10.5, color: "rgba(255,255,255,0.78)" }}>
+            Haqiqiy odamlar bilan 1x1 · Durak · Blackjack · Poker · 17 duel o'yini
+          </p>
+          <span className="inline-flex items-center gap-1.5 mt-3 px-3 py-1.5 rounded-xl font-black pvp-pulse"
+            style={{ fontSize: 11, background: GOLD.grad, color: "#1a1204", border: "1px solid rgba(255,246,207,0.8)" }}>
+            <Swords size={13} color="#1a1204" /> ARENAGA KIRISH
+          </span>
+        </div>
+
+        <span className="fx-spin absolute right-4 top-1/2 -translate-y-1/2" style={{ fontSize: 44, opacity: 0.9 }}>♠️</span>
+      </button>
 
       {/* ─── 4 ACTION BUTTONS ─── */}
       <div className="grid grid-cols-4 gap-2 mx-4 mb-4">
@@ -414,14 +412,31 @@ export default function Home() {
         <div className="px-4 pb-20">
           <div className="flex items-center justify-between mb-3">
             <p className="text-xs font-black tracking-widest uppercase" style={{ color: TEXT_SUB }}>{t.games}</p>
-            <button onClick={() => nav("/leaderboard")}
-              className="text-xs px-2.5 py-1 rounded-xl font-bold flex items-center gap-1"
-              style={{ background: "rgba(251,191,36,0.12)", color: "#f59e0b", border: "1px solid rgba(251,191,36,0.3)" }}>
-               <Trophy size={12} color="#f59e0b" /> {t.leaderboard}
-            </button>
+            <div className="flex items-center gap-1.5">
+              {/* Ustunlar soni — 3 / 4 / 5 */}
+              <div className="flex items-center gap-0.5 p-0.5 rounded-xl"
+                style={{ background: CARD_BG, border: `1px solid ${CARD_BORDER}` }}>
+                {[3, 4, 5].map((n) => (
+                  <button key={n} onClick={() => setColsSaved(n)}
+                    className="px-2 py-1 rounded-lg font-black transition-all active:scale-90"
+                    style={{
+                      fontSize: 10,
+                      background: cols === n ? GOLD.grad : "transparent",
+                      color: cols === n ? "#1a1204" : TEXT_SUB,
+                    }}>
+                    {n}
+                  </button>
+                ))}
+              </div>
+              <button onClick={() => nav("/leaderboard")}
+                className="text-xs px-2.5 py-1 rounded-xl font-bold flex items-center gap-1"
+                style={{ background: "rgba(251,191,36,0.12)", color: "#f59e0b", border: "1px solid rgba(251,191,36,0.3)" }}>
+                <Trophy size={12} color="#f59e0b" /> {t.leaderboard}
+              </button>
+            </div>
           </div>
 
-          <div className="grid grid-cols-3 gap-2">
+          <div className="grid gap-2" style={{ gridTemplateColumns: `repeat(${cols}, minmax(0, 1fr))` }}>
             {GAMES.filter(g => enabledGames[g.key] !== false).map((g) => (
               <button key={g.path} onClick={() => nav(g.path)}
                 className="relative overflow-hidden active:scale-[0.93] transition-all pro-tile"
@@ -479,7 +494,7 @@ export default function Home() {
                   </span>
                 </div>
                 <p className="relative text-white font-black leading-tight text-center mt-auto"
-                  style={{ fontSize: 12, textShadow: "0 2px 6px rgba(0,0,0,0.9)" }}>
+                  style={{ fontSize: cols >= 5 ? 8.5 : cols === 4 ? 10 : 12, textShadow: "0 2px 6px rgba(0,0,0,0.9)" }}>
                   {GAME_NAMES[g.key][lang]}
                 </p>
 
