@@ -9,7 +9,7 @@ import { sfx } from "@/lib/sound";
 type G = { key: string; title: string; sub: string; img: string; emoji: string; live: number };
 
 const CLASSIC = [
-  { path: "/pvp", img: "/games/pvpblackjack.jpg", title: "DURAK", sub: "36 karta · suzish · 1x1", emoji: "🃏" },
+  { path: "/pvp", img: "/games/pvpdurak.jpg", title: "DURAK", sub: "36 karta · suzish · 1x1", emoji: "🃏" },
   { path: "/pvp-blackjack", img: "/games/pvpblackjack.jpg", title: "BLACKJACK", sub: "1x1 · 21 ochko", emoji: "♠️" },
   { path: "/pvp-poker", img: "/games/pvppoker.jpg", title: "POKER", sub: "Texas Hold'em", emoji: "👑" },
 ];
@@ -19,17 +19,32 @@ export default function PvpHub() {
   const { theme, ts } = useTheme();
   const [games, setGames] = useState<G[]>([]);
   const [online, setOnline] = useState(0);
+  const [loading, setLoading] = useState(true);
+  const [err, setErr] = useState<string | null>(null);
+  const [tick, setTick] = useState(0);
 
   useEffect(() => {
-    const load = () =>
-      fetch("/api/duel/list")
-        .then((r) => r.json())
-        .then((d) => { setGames(d.games ?? []); setOnline(d.online ?? 0); })
-        .catch(() => {});
-    load();
-    const iv = setInterval(load, 8000);
-    return () => clearInterval(iv);
-  }, []);
+    let alive = true;
+    const load = async (first: boolean) => {
+      if (first) { setLoading(true); setErr(null); }
+      try {
+        const r = await fetch("/api/duel/list");
+        if (!r.ok) throw new Error("HTTP " + r.status);
+        const d = await r.json();
+        if (!alive) return;
+        setGames(d.games ?? []);
+        setOnline(d.online ?? 0);
+        setErr(null);
+      } catch {
+        if (alive && first) setErr("Arena yuklanmadi. Internetni tekshiring va qayta urinib ko'ring.");
+      } finally {
+        if (alive && first) setLoading(false);
+      }
+    };
+    load(true);
+    const iv = setInterval(() => load(false), 8000);
+    return () => { alive = false; clearInterval(iv); };
+  }, [tick]);
 
   const go = (p: string) => { sfx.select(); nav(p); };
 
@@ -74,6 +89,31 @@ export default function PvpHub() {
 
       {/* Duel o'yinlari */}
       <p className="mx-4 mb-2 font-black" style={{ fontSize: 12, color: GOLD.text, letterSpacing: "0.1em" }}>1x1 DUELLAR</p>
+      {loading && (
+        <div className="grid grid-cols-2 gap-2.5 mx-4">
+          {[0, 1, 2, 3].map((i) => (
+            <div key={i} className="rounded-2xl skeleton-shimmer" style={{ height: 96, border: `1px solid ${GOLD.border}` }} />
+          ))}
+        </div>
+      )}
+
+      {!loading && err && (
+        <div className="mx-4 rounded-2xl p-4 text-center" style={{ background: "rgba(239,68,68,0.12)", border: "1px solid rgba(239,68,68,0.45)" }}>
+          <p className="font-black" style={{ fontSize: 12, color: "#ff9b9b" }}>⚠️ {err}</p>
+          <button onClick={() => { sfx.select(); setTick((t) => t + 1); }}
+            className="mt-3 px-4 py-2 rounded-xl font-black active:scale-95 transition-transform"
+            style={{ fontSize: 11, background: GOLD.grad, color: "#221703", border: `1px solid ${GOLD.border}` }}>
+            🔄 Qayta urinish
+          </button>
+        </div>
+      )}
+
+      {!loading && !err && games.length === 0 && (
+        <p className="mx-4 text-center font-bold py-6" style={{ fontSize: 11, color: ts.textSub }}>
+          Hozircha duel o'yinlari mavjud emas.
+        </p>
+      )}
+
       <div className="grid grid-cols-2 gap-2.5 mx-4">
         {games.map((g) => (
           <button key={g.key} onClick={() => go(`/duel/${g.key}`)}

@@ -657,3 +657,13 @@ button:not(:disabled):active { transform: scale(.955); }
 }
 .pvp-pulse { animation: pvpPulse 1.6s ease-in-out infinite; will-change: box-shadow; }
 @media (prefers-reduced-motion: reduce) { .pvp-pulse { animation: none; } }
+
+/* LIVE PVP — skeleton loader */
+.skeleton-shimmer {
+  background: linear-gradient(100deg, rgba(255,255,255,0.04) 30%, rgba(255,214,102,0.13) 50%, rgba(255,255,255,0.04) 70%);
+  background-size: 220% 100%;
+  animation: skelShimmer 1.25s linear infinite;
+  will-change: background-position;
+}
+@keyframes skelShimmer { 0% { background-position: 120% 0; } 100% { background-position: -120% 0; } }
+@media (prefers-reduced-motion: reduce) { .skeleton-shimmer { animation: none; } }
