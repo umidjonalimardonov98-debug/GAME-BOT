@@ -10,6 +10,9 @@ import {
   getLeagues,
   getActiveFixtures,
   getFixtureOdds,
+  getResults,
+  getPlayerResults,
+  getHeadToHead,
   type OpticFixture,
   type OpticOdd,
 } from "../lib/optic";
@@ -158,6 +161,215 @@ router.get("/sports/fixture/:id", async (req, res): Promise<void> => {
       markets: Object.entries(groups)
         .map(([market, selections]) => ({ market, selections }))
         .sort((a, b) => (MAIN_MARKETS.indexOf(a.market) + 99) - (MAIN_MARKETS.indexOf(b.market) + 99)),
+    });
+  } catch (err) {
+    fail(res, err);
+  }
+});
+
+
+/* ───────────────────────── STATISTIKA (OpticOdds Statistics API) ─────────────────────────
+ * Docs: https://developer.opticodds.com/docs/statistics-api-guide
+ * Manba: /fixtures/results (jamoa stats + events + market_stats)
+ *        /fixtures/player-results (o'yinchi stats)
+ *        /fixtures/results/head-to-head (oxirgi uchrashuvlar)
+ */
+
+/** Ekranda ko'rsatiladigan asosiy jamoa ko'rsatkichlari (tartib muhim) */
+const TEAM_STAT_ROWS: { key: string; uz: string; ru: string; en: string; pct?: boolean }[] = [
+  { key: "possession_percentage", uz: "Egallash", ru: "Владение", en: "Possession", pct: true },
+  { key: "total_scoring_att", uz: "Zarbalar", ru: "Удары", en: "Shots" },
+  { key: "ontarget_scoring_att", uz: "Darvoza ichiga", ru: "В створ", en: "On target" },
+  { key: "shot_off_target", uz: "Nishondan tashqari", ru: "Мимо", en: "Off target" },
+  { key: "blocked_scoring_att", uz: "To'silgan zarba", ru: "Заблокировано", en: "Blocked" },
+  { key: "big_chance_created", uz: "Xatarli imkoniyat", ru: "Голевые моменты", en: "Big chances" },
+  { key: "attempts_ibox", uz: "Jarima maydonidan", ru: "Из штрафной", en: "Shots in box" },
+  { key: "total_pass", uz: "Uzatmalar", ru: "Передачи", en: "Passes" },
+  { key: "accurate_pass", uz: "Aniq uzatma", ru: "Точные передачи", en: "Accurate passes" },
+  { key: "final_third_entries", uz: "Oxirgi uchdan bir", ru: "Выходы в треть", en: "Final third entries" },
+  { key: "total_cross", uz: "Navesslar", ru: "Навесы", en: "Crosses" },
+  { key: "corner_taken", uz: "Burchaklar", ru: "Угловые", en: "Corners" },
+  { key: "total_tackle", uz: "Otbor", ru: "Отборы", en: "Tackles" },
+  { key: "interceptions", uz: "Perexvat", ru: "Перехваты", en: "Interceptions" },
+  { key: "total_clearance", uz: "Chiqarib yuborish", ru: "Выносы", en: "Clearances" },
+  { key: "duel_won", uz: "Yutilgan duel", ru: "Выигранные единоборства", en: "Duels won" },
+  { key: "aerial_won", uz: "Havoda yutuq", ru: "Верховые дуэли", en: "Aerials won" },
+  { key: "saves", uz: "To'xtatilgan zarba", ru: "Сейвы", en: "Saves" },
+  { key: "fouls", uz: "Qoidabuzarlik", ru: "Фолы", en: "Fouls" },
+  { key: "total_offside", uz: "Ofsayd", ru: "Офсайды", en: "Offsides" },
+  { key: "total_yellow_card", uz: "Sariq kartochka", ru: "Жёлтые", en: "Yellow cards" },
+  { key: "total_red_card", uz: "Qizil kartochka", ru: "Красные", en: "Red cards" },
+  { key: "ppda", uz: "PPDA (pressing)", ru: "PPDA (прессинг)", en: "PPDA (pressing)" },
+];
+
+/** O'yinchi kartochkasi uchun market stats (betting-relevant) */
+const PLAYER_STAT_ROWS: { key: string; uz: string; ru: string; en: string }[] = [
+  { key: "player_goals", uz: "Gol", ru: "Голы", en: "Goals" },
+  { key: "player_assists", uz: "Uzatma", ru: "Ассисты", en: "Assists" },
+  { key: "player_shots", uz: "Zarba", ru: "Удары", en: "Shots" },
+  { key: "player_shots_on_target", uz: "Darvozaga", ru: "В створ", en: "On target" },
+  { key: "player_passes_completed", uz: "Aniq uzatma", ru: "Точные передачи", en: "Passes" },
+  { key: "player_tackles", uz: "Otbor", ru: "Отборы", en: "Tackles" },
+  { key: "player_interceptions", uz: "Perexvat", ru: "Перехваты", en: "Interceptions" },
+  { key: "player_fouls", uz: "Fol", ru: "Фолы", en: "Fouls" },
+  { key: "player_cards", uz: "Kartochka", ru: "Карточки", en: "Cards" },
+  { key: "player_saves", uz: "To'xtatish", ru: "Сейвы", en: "Saves" },
+];
+
+type StatBucket = { period: string; stats: Record<string, number> };
+
+function periodStats(list: StatBucket[] | undefined, period: string): Record<string, number> {
+  if (!Array.isArray(list)) return {};
+  return list.find((b) => b.period === period)?.stats ?? {};
+}
+
+function num(v: unknown): number {
+  return typeof v === "number" && Number.isFinite(v) ? v : 0;
+}
+
+/** Bitta o'yin statistikasi: hisob, davrlar, voqealar, jamoa va o'yinchi ko'rsatkichlari */
+router.get("/sports/stats/:id", async (req, res): Promise<void> => {
+  if (!guard(res)) return;
+  const id = String(req.params["id"] ?? "");
+  const period = String(req.query["period"] ?? "all"); // all | period_1 | period_2 ...
+  try {
+    const [resultsRes, playersRes] = await Promise.all([
+      getResults([id]),
+      getPlayerResults([id]).catch(() => ({ data: [] as any[] })),
+    ]);
+    const r: any = resultsRes.data?.[0];
+    if (!r) {
+      res.status(404).json({ error: "not_found", message: "Bu o'yin uchun statistika hali yo'q" });
+      return;
+    }
+
+    const fx = r.fixture ?? {};
+    const homeName = fx.home_competitors?.[0]?.name ?? fx.home_team_display ?? "Home";
+    const awayName = fx.away_competitors?.[0]?.name ?? fx.away_team_display ?? "Away";
+
+    const homeStats = periodStats(r.stats?.home, period);
+    const awayStats = periodStats(r.stats?.away, period);
+    const hasAny = Object.keys(homeStats).length + Object.keys(awayStats).length > 0;
+
+    const rows = TEAM_STAT_ROWS.filter((row) => row.key in homeStats || row.key in awayStats).map((row) => {
+      const h = num(homeStats[row.key]);
+      const a = num(awayStats[row.key]);
+      const sum = h + a;
+      return {
+        key: row.key,
+        label: { uz: row.uz, ru: row.ru, en: row.en },
+        home: h,
+        away: a,
+        homePct: sum > 0 ? Math.round((h / sum) * 100) : 50,
+        suffix: row.pct ? "%" : "",
+      };
+    });
+
+    // voqealar tasmasi (gol, kartochka, almashtirish)
+    const events = (r.events ?? [])
+      .filter((e: any) => e?.event_type)
+      .map((e: any) => ({
+        type: String(e.event_type),
+        period: e.period ?? null,
+        clock: e.clock != null ? String(e.clock) : null,
+        team: e.team === "home" ? "home" : e.team === "away" ? "away" : null,
+        player: e.player?.name ?? null,
+        secondary: e.secondary_player?.name ?? e.assist?.name ?? null,
+      }))
+      .sort((a: any, b: any) => Number(a.clock ?? 0) - Number(b.clock ?? 0));
+
+    // o'yinchilar — market stats bo'yicha eng faollari
+    const rawPlayers = playersRes.data?.[0]?.results ?? [];
+    const players = rawPlayers
+      .map((p: any) => {
+        const ms: Record<string, number> = p.market_stats ?? {};
+        const base = periodStats(p.stats, period);
+        const minutes = num(base["minutes"]);
+        const score =
+          num(ms["player_goals"]) * 10 +
+          num(ms["player_assists"]) * 7 +
+          num(ms["player_shots_on_target"]) * 2 +
+          num(ms["player_shots"]) +
+          num(ms["player_saves"]) * 2 +
+          minutes / 30;
+        return {
+          id: p.player?.id ?? null,
+          name: p.player?.name ?? "?",
+          position: p.player?.position ?? null,
+          number: p.player?.number ?? null,
+          team: p.team?.name === awayName ? "away" : "home",
+          teamName: p.team?.name ?? null,
+          isStarter: Boolean(p.is_starter),
+          minutes,
+          rating: Math.round(score * 10) / 10,
+          stats: PLAYER_STAT_ROWS.filter((row) => row.key in ms).map((row) => ({
+            key: row.key,
+            label: { uz: row.uz, ru: row.ru, en: row.en },
+            value: num(ms[row.key]),
+          })),
+        };
+      })
+      .sort((a: any, b: any) => b.rating - a.rating)
+      .slice(0, 16);
+
+    res.json({
+      fixture: {
+        id: fx.id ?? id,
+        status: fx.status ?? null,
+        startDate: fx.start_date ?? null,
+        venue: fx.venue_name ?? null,
+        venueLocation: fx.venue_location ?? null,
+        league: r.league?.name ?? null,
+        sport: r.sport?.id ?? null,
+        isLive: Boolean(r.in_play),
+        home: homeName,
+        away: awayName,
+      },
+      scores: {
+        home: num(r.scores?.home?.total),
+        away: num(r.scores?.away?.total),
+        periods: {
+          home: r.scores?.home?.periods ?? {},
+          away: r.scores?.away?.periods ?? {},
+        },
+      },
+      periodsAvailable: [...new Set((r.stats?.home ?? []).map((b: StatBucket) => b.period))],
+      period,
+      hasStats: hasAny,
+      teamStats: rows,
+      marketStats: {
+        home: r.market_stats?.home ?? {},
+        away: r.market_stats?.away ?? {},
+      },
+      events,
+      players,
+    });
+  } catch (err) {
+    fail(res, err);
+  }
+});
+
+/** Oxirgi uchrashuvlar (H2H) */
+router.get("/sports/h2h", async (req, res): Promise<void> => {
+  if (!guard(res)) return;
+  const t1 = String(req.query["team1"] ?? "");
+  const t2 = String(req.query["team2"] ?? "");
+  if (!t1 || !t2) {
+    res.status(400).json({ error: "team1 va team2 kerak" });
+    return;
+  }
+  try {
+    const r = await getHeadToHead(t1, t2);
+    res.json({
+      matches: (r.data ?? []).slice(0, 10).map((m: any) => ({
+        id: m.fixture?.id ?? null,
+        date: m.fixture?.start_date ?? null,
+        league: m.league?.name ?? null,
+        home: m.fixture?.home_competitors?.[0]?.name ?? "?",
+        away: m.fixture?.away_competitors?.[0]?.name ?? "?",
+        homeScore: num(m.scores?.home?.total),
+        awayScore: num(m.scores?.away?.total),
+      })),
     });
   } catch (err) {
     fail(res, err);
