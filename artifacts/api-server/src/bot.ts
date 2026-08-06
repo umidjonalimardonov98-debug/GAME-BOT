@@ -623,6 +623,7 @@ async function getOrCreatePlayer(tgUser: TelegramBot.User) {
 const MENU_IMAGE = process.env.MENU_IMAGE_URL || (APP_URL ? `${APP_URL.replace(/\/$/, "")}/banner-main.jpg` : "");
 const ADMIN_IMAGE = process.env.ADMIN_IMAGE_URL || (APP_URL ? `${APP_URL.replace(/\/$/, "")}/banner-admin.jpg` : "");
 
+const PVP_URL = APP_URL.endsWith("/") ? `${APP_URL}live` : `${APP_URL}/live`;
 const DEPOSIT_URL = APP_URL.endsWith("/") ? `${APP_URL}deposit` : `${APP_URL}/deposit`;
 
 // Track last main menu message ID per user so /start edits it instead of sending new
@@ -634,6 +635,7 @@ function mainMenuKeyboard(isAdmin: boolean): any[][] {
     [{ text: "💰 Balansim", callback_data: "balance" }],
     [{ text: "💳 Hisob To'ldirish", callback_data: "deposit_menu" }, { text: "💸 Pul Yechish", callback_data: "withdraw_menu" }],
     [{ text: "🤝 Referal", callback_data: "referral_menu" }, { text: "🆘 Yordam", callback_data: "help_menu" }],
+    [{ text: "⚔️  LIVE PVP ARENA (1x1)  ⚔️", web_app: { url: PVP_URL } }],
     [{ text: "💬  ADMIN BILAN JONLI SUHBAT  💬", callback_data: "live_chat" }],
   ];
   if (isAdmin) kb.push([{ text: "⚙️  ADMIN PANEL  ⚙️", callback_data: "admin_panel" }]);
