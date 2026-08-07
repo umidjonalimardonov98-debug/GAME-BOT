@@ -138,7 +138,8 @@ export default function Home() {
     <div className="min-h-screen flex flex-col"style={{ background: pageBg(theme, GAME_BG.home), fontFamily:"'Inter', system-ui, sans-serif" }}>
 
       {/* ─── TOP HEADER ─── */}
-      <div className="flex items-center gap-2 px-3 pt-4 pb-2 w-full max-w-full overflow-hidden">
+      <div className="relative z-50 flex items-center gap-2 px-3 pt-4 pb-2 w-full max-w-full">
+
         {/* Avatar + name */}
         <div className="flex items-center gap-2 min-w-0 flex-1">
           <div className="w-10 h-10 rounded-full overflow-hidden flex items-center justify-center text-white font-black text-lg flex-shrink-0"
@@ -173,102 +174,101 @@ export default function Home() {
 
       </div>
 
-      {/* ─── PRO HERO BANNER (TEKIN O'YIN) ─── */}
-      <div className="mx-4 mb-3 rounded-3xl relative overflow-hidden pro-sheen"
-        style={{ aspectRatio: "16 / 8", border: `1px solid ${GOLD.border}`, boxShadow: "0 16px 44px rgba(0,0,0,0.5)" }}>
-        <SmartImage src="/banner-main.jpg" alt="" loading="eager" fetchPriority="high"
-          sizes="360px" className="absolute inset-0 w-full h-full object-cover" />
-        <div className="absolute inset-0"
-          style={{ background: "linear-gradient(90deg, rgba(3,2,12,0.94) 0%, rgba(3,2,12,0.66) 52%, rgba(3,2,12,0.06) 100%)" }} />
-        {/* oltin charx surati */}
-        <img src="/symbols/wheel.png" alt="" width={112} height={112}
-          className="absolute spin-slow"
-          style={{ right: 10, top: "50%", marginTop: -56, opacity: 0.95, filter: "drop-shadow(0 8px 26px rgba(255,207,74,0.5))" }} />
-        <div className="absolute inset-0 flex flex-col justify-center gap-1.5 px-4">
-          <span className="font-black gold-text" style={{ fontSize: 9, letterSpacing: "0.28em" }}>VIP CASINO</span>
-          <p className="font-black leading-none" style={{ fontSize: 24, color: "#fff", textShadow: "0 2px 12px rgba(0,0,0,0.7)" }}>
-            1X GAME <span className="gold-text">PRO</span>
-          </p>
-          <p className="font-bold" style={{ fontSize: 10, color: "rgba(255,255,255,0.72)" }}>
-            {u("freeSpinHint")}
-          </p>
-          <button onClick={() => nav("/spin")}
-            className="self-start mt-1.5 px-4 py-2 rounded-2xl font-black active:scale-95 transition-transform pro-sheen flex items-center gap-1.5"
-            style={{
-              fontSize: 11,
-              letterSpacing: "0.06em",
-              background: XGREEN.grad,
-              color: "#fff",
-              boxShadow: XGREEN.shadow,
-              border: "1px solid rgba(255,255,255,0.22)",
-            }}>
-            <img src="/symbols/gift.png" alt="" width={14} height={14} />
-            {u("freeGame").toUpperCase()}
-          </button>
-        </div>
-      </div>
-
-      {/* ─── BALANCE CARD ─── */}
-      <div className="mx-4 rounded-3xl p-4 mb-3 relative overflow-hidden pro-sheen"
+      {/* ─── BALANCE CARD (birinchi o'rinda) ─── */}
+      <div className="mx-4 rounded-3xl px-4 py-3.5 mb-3 relative overflow-hidden pro-sheen"
         style={{
-          background: "linear-gradient(135deg,#0d4fb0,#1668e3)",
-          boxShadow: "0 6px 24px rgba(13,79,176,0.35)",
+          background: "linear-gradient(135deg,#0b3f8f 0%,#1668e3 55%,#2f8fff 100%)",
+          border: "1px solid rgba(255,255,255,0.16)",
+          boxShadow: "0 12px 32px rgba(13,79,176,0.42)",
         }}>
-        <div className="absolute inset-x-0 top-0 h-px"style={{ background:"linear-gradient(90deg,transparent,rgba(255,255,255,0.5),transparent)" }} />
-        <div className="absolute -right-10 -top-10 w-44 h-44 rounded-full pointer-events-none"style={{ background:"radial-gradient(circle,rgba(255,255,255,0.12) 0%,transparent 70%)" }} />
-        <p className="text-xs font-bold tracking-widest uppercase mb-1"style={{ color:"rgba(255,255,255,0.65)" }}>
-          {t.balance}
-        </p>
+        <div className="absolute inset-x-0 top-0 h-px" style={{ background: "linear-gradient(90deg,transparent,rgba(255,255,255,0.55),transparent)" }} />
+        <div className="absolute -right-12 -top-12 w-44 h-44 rounded-full pointer-events-none" style={{ background: "radial-gradient(circle,rgba(255,255,255,0.16) 0%,transparent 70%)" }} />
+        <img src="/symbols/coin.png" alt="" width={64} height={64}
+          className="idle-float absolute right-3 top-3 pointer-events-none"
+          style={{ opacity: 0.9, filter: "drop-shadow(0 8px 20px rgba(0,0,0,0.45))" }} />
+
+        <div className="relative flex items-center justify-between gap-3">
+          <p className="text-[10px] font-black tracking-[0.22em] uppercase" style={{ color: "rgba(255,255,255,0.72)" }}>
+            {t.balance}
+          </p>
+          <span className="text-[9px] font-black px-2 py-0.5 rounded-full"
+            style={{ background: GOLD.grad, color: "#1a1204", letterSpacing: "0.12em" }}>UZS</span>
+        </div>
+
         {loading ? (
-          <div className="h-9 w-40 rounded-xl animate-pulse mb-2"style={{ background:"rgba(255,255,255,0.12)" }} />
+          <div className="h-9 w-40 rounded-xl animate-pulse mt-1.5 mb-2" style={{ background: "rgba(255,255,255,0.14)" }} />
         ) : (
-          <p className="font-black text-3xl text-white mb-2"style={{ textShadow:"0 2px 8px rgba(0,0,0,0.3)" }}>
-            <Odometer value={player?.balance ?? 0} /> <span className="text-lg opacity-75">UZS</span>
+          <p className="relative font-black text-3xl text-white mt-1 mb-2 leading-none" style={{ textShadow: "0 2px 10px rgba(0,0,0,0.4)" }}>
+            <Odometer value={player?.balance ?? 0} />
           </p>
         )}
-        <div className="flex gap-4 pt-2"style={{ borderTop:"1px solid rgba(255,255,255,0.15)" }}>
-          <div className="text-xs"style={{ color:"rgba(255,255,255,0.65)" }}>
-             {t.won}: <b className="text-white">{(player?.totalWon ?? 0).toLocaleString()}</b>
+
+        <div className="relative grid grid-cols-2 gap-2 pt-2" style={{ borderTop: "1px solid rgba(255,255,255,0.18)" }}>
+          <div className="min-w-0">
+            <p className="text-[9px] font-bold uppercase tracking-wider truncate" style={{ color: "rgba(255,255,255,0.6)" }}>{t.won}</p>
+            <p className="font-black text-white text-sm truncate">{(player?.totalWon ?? 0).toLocaleString()}</p>
           </div>
-          <div className="text-xs"style={{ color:"rgba(255,255,255,0.65)" }}>
-             {t.games_played}: <b className="text-white">{player?.gamesPlayed ?? 0}</b>
+          <div className="min-w-0">
+            <p className="text-[9px] font-bold uppercase tracking-wider truncate" style={{ color: "rgba(255,255,255,0.6)" }}>{t.games_played}</p>
+            <p className="font-black text-white text-sm truncate">{player?.gamesPlayed ?? 0}</p>
           </div>
         </div>
       </div>
 
-      {/* ─── LIVE PvP ARENA ─── */}
-      <button onClick={() => nav("/live")}
-        className="mx-4 mb-4 rounded-3xl relative overflow-hidden text-left active:scale-[0.98] transition-transform"
-        style={{
-          border: `1px solid ${GOLD.border}`,
-          boxShadow: "0 14px 38px rgba(0,0,0,0.45)",
-          minHeight: 132,
-          background: "linear-gradient(120deg,#12060b,#3a0d16 45%,#0a3b26)",
-        }}>
-        <div className="lfx lfx-panx absolute inset-0" style={{ opacity: 0.42 }}>
-          <img src="/games/pvppoker.jpg" alt="" loading="lazy" decoding="async" />
-        </div>
-        <div className="absolute inset-0" style={{ background: "linear-gradient(100deg,rgba(6,4,10,0.92) 30%,rgba(6,4,10,0.35))" }} />
+      {/* ─── IKKI IXCHAM BANNER: TEKIN O'YIN + LIVE PvP ─── */}
+      <div className="grid grid-cols-2 gap-2.5 mx-4 mb-3">
+        {/* VIP / tekin o'yin */}
+        <button onClick={() => nav("/spin")}
+          className="relative overflow-hidden rounded-3xl text-left active:scale-[0.97] transition-transform pro-sheen"
+          style={{ minHeight: 118, border: `1px solid ${GOLD.border}`, boxShadow: "0 12px 30px rgba(0,0,0,0.45)" }}>
+          <SmartImage src="/banner-main.jpg" alt="" loading="eager" fetchPriority="high"
+            sizes="200px" className="absolute inset-0 w-full h-full object-cover" />
+          <div className="absolute inset-0" style={{ background: "linear-gradient(160deg,rgba(3,2,12,0.9) 10%,rgba(3,2,12,0.45) 100%)" }} />
+          <img src="/symbols/wheel.png" alt="" width={62} height={62}
+            className="absolute spin-slow" style={{ right: -8, bottom: -8, opacity: 0.9, filter: "drop-shadow(0 6px 18px rgba(255,207,74,0.45))" }} />
+          <div className="relative p-3 flex flex-col h-full">
+            <span className="font-black gold-text" style={{ fontSize: 8, letterSpacing: "0.24em" }}>VIP CASINO</span>
+            <p className="font-black leading-none mt-1" style={{ fontSize: 15, color: "#fff", textShadow: "0 2px 10px rgba(0,0,0,0.7)" }}>
+              1X GAME <span className="gold-text">PRO</span>
+            </p>
+            <span className="mt-auto self-start inline-flex items-center gap-1 px-2.5 py-1.5 rounded-xl font-black pro-sheen"
+              style={{ fontSize: 9.5, background: XGREEN.grad, color: "#fff", border: "1px solid rgba(255,255,255,0.22)", boxShadow: XGREEN.shadow }}>
+              <img src="/symbols/gift.png" alt="" width={12} height={12} />
+              {u("freeGame").toUpperCase()}
+            </span>
+          </div>
+        </button>
 
-        <div className="relative p-4">
-          <span className="inline-flex items-center gap-1.5 px-2 py-0.5 rounded-full font-black"
-            style={{ fontSize: 9, background: "rgba(239,68,68,0.92)", color: "#fff", letterSpacing: "0.14em" }}>
-            <span className="live-dot" style={{ width: 6, height: 6, borderRadius: 99, background: "#fff" }} /> LIVE
-          </span>
-          <p className="font-black mt-2 leading-none" style={{ fontSize: 26, color: "#fff", letterSpacing: "0.02em" }}>
-            LIVE <span className="gold-text">PvP</span>
-          </p>
-          <p className="font-bold mt-1.5" style={{ fontSize: 10.5, color: "rgba(255,255,255,0.78)" }}>
-            Haqiqiy odamlar bilan 1x1 · Durak · Blackjack · Poker · 17 duel o'yini
-          </p>
-          <span className="inline-flex items-center gap-1.5 mt-3 px-3 py-1.5 rounded-xl font-black pvp-pulse"
-            style={{ fontSize: 11, background: GOLD.grad, color: "#1a1204", border: "1px solid rgba(255,246,207,0.8)" }}>
-            <Swords size={13} color="#1a1204" /> ARENAGA KIRISH
-          </span>
-        </div>
+        {/* LIVE PvP */}
+        <button onClick={() => nav("/live")}
+          className="relative overflow-hidden rounded-3xl text-left active:scale-[0.97] transition-transform"
+          style={{
+            minHeight: 118,
+            border: `1px solid ${GOLD.border}`,
+            boxShadow: "0 12px 30px rgba(0,0,0,0.45)",
+            background: "linear-gradient(140deg,#12060b,#3a0d16 45%,#0a3b26)",
+          }}>
+          <div className="lfx lfx-panx absolute inset-0" style={{ opacity: 0.4 }}>
+            <img src="/games/pvppoker.jpg" alt="" loading="lazy" decoding="async" />
+          </div>
+          <div className="absolute inset-0" style={{ background: "linear-gradient(150deg,rgba(6,4,10,0.9) 20%,rgba(6,4,10,0.35))" }} />
+          <span className="fx-spin absolute right-1 bottom-1" style={{ fontSize: 30, opacity: 0.85 }}>♠️</span>
+          <div className="relative p-3 flex flex-col h-full">
+            <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded-full font-black self-start"
+              style={{ fontSize: 8, background: "rgba(239,68,68,0.92)", color: "#fff", letterSpacing: "0.14em" }}>
+              <span className="live-dot" style={{ width: 5, height: 5, borderRadius: 99, background: "#fff" }} /> LIVE
+            </span>
+            <p className="font-black leading-none mt-1" style={{ fontSize: 17, color: "#fff" }}>
+              LIVE <span className="gold-text">PvP</span>
+            </p>
+            <span className="mt-auto self-start inline-flex items-center gap-1 px-2.5 py-1.5 rounded-xl font-black pvp-pulse"
+              style={{ fontSize: 9.5, background: GOLD.grad, color: "#1a1204", border: "1px solid rgba(255,246,207,0.8)" }}>
+              <Swords size={12} color="#1a1204" /> ARENAGA KIRISH
+            </span>
+          </div>
+        </button>
+      </div>
 
-        <span className="fx-spin absolute right-4 top-1/2 -translate-y-1/2" style={{ fontSize: 44, opacity: 0.9 }}>♠️</span>
-      </button>
 
       {/* ─── 4 ACTION BUTTONS ─── */}
       <div className="grid grid-cols-4 gap-2 mx-4 mb-4">
@@ -478,25 +478,37 @@ export default function Home() {
                 {/* Matn o'qilishi uchun faqat pastdan yengil qoraytirish */}
                 <div className="absolute inset-0 pointer-events-none"
                   style={{ background: "linear-gradient(180deg,rgba(0,0,0,0) 40%,rgba(4,14,24,0.55) 70%,rgba(4,14,24,0.92) 100%)", borderRadius: 12 }} />
-                {/* Tag badge */}
-                <div className="absolute top-1 right-1">
-                  <span className="font-black px-1.5 py-0.5 rounded-md"
+                {/* Tag badge — ustunlar soniga qarab kichrayadi */}
+                <div className="absolute" style={{ top: 3, right: 3 }}>
+                  <span className="font-black rounded-md"
                     style={{
+                      display: "inline-block",
+                      padding: cols >= 5 ? "0px 3px" : "1px 5px",
                       background: `linear-gradient(145deg,${g.tagColor},rgba(0,0,0,0.55))`,
                       color: "#0b1020",
-                      fontSize: 9,
-                      letterSpacing: 0.3,
+                      fontSize: cols >= 5 ? 6.5 : cols === 4 ? 7.5 : 9,
+                      lineHeight: 1.45,
+                      letterSpacing: 0.2,
                       border: "1px solid rgba(255,255,255,0.45)",
                       textShadow: "0 1px 0 rgba(255,255,255,0.35)",
-                      boxShadow: `0 2px 10px ${g.tagColor}66`,
+                      boxShadow: `0 2px 8px ${g.tagColor}55`,
                     }}>
                     {g.tag}
                   </span>
                 </div>
-                <p className="relative text-white font-black leading-tight text-center mt-auto"
-                  style={{ fontSize: cols >= 5 ? 8.5 : cols === 4 ? 10 : 12, textShadow: "0 2px 6px rgba(0,0,0,0.9)" }}>
+                <p className="relative text-white font-black leading-tight text-center mt-auto px-0.5"
+                  style={{
+                    fontSize: cols >= 5 ? 7.5 : cols === 4 ? 9 : 11.5,
+                    lineHeight: 1.15,
+                    textShadow: "0 2px 6px rgba(0,0,0,0.95)",
+                    display: "-webkit-box",
+                    WebkitLineClamp: 2,
+                    WebkitBoxOrient: "vertical",
+                    overflow: "hidden",
+                  }}>
                   {GAME_NAMES[g.key][lang]}
                 </p>
+
 
               </button>
             ))}

@@ -6,7 +6,6 @@ import { useTheme, pageBg, GAME_BG } from "@/lib/theme-context";
 import { GAME_RULES, RULES_TITLE } from "@/lib/rules";
 import { GAME_NAMES } from "@/lib/game-i18n";
 import { sfx } from "@/lib/sound";
-import { useU } from "@/lib/ui-i18n";
 
 const KEYS = Object.keys(GAME_RULES);
 
@@ -192,85 +191,144 @@ const BOT_RULES: Record<string, Sec[]> = {
 };
 
 export default function HowToPlay() {
-  const u = useU();
+
   const [, nav] = useLocation();
   const { lang } = useLang();
   const { theme, ts } = useTheme();
   const [active, setActive] = useState<string>(KEYS[0]);
+  const [open, setOpen] = useState<string | null>(null);
+  const [q, setQ] = useState("");
 
   const cur = GAME_RULES[active];
   const extra = EXTRA[lang];
+  const sections = BOT_RULES[lang] ?? BOT_RULES.uz!;
+  const term = q.trim().toLowerCase();
+  const shown = term
+    ? sections
+        .map((s) => ({ ...s, items: s.items.filter((i) => i.toLowerCase().includes(term)) }))
+        .filter((s) => s.items.length || s.t.toLowerCase().includes(term))
+    : sections;
+  const gameKeys = term
+    ? KEYS.filter((k) => GAME_NAMES[k][lang].toLowerCase().includes(term))
+    : KEYS;
 
   return (
     <div className="min-h-screen flex flex-col" style={{ background: pageBg(theme, GAME_BG.home) }}>
-      <div className="flex items-center gap-3 px-4 pt-5 pb-4">
-        <button onClick={() => nav("/")}
-          className="w-10 h-10 flex items-center justify-center rounded-2xl active:scale-90 transition-transform"
-          style={{ background: "rgba(255,255,255,0.06)", border: "1px solid rgba(255,255,255,0.1)" }}>
-          <ArrowLeft className="w-4 h-4" style={{ color: ts.text }} />
-        </button>
-        <h1 className="font-black text-lg" style={{ color: ts.text }}>{RULES_TITLE[lang]}</h1>
-      </div>
-
-      {/* 4 qatorli o'yin tanlash gridi */}
-      <div className="grid grid-cols-4 gap-2 px-4 mb-4">
-        {KEYS.map(k => (
-          <button key={k} onClick={() =>{ setActive(k); sfx.select(); }}
-            className="rounded-2xl py-2.5 px-1 flex flex-col items-center gap-1 active:scale-95 transition-all"
-            style={{
-              background: active === k ? "linear-gradient(135deg,#1668e3,#0d4fb0)" : ts.card,
-              border: `1px solid ${active === k ? "rgba(47,143,255,0.6)" : ts.cardBorder}`,
-            }}>
-            <span style={{ fontSize: 20 }}>{GAME_RULES[k].emoji}</span>
-            <span className="font-black text-center leading-tight"
-              style={{ fontSize: 8.5, color: active === k ? "#fff" : ts.textSub }}>
-              {GAME_NAMES[k][lang]}
-            </span>
+      {/* ─── STICKY HEADER ─── */}
+      <div className="sticky top-0 z-30 px-4 pt-4 pb-3"
+        style={{
+          background: "linear-gradient(180deg,rgba(6,10,18,0.92),rgba(6,10,18,0.62))",
+          backdropFilter: "blur(14px)",
+        }}>
+        <div className="flex items-center gap-3">
+          <button onClick={() => nav("/")}
+            className="w-9 h-9 flex items-center justify-center rounded-2xl active:scale-90 transition-transform shrink-0"
+            style={{ background: "rgba(255,255,255,0.08)", border: "1px solid rgba(255,255,255,0.12)" }}>
+            <ArrowLeft className="w-4 h-4" style={{ color: ts.text }} />
           </button>
-        ))}
+          <div className="min-w-0 flex-1">
+            <h1 className="font-black text-base truncate" style={{ color: ts.text }}>{RULES_TITLE[lang]}</h1>
+            <p className="text-[10px] font-bold truncate" style={{ color: ts.textSub }}>1X GAME PRO · 18+</p>
+          </div>
+        </div>
+        <input value={q} onChange={(e) => setQ(e.target.value)} placeholder="🔍"
+          className="w-full mt-2.5 rounded-2xl px-3 py-2 text-[12px] font-bold outline-none"
+          style={{ background: "rgba(255,255,255,0.07)", border: "1px solid rgba(255,255,255,0.12)", color: ts.text }} />
       </div>
 
-      <div className="px-4 pb-8 space-y-3">
-        <div className="rounded-2xl p-4" style={{ background: ts.card, border: `1px solid ${ts.cardBorder}` }}>
-          <div className="flex items-center gap-3 mb-3">
-            <span className="text-3xl">{cur.emoji}</span>
+      {/* ─── O'YINLAR CHIP QATORI (gorizontal, ixcham) ─── */}
+      <div className="flex gap-2 px-4 py-3 overflow-x-auto no-scrollbar">
+        {gameKeys.map((k) => {
+          const on = active === k;
+          return (
+            <button key={k} onClick={() => { setActive(k); sfx.select(); }}
+              className="shrink-0 flex items-center gap-1.5 rounded-2xl px-2.5 py-1.5 active:scale-95 transition-all"
+              style={{
+                background: on ? "linear-gradient(135deg,#1668e3,#0d4fb0)" : ts.card,
+                border: `1px solid ${on ? "rgba(47,143,255,0.6)" : ts.cardBorder}`,
+                boxShadow: on ? "0 6px 18px rgba(22,104,227,0.35)" : "none",
+              }}>
+              <span style={{ fontSize: 14 }}>{GAME_RULES[k].emoji}</span>
+              <span className="font-black whitespace-nowrap"
+                style={{ fontSize: 10, color: on ? "#fff" : ts.textSub }}>
+                {GAME_NAMES[k][lang]}
+              </span>
+            </button>
+          );
+        })}
+      </div>
+
+      <div className="px-4 pb-10 space-y-2.5">
+        {/* Tanlangan o'yin qoidalari */}
+        <div key={active} className="rounded-3xl p-3.5 pop-in relative overflow-hidden"
+          style={{ background: ts.card, border: "1px solid rgba(255,214,102,0.28)", boxShadow: "0 12px 30px rgba(0,0,0,0.4)" }}>
+          <div className="absolute -right-10 -top-10 w-32 h-32 rounded-full pointer-events-none"
+            style={{ background: "radial-gradient(circle,rgba(255,207,74,0.16),transparent 70%)" }} />
+          <div className="relative flex items-center gap-2.5 mb-2.5">
+            <span className="idle-float" style={{ fontSize: 26 }}>{cur.emoji}</span>
             <h2 className="font-black text-sm" style={{ color: ts.text }}>{GAME_NAMES[active][lang]}</h2>
           </div>
-          <ol className="space-y-1.5">
+          <ol className="relative space-y-1.5">
             {cur.rules[lang].map((s, i) => (
-              <li key={i} className="flex gap-2.5 text-sm">
-                <span className="font-black shrink-0"style={{ color:"#fbbf24", minWidth: 18 }}>{i + 1}.</span>
+              <li key={i} className="flex gap-2 items-start pop-in"
+                style={{ fontSize: 12, animationDelay: `${i * 40}ms` }}>
+                <span className="font-black shrink-0 rounded-lg text-center"
+                  style={{ color: "#1a1204", background: "linear-gradient(180deg,#ffe9a8,#c99a25)", fontSize: 9, minWidth: 16, lineHeight: "16px" }}>{i + 1}</span>
                 <span style={{ color: ts.textSub }}>{s}</span>
               </li>
             ))}
           </ol>
         </div>
 
-        <div className="rounded-2xl p-4"style={{ background:"rgba(37,165,90,0.06)", border: "1px solid rgba(37,165,90,0.15)" }}>
-          <p className="font-bold mb-2.5"style={{ color:"#39c46f" }}>{extra.title}</p>
-          <ul className="space-y-2">
+        {/* Depozit / yechish */}
+        <div className="rounded-3xl p-3.5" style={{ background: "rgba(37,165,90,0.08)", border: "1px solid rgba(37,165,90,0.22)" }}>
+          <p className="font-black mb-2" style={{ fontSize: 12, color: "#39c46f" }}>{extra.title}</p>
+          <ul className="space-y-1.5">
             {extra.items.map((it, i) => (
-              <li key={i} className="flex items-start gap-2 text-sm" style={{ color: ts.textSub }}>
-                <span>•</span><span>{it}</span>
+              <li key={i} className="flex items-start gap-2" style={{ fontSize: 11.5, color: ts.textSub }}>
+                <span style={{ color: "#39c46f" }}>•</span><span>{it}</span>
               </li>
             ))}
           </ul>
         </div>
 
-        {/* ─── BOTNING TO'LIQ QOIDALARI ─── */}
-        {(BOT_RULES[lang] ?? BOT_RULES.uz!).map((sec) => (
-          <div key={sec.t} className="rounded-2xl p-4" style={{ background: ts.card, border: `1px solid ${ts.cardBorder}` }}>
-            <p className="font-black mb-2.5" style={{ fontSize: 13, color: "#fbbf24" }}>{sec.t}</p>
-            <ul className="space-y-2">
-              {sec.items.map((it, i) => (
-                <li key={i} className="flex items-start gap-2" style={{ fontSize: 12.5, color: ts.textSub }}>
-                  <span style={{ color: "#fbbf24" }}>•</span><span>{it}</span>
-                </li>
-              ))}
-            </ul>
-          </div>
-        ))}
+        {/* ─── BOT QOIDALARI — AKKORDEON ─── */}
+        {shown.map((sec) => {
+          const on = open === sec.t;
+          return (
+            <div key={sec.t} className="rounded-3xl overflow-hidden"
+              style={{ background: ts.card, border: `1px solid ${on ? "rgba(255,214,102,0.35)" : ts.cardBorder}` }}>
+              <button onClick={() => { setOpen(on ? null : sec.t); sfx.select(); }}
+                className="w-full flex items-center gap-2 px-3.5 py-3 text-left active:scale-[0.99] transition-transform">
+                <span className="font-black flex-1 min-w-0" style={{ fontSize: 12, color: on ? "#ffe9a8" : ts.text }}>{sec.t}</span>
+                <span className="font-black shrink-0 transition-transform"
+                  style={{ fontSize: 12, color: "#fbbf24", transform: on ? "rotate(180deg)" : "none" }}>⌄</span>
+              </button>
+              <div style={{
+                display: "grid",
+                gridTemplateRows: on ? "1fr" : "0fr",
+                transition: "grid-template-rows .28s ease",
+              }}>
+                <div style={{ overflow: "hidden" }}>
+                  <ul className="px-3.5 pb-3 space-y-1.5">
+                    {sec.items.map((it, i) => (
+                      <li key={i} className="flex items-start gap-2 pop-in"
+                        style={{ fontSize: 11.5, color: ts.textSub, animationDelay: `${i * 35}ms` }}>
+                        <span style={{ color: "#fbbf24" }}>•</span><span>{it}</span>
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+              </div>
+            </div>
+          );
+        })}
+
+        {!shown.length && !gameKeys.length && (
+          <p className="text-center py-6 font-bold" style={{ fontSize: 12, color: ts.textSub }}>—</p>
+        )}
       </div>
     </div>
   );
 }
+

@@ -2512,7 +2512,7 @@ Miqdorni tanlang yoki o'zingiz kiriting:`,
           `⏳ Kutilayotgan:\n• Depozit: <b>${pendingDeps[0]?.cnt ?? 0} ta</b>\n• Yechim: <b>${pendingWds[0]?.cnt ?? 0} ta</b>`,
           { parse_mode: "HTML", reply_markup: { inline_keyboard: [[{ text: "🔙 Admin panel", callback_data: "admin_panel" }]] } }
         );
-      } catch (err) { logger.error({ err }, "admin_stat xato"); }
+      } catch (err) { logger.error({ err }, "admin_stat xato"); await bot!.sendMessage(chatId, `❌ Xatolik (${"admin_stat"}): <code>${String((err as Error)?.message ?? err).slice(0,300)}</code>`, { parse_mode: "HTML", reply_markup: { inline_keyboard: [[{ text: "🔙 Admin panel", callback_data: "admin_panel" }]] } }).catch(() => {}); }
       return;
     }
 
@@ -2546,7 +2546,7 @@ Miqdorni tanlang yoki o'zingiz kiriting:`,
         await bot!.sendMessage(chatId,
           `🎮 <b>O'YIN STATISTIKASI</b>\n\n${lines}\n\n➖➖➖➖➖➖\n💰 Jami tikilgan: <b>${fmt(totalW)} UZS</b>\n🏆 Jami to'langan: <b>${fmt(totalP)} UZS</b>\n📊 Umumiy RTP: <b>${allRtp}%</b>\n📈 Sof foyda: <b>${fmt(totalW - totalP)} UZS</b>`,
           { parse_mode: "HTML", reply_markup: { inline_keyboard: [[{ text: "🔙 Admin panel", callback_data: "admin_panel" }]] } });
-      } catch (err) { logger.error({ err }, "admin_gamestat xato"); }
+      } catch (err) { logger.error({ err }, "admin_gamestat xato"); await bot!.sendMessage(chatId, `❌ Xatolik (${"admin_gamestat"}): <code>${String((err as Error)?.message ?? err).slice(0,300)}</code>`, { parse_mode: "HTML", reply_markup: { inline_keyboard: [[{ text: "🔙 Admin panel", callback_data: "admin_panel" }]] } }).catch(() => {}); }
       return;
     }
 
@@ -2578,7 +2578,7 @@ Miqdorni tanlang yoki o'zingiz kiriting:`,
         }).join("\n\n");
         await bot!.sendMessage(chatId, `🏆 <b>TOP O'YINCHILAR</b>\n\n${lines}`,
           { parse_mode: "HTML", reply_markup: { inline_keyboard: [[{ text: "🔙 Admin panel", callback_data: "admin_panel" }]] } });
-      } catch (err) { logger.error({ err }, "admin_top xato"); }
+      } catch (err) { logger.error({ err }, "admin_top xato"); await bot!.sendMessage(chatId, `❌ Xatolik (${"admin_top"}): <code>${String((err as Error)?.message ?? err).slice(0,300)}</code>`, { parse_mode: "HTML", reply_markup: { inline_keyboard: [[{ text: "🔙 Admin panel", callback_data: "admin_panel" }]] } }).catch(() => {}); }
       return;
     }
 

@@ -64,8 +64,11 @@ export function ThemeProvider({ children }: { children: ReactNode }) {
   }
   useEffect(() => {
     fetch("/api/game/config").then(res => res.ok ? res.json() : null).then(config => {
+      // Foydalanuvchi o'zi tema tanlagan bo'lsa — server sozlamasi ustidan yozmaydi
+      let userPicked = false;
+      try { userPicked = !!localStorage.getItem("theme"); } catch {}
       const remoteTheme = config?.theme?.theme_mode as Theme | undefined;
-      if (remoteTheme && ["dark", "light", "black"].includes(remoteTheme)) setThemeState(remoteTheme);
+      if (!userPicked && remoteTheme && ["dark", "light", "black"].includes(remoteTheme)) setThemeState(remoteTheme);
       remoteBackgroundStyle = config?.theme?.background_style === "classic" ? "classic" : "gold";
     }).catch(() => {});
   }, []);
