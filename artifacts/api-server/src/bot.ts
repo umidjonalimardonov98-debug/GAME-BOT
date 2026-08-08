@@ -639,15 +639,30 @@ const userMenuMsgId = new Map<number, number>();
 
 function mainMenuKeyboard(isAdmin: boolean): any[][] {
   const kb: any[][] = [
-    [{ text: "🎰  O'YINNI BOSHLASH  🎰", web_app: { url: APP_URL } }],
-    [{ text: "💰 Balansim", callback_data: "balance" }],
-    [{ text: "💳 Hisob To'ldirish", callback_data: "deposit_menu" }, { text: "💸 Pul Yechish", callback_data: "withdraw_menu" }],
-    [{ text: "🤝 Referal", callback_data: "referral_menu" }, { text: "🆘 Yordam", callback_data: "help_menu" }],
-    [{ text: "⚔️  LIVE PVP ARENA (1x1)  ⚔️", web_app: { url: PVP_URL } }],
-    [{ text: "💬  ADMIN BILAN JONLI SUHBAT  💬", callback_data: "live_chat" }],
+    [{ text: "🎰 O'YNASH", web_app: { url: APP_URL } }, { text: "⚔️ LIVE 1x1", web_app: { url: PVP_URL } }],
+    [{ text: "💳 To'ldirish", callback_data: "deposit_menu" }, { text: "💸 Yechish", callback_data: "withdraw_menu" }],
+    [{ text: "💰 Balans", callback_data: "balance" }, { text: "🤝 Referal", callback_data: "referral_menu" }],
+    [{ text: "💬 Admin", callback_data: "live_chat" }, { text: "🆘 Yordam", callback_data: "help_menu" }],
   ];
-  if (isAdmin) kb.push([{ text: "⚙️  ADMIN PANEL  ⚙️", callback_data: "admin_panel" }]);
+  if (isAdmin) kb.push([{ text: "⚙️ ADMIN PANEL", callback_data: "admin_panel" }]);
   return kb;
+}
+
+// Doimiy pastki klaviatura — "/" yozish shart emas
+const PERSIST_KB: any = {
+  keyboard: [
+    [{ text: "🎰 O'ynash", web_app: { url: APP_URL } }],
+    [{ text: "📋 Menyu" }, { text: "💰 Balans" }],
+  ],
+  resize_keyboard: true,
+  is_persistent: true,
+  input_field_placeholder: "Menyudan tanlang 👇",
+};
+const persistSent = new Set<number>();
+async function ensurePersistKb(chatId: number) {
+  if (persistSent.has(chatId)) return;
+  persistSent.add(chatId);
+  try { await bot!.sendMessage(chatId, "👇 Tugmalardan foydalaning", { reply_markup: PERSIST_KB }); } catch {}
 }
 
 function mainMenuText(name: string, balance: number): string {
@@ -922,6 +937,7 @@ export async function startBot() {
       return;
     }
     const isAdminUser = isAdminId(user.id);
+    await ensurePersistKb(msg.chat.id);
     const oldMsgId = freshPlayer.lastMenuMsgId ?? userMenuMsgId.get(msg.chat.id) ?? undefined;
     await mainMenu(msg.chat.id, user.first_name, freshPlayer.balance, isAdminUser, String(user.id), oldMsgId);
     } catch (err) { logger.error({ err, chatId: msg.chat.id }, "/start handler error"); }
@@ -1013,12 +1029,26 @@ export async function startBot() {
   }
 
   // /menu command — show main menu
-  regText(/^\/menu(?:@\w+)?\s*$/, async (msg) => {
+  regText(/^(?:\/menu(?:@\w+)?|📋\s*Menyu|Menyu)\s*$/i, async (msg) => {
     if (!msg.from) return;
     const [p] = await db.select().from(playersTable).where(eq(playersTable.telegramId, String(msg.from.id)));
     if (!p) { await bot!.sendMessage(msg.chat.id, "Botni ishga tushirish uchun /start yuboring."); return; }
     const isAdminUser = isAdminId(msg.from.id);
     await mainMenu(msg.chat.id, msg.from.first_name, p.balance, isAdminUser);
+  });
+
+  // "💰 Balans" tugmasi (pastki klaviatura)
+  regText(/^(?:💰\s*)?Balans(?:im)?\s*$/i, async (msg) => {
+    if (!msg.from) return;
+    const [p] = await db.select().from(playersTable).where(eq(playersTable.telegramId, String(msg.from.id)));
+    if (!p) { await bot!.sendMessage(msg.chat.id, "Botni ishga tushirish uchun /start yuboring."); return; }
+    await bot!.sendMessage(msg.chat.id, `💰 <b>Balansingiz:</b> ${fmt(p.balance)} UZS`, {
+      parse_mode: "HTML",
+      reply_markup: { inline_keyboard: [[
+        { text: "💳 To'ldirish", callback_data: "deposit_menu" },
+        { text: "💸 Yechish", callback_data: "withdraw_menu" },
+      ], [{ text: "📋 Asosiy menyu", callback_data: "main_menu" }]] },
+    });
   });
 
   // /help command
