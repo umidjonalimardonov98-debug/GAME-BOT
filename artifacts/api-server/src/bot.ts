@@ -498,7 +498,13 @@ export async function notifyAdminWithdraw(opts: {
   }
 }
 
-function fmt(n: number) { return n.toLocaleString("uz-UZ"); }
+async function safeQ<T>(fn: () => Promise<T>, fallback: T, label: string): Promise<T> {
+  try { return await fn(); } catch (err) { logger.error({ err, label }, "stat query xato"); return fallback; }
+}
+function fmt(n: number | string | bigint | null | undefined) {
+  const v = typeof n === "number" ? n : Number(n ?? 0);
+  return (Number.isFinite(v) ? v : 0).toLocaleString("uz-UZ");
+}
 
 /** Promokod bera oladigan adminlar (bosh admin / owner) */
 async function promoAdminIds(): Promise<number[]> {
@@ -1128,9 +1134,9 @@ export async function startBot() {
       const today = new Date(); today.setHours(0, 0, 0, 0);
       const [totalPlayers] = await db.select({ count: sql<number>`count(*)::int` }).from(playersTable);
       const [newToday] = await db.select({ count: sql<number>`count(*)::int` }).from(playersTable).where(sql`created_at >= ${today}`);
-      const [depToday] = await db.select({ total: sql<number>`coalesce(sum(amount),0)::int`, cnt: sql<number>`count(*)::int` }).from(depositRequestsTable).where(sql`created_at >= ${today} and status = 'approved'`);
-      const [wdToday] = await db.select({ total: sql<number>`coalesce(sum(amount),0)::int`, cnt: sql<number>`count(*)::int` }).from(withdrawRequestsTable).where(sql`created_at >= ${today} and status = 'approved'`);
-      const [totalBal] = await db.select({ total: sql<number>`coalesce(sum(balance),0)::int` }).from(playersTable);
+      const [depToday] = await db.select({ total: sql<string>`coalesce(sum(amount),0)::bigint`, cnt: sql<number>`count(*)::int` }).from(depositRequestsTable).where(sql`created_at >= ${today} and status = 'approved'`);
+      const [wdToday] = await db.select({ total: sql<string>`coalesce(sum(amount),0)::bigint`, cnt: sql<number>`count(*)::int` }).from(withdrawRequestsTable).where(sql`created_at >= ${today} and status = 'approved'`);
+      const [totalBal] = await db.select({ total: sql<string>`coalesce(sum(balance),0)::bigint` }).from(playersTable);
       const pendingDeps = await db.select().from(depositRequestsTable).where(eq(depositRequestsTable.status, "pending"));
       const pendingWds = await db.select().from(withdrawRequestsTable).where(eq(withdrawRequestsTable.status, "pending"));
 
@@ -2491,24 +2497,24 @@ Miqdorni tanlang yoki o'zingiz kiriting:`,
       await bot!.answerCallbackQuery(q.id);
       try {
         const today = new Date(); today.setHours(0, 0, 0, 0);
-        const [totalPlayers] = await db.select({ count: sql<number>`count(*)::int` }).from(playersTable);
-        const [newToday] = await db.select({ count: sql<number>`count(*)::int` }).from(playersTable).where(sql`created_at >= ${today}`);
-        const [depTotal] = await db.select({ total: sql<number>`coalesce(sum(amount),0)::int`, cnt: sql<number>`count(*)::int` }).from(depositRequestsTable).where(eq(depositRequestsTable.status, "approved"));
-        const [depToday] = await db.select({ total: sql<number>`coalesce(sum(amount),0)::int`, cnt: sql<number>`count(*)::int` }).from(depositRequestsTable).where(sql`created_at >= ${today} and status = 'approved'`);
-        const [wdToday] = await db.select({ total: sql<number>`coalesce(sum(amount),0)::int`, cnt: sql<number>`count(*)::int` }).from(withdrawRequestsTable).where(sql`created_at >= ${today} and status = 'approved'`);
-        const [wdTotal] = await db.select({ total: sql<number>`coalesce(sum(amount),0)::int` }).from(withdrawRequestsTable).where(eq(withdrawRequestsTable.status, "approved"));
-        const [totalBal] = await db.select({ total: sql<number>`coalesce(sum(balance),0)::int` }).from(playersTable);
-        const pendingDeps = await db.select({ cnt: sql<number>`count(*)::int` }).from(depositRequestsTable).where(eq(depositRequestsTable.status, "pending"));
-        const pendingWds = await db.select({ cnt: sql<number>`count(*)::int` }).from(withdrawRequestsTable).where(eq(withdrawRequestsTable.status, "pending"));
+        const [totalPlayers] = await safeQ(() => db.select({ count: sql<number>`count(*)::int` }).from(playersTable), [{}] as any[], "totalPlayers");
+        const [newToday] = await safeQ(() => db.select({ count: sql<number>`count(*)::int` }).from(playersTable).where(sql`created_at >= ${today}`), [{}] as any[], "newToday");
+        const [depTotal] = await safeQ(() => db.select({ total: sql<string>`coalesce(sum(amount),0)::bigint`, cnt: sql<number>`count(*)::int` }).from(depositRequestsTable).where(eq(depositRequestsTable.status, "approved")), [{}] as any[], "depTotal");
+        const [depToday] = await safeQ(() => db.select({ total: sql<string>`coalesce(sum(amount),0)::bigint`, cnt: sql<number>`count(*)::int` }).from(depositRequestsTable).where(sql`created_at >= ${today} and status = 'approved'`), [{}] as any[], "depToday");
+        const [wdToday] = await safeQ(() => db.select({ total: sql<string>`coalesce(sum(amount),0)::bigint`, cnt: sql<number>`count(*)::int` }).from(withdrawRequestsTable).where(sql`created_at >= ${today} and status = 'approved'`), [{}] as any[], "wdToday");
+        const [wdTotal] = await safeQ(() => db.select({ total: sql<string>`coalesce(sum(amount),0)::bigint` }).from(withdrawRequestsTable).where(eq(withdrawRequestsTable.status, "approved")), [{}] as any[], "wdTotal");
+        const [totalBal] = await safeQ(() => db.select({ total: sql<string>`coalesce(sum(balance),0)::bigint` }).from(playersTable), [{}] as any[], "totalBal");
+        const pendingDeps = await safeQ(() => db.select({ cnt: sql<number>`count(*)::int` }).from(depositRequestsTable).where(eq(depositRequestsTable.status, "pending")), [] as any[], "pendingDeps");
+        const pendingWds = await safeQ(() => db.select({ cnt: sql<number>`count(*)::int` }).from(withdrawRequestsTable).where(eq(withdrawRequestsTable.status, "pending")), [] as any[], "pendingWds");
         await bot!.sendMessage(chatId,
           `📊 <b>STATISTIKA</b>\n\n` +
-          `👥 Jami o'yinchilar: <b>${totalPlayers.count}</b>\n` +
-          `🆕 Bugun yangi: <b>${newToday.count}</b>\n\n` +
-          `💰 Bugun depozit: <b>${fmt(depToday.total)} UZS</b> (${depToday.cnt} ta)\n` +
-          `💰 Jami depozit: <b>${fmt(depTotal.total)} UZS</b> (${depTotal.cnt} ta)\n\n` +
-          `💸 Bugun yechim: <b>${fmt(wdToday.total)} UZS</b> (${wdToday.cnt} ta)\n` +
-          `💸 Jami yechim: <b>${fmt(wdTotal.total)} UZS</b>\n\n` +
-          `🏦 Jami balanslar: <b>${fmt(totalBal.total)} UZS</b>\n\n` +
+          `👥 Jami o'yinchilar: <b>${totalPlayers?.count ?? 0}</b>\n` +
+          `🆕 Bugun yangi: <b>${newToday?.count ?? 0}</b>\n\n` +
+          `💰 Bugun depozit: <b>${fmt(depToday?.total)} UZS</b> (${depToday?.cnt ?? 0} ta)\n` +
+          `💰 Jami depozit: <b>${fmt(depTotal?.total)} UZS</b> (${depTotal?.cnt ?? 0} ta)\n\n` +
+          `💸 Bugun yechim: <b>${fmt(wdToday?.total)} UZS</b> (${wdToday?.cnt ?? 0} ta)\n` +
+          `💸 Jami yechim: <b>${fmt(wdTotal?.total)} UZS</b>\n\n` +
+          `🏦 Jami balanslar: <b>${fmt(totalBal?.total)} UZS</b>\n\n` +
           `⏳ Kutilayotgan:\n• Depozit: <b>${pendingDeps[0]?.cnt ?? 0} ta</b>\n• Yechim: <b>${pendingWds[0]?.cnt ?? 0} ta</b>`,
           { parse_mode: "HTML", reply_markup: { inline_keyboard: [[{ text: "🔙 Admin panel", callback_data: "admin_panel" }]] } }
         );
