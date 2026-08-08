@@ -876,7 +876,7 @@ export async function startBot() {
   }
 
   // /start command (with referral support)
-  regText(/\/start(.*)/, async (msg, match) => {
+  regText(/^\/start(?:@\w+)?(.*)/, async (msg, match) => {
     try {
     const user = msg.from; if (!user) return;
     // Delete the user's "/start" command message so the chat stays clean
@@ -1007,7 +1007,7 @@ export async function startBot() {
   }
 
   // /menu command — show main menu
-  regText(/\/menu/, async (msg) => {
+  regText(/^\/menu(?:@\w+)?\s*$/, async (msg) => {
     if (!msg.from) return;
     const [p] = await db.select().from(playersTable).where(eq(playersTable.telegramId, String(msg.from.id)));
     if (!p) { await bot!.sendMessage(msg.chat.id, "Botni ishga tushirish uchun /start yuboring."); return; }
@@ -1016,7 +1016,7 @@ export async function startBot() {
   });
 
   // /help command
-  regText(/\/help/, async (msg) => {
+  regText(/^\/help(?:@\w+)?\s*$/, async (msg) => {
     if (!msg.from) return;
     await bot!.sendMessage(msg.chat.id,
       `❓ <b>Yordam</b>\n\nSavolingizni yozing, admin tez orada javob beradi:`,
@@ -1025,14 +1025,14 @@ export async function startBot() {
   });
 
   // /admin command — admin panel
-  regText(/\/admin/, async (msg) => {
+  regText(/^\/admin(?:@\w+)?\s*$/, async (msg) => {
     if (!msg.from) return;
     if (!isAdminId(msg.from.id)) return;
     await sendAdminMenu(msg.chat.id, msg.from.id);
   });
 
   // /addadmin <id> <role> — faqat bosh admin (owner) yangi admin qo'sha oladi
-  regText(/\/addadmin(?:\s+(\d+))?(?:\s+(\w+))?/, async (msg, match) => {
+  regText(/^\/addadmin(?:@\w+)?(?:\s+(\d+))?(?:\s+(\w+))?\s*$/, async (msg, match) => {
     if (!msg.from) return;
     if (!hasPerm(msg.from.id, "admins")) {
       await bot!.sendMessage(msg.chat.id, "❌ Bu buyruq faqat bosh admin uchun.");
@@ -1073,7 +1073,7 @@ export async function startBot() {
   });
 
   // /removeadmin <id>
-  regText(/\/removeadmin(?:\s+(\d+))?/, async (msg, match) => {
+  regText(/^\/removeadmin(?:@\w+)?(?:\s+(\d+))?\s*$/, async (msg, match) => {
     if (!msg.from) return;
     if (!hasPerm(msg.from.id, "admins")) {
       await bot!.sendMessage(msg.chat.id, "❌ Bu buyruq faqat bosh admin uchun.");
@@ -1094,7 +1094,7 @@ export async function startBot() {
   });
 
   // /admins — ro'yxat
-  regText(/\/admins/, async (msg) => {
+  regText(/^\/admins(?:@\w+)?\s*$/, async (msg) => {
     if (!msg.from) return;
     if (!isAdminId(msg.from.id)) return;
     const rows = await listAdmins();
@@ -1111,7 +1111,7 @@ export async function startBot() {
   });
 
   // /broadcast command — admin only
-  regText(/\/broadcast/, async (msg) => {
+  regText(/^\/broadcast(?:@\w+)?\s*$/, async (msg) => {
     if (!hasPerm(msg.from?.id, "broadcast")) return;
     waitingForBroadcast.add(msg.from.id);
     await bot!.sendMessage(msg.chat.id,
@@ -1121,7 +1121,7 @@ export async function startBot() {
   });
 
   // /stat command — admin only
-  regText(/\/stat/, async (msg) => {
+  regText(/^\/stat(?:@\w+)?\s*$/, async (msg) => {
     if (!hasPerm(msg.from?.id, "stats")) return;
     const chatId = msg.chat.id;
     try {
@@ -1151,7 +1151,7 @@ export async function startBot() {
   });
 
   // /send <telegramId> <message> — admin only
-  regText(/\/send (.+)/, async (msg, match) => {
+  regText(/^\/send(?:@\w+)?\s+(.+)/, async (msg, match) => {
     if (!hasPerm(msg.from?.id, "broadcast")) return;
     const parts = (match?.[1] || "").trim().split(" ");
     const targetId = parts[0];
@@ -1172,7 +1172,7 @@ export async function startBot() {
   });
 
   // /users — list all players (admin only)
-  regText(/\/users/, async (msg) => {
+  regText(/^\/users(?:@\w+)?\s*$/, async (msg) => {
     if (!hasPerm(msg.from?.id, "stats")) return;
     const all = await db.select({
       telegramId: playersTable.telegramId,
@@ -1195,7 +1195,7 @@ export async function startBot() {
   });
 
   // /addbal <telegramId> <amount> — admin only
-  regText(/\/addbal (.+)/, async (msg, match) => {
+  regText(/^\/addbal(?:@\w+)?\s+(.+)/, async (msg, match) => {
     if (!hasPerm(msg.from?.id, "finance")) return;
     const parts = (match?.[1] || "").trim().split(" ");
     const targetId = parts[0];
@@ -3151,7 +3151,18 @@ Miqdorni tanlang yoki o'zingiz kiriting:`,
 
     } catch (err) {
       logger.error({ err, data, userId: q.from.id }, "Callback query xatosi");
-      try { await bot!.answerCallbackQuery(q.id, { text: "❌ Xato yuz berdi, qayta urinib ko'ring" }); } catch {}
+      const emsg = String((err as any)?.message ?? err ?? "");
+      // Adminlarga aniq xatoni ko'rsatamiz — menyu nima uchun ishlamayotgani bilinsin
+      if (isAdminId(q.from.id)) {
+        try { await bot!.answerCallbackQuery(q.id, { text: `❌ Xato: ${emsg.slice(0, 150)}` }); } catch {}
+        try {
+          await bot!.sendMessage(q.message.chat.id,
+            `⚠️ <b>Admin tugmasi xatosi</b>\n\n🔘 <code>${escHtml(data)}</code>\n\n<code>${escHtml(emsg.slice(0, 600))}</code>`,
+            { parse_mode: "HTML", reply_markup: { inline_keyboard: [[{ text: "🔙 Admin panel", callback_data: "admin_panel" }]] } });
+        } catch {}
+      } else {
+        try { await bot!.answerCallbackQuery(q.id, { text: "❌ Xato yuz berdi, qayta urinib ko'ring" }); } catch {}
+      }
     }
   };
   bot.on("callback_query", cbQueryHandler);

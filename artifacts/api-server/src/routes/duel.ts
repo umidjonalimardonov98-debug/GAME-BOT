@@ -173,20 +173,20 @@ router.post("/duel/queue", async (req, res) => {
     const stake = Number(req.body?.stake ?? 0);
     const code = String(req.body?.code ?? "").trim().toUpperCase().slice(0, 8);
     const def = DUEL_MAP.get(game);
-    if (!telegramId) return res.status(400).json({ error: "telegramId kerak" });
-    if (!def) return res.status(400).json({ error: "O'yin topilmadi" });
+    if (!telegramId) { res.status(400).json({ error: "telegramId kerak" }); return; }
+    if (!def) { res.status(400).json({ error: "O'yin topilmadi" }); return; }
     await syncLiveCfg();
     if (!cfgEnabled)
-      return res.status(503).json({ error: "LIVE o'yinlar vaqtincha o'chirilgan. Keyinroq urinib ko'ring." });
-    if (!STAKES.includes(stake)) return res.status(400).json({ error: "Noto'g'ri tikish" });
+      { res.status(503).json({ error: "LIVE o'yinlar vaqtincha o'chirilgan. Keyinroq urinib ko'ring." }); return; }
+    if (!STAKES.includes(stake)) { res.status(400).json({ error: "Noto'g'ri tikish" }); return; }
 
     const cur = byPlayer.get(telegramId);
     if (cur && rooms.get(cur) && rooms.get(cur)!.phase !== "done")
-      return res.json({ status: "matched", roomId: cur });
+      { res.json({ status: "matched", roomId: cur }); return; }
 
     const [me] = await db.select().from(playersTable).where(eq(playersTable.telegramId, telegramId));
-    if (!me) return res.status(404).json({ error: "O'yinchi topilmadi" });
-    if (me.balance < stake) return res.status(400).json({ error: "Balans yetarli emas" });
+    if (!me) { res.status(404).json({ error: "O'yinchi topilmadi" }); return; }
+    if (me.balance < stake) { res.status(400).json({ error: "Balans yetarli emas" }); return; }
 
     const key = `${game}:${stake}:${code}`;
     const waiting = queue.get(key);
@@ -195,7 +195,7 @@ router.post("/duel/queue", async (req, res) => {
       const [foe] = await db.select().from(playersTable).where(eq(playersTable.telegramId, waiting.telegramId));
       if (!foe || foe.balance < stake) {
         queue.set(key, { telegramId, name, at: Date.now() });
-        return res.json({ status: "waiting" });
+        { res.json({ status: "waiting" }); return; }
       }
       await money(waiting.telegramId, stake, "loss", `duel-${game}`);
       await money(telegramId, stake, "loss", `duel-${game}`);
@@ -216,13 +216,13 @@ router.post("/duel/queue", async (req, res) => {
       rooms.set(id, room);
       byPlayer.set(waiting.telegramId, id);
       byPlayer.set(telegramId, id);
-      return res.json({ status: "matched", roomId: id });
+      { res.json({ status: "matched", roomId: id }); return; }
     }
 
     queue.set(key, { telegramId, name, at: Date.now() });
-    return res.json({ status: "waiting", code: code || null });
+    { res.json({ status: "waiting", code: code || null }); return; }
   } catch (e: any) {
-    return res.status(500).json({ error: e?.message || "Xatolik" });
+    { res.status(500).json({ error: e?.message || "Xatolik" }); return; }
   }
 });
 
@@ -275,7 +275,7 @@ function buildState(room: Room, me: P, since: number) {
 
 router.get("/duel/state", (req, res) => {
   const { room, me } = ctx(req);
-  if (!room || !me) return res.status(404).json({ error: "Xona topilmadi" });
+  if (!room || !me) { res.status(404).json({ error: "Xona topilmadi" }); return; }
   const since = Number(req.query.chatSince ?? 0) || 0;
   res.json(buildState(room, me, since));
 });
@@ -286,7 +286,7 @@ router.get("/duel/state", (req, res) => {
  */
 router.get("/duel/stream", (req, res) => {
   const { room, me } = ctx(req);
-  if (!room || !me) return res.status(404).json({ error: "Xona topilmadi" });
+  if (!room || !me) { res.status(404).json({ error: "Xona topilmadi" }); return; }
 
   res.writeHead(200, {
     "Content-Type": "text/event-stream",
@@ -337,10 +337,10 @@ router.get("/duel/stream", (req, res) => {
 
 router.post("/duel/submit", (req, res) => {
   const { room, me } = ctx(req);
-  if (!room || !me) return res.status(404).json({ error: "Xona topilmadi" });
+  if (!room || !me) { res.status(404).json({ error: "Xona topilmadi" }); return; }
   tick(room);
-  if (room.phase !== "play") return res.json({ ok: true });
-  if (room.subs[me.side]) return res.json({ ok: true });
+  if (room.phase !== "play") { res.json({ ok: true }); return; }
+  if (room.subs[me.side]) { res.json({ ok: true }); return; }
   const value = Number(req.body?.value ?? 0);
   const picks = Array.isArray(req.body?.picks) ? req.body.picks.map((n: any) => Number(n) || 0).slice(0, 8) : undefined;
   room.subs[me.side] = { value: Number.isFinite(value) ? value : 0, picks };
@@ -350,9 +350,9 @@ router.post("/duel/submit", (req, res) => {
 
 router.post("/duel/chat", (req, res) => {
   const { room, me } = ctx(req);
-  if (!room || !me) return res.status(404).json({ error: "Xona topilmadi" });
+  if (!room || !me) { res.status(404).json({ error: "Xona topilmadi" }); return; }
   const text = String(req.body?.text ?? "").trim().slice(0, 160);
-  if (!text) return res.status(400).json({ error: "Bo'sh" });
+  if (!text) { res.status(400).json({ error: "Bo'sh" }); return; }
   room.chatN += 1;
   room.chat.push({ n: room.chatN, name: me.name, text, emoji: !!req.body?.emoji, at: Date.now() });
   if (room.chat.length > 60) room.chat.splice(0, room.chat.length - 60);
@@ -361,7 +361,7 @@ router.post("/duel/chat", (req, res) => {
 
 router.post("/duel/forfeit", async (req, res) => {
   const { room, me } = ctx(req);
-  if (!room || !me) return res.status(404).json({ error: "Xona topilmadi" });
+  if (!room || !me) { res.status(404).json({ error: "Xona topilmadi" }); return; }
   if (room.phase !== "done") {
     room.winner = (me.side === 0 ? 1 : 0) as 0 | 1;
     room.phase = "done";

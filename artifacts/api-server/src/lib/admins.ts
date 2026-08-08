@@ -161,7 +161,9 @@ export function permForCallback(data: string): Perm | null {
     case "admin_promo_create":
       return "promo";
     default:
-      return "stats";
+      // Xaritada yo'q admin_* tugmalari: ishlovchining o'zi isAdmin/hasPerm
+      // tekshiradi. Bu yerda "stats" qaytarish rollarni noto'g'ri bloklaydi.
+      return null;
   }
 }
 

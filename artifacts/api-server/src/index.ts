@@ -37,7 +37,8 @@ async function runMigrations() {
     logger.error({ err }, "Migration failed — continuing anyway");
   }
   await ensureGameSettingsColumns(db, sql);
-  await ensureExtraSchema(db, sql);
+  const schemaFailed = await ensureExtraSchema(db, sql);
+  if (schemaFailed.length) logger.warn({ schemaFailed }, "Ba'zi sxema tuzatishlari o'tmadi");
 }
 
 async function main() {
