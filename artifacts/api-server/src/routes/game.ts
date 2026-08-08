@@ -70,7 +70,7 @@ router.get("/game/leaderboard", async (_req, res): Promise<void> => {
 router.get("/game/stats", async (_req, res): Promise<void> => {
   const [stats] = await db.select({
     totalPlayers: sql<number>`count(*)::int`,
-    totalGamesPlayed: sql<number>`sum(games_played)::int`,
+    totalGamesPlayed: sql<string>`coalesce(sum(games_played),0)::bigint`,
     biggestWin: sql<number>`max(total_won)::int`,
   }).from(playersTable);
 
@@ -80,7 +80,7 @@ router.get("/game/stats", async (_req, res): Promise<void> => {
 
   res.json({
     totalPlayers: stats?.totalPlayers ?? 0,
-    totalGamesPlayed: stats?.totalGamesPlayed ?? 0,
+    totalGamesPlayed: Number(stats?.totalGamesPlayed ?? 0),
     biggestWin: stats?.biggestWin ?? 0,
     topPlayer: top?.firstName ?? null,
   });
