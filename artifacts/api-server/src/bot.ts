@@ -1667,7 +1667,9 @@ export async function startBot() {
 
     // Admin: konkurs sovrinlari (3 ta raqam)
     if (waitingForContestPrizes.has(userId)) {
-      const nums = (text.match(/\d[\d\s]*/g) || []).map((v: string) => parseInt(v.replace(/\s/g, ""), 10)).filter((n: number) => Number.isFinite(n));
+      const nums = (text.replace(/[^\d\s,;]/g, " ").split(/[\s,;]+/).filter(Boolean) as string[])
+        .map((v: string) => parseInt(v, 10))
+        .filter((n: number) => Number.isFinite(n) && n > 0);
       if (nums.length < 3) {
         await bot!.sendMessage(chatId, "❌ 3 ta raqam kiriting. Masalan: <code>500000 300000 150000</code>\n<i>Bekor qilish: /cancel</i>", { parse_mode: "HTML" });
         return;
