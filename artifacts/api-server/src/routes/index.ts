@@ -11,6 +11,7 @@ import pvpRouter from "./pvp";
 import pvpBlackjackRouter from "./pvp-blackjack";
 import pvpPokerRouter from "./pvp-poker";
 import duelRouter from "./duel";
+import contestRouter from "./contest";
 
 const router: IRouter = Router();
 
@@ -26,5 +27,6 @@ router.use(pvpRouter);
 router.use(pvpBlackjackRouter);
 router.use(pvpPokerRouter);
 router.use(duelRouter);
+router.use(contestRouter);
 
 export default router;

@@ -30,6 +30,7 @@ async function redeemPromo(telegramId: string, code: string) {
 import { NEW_GAMES, NEW_GAME_MAP, coverOf } from "@/lib/new-games";
 import GameArt from "@/components/casino/GameArt";
 import SmartImage from "@/components/SmartImage";
+import ContestBanner from "@/components/casino/ContestBanner";
 
 const GAMES = [
   { key: "apple",       path: "/apple",       img: "/games/apple.jpg",       tag: "HOT",   tagColor: "#ef4444", bg: "linear-gradient(145deg,#064e3b,#1a7d43)", glow: "#1a7d4355" },
@@ -213,6 +214,11 @@ export default function Home() {
             <p className="font-black text-white text-sm truncate">{player?.gamesPlayed ?? 0}</p>
           </div>
         </div>
+      </div>
+
+      {/* ─── REFERAL KONKURSI BANNERI ─── */}
+      <div className="mx-4 mb-3">
+        <ContestBanner />
       </div>
 
       {/* ─── IKKI IXCHAM BANNER: TEKIN O'YIN + LIVE PvP ─── */}

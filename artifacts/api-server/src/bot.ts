@@ -1,6 +1,7 @@
 import TelegramBot from "node-telegram-bot-api";
 import { eq, and, isNull, sql, desc } from "drizzle-orm";
 import { getLiveSettings, setLiveSetting, RULE_PRESETS } from "./lib/live-settings";
+import { getContest, setContestValue, getContestTop, getContestInvitees } from "./lib/contest";
 import { db, playersTable, transactionsTable, depositRequestsTable, withdrawRequestsTable, promoCodesTable, promoUsesTable, gameSettingsTable, appSettingsTable } from "@workspace/db";
 import { logger } from "./lib/logger";
 import { ALL_GAMES, GAME_LABELS, DIFFICULTIES, DIFFICULTY_WIN_SUGGEST, nextDifficulty, type Difficulty } from "./lib/games-catalog";
@@ -418,6 +419,9 @@ export async function sendLiveChatVoiceFromApp(opts: { telegramId: string; audio
   pushLiveChatMsg(uid, "user", `\u{1F3A4} Ovozli xabar (${secs}s)`);
   return { ok: true, delivered };
 }
+const waitingForContestPrizes = new Set<number>();               // admin waiting to type 3 prize amounts
+const waitingForContestTitle = new Set<number>();                // admin waiting to type contest title
+const waitingForContestDesc = new Set<number>();                 // admin waiting to type contest description
 const waitingForRefPrice = new Set<number>();                  // admin waiting to type new referral bonus
 const waitingForBroadcast = new Set<number>();                  // adminId waiting to type broadcast message
 const waitingForSendId = new Set<number>();                    // admin waiting to type target userId
@@ -992,6 +996,7 @@ export async function startBot() {
       if (p("admins")) push([{ text: "🎮 O'yin va tema sozlamalari", callback_data: "admin_game_settings" }]);
       if (p("admins")) push([{ text: "🔴 LIVE PVP sozlamalari", callback_data: "admin_live" }]);
       if (p("finance") || p("admins")) push([{ text: "🤝 Referal narxi", callback_data: "admin_ref_price" }]);
+      if (p("finance") || p("admins")) push([{ text: "🏆 KONKURS (referal)", callback_data: "admin_contest" }]);
       // Faqat egasi (owner) adminlarni boshqaradi
       if (p("admins")) push([{ text: "👑 Adminlar", callback_data: "admin_admins" }]);
       rows.push([{ text: "🔙 Asosiy menyu", callback_data: "main_menu" }]);
@@ -1362,6 +1367,9 @@ export async function startBot() {
       waitingForPromoAmount.delete(userId);
       waitingForPromoMaxUses.delete(userId);
       waitingForPromoPersonalId.delete(userId);
+      waitingForContestPrizes.delete(userId);
+      waitingForContestTitle.delete(userId);
+      waitingForContestDesc.delete(userId);
       waitingForPromoTarget.delete(userId);
       waitingForNewAdminId.delete(userId);
       waitingForMaxWin.delete(userId);
@@ -1654,6 +1662,39 @@ export async function startBot() {
       } catch {
         await bot!.sendMessage(chatId, `❌ Xato: Bu kod allaqachon mavjud yoki boshqa xatolik yuz berdi.`);
       }
+      return;
+    }
+
+    // Admin: konkurs sovrinlari (3 ta raqam)
+    if (waitingForContestPrizes.has(userId)) {
+      const nums = (text.match(/\d[\d\s]*/g) || []).map((v: string) => parseInt(v.replace(/\s/g, ""), 10)).filter((n: number) => Number.isFinite(n));
+      if (nums.length < 3) {
+        await bot!.sendMessage(chatId, "❌ 3 ta raqam kiriting. Masalan: <code>500000 300000 150000</code>\n<i>Bekor qilish: /cancel</i>", { parse_mode: "HTML" });
+        return;
+      }
+      waitingForContestPrizes.delete(userId);
+      await setContestValue("contest_prize_1", String(nums[0]));
+      await setContestValue("contest_prize_2", String(nums[1]));
+      await setContestValue("contest_prize_3", String(nums[2]));
+      await bot!.sendMessage(chatId,
+        `✅ Sovrinlar saqlandi:\n🥇 ${fmt(nums[0]!)} UZS\n🥈 ${fmt(nums[1]!)} UZS\n🥉 ${fmt(nums[2]!)} UZS`,
+        { parse_mode: "HTML", reply_markup: { inline_keyboard: [[{ text: "🏆 Konkurs", callback_data: "admin_contest" }]] } });
+      return;
+    }
+
+    // Admin: konkurs sarlavhasi
+    if (waitingForContestTitle.has(userId)) {
+      waitingForContestTitle.delete(userId);
+      await setContestValue("contest_title", text.trim().slice(0, 120));
+      await bot!.sendMessage(chatId, "✅ Konkurs nomi yangilandi.", { reply_markup: { inline_keyboard: [[{ text: "🏆 Konkurs", callback_data: "admin_contest" }]] } });
+      return;
+    }
+
+    // Admin: konkurs sharti/tavsifi
+    if (waitingForContestDesc.has(userId)) {
+      waitingForContestDesc.delete(userId);
+      await setContestValue("contest_desc", text.trim().slice(0, 900));
+      await bot!.sendMessage(chatId, "✅ Konkurs sharti yangilandi.", { reply_markup: { inline_keyboard: [[{ text: "🏆 Konkurs", callback_data: "admin_contest" }]] } });
       return;
     }
 
@@ -2486,6 +2527,181 @@ Miqdorni tanlang yoki o'zingiz kiriting:`,
         `🤝 <b>Referal narxi</b>\n\nHozirgi qiymat: <b>${fmt(cur)} UZS</b>\n\nYangi miqdorni raqam bilan yozing (masalan: <code>2000</code>).\nO'zgarish barcha foydalanuvchilarga xabar qilinadi.\n\n<i>Bekor qilish: /cancel</i>`,
         { parse_mode: "HTML" }
       );
+      return;
+    }
+
+    /* ───────────── KONKURS (referal) ───────────── */
+    const contestAllowed = (id: number) => hasPerm(id, "finance") || hasPerm(id, "admins");
+
+    async function sendContestPanel(target: number) {
+      const c = await getContest();
+      const top = c.startAt ? await getContestTop(sql, 10) : [];
+      const fdate = (v: string | null) => (v ? new Date(v).toLocaleString("uz-UZ", { timeZone: "Asia/Tashkent" }) : "—");
+      const lines = top.length
+        ? top.map((r, i) => `${["🥇","🥈","🥉"][i] ?? `${i + 1}.`} ${r.username ? "@" + r.username : r.name} — <b>${r.count}</b> ta`).join("\n")
+        : "<i>Hozircha ishtirokchi yo'q</i>";
+      const caption =
+        `🏆 <b>KONKURS PANELI</b>\n\n` +
+        `📌 Nomi: <b>${c.title}</b>\n` +
+        `⚡️ Holati: <b>${c.active ? "FAOL" : "TO'XTATILGAN"}</b>\n` +
+        `🕒 Boshlangan: <b>${fdate(c.startAt)}</b>\n` +
+        `🏁 Tugash: <b>${fdate(c.endAt)}</b>\n` +
+        `🎁 Sovrinlar: 🥇 ${fmt(c.prizes[0])} · 🥈 ${fmt(c.prizes[1])} · 🥉 ${fmt(c.prizes[2])} UZS\n\n` +
+        `<b>TOP 10:</b>\n${lines}\n\n` +
+        `<i>Eslatma: konkurs boshlangunga qadar chaqirilgan do'stlar hisobga olinmaydi.</i>`;
+      const kb: any[][] = [
+        [{ text: c.active ? "⛔️ Konkursni to'xtatish" : "▶️ Konkursni boshlash (0 dan)", callback_data: c.active ? "admin_contest_stop" : "admin_contest_start" }],
+        [{ text: "🎁 Sovrinlarni belgilash", callback_data: "admin_contest_prizes" }],
+        [{ text: "✏️ Nomi", callback_data: "admin_contest_title" }, { text: "📝 Shartlari", callback_data: "admin_contest_desc" }],
+        [{ text: "👥 Kim kimni chaqirgan", callback_data: "admin_contest_who" }],
+        [{ text: "💸 TOP 3 ga sovrin berish", callback_data: "admin_contest_pay" }],
+        [{ text: "📢 Konkursni e'lon qilish", callback_data: "admin_contest_announce" }],
+        [{ text: "🔙 Admin panel", callback_data: "admin_panel" }],
+      ];
+      await bot!.sendMessage(target, caption, { parse_mode: "HTML", reply_markup: { inline_keyboard: kb } });
+    }
+
+    if (data === "admin_contest") {
+      if (!contestAllowed(q.from.id)) { await bot!.answerCallbackQuery(q.id, { text: "❌ Ruxsat yo'q" }); return; }
+      await bot!.answerCallbackQuery(q.id);
+      await sendContestPanel(chatId);
+      return;
+    }
+
+    if (data === "admin_contest_start") {
+      if (!contestAllowed(q.from.id)) { await bot!.answerCallbackQuery(q.id, { text: "❌ Ruxsat yo'q" }); return; }
+      await bot!.answerCallbackQuery(q.id);
+      const now = new Date().toISOString();
+      await setContestValue("contest_start_at", now);
+      await setContestValue("contest_end_at", "");
+      await setContestValue("contest_paid_at", "");
+      await setContestValue("contest_active", "1");
+      await bot!.sendMessage(chatId, "✅ Yangi konkurs boshlandi! Hisob 0 dan boshlanadi — eski referallar hisobga olinmaydi.", { parse_mode: "HTML" });
+      await sendContestPanel(chatId);
+      return;
+    }
+
+    if (data === "admin_contest_stop") {
+      if (!contestAllowed(q.from.id)) { await bot!.answerCallbackQuery(q.id, { text: "❌ Ruxsat yo'q" }); return; }
+      await bot!.answerCallbackQuery(q.id);
+      await setContestValue("contest_end_at", new Date().toISOString());
+      await setContestValue("contest_active", "0");
+      await bot!.sendMessage(chatId, "⛔️ Konkurs to'xtatildi. Natijalar muzlatildi.", { parse_mode: "HTML" });
+      await sendContestPanel(chatId);
+      return;
+    }
+
+    if (data === "admin_contest_prizes") {
+      if (!contestAllowed(q.from.id)) { await bot!.answerCallbackQuery(q.id, { text: "❌ Ruxsat yo'q" }); return; }
+      await bot!.answerCallbackQuery(q.id);
+      waitingForContestPrizes.add(q.from.id);
+      await bot!.sendMessage(chatId, "🎁 <b>Sovrinlar</b>\n\n1-2-3 o'rin uchun summani bitta qatorda yozing:\n<code>500000 300000 150000</code>\n\n<i>Bekor qilish: /cancel</i>", { parse_mode: "HTML" });
+      return;
+    }
+
+    if (data === "admin_contest_title") {
+      if (!contestAllowed(q.from.id)) { await bot!.answerCallbackQuery(q.id, { text: "❌ Ruxsat yo'q" }); return; }
+      await bot!.answerCallbackQuery(q.id);
+      waitingForContestTitle.add(q.from.id);
+      await bot!.sendMessage(chatId, "✏️ Konkurs nomini yozing:\n<i>Bekor qilish: /cancel</i>", { parse_mode: "HTML" });
+      return;
+    }
+
+    if (data === "admin_contest_desc") {
+      if (!contestAllowed(q.from.id)) { await bot!.answerCallbackQuery(q.id, { text: "❌ Ruxsat yo'q" }); return; }
+      await bot!.answerCallbackQuery(q.id);
+      waitingForContestDesc.add(q.from.id);
+      await bot!.sendMessage(chatId, "📝 Konkurs shartlarini yozing (o'yinchilarga ko'rinadi):\n<i>Bekor qilish: /cancel</i>", { parse_mode: "HTML" });
+      return;
+    }
+
+    if (data === "admin_contest_who") {
+      if (!contestAllowed(q.from.id)) { await bot!.answerCallbackQuery(q.id, { text: "❌ Ruxsat yo'q" }); return; }
+      await bot!.answerCallbackQuery(q.id);
+      const top = await getContestTop(sql, 10);
+      if (!top.length) { await bot!.sendMessage(chatId, "Hozircha ishtirokchi yo'q."); return; }
+      const kb = top.map((r, i) => [{ text: `${i + 1}. ${r.username ? "@" + r.username : r.name} (${r.count})`, callback_data: `admin_cwho_${r.telegramId}` }]);
+      kb.push([{ text: "🔙 Konkurs", callback_data: "admin_contest" }]);
+      await bot!.sendMessage(chatId, "👥 <b>Kim kimni chaqirgan?</b>\n\nBatafsil ko'rish uchun ishtirokchini tanlang:", { parse_mode: "HTML", reply_markup: { inline_keyboard: kb } });
+      return;
+    }
+
+    if (data.startsWith("admin_cwho_")) {
+      if (!contestAllowed(q.from.id)) { await bot!.answerCallbackQuery(q.id, { text: "❌ Ruxsat yo'q" }); return; }
+      await bot!.answerCallbackQuery(q.id);
+      const tgId = data.replace("admin_cwho_", "");
+      const list = await getContestInvitees(sql, tgId, 50);
+      const [owner] = await db.select().from(playersTable).where(eq(playersTable.telegramId, tgId));
+      const ownerName = owner ? (owner.username ? "@" + owner.username : owner.firstName) : tgId;
+      const body = list.length
+        ? list.map((f, i) => `${i + 1}. ${f.username ? "@" + f.username : f.name} — <code>${f.telegramId}</code>`).join("\n")
+        : "<i>Konkurs davomida chaqirgan do'stlari yo'q</i>";
+      await bot!.sendMessage(chatId,
+        `👤 <b>${ownerName}</b>\n🆔 <code>${tgId}</code>\n\n<b>Chaqirgan do'stlari (${list.length} ta):</b>\n${body}`,
+        { parse_mode: "HTML", reply_markup: { inline_keyboard: [[{ text: "🔙 Ro'yxat", callback_data: "admin_contest_who" }], [{ text: "🏆 Konkurs", callback_data: "admin_contest" }]] } });
+      return;
+    }
+
+    if (data === "admin_contest_pay") {
+      if (!contestAllowed(q.from.id)) { await bot!.answerCallbackQuery(q.id, { text: "❌ Ruxsat yo'q" }); return; }
+      await bot!.answerCallbackQuery(q.id);
+      const c = await getContest();
+      const top = (await getContestTop(sql, 3));
+      if (!top.length) { await bot!.sendMessage(chatId, "❌ G'oliblar yo'q."); return; }
+      const rows = top.map((r, i) => `${["🥇","🥈","🥉"][i]} ${r.username ? "@" + r.username : r.name} — ${r.count} ta → <b>${fmt(c.prizes[i] ?? 0)} UZS</b>`).join("\n");
+      await bot!.sendMessage(chatId,
+        `💸 <b>Sovrinlarni berish</b>\n\n${rows}\n\nTasdiqlaysizmi? Pul balansga qo'shiladi.`,
+        { parse_mode: "HTML", reply_markup: { inline_keyboard: [
+          [{ text: "✅ Ha, sovrinlarni berish", callback_data: "admin_contest_pay_go" }],
+          [{ text: "🔙 Konkurs", callback_data: "admin_contest" }],
+        ] } });
+      return;
+    }
+
+    if (data === "admin_contest_pay_go") {
+      if (!contestAllowed(q.from.id)) { await bot!.answerCallbackQuery(q.id, { text: "❌ Ruxsat yo'q" }); return; }
+      await bot!.answerCallbackQuery(q.id);
+      const c = await getContest();
+      const top = await getContestTop(sql, 3);
+      const done: string[] = [];
+      for (let i = 0; i < top.length; i++) {
+        const winner = top[i]!;
+        const prize = c.prizes[i] ?? 0;
+        if (prize <= 0) continue;
+        const [pl] = await db.select().from(playersTable).where(eq(playersTable.telegramId, winner.telegramId));
+        if (!pl) continue;
+        const newBal = pl.balance + prize;
+        await db.update(playersTable).set({ balance: newBal, updatedAt: new Date() }).where(eq(playersTable.telegramId, winner.telegramId));
+        try {
+          await bot!.sendMessage(Number(winner.telegramId),
+            `🏆 <b>TABRIKLAYMIZ!</b>\n\nSiz <b>${c.title}</b> konkursida <b>${i + 1}-o'rin</b>ni egalladingiz!\n👥 Taklif qilgan do'stlaringiz: <b>${winner.count} ta</b>\n🎁 Sovrin: <b>+${fmt(prize)} UZS</b>\n💵 Yangi balans: <b>${fmt(newBal)} UZS</b>`,
+            { parse_mode: "HTML" });
+        } catch {}
+        done.push(`${i + 1}. ${winner.username ? "@" + winner.username : winner.name} — +${fmt(prize)} UZS`);
+      }
+      await setContestValue("contest_paid_at", new Date().toISOString());
+      await bot!.sendMessage(chatId,
+        done.length ? `✅ <b>Sovrinlar berildi!</b>\n\n${done.join("\n")}` : "❌ Hech kimga sovrin berilmadi.",
+        { parse_mode: "HTML", reply_markup: { inline_keyboard: [[{ text: "🏆 Konkurs", callback_data: "admin_contest" }]] } });
+      return;
+    }
+
+    if (data === "admin_contest_announce") {
+      if (!contestAllowed(q.from.id)) { await bot!.answerCallbackQuery(q.id, { text: "❌ Ruxsat yo'q" }); return; }
+      await bot!.answerCallbackQuery(q.id);
+      const c = await getContest();
+      await bot!.sendMessage(chatId, "📢 Konkurs e'loni yuborilmoqda...");
+      const allPlayers = await db.select({ telegramId: playersTable.telegramId }).from(playersTable);
+      const msg =
+        `🏆 <b>${c.title}</b>\n\n${c.desc}\n\n` +
+        `🎁 Sovrinlar:\n🥇 ${fmt(c.prizes[0])} UZS\n🥈 ${fmt(c.prizes[1])} UZS\n🥉 ${fmt(c.prizes[2])} UZS\n\n` +
+        `👥 Ilovadagi <b>KONKURS</b> bo'limiga kiring va do'stlaringizni taklif qiling!`;
+      let sent = 0, failed = 0;
+      for (const pl of allPlayers) {
+        try { await bot!.sendMessage(Number(pl.telegramId), msg, { parse_mode: "HTML" }); sent++; await new Promise(r => setTimeout(r, 50)); }
+        catch { failed++; }
+      }
+      await bot!.sendMessage(chatId, `✅ Yuborildi: <b>${sent}</b> · ❌ Yuborilmadi: <b>${failed}</b>`, { parse_mode: "HTML", reply_markup: { inline_keyboard: [[{ text: "🏆 Konkurs", callback_data: "admin_contest" }]] } });
       return;
     }
 

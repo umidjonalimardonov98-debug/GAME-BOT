@@ -52,6 +52,7 @@ import LiveBg from "@/components/casino/LiveBg";
 import { usePlayer } from "@/lib/player-context";
 import PvpHub from "@/pages/PvpHub";
 import Duel from "@/pages/Duel";
+import Contest from "@/pages/Contest";
 
 const queryClient = new QueryClient({
   defaultOptions: { queries: { retry: 1, staleTime: 30000 } },
@@ -79,6 +80,7 @@ function Router() {
       <Route path="/history" component={History} />
       <Route path="/support" component={Support} />
       <Route path="/referral" component={Referral} />
+      <Route path="/contest" component={Contest} />
       <Route path="/chat" component={GlobalChat} />
       <Route path="/plinko" component={Plinko} />
       <Route path="/towers" component={Towers} />

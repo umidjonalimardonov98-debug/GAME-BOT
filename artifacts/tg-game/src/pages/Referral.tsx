@@ -2,6 +2,7 @@ import { useEffect, useMemo, useState } from "react";
 import { useLocation } from "wouter";
 import { usePlayer } from "@/lib/player-context";
 import { ArrowLeft, Copy, Check, Share2, Gift, ClipboardList, Lock, Users } from "lucide-react";
+import ContestBanner from "@/components/casino/ContestBanner";
 
 type RefFriend = { username: string | null; name: string; photoUrl: string | null; joinedAt: string | null };
 
@@ -136,6 +137,11 @@ export default function Referral() {
           <p className="font-black text-lg flex-1 text-center pr-10" style={{ color: G.light, textShadow: "0 2px 12px rgba(247,201,72,.45)" }}>
             Do'st taklif qilish
           </p>
+        </div>
+
+        {/* KONKURS BANNERI */}
+        <div className="px-4 pb-1">
+          <ContestBanner />
         </div>
 
         {/* HERO */}
