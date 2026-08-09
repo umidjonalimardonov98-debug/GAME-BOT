@@ -6,7 +6,7 @@ import { getBotUsername } from "../bot";
 const router: IRouter = Router();
 
 /** Konkurs ma'lumoti + TOP 10 (ixtiyoriy: o'yinchining natijasi) */
-router.get("/contest/:telegramId?", async (req, res): Promise<void> => {
+async function contestHandler(req: any, res: any): Promise<void> {
   try {
     const c = await getContest();
     const top = c.startAt ? await getContestTop(sql, 10) : [];
@@ -29,6 +29,10 @@ router.get("/contest/:telegramId?", async (req, res): Promise<void> => {
   } catch {
     res.status(500).json({ error: "contest info failed" });
   }
-});
+}
+
+// Express 5 optional param (":id?") ni qo'llamaydi — shuning uchun 2 ta yo'l
+router.get("/contest", contestHandler);
+router.get("/contest/:telegramId", contestHandler);
 
 export default router;
