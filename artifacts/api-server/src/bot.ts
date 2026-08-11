@@ -1156,7 +1156,7 @@ export async function startBot() {
     if (!hasPerm(msg.from?.id, "broadcast")) return;
     waitingForBroadcast.add(msg.from.id);
     await bot!.sendMessage(msg.chat.id,
-      `📢 <b>Xabar Yuborish</b>\n\nBarcha o'yinchilarga yuboriladigan xabarni yozing:\n\n<i>Bekor qilish uchun /cancel yozing</i>`,
+      `📢 <b>Xabar Yuborish</b>\n\nBarcha o'yinchilarga yuboriladigan xabarni yozing.\n📷 Rasm/video ham yuborishingiz mumkin — izoh (caption) bilan birga ketadi.\n\n<i>Bekor qilish uchun /cancel yozing</i>`,
       { parse_mode: "HTML" }
     );
   });
@@ -1265,11 +1265,54 @@ export async function startBot() {
     } catch {}
   });
 
+  /** Broadcast: har qanday xabarni (rasm/video/ovoz/matn) barcha o'yinchilarga nusxalash */
+  const runBroadcastCopy = async (adminId: number, chatId: number, fromChatId: number, messageId: number) => {
+    waitingForBroadcast.delete(adminId);
+    const allPlayers = await db.select({ telegramId: playersTable.telegramId }).from(playersTable);
+    await bot!.sendMessage(chatId, `📢 <b>${allPlayers.length} ta foydalanuvchiga yuborilmoqda...</b>`, { parse_mode: "HTML" });
+    let sent = 0, failed = 0;
+    for (const pl of allPlayers) {
+      const target = Number(pl.telegramId);
+      if (!target || Number.isNaN(target)) { failed++; continue; }
+      try {
+        if (typeof (bot as any).copyMessage === "function") {
+          await (bot as any).copyMessage(target, fromChatId, messageId);
+        } else {
+          const token = process.env.TELEGRAM_BOT_TOKEN || process.env.BOT_TOKEN;
+          const res = await fetch(`https://api.telegram.org/bot${token}/copyMessage`, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ chat_id: target, from_chat_id: fromChatId, message_id: messageId }),
+          });
+          if (!res.ok) throw new Error(`copyMessage ${res.status}`);
+        }
+        sent++;
+      } catch {
+        failed++;
+      }
+      await new Promise(r => setTimeout(r, 50));
+    }
+    await bot!.sendMessage(chatId,
+      `✅ <b>Yuborildi!</b>\n✅ Muvaffaqiyatli: <b>${sent} ta</b>\n❌ Yuborilmadi: <b>${failed} ta</b>`,
+      { parse_mode: "HTML", reply_markup: { inline_keyboard: [[{ text: "🔙 Admin panel", callback_data: "admin_panel" }]] } }
+    );
+  };
+
+  /** Media (rasm/video/ovoz/hujjat) orqali broadcast — caption bilan birga ketadi */
+  const mediaBroadcastHandler = async (msg: any) => {
+    const userId = msg.from?.id;
+    if (!userId || !waitingForBroadcast.has(userId)) return false;
+    await runBroadcastCopy(userId, msg.chat.id, msg.chat.id, msg.message_id);
+    return true;
+  };
+
   // Photo handler — deposit receipt
   const photoHandler = async (msg: any) => {
     const userId = msg.from?.id; if (!userId) return;
     const fileId = msg.photo![msg.photo!.length - 1].file_id;
     const chatId = msg.chat.id;
+
+    if (await mediaBroadcastHandler(msg)) return;
 
     if (waitingForSendMsg.has(userId)) {
       const targetId = waitingForSendMsg.get(userId)!;
@@ -1333,6 +1376,9 @@ export async function startBot() {
     }
   };
   bot.on("photo", photoHandler);
+  for (const ev of ["video", "animation", "voice", "audio", "document", "video_note", "sticker"]) {
+    bot.on(ev as any, async (m: any) => { try { await mediaBroadcastHandler(m); } catch (err) { logger.error({ err }, "Media broadcast xatosi"); } });
+  }
 
   // Text handler
   const textMsgHandler = async (msg: any) => {
@@ -2315,7 +2361,7 @@ Miqdorni tanlang yoki o'zingiz kiriting:`,
       await bot!.answerCallbackQuery(q.id);
       waitingForBroadcast.add(q.from.id);
       await bot!.sendMessage(chatId,
-        `📢 <b>Xabar Yuborish</b>\n\nBarcha o'yinchilarga yuboriladigan xabarni yozing:\n\n<i>Bekor qilish uchun /cancel yozing</i>`,
+        `📢 <b>Xabar Yuborish</b>\n\nBarcha o'yinchilarga yuboriladigan xabarni yozing.\n📷 Rasm/video ham yuborishingiz mumkin — izoh (caption) bilan birga ketadi.\n\n<i>Bekor qilish uchun /cancel yozing</i>`,
         { parse_mode: "HTML" }
       );
       return;
@@ -2712,7 +2758,7 @@ Miqdorni tanlang yoki o'zingiz kiriting:`,
       await bot!.answerCallbackQuery(q.id);
       waitingForBroadcast.add(q.from.id);
       await bot!.sendMessage(chatId,
-        `📢 <b>Barchaga Xabar</b>\n\nBarcha o'yinchilarga yuboriladigan xabarni yozing:\n\n<i>Bekor qilish uchun /cancel yozing</i>`,
+        `📢 <b>Barchaga Xabar</b>\n\nBarcha o'yinchilarga yuboriladigan xabarni yozing.\n📷 Rasm/video ham yuborishingiz mumkin — izoh (caption) bilan birga ketadi.\n\n<i>Bekor qilish uchun /cancel yozing</i>`,
         { parse_mode: "HTML" }
       );
       return;
