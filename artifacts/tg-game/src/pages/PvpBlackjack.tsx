@@ -227,10 +227,10 @@ export default function PvpBlackjack() {
               }}>
               <div className="flex gap-1.5 flex-wrap justify-center">
                 {v.foeHand.map((c, i) => (
-                  <PlayingCard key={i} suit={c.s} value={RANK_LABEL[c.r]} w={42} delay={i * 60} />
+                  <PlayingCard key={i} suit={c.s} value={RANK_LABEL[c.r]} w={56} delay={i * 60} />
                 ))}
                 {Array.from({ length: Math.max(0, v.foeCount - v.foeHand.length) }).map((_, i) => (
-                  <PlayingCard key={`h${i}`} suit="♠" value="A" hidden w={42} />
+                  <PlayingCard key={`h${i}`} suit="♠" value="A" hidden w={56} />
                 ))}
               </div>
               <p className="text-center font-black" style={{ fontSize: 11, color: v.myTurn ? "#4ade80" : "#f7c948" }}>
@@ -242,7 +242,7 @@ export default function PvpBlackjack() {
               style={{ background: ts.card, border: `1px solid ${ts.cardBorder}` }}>
               <div className="flex gap-1.5 flex-wrap justify-center">
                 {v.myHand.map((c, i) => (
-                  <PlayingCard key={i} suit={c.s} value={RANK_LABEL[c.r]} w={48} delay={i * 60} />
+                  <PlayingCard key={i} suit={c.s} value={RANK_LABEL[c.r]} w={62} delay={i * 60} />
                 ))}
               </div>
               <p className="font-black" style={{ fontSize: 14, color: v.iBust ? "#f87171" : "#fff" }}>
