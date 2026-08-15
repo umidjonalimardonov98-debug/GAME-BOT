@@ -53,6 +53,9 @@ import { usePlayer } from "@/lib/player-context";
 import PvpHub from "@/pages/PvpHub";
 import Duel from "@/pages/Duel";
 import Contest from "@/pages/Contest";
+import SocialHub from "@/pages/social/SocialHub";
+import LoveMatch from "@/pages/social/LoveMatch";
+import { LoveQuiz, TruthOrDare, QuizBattle, PartyRoom, Challenge, RulesPage } from "@/pages/social/SocialGames";
 
 const queryClient = new QueryClient({
   defaultOptions: { queries: { retry: 1, staleTime: 30000 } },
@@ -62,6 +65,14 @@ function Router() {
   return (
     <Switch>
       <Route path="/live" component={PvpHub} />
+      <Route path="/social" component={SocialHub} />
+      <Route path="/social/match" component={LoveMatch} />
+      <Route path="/social/lovequiz" component={LoveQuiz} />
+      <Route path="/social/truthordare" component={TruthOrDare} />
+      <Route path="/social/quizbattle" component={QuizBattle} />
+      <Route path="/social/party" component={PartyRoom} />
+      <Route path="/social/challenge" component={Challenge} />
+      <Route path="/rules" component={RulesPage} />
       <Route path="/duel/:key">{(p:any) => <Duel gameKey={p.key} />}</Route>
       <Route path="/" component={Home} />
       <Route path="/apple" component={AppleOfFortune} />

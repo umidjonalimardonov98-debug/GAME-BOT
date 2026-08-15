@@ -221,6 +221,20 @@ export default function Home() {
         <ContestBanner />
       </div>
 
+      {/* ─── SOCIAL GAMES ─── */}
+      <button onClick={() => nav("/social")}
+        className="relative overflow-hidden rounded-3xl mx-4 mb-3 text-left p-4 active:scale-[0.98] transition-transform"
+        style={{ background: "linear-gradient(140deg,#ff5f8f 0%,#a56bff 55%,#2c0d5e 100%)", border: "1px solid rgba(255,255,255,0.18)", boxShadow: "0 14px 34px rgba(165,107,255,0.35)" }}>
+        <div className="absolute -right-10 -top-10 w-40 h-40 rounded-full pointer-events-none" style={{ background: "radial-gradient(circle,rgba(255,255,255,0.25),transparent 70%)" }} />
+        <p className="font-black" style={{ fontSize: 9, letterSpacing: "0.22em", color: "rgba(255,255,255,0.75)" }}>SOCIAL</p>
+        <p className="font-black text-white leading-none mt-1" style={{ fontSize: 18 }}>SOCIAL GAMES</p>
+        <div className="flex flex-wrap gap-1.5 mt-2.5">
+          {["Love Match", "Love Quiz", "Truth or Dare", "Quiz Battle", "Party", "Challenge"].map((n) => (
+            <span key={n} className="px-2 py-1 rounded-full font-bold" style={{ fontSize: 9.5, background: "rgba(0,0,0,0.3)", color: "#fff" }}>{n}</span>
+          ))}
+        </div>
+      </button>
+
       {/* ─── IKKI IXCHAM BANNER: TEKIN O'YIN + LIVE PvP ─── */}
       <div className="grid grid-cols-2 gap-2.5 mx-4 mb-3">
         {/* VIP / tekin o'yin */}
