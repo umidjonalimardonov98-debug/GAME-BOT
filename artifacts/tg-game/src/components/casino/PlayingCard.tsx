@@ -15,7 +15,7 @@ const PIP_LAYOUT: Record<string, [number, number][]> = {
   "10": [[30, 18], [70, 18], [50, 29], [30, 40], [70, 40], [30, 62], [70, 62], [50, 71], [30, 84], [70, 84]],
 };
 
-const FACE_GLYPH: Record<string, string> = { J: "", Q: "", K: "" };
+const FACE_GLYPH: Record<string, string> = { J: "J", Q: "Q", K: "K" };
 
 interface Props {
   suit: Suit;
@@ -151,9 +151,14 @@ export default function PlayingCard({ suit, value, hidden, w = 62, delay = 0 }: 
             alignItems: "center",
             justifyContent: "center",
             fontSize: w * 0.5,
+            fontWeight: 800,
+            color: ink,
+            flexDirection: "column",
+            lineHeight: 0.85,
           }}
         >
-          {FACE_GLYPH[value] ?? suit}
+          <span>{FACE_GLYPH[value] ?? value}</span>
+          <span style={{ fontSize: w * 0.3 }}>{suit}</span>
         </div>
       )}
     </div>
