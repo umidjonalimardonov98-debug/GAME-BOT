@@ -222,7 +222,7 @@ export default function PvpDurak() {
               <span className="font-black" style={{ fontSize: 12, color: "#fff" }}>{v.foeName}</span>
               <span className="flex gap-0.5">
                 {Array.from({ length: Math.min(v.foeCount, 8) }).map((_, i) => (
-                  <PlayingCard key={i} suit="♠" value="A" hidden w={22} />
+                  <PlayingCard key={i} suit="♠" value="A" hidden w={30} />
                 ))}
               </span>
             </div>
@@ -247,10 +247,10 @@ export default function PvpDurak() {
                     onClick={() => pick && move("defend", pick, i)}
                     className="relative active:scale-95"
                     style={{ paddingRight: p.d ? 16 : 0, opacity: !p.d && pick && !v.iAmAttacker ? 1 : 0.95 }}>
-                    <PlayingCard suit={p.a.s} value={RANK_LABEL[p.a.r]} w={48} />
+                    <PlayingCard suit={p.a.s} value={RANK_LABEL[p.a.r]} w={58} />
                     {p.d && (
                       <span style={{ position: "absolute", left: 14, top: 12 }}>
-                        <PlayingCard suit={p.d.s} value={RANK_LABEL[p.d.r]} w={48} />
+                        <PlayingCard suit={p.d.s} value={RANK_LABEL[p.d.r]} w={58} />
                       </span>
                     )}
                     {!p.d && pick && !v.iAmAttacker && v.myTurn && (
@@ -281,7 +281,7 @@ export default function PvpDurak() {
                       transform: sel ? "translateY(-10px)" : "none",
                       background: sel ? "linear-gradient(160deg,#f7e59b,#d4af37)" : "transparent",
                     }}>
-                    <PlayingCard suit={c.s} value={RANK_LABEL[c.r]} w={46} delay={i * 60} />
+                    <PlayingCard suit={c.s} value={RANK_LABEL[c.r]} w={58} delay={i * 60} />
                   </button>
                 );
               })}
