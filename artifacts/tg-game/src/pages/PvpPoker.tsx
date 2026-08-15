@@ -207,9 +207,9 @@ export default function PvpPoker() {
               <span className="font-black" style={{ fontSize: 12, color: "#fff" }}>{v.foeName}</span>
               <span className="flex gap-1.5">
                 {v.foeHole.length ? v.foeHole.map((c, i) => (
-                  <PlayingCard key={i} suit={c.s} value={RANK_LABEL[c.r]} w={34} />
+                  <PlayingCard key={i} suit={c.s} value={RANK_LABEL[c.r]} w={46} />
                 )) : Array.from({ length: 2 }).map((_, i) => (
-                  <PlayingCard key={i} suit="♠" value="A" hidden w={34} />
+                  <PlayingCard key={i} suit="♠" value="A" hidden w={46} />
                 ))}
               </span>
             </div>
@@ -227,7 +227,7 @@ export default function PvpPoker() {
               <div className="flex gap-1 flex-wrap justify-center min-h-[54px] items-center">
                 {v.board.length === 0 && <span style={{ fontSize: 11, color: "rgba(255,255,255,.5)" }}>Umumiy kartalar yopiq</span>}
                 {v.board.map((c, i) => (
-                  <PlayingCard key={i} suit={c.s} value={RANK_LABEL[c.r]} w={38} delay={i * 60} />
+                  <PlayingCard key={i} suit={c.s} value={RANK_LABEL[c.r]} w={49} delay={i * 60} />
                 ))}
               </div>
               <p className="text-center font-black" style={{ fontSize: 11, color: v.myTurn ? "#4ade80" : "#f7c948" }}>
@@ -239,7 +239,7 @@ export default function PvpPoker() {
               style={{ background: ts.card, border: `1px solid ${ts.cardBorder}` }}>
               <div className="flex gap-1.5">
                 {v.myHole.map((c, i) => (
-                  <PlayingCard key={i} suit={c.s} value={RANK_LABEL[c.r]} w={52} delay={i * 60} />
+                  <PlayingCard key={i} suit={c.s} value={RANK_LABEL[c.r]} w={68} delay={i * 60} />
                 ))}
               </div>
               <p style={{ fontSize: 11, color: ts.textSub }}>Sizning tikkanigiz: {v.myBet.toLocaleString()} · Raqib: {v.foeBet.toLocaleString()}</p>
