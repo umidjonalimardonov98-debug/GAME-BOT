@@ -5,38 +5,51 @@ import { useTheme, pageBg } from "@/lib/theme-context";
 import { sfx } from "@/lib/sound";
 import GameHeader from "@/components/GameHeader";
 import PlayingCard from "@/components/casino/PlayingCard";
-import Sym from "@/components/casino/Sym";
 
 /**
- * LIVE PVP — 36 kartali haqiqiy DURAK. Ikki haqiqiy odam pul tikib o'ynaydi.
- * Barcha qoidalar server tomonda tekshiriladi (api-server/src/lib/durak.ts).
- * Bu sahifa faqat holatni ko'rsatadi va harakat yuboradi (1 sek polling).
+ * LIVE DURAK STOLI — 2, 3 yoki 4 kishi. Kartalar yirik va to'liq ko'rinadi.
+ * Barcha qoidalar serverda (api-server/src/lib/durak.ts), bu sahifa faqat ko'rsatadi.
  */
 
 type Suit = "♠" | "♥" | "♦" | "♣";
 type Card = { r: number; s: Suit };
 type Pair = { a: Card; d?: Card };
+type SeatInfo = { name: string; photo: string | null; id: string } | null;
+
+type Foe = {
+  seat: number;
+  cards: number;
+  out: boolean;
+  isAttacker: boolean;
+  isDefender: boolean;
+  isTurn: boolean;
+};
 
 type View = {
   roomId: string;
   stake: number;
+  max: number;
   prize: number;
-  foeName: string;
-  trump: Suit;
-  trumpCard: Card | null;
-  deckLeft: number;
-  myHand: Card[];
-  foeCount: number;
-  table: Pair[];
-  iAmAttacker: boolean;
-  myTurn: boolean;
-  canPass: boolean;
-  winner: "me" | "foe" | null;
-  discard: number;
-  log: string[];
+  seats: SeatInfo[];
+  mySeat: number;
+  started: boolean;
+  trump?: Suit;
+  trumpCard?: Card | null;
+  deckLeft?: number;
+  myHand?: Card[];
+  foes?: Foe[];
+  table?: Pair[];
+  iAmAttacker?: boolean;
+  iAmDefender?: boolean;
+  myTurn?: boolean;
+  canPass?: boolean;
+  finished?: boolean;
+  result?: "win" | "lose" | null;
+  discard?: number;
+  log?: string[];
 };
 
-const RANK_LABEL: Record<number, string> = {
+const RANK: Record<number, string> = {
   6: "6", 7: "7", 8: "8", 9: "9", 10: "10", 11: "J", 12: "Q", 13: "K", 14: "A",
 };
 
@@ -47,288 +60,229 @@ const api = (p: string, body?: unknown) =>
   ).then(async (r) => {
     const j = await r.json().catch(() => ({}));
     if (!r.ok) throw new Error((j as { error?: string }).error || "Xatolik");
-    return j;
+    return j as any;
   });
 
-export default function PvpDurak() {
-  const [, nav] = useLocation();
-  const { player, refresh } = usePlayer();
-  const { theme, ts } = useTheme();
+const money = (n: number) => n.toLocaleString("ru-RU");
 
-  const [cfg, setCfg] = useState<{ stakes: number[]; online: number; tables: number } | null>(null);
-  const [stake, setStake] = useState<number | null>(null);
-  const [status, setStatus] = useState<"idle" | "waiting" | "playing" | "done">("idle");
-  const [roomId, setRoomId] = useState("");
+function Seat({ info, foe, me }: { info: SeatInfo; foe?: Foe; me?: boolean }) {
+  const letter = (info?.name || "P").trim().charAt(0).toUpperCase();
+  const active = foe?.isTurn || me;
+  return (
+    <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 3, width: 66 }}>
+      <div style={{ position: "relative" }}>
+        {info?.photo ? (
+          <img src={info.photo} alt={info.name} style={{ width: 46, height: 46, borderRadius: "50%", objectFit: "cover", border: `2px solid ${active ? "#ffd85e" : "rgba(255,255,255,0.25)"}` }} />
+        ) : (
+          <div style={{ width: 46, height: 46, borderRadius: "50%", background: "linear-gradient(150deg,#2f6bff,#7a2fff)", border: `2px solid ${active ? "#ffd85e" : "rgba(255,255,255,0.25)"}`, display: "grid", placeItems: "center", color: "#fff", fontWeight: 900, fontSize: 18 }}>
+            {letter}
+          </div>
+        )}
+        {foe && (
+          <span style={{ position: "absolute", right: -4, bottom: -4, minWidth: 20, height: 20, padding: "0 5px", borderRadius: 10, background: "#12161c", border: "1px solid rgba(255,255,255,0.3)", color: "#fff", fontSize: 11, fontWeight: 900, display: "grid", placeItems: "center" }}>
+            {foe.cards}
+          </span>
+        )}
+      </div>
+      <span style={{ color: "#fff", fontSize: 10, fontWeight: 700, maxWidth: 66, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+        {info?.name ?? "kutilmoqda"}
+      </span>
+      <span style={{ color: foe?.isDefender ? "#4ce38a" : "rgba(255,255,255,0.45)", fontSize: 9, fontWeight: 800 }}>
+        {foe?.isDefender ? "HIMOYA" : foe?.isAttacker ? "HUJUM" : info ? `ID ${info.id.slice(-5)}` : ""}
+      </span>
+    </div>
+  );
+}
+
+export default function PvpDurak() {
+  const [loc, nav] = useLocation();
+  const { player, refresh } = usePlayer();
+  const { theme } = useTheme();
+
+  const roomId = new URLSearchParams(typeof window !== "undefined" ? window.location.search : "").get("room") ?? "";
   const [view, setView] = useState<View | null>(null);
   const [pick, setPick] = useState<Card | null>(null);
   const [err, setErr] = useState("");
   const poll = useRef<ReturnType<typeof setInterval> | null>(null);
+  const done = useRef(false);
 
   useEffect(() => {
-    api("/pvp/config").then(setCfg).catch(() => {});
-    return () => { if (poll.current) clearInterval(poll.current); };
-  }, []);
-
-  /* ── navbat ── */
-  const join = async (s: number) => {
-    if (!player) return;
-    setErr(""); setStake(s);
-    try {
-      const r = await api("/pvp/queue", { telegramId: player.telegramId, name: player.firstName ?? "O'yinchi", stake: s });
-      if (r.status === "matched") { setRoomId(r.roomId); setStatus("playing"); startPoll(r.roomId); }
-      else { setStatus("waiting"); waitLoop(s); }
-      sfx.select();
-    } catch (e) { setErr((e as Error).message); setStake(null); }
-  };
-
-  const waitLoop = (s: number) => {
-    if (poll.current) clearInterval(poll.current);
-    poll.current = setInterval(async () => {
-      if (!player) return;
+    if (!roomId || !player) { nav("/live"); return; }
+    const tick = async () => {
       try {
-        const r = await api("/pvp/queue", { telegramId: player.telegramId, name: player.firstName ?? "O'yinchi", stake: s });
-        if (r.status === "matched") { setRoomId(r.roomId); setStatus("playing"); startPoll(r.roomId); }
-      } catch { /* kutamiz */ }
-    }, 2000);
-  };
-
-  const cancel = async () => {
-    if (!player) return;
-    if (poll.current) clearInterval(poll.current);
-    await api("/pvp/cancel", { telegramId: player.telegramId }).catch(() => {});
-    setStatus("idle"); setStake(null);
-  };
-
-  const startPoll = (rid: string) => {
-    if (poll.current) clearInterval(poll.current);
-    poll.current = setInterval(async () => {
-      if (!player) return;
-      try {
-        const v: View = await api(`/pvp/state?telegramId=${player.telegramId}&roomId=${rid}`);
+        const v = await api(`/pvp/state?roomId=${roomId}&telegramId=${player.telegramId}`);
         setView(v);
-        if (v.winner) {
-          setStatus("done");
-          if (poll.current) clearInterval(poll.current);
-          if (v.winner === "me") sfx.win(true); else sfx.lose();
-          refresh();
-        }
-      } catch { /* xona yopilgan */ }
-    }, 1000);
-  };
+        if (v.finished && !done.current) { done.current = true; sfx.select(); void refresh?.(); }
+      } catch (e: any) { setErr(e?.message || ""); }
+    };
+    void tick();
+    poll.current = setInterval(tick, 1200);
+    return () => { if (poll.current) clearInterval(poll.current); };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [roomId, player?.telegramId]);
 
-  const move = async (action: string, card?: Card, target = -1) => {
-    if (!player || !roomId) return;
+  const move = async (action: string, card?: Card, target?: number) => {
+    if (!player) return;
     setErr("");
     try {
-      await api("/pvp/move", { telegramId: player.telegramId, roomId, action, card, target });
-      setPick(null); sfx.select();
-    } catch (e) { setErr((e as Error).message); }
+      await api("/pvp/move", { roomId, telegramId: player.telegramId, action, card, target });
+      sfx.select();
+      setPick(null);
+    } catch (e: any) { setErr(e?.message || "Xatolik"); }
   };
 
-  const forfeit = async () => {
-    if (!player || !roomId) return;
-    await api("/pvp/forfeit", { telegramId: player.telegramId, roomId }).catch(() => {});
+  const onCard = (c: Card) => {
+    if (!view?.started) return;
+    if (view.iAmDefender) {
+      const idx = (view.table ?? []).findIndex((p) => !p.d);
+      if (idx >= 0) void move("defend", c, idx);
+      return;
+    }
+    if (view.iAmAttacker) void move("attack", c);
   };
 
-  const BG = pageBg(theme);
+  const leave = async () => {
+    if (player) await api("/pvp/leave", { telegramId: player.telegramId }).catch(() => {});
+    nav("/live");
+  };
 
-  /* ── LOBBI ── */
-  if (status === "idle" || status === "waiting") {
-    return (
-      <div className="min-h-screen flex flex-col" style={{ background: BG }}>
-        <GameHeader icon="cardback" title=" LIVE PVP · DURAK" subtitle="36 karta · haqiqiy raqib" />
-        <div className="flex-1 px-4 pb-8 flex flex-col gap-4">
+  const foes = view?.foes ?? [];
+  const seats = view?.seats ?? [];
 
-          <div className="rounded-3xl p-4 flex items-center justify-around"
-            style={{ background: ts.card, border: `1px solid ${ts.cardBorder}` }}>
-            <div className="text-center">
-              <p className="font-black text-lg" style={{ color: "#22c55e" }}>{cfg?.online ?? 0}</p>
-              <p style={{ fontSize: 10, color: ts.textSub }}>ONLAYN</p>
-            </div>
-            <div className="text-center">
-              <p className="font-black text-lg" style={{ color: "#f7c948" }}>{cfg?.tables ?? 0}</p>
-              <p style={{ fontSize: 10, color: ts.textSub }}>STOL</p>
-            </div>
-            <div className="text-center">
-              <p className="font-black text-lg" style={{ color: "#38bdf8" }}>36</p>
-              <p style={{ fontSize: 10, color: ts.textSub }}>KARTA</p>
-            </div>
-          </div>
-
-          {status === "waiting" ? (
-            <div className="rounded-3xl p-6 text-center flex flex-col items-center gap-3"
-              style={{ background: ts.card, border: "1px solid rgba(247,201,72,.4)" }}>
-              <Sym n="cardback" s={54} className="idle-float" />
-              <p className="font-black" style={{ color: "#f7c948" }}>Raqib kutilmoqda...</p>
-              <p style={{ fontSize: 11, color: ts.textSub }}>Tikish: {stake?.toLocaleString()} so'm</p>
-              <button onClick={cancel} className="rounded-xl px-5 py-2 font-black"
-                style={{ fontSize: 12, background: "rgba(239,68,68,.18)", color: "#f87171" }}>BEKOR QILISH</button>
-            </div>
-          ) : (
-            <>
-              <p className="font-black" style={{ fontSize: 12, color: ts.textSub }}>TIKISHNI TANLANG</p>
-              <div className="grid grid-cols-2 gap-2">
-                {(cfg?.stakes ?? [5000, 10000, 25000, 50000, 100000]).map((s) => (
-                  <button key={s} onClick={() => join(s)}
-                    className="rounded-2xl py-4 font-black active:scale-95 transition-all"
-                    style={{
-                      background: "linear-gradient(160deg,#1a6b46,#0a3b26)",
-                      border: "1px solid rgba(247,201,72,.35)", color: "#fff",
-                    }}>
-                    {s.toLocaleString()}
-                    <div style={{ fontSize: 10, color: "#f7c948" }}>yutuq {Math.floor(s * 2 * 0.92).toLocaleString()}</div>
-                  </button>
-                ))}
-              </div>
-            </>
-          )}
-
-          {err && <p className="text-center font-bold" style={{ fontSize: 12, color: "#f87171" }}>{err}</p>}
-
-          <div className="rounded-3xl p-4" style={{ background: ts.card, border: `1px solid ${ts.cardBorder}` }}>
-            <p className="font-black mb-2" style={{ fontSize: 12, color: "#f7c948" }}>QOIDALAR</p>
-            <ul className="space-y-1" style={{ fontSize: 11, color: ts.textSub, lineHeight: 1.5 }}>
-              <li>• 36 karta (6..A), har kimga 6 ta karta, oxirgi karta — kozir.</li>
-              <li>• Eng kichik kozir kimda bo'lsa — birinchi hujum qiladi.</li>
-              <li>• Suzish (bito): himoyachi kartani baland karta bilan yopadi, kozir har qanday rangni yopadi.</li>
-              <li>• Yopa olmasa — "OLAMAN" bosadi va stoldagi hamma kartani oladi.</li>
-              <li>• Kartalar tugab, qo'li bo'shagan birinchi o'yinchi yutadi.</li>
-              <li>• 30 soniya ichida harakat qilmasa — avtomatik harakat bo'ladi.</li>
-              <li>• Yutuq: ikki tikish summasi, uy ulushi 8%.</li>
-            </ul>
-          </div>
-
-          <button onClick={() => nav("/")} className="rounded-xl py-3 font-black"
-            style={{ fontSize: 12, background: "rgba(255,255,255,.07)", color: ts.textSub }}>ORQAGA</button>
-        </div>
-      </div>
-    );
-  }
-
-  /* ── STOL ── */
-  const v = view;
   return (
-    <div className="min-h-screen flex flex-col" style={{ background: BG }}>
-      <GameHeader icon="cardback" title=" DURAK PVP" subtitle={v ? `${v.stake.toLocaleString()} · ${v.foeName}` : "..."} />
-      <div className="flex-1 px-3 pb-6 flex flex-col gap-3">
+    <div className="min-h-screen pb-28" style={{ background: pageBg(theme) }}>
+      <GameHeader
+        icon="cardback"
+        title="DURAK LIVE"
+        subtitle={view ? `#${view.roomId} · ${money(view.stake)} · bank ${money(view.prize)}` : "..."}
+      />
 
-        {!v && <p className="text-center font-bold" style={{ color: ts.textSub }}>Stol yuklanmoqda...</p>}
+      {/* raqiblar */}
+      <div style={{ display: "flex", justifyContent: "space-around", padding: "10px 8px" }}>
+        {foes.length === 0 && seats.filter((_, i) => i !== view?.mySeat).map((s, i) => (
+          <Seat key={i} info={s} />
+        ))}
+        {foes.map((f) => <Seat key={f.seat} info={seats[f.seat] ?? null} foe={f} />)}
+      </div>
 
-        {v && (
-          <>
-            {/* raqib */}
-            <div className="flex items-center justify-between rounded-2xl px-3 py-2"
-              style={{ background: ts.card, border: `1px solid ${ts.cardBorder}` }}>
-              <span className="font-black" style={{ fontSize: 12, color: "#fff" }}>{v.foeName}</span>
-              <span className="flex gap-0.5">
-                {Array.from({ length: Math.min(v.foeCount, 8) }).map((_, i) => (
-                  <PlayingCard key={i} suit="♠" value="A" hidden w={30} />
-                ))}
+      {!view?.started && (
+        <div style={{ margin: "18px 14px", padding: 24, borderRadius: 18, textAlign: "center", background: "rgba(255,255,255,0.05)", border: "1px dashed rgba(255,255,255,0.16)" }}>
+          <div style={{ color: "#fff", fontWeight: 900, fontSize: 15, marginBottom: 6 }}>Raqiblar kutilmoqda</div>
+          <div style={{ color: "rgba(255,255,255,0.55)", fontSize: 12 }}>
+            {seats.filter(Boolean).length}/{view?.max ?? 2} o'yinchi · stol to'lganda o'yin boshlanadi
+          </div>
+          <button onClick={leave} style={{ marginTop: 16, padding: "10px 22px", borderRadius: 12, fontWeight: 900, color: "#fff", background: "rgba(255,255,255,0.1)" }}>
+            CHIQISH
+          </button>
+        </div>
+      )}
+
+      {view?.started && (
+        <>
+          {/* stol */}
+          <div
+            style={{
+              margin: "6px 12px",
+              minHeight: 190,
+              borderRadius: 20,
+              padding: 14,
+              background: "radial-gradient(ellipse at 50% 35%, #1f6b8c 0%, #114a63 55%, #0a3346 100%)",
+              border: "3px solid #0b2634",
+              boxShadow: "inset 0 6px 26px rgba(0,0,0,0.45)",
+              display: "flex", flexWrap: "wrap", gap: 10, alignItems: "center", justifyContent: "center",
+            }}
+          >
+            {(view.table ?? []).length === 0 && (
+              <span style={{ color: "rgba(255,255,255,0.5)", fontSize: 13, fontWeight: 700 }}>
+                {view.iAmAttacker ? "Hujum kartangizni tanlang" : "Hujum kutilmoqda"}
               </span>
-            </div>
-
-            {/* stol */}
-            <div className="rounded-3xl p-3 min-h-[190px] flex flex-col justify-between"
-              style={{
-                background: "radial-gradient(circle at 50% 30%, #1a6b46, #08301f 70%)",
-                border: `1px solid ${ts.cardBorder}`,
-                boxShadow: "inset 0 0 60px rgba(0,0,0,.6)",
-              }}>
-              <div className="flex items-center justify-between" style={{ fontSize: 11, color: "rgba(255,255,255,.75)" }}>
-                <span>Kozir: <b style={{ color: "#f7c948" }}>{v.trump}</b> {v.trumpCard ? RANK_LABEL[v.trumpCard.r] : ""}</span>
-                <span>Paluba: {v.deckLeft}</span>
-                <span>{v.iAmAttacker ? "Hujum: SIZ" : "Himoya: SIZ"}</span>
-              </div>
-
-              <div className="flex flex-wrap gap-3 justify-center py-2">
-                {v.table.length === 0 && <span style={{ fontSize: 11, color: "rgba(255,255,255,.5)" }}>Stol bo'sh</span>}
-                {v.table.map((p, i) => (
-                  <button key={i} disabled={!(pick && !p.d && !v.iAmAttacker && v.myTurn)}
-                    onClick={() => pick && move("defend", pick, i)}
-                    className="relative active:scale-95"
-                    style={{ paddingRight: p.d ? 16 : 0, opacity: !p.d && pick && !v.iAmAttacker ? 1 : 0.95 }}>
-                    <PlayingCard suit={p.a.s} value={RANK_LABEL[p.a.r]} w={58} />
-                    {p.d && (
-                      <span style={{ position: "absolute", left: 14, top: 12 }}>
-                        <PlayingCard suit={p.d.s} value={RANK_LABEL[p.d.r]} w={58} />
-                      </span>
-                    )}
-                    {!p.d && pick && !v.iAmAttacker && v.myTurn && (
-                      <span style={{
-                        position: "absolute", inset: -3, borderRadius: 8,
-                        border: "2px dashed #f7c948", boxShadow: "0 0 12px rgba(247,201,72,.5)",
-                      }} />
-                    )}
-                  </button>
-                ))}
-              </div>
-
-              <p className="text-center font-black" style={{ fontSize: 11, color: v.myTurn ? "#4ade80" : "#f7c948" }}>
-                {v.winner ? (v.winner === "me" ? "SIZ YUTDINGIZ!" : "Yutqazdingiz") : v.myTurn ? "Sizning navbatingiz" : "Raqib o'ylayapti..."}
-              </p>
-            </div>
-
-            {/* mening kartalarim */}
-            <div className="flex flex-wrap gap-1.5 justify-center rounded-2xl p-2"
-              style={{ background: ts.card, border: `1px solid ${ts.cardBorder}` }}>
-              {v.myHand.map((c, i) => {
-                const sel = pick && pick.r === c.r && pick.s === c.s;
-                return (
-                  <button key={`${c.r}${c.s}`} onClick={() => { setPick(c); sfx.select(); }}
-                    className="active:scale-95 transition-transform"
-                    style={{
-                      borderRadius: 10, padding: 2,
-                      transform: sel ? "translateY(-10px)" : "none",
-                      background: sel ? "linear-gradient(160deg,#f7e59b,#d4af37)" : "transparent",
-                    }}>
-                    <PlayingCard suit={c.s} value={RANK_LABEL[c.r]} w={58} delay={i * 60} />
-                  </button>
-                );
-              })}
-            </div>
-
-            {/* harakatlar */}
-            {!v.winner ? (
-              <div className="grid grid-cols-3 gap-2">
-                <button disabled={!v.myTurn || !v.iAmAttacker || !pick} onClick={() => pick && move("attack", pick)}
-                  className="rounded-xl py-3 font-black active:scale-95"
-                  style={{ fontSize: 12, background: "linear-gradient(160deg,#f7e59b,#d4af37)", color: "#1a1200", opacity: v.myTurn && v.iAmAttacker && pick ? 1 : 0.45 }}>
-                  HUJUM
-                </button>
-                <button disabled={!v.myTurn || v.iAmAttacker} onClick={() => move("take")}
-                  className="rounded-xl py-3 font-black active:scale-95"
-                  style={{ fontSize: 12, background: "rgba(239,68,68,.2)", color: "#f87171", opacity: v.myTurn && !v.iAmAttacker ? 1 : 0.45 }}>
-                  OLAMAN
-                </button>
-                <button disabled={!v.canPass} onClick={() => move("pass")}
-                  className="rounded-xl py-3 font-black active:scale-95"
-                  style={{ fontSize: 12, background: "rgba(34,197,94,.2)", color: "#4ade80", opacity: v.canPass ? 1 : 0.45 }}>
-                  BITA
-                </button>
-              </div>
-            ) : (
-              <button onClick={() => { setStatus("idle"); setView(null); setStake(null); }}
-                className="rounded-xl py-3 font-black"
-                style={{ fontSize: 13, background: "linear-gradient(160deg,#f7e59b,#d4af37)", color: "#1a1200" }}>
-                YANA O'YNASH
-              </button>
             )}
+            {(view.table ?? []).map((p, i) => (
+              <div key={i} style={{ position: "relative", width: 74, height: 128 }}>
+                <div style={{ position: "absolute", left: 0, top: 0 }}>
+                  <PlayingCard suit={p.a.s} value={RANK[p.a.r]} w={68} />
+                </div>
+                {p.d && (
+                  <div style={{ position: "absolute", left: 14, top: 22 }}>
+                    <PlayingCard suit={p.d.s} value={RANK[p.d.r]} w={68} />
+                  </div>
+                )}
+              </div>
+            ))}
+          </div>
 
-            {err && <p className="text-center font-bold" style={{ fontSize: 11, color: "#f87171" }}>{err}</p>}
+          {/* koloda va kozır */}
+          <div style={{ display: "flex", alignItems: "center", gap: 10, padding: "8px 14px" }}>
+            <PlayingCard suit="♠" value="A" hidden w={44} />
+            <div style={{ color: "#fff", fontSize: 12, fontWeight: 800 }}>
+              Koloda: {view.deckLeft ?? 0}
+            </div>
+            {view.trumpCard && (
+              <div style={{ marginLeft: "auto", display: "flex", alignItems: "center", gap: 8 }}>
+                <span style={{ color: "rgba(255,255,255,0.6)", fontSize: 11, fontWeight: 800 }}>KOZIR</span>
+                <PlayingCard suit={view.trumpCard.s} value={RANK[view.trumpCard.r]} w={44} />
+              </div>
+            )}
+          </div>
 
-            <div className="rounded-2xl px-3 py-2" style={{ background: ts.card, border: `1px solid ${ts.cardBorder}` }}>
-              {v.log.map((l, i) => (
-                <p key={i} style={{ fontSize: 10, color: ts.textSub }}>· {l}</p>
+          {/* mening qo'lim */}
+          <div style={{ padding: "6px 10px" }}>
+            <div style={{ color: "rgba(255,255,255,0.5)", fontSize: 11, fontWeight: 800, marginBottom: 6 }}>
+              {view.finished
+                ? view.result === "win" ? "SIZ YUTDINGIZ" : "SIZ DURAK"
+                : view.myTurn ? (view.iAmDefender ? "HIMOYA QILING" : "HUJUM QILING") : "RAQIB O'YLAYAPTI"}
+            </div>
+            <div style={{ display: "flex", gap: 6, overflowX: "auto", paddingBottom: 8 }}>
+              {(view.myHand ?? []).map((c, i) => (
+                <button
+                  key={`${c.r}${c.s}`}
+                  onClick={() => { setPick(c); onCard(c); }}
+                  disabled={!view.myTurn || view.finished}
+                  style={{
+                    flex: "0 0 auto",
+                    transform: pick && pick.r === c.r && pick.s === c.s ? "translateY(-10px)" : "none",
+                    transition: "transform .15s",
+                    opacity: view.myTurn ? 1 : 0.7,
+                  }}
+                >
+                  <PlayingCard suit={c.s} value={RANK[c.r]} w={72} delay={i * 40} />
+                </button>
               ))}
             </div>
+          </div>
 
-            {!v.winner && (
-              <button onClick={forfeit} className="rounded-xl py-2 font-black"
-                style={{ fontSize: 11, background: "rgba(255,255,255,.06)", color: ts.textSub }}>TASLIM BO'LISH</button>
+          {/* boshqaruv */}
+          <div style={{ display: "flex", gap: 8, padding: "4px 12px" }}>
+            {view.iAmDefender && !view.finished && (
+              <button
+                onClick={() => move("take")}
+                style={{ flex: 1, padding: "13px 0", borderRadius: 14, fontWeight: 900, color: "#08120c", background: "linear-gradient(135deg,#ffd85e,#f2a52a)" }}
+              >
+                OLAMAN
+              </button>
             )}
-          </>
-        )}
-      </div>
+            {view.canPass && !view.finished && (
+              <button
+                onClick={() => move("pass")}
+                style={{ flex: 1, padding: "13px 0", borderRadius: 14, fontWeight: 900, color: "#08120c", background: "linear-gradient(135deg,#4ce38a,#19b45f)" }}
+              >
+                BITA
+              </button>
+            )}
+            {view.finished && (
+              <button
+                onClick={() => nav("/live")}
+                style={{ flex: 1, padding: "13px 0", borderRadius: 14, fontWeight: 900, color: "#08120c", background: "linear-gradient(135deg,#4ce38a,#19b45f)" }}
+              >
+                LOBBIGA QAYTISH
+              </button>
+            )}
+          </div>
+        </>
+      )}
+
+      {err && <div style={{ color: "#ff6b6b", fontSize: 12, textAlign: "center", padding: 8 }}>{err}</div>}
+      <div style={{ display: "none" }}>{loc}</div>
     </div>
   );
 }

@@ -1,117 +1,308 @@
 import { useEffect, useState } from "react";
 import { useLocation } from "wouter";
+import { usePlayer } from "@/lib/player-context";
 import { useTheme, pageBg } from "@/lib/theme-context";
 import GameHeader from "@/components/GameHeader";
 import { sfx } from "@/lib/sound";
-import { Users, ChevronRight, Radio } from "lucide-react";
 
-type LiveGame = {
-  path: string;
-  title: string;
-  sub: string;
-  img: string;
-  players: string;
-  online: number;
-  tables: number;
+/**
+ * LIVE O'YINLAR LOBBISI — ochiq stollar ro'yxati.
+ * Har bir stolda o'rinlar, o'yinchi avatarlari, ID va tikish ko'rinadi.
+ * 1 / 2 / 3 / 4 kishilik stol yaratish mumkin. Emoji ishlatilmaydi.
+ */
+
+type Seat = { name: string; photo: string | null; id: string } | null;
+type Room = {
   id: string;
+  stake: number;
+  max: number;
+  started: boolean;
+  finished: boolean;
+  prize: number;
+  seats: Seat[];
 };
 
-const TABLES: Omit<LiveGame, "online" | "tables">[] = [
-  { path: "/pvp", img: "/games/pvpdurak.jpg", title: "DURAK", sub: "36 karta · kozir · to‘liq qoidalar", players: "2 kishilik", id: "DRK-01" },
-  { path: "/pvp-blackjack", img: "/games/pvpblackjack.jpg", title: "BLACKJACK", sub: "21 ochko · haqiqiy raqib", players: "2 kishilik", id: "BJK-02" },
-  { path: "/pvp-poker", img: "/games/pvppoker.jpg", title: "TEXAS POKER", sub: "Hold’em · umumiy bank", players: "2 kishilik", id: "PKR-03" },
-];
+const GAMES = [
+  { key: "durak", title: "DURAK", path: "/pvp", cfg: "/pvp/config", list: "/pvp/rooms" },
+  { key: "blackjack", title: "BLACKJACK", path: "/pvp-blackjack", cfg: "/pvp-bj/config", list: "" },
+  { key: "poker", title: "TEXAS POKER", path: "/pvp-poker", cfg: "/pvp-poker/config", list: "" },
+] as const;
 
-async function getStats(path: string) {
-  const response = await fetch(`/api${path}`);
-  if (!response.ok) return { online: 0, tables: 0 };
-  const data = await response.json();
-  return { online: Number(data.online) || 0, tables: Number(data.tables) || 0 };
+const api = (p: string, body?: unknown) =>
+  fetch(`/api${p}`, body
+    ? { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(body) }
+    : undefined,
+  ).then(async (r) => {
+    const j = await r.json().catch(() => ({}));
+    if (!r.ok) throw new Error((j as { error?: string }).error || "Xatolik");
+    return j as any;
+  });
+
+const money = (n: number) => n.toLocaleString("ru-RU");
+
+function Avatar({ seat, size = 42 }: { seat: Seat; size?: number }) {
+  if (!seat) {
+    return (
+      <div
+        style={{
+          width: size, height: size, borderRadius: "50%",
+          border: "2px dashed rgba(255,255,255,0.28)",
+          display: "grid", placeItems: "center",
+          color: "rgba(255,255,255,0.4)", fontSize: size * 0.4, fontWeight: 900,
+        }}
+      >
+        +
+      </div>
+    );
+  }
+  const letter = (seat.name || "P").trim().charAt(0).toUpperCase();
+  return (
+    <div style={{ position: "relative", width: size, height: size }}>
+      {seat.photo ? (
+        <img
+          src={seat.photo}
+          alt={seat.name}
+          style={{ width: size, height: size, borderRadius: "50%", objectFit: "cover", border: "2px solid #38d47a" }}
+        />
+      ) : (
+        <div
+          style={{
+            width: size, height: size, borderRadius: "50%",
+            background: "linear-gradient(150deg,#2f6bff,#7a2fff)",
+            border: "2px solid #38d47a",
+            display: "grid", placeItems: "center",
+            color: "#fff", fontWeight: 900, fontSize: size * 0.42,
+          }}
+        >
+          {letter}
+        </div>
+      )}
+    </div>
+  );
 }
 
 export default function PvpHub() {
   const [, nav] = useLocation();
-  const { theme, ts } = useTheme();
-  const [games, setGames] = useState<LiveGame[]>(TABLES.map((game) => ({ ...game, online: 0, tables: 0 })));
-  const [loading, setLoading] = useState(true);
+  const { player } = usePlayer();
+  const { theme } = useTheme();
+
+  const [tab, setTab] = useState<(typeof GAMES)[number]["key"]>("durak");
+  const [rooms, setRooms] = useState<Room[]>([]);
+  const [cfg, setCfg] = useState<{ stakes: number[]; maxOptions: number[]; online: number } | null>(null);
+  const [stake, setStake] = useState(10000);
+  const [max, setMax] = useState(2);
+  const [busy, setBusy] = useState(false);
+  const [err, setErr] = useState("");
+
+  const game = GAMES.find((g) => g.key === tab)!;
 
   useEffect(() => {
-    let active = true;
+    let alive = true;
     const load = async () => {
-      const stats = await Promise.all([
-        getStats("/pvp/config"),
-        getStats("/pvp-bj/config"),
-        getStats("/pvp-poker/config"),
-      ]);
-      if (active) {
-        setGames(TABLES.map((game, index) => ({ ...game, ...stats[index] })));
-        setLoading(false);
-      }
+      try {
+        const c = await api(game.cfg);
+        if (!alive) return;
+        setCfg({ stakes: c.stakes ?? [5000, 10000, 25000, 50000, 100000], maxOptions: c.maxOptions ?? [2, 3, 4], online: c.online ?? 0 });
+        if (c.stakes?.length && !c.stakes.includes(stake)) setStake(c.stakes[1] ?? c.stakes[0]);
+      } catch { /* ignore */ }
+      if (!game.list) { setRooms([]); return; }
+      try {
+        const r = await api(game.list);
+        if (alive) setRooms(r.rooms ?? []);
+      } catch { /* ignore */ }
     };
     void load();
-    const timer = window.setInterval(load, 8000);
-    return () => { active = false; window.clearInterval(timer); };
-  }, []);
+    const t = window.setInterval(load, 3000);
+    return () => { alive = false; window.clearInterval(t); };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [tab]);
 
-  const totalOnline = games.reduce((sum, game) => sum + game.online, 0);
-  const open = (path: string) => { sfx.select(); nav(path); };
+  const create = async () => {
+    if (!player || busy) return;
+    setBusy(true); setErr("");
+    try {
+      const r = await api("/pvp/create", {
+        telegramId: player.telegramId,
+        name: player.firstName ?? "O'yinchi",
+        photo: (player as any).photoUrl ?? null,
+        stake, max,
+      });
+      sfx.select();
+      nav(`${game.path}?room=${r.roomId}`);
+    } catch (e: any) { setErr(e?.message || "Xatolik"); }
+    setBusy(false);
+  };
+
+  const join = async (room: Room) => {
+    if (!player || busy) return;
+    setBusy(true); setErr("");
+    try {
+      await api("/pvp/join", {
+        telegramId: player.telegramId,
+        name: player.firstName ?? "O'yinchi",
+        photo: (player as any).photoUrl ?? null,
+        roomId: room.id,
+      });
+      sfx.select();
+      nav(`${game.path}?room=${room.id}`);
+    } catch (e: any) { setErr(e?.message || "Xatolik"); }
+    setBusy(false);
+  };
 
   return (
-    <div className="min-h-screen pb-8" style={{ background: pageBg(theme) }}>
-      <GameHeader title="LIVE O‘YINLAR" subtitle="Haqiqiy odamlar bilan karta stollari" />
+    <div className="min-h-screen pb-24" style={{ background: pageBg(theme) }}>
+      <GameHeader icon="cardback" title="LIVE O'YINLAR" subtitle={`Onlayn: ${cfg?.online ?? 0}`} />
 
-      <div className="mx-3 mb-3 flex items-center justify-between rounded-xl px-3 py-2.5"
-        style={{ background: ts.card, border: `1px solid ${ts.cardBorder}` }}>
-        <div className="flex items-center gap-2">
-          <Radio size={17} color="#22c55e" />
-          <div>
-            <p className="font-black" style={{ fontSize: 12, color: ts.text }}>JONLI STOLLAR</p>
-            <p style={{ fontSize: 10, color: ts.textSub }}>Natijalar serverda hisoblanadi</p>
-          </div>
-        </div>
-        <div className="text-right">
-          <p className="font-black" style={{ fontSize: 17, color: "#22c55e" }}>{loading ? "—" : totalOnline}</p>
-          <p style={{ fontSize: 9, color: ts.textSub }}>ONLAYN</p>
-        </div>
-      </div>
-
-      <div className="mx-3 flex flex-col gap-2.5">
-        {games.map((game) => (
-          <button key={game.path} onClick={() => open(game.path)}
-            className="grid w-full grid-cols-[112px_1fr_30px] overflow-hidden rounded-xl text-left active:scale-[0.985]"
-            style={{ minHeight: 112, background: ts.card, border: `1px solid ${ts.cardBorder}`, boxShadow: "0 6px 18px rgba(0,0,0,.24)" }}>
-            <div className="relative h-full min-h-[112px] overflow-hidden">
-              <img src={game.img} alt={`${game.title} live o‘yini`} className="absolute inset-0 h-full w-full object-cover" loading="eager" />
-              <div className="absolute inset-0" style={{ background: "linear-gradient(90deg,transparent 55%,rgba(0,0,0,.38))" }} />
-              <span className="absolute left-2 top-2 rounded px-1.5 py-0.5 font-black"
-                style={{ fontSize: 9, color: "#fff", background: "#dc2626" }}>LIVE</span>
-            </div>
-
-            <div className="flex min-w-0 flex-col justify-center px-3 py-2">
-              <div className="flex items-center gap-2">
-                <p className="truncate font-black" style={{ fontSize: 15, color: ts.text }}>{game.title}</p>
-                <span className="shrink-0 rounded px-1.5 py-0.5 font-black"
-                  style={{ fontSize: 8, color: "#f7c948", background: "rgba(247,201,72,.12)", border: "1px solid rgba(247,201,72,.3)" }}>{game.id}</span>
-              </div>
-              <p className="mt-0.5 truncate font-semibold" style={{ fontSize: 10, color: ts.textSub }}>{game.sub}</p>
-              <div className="mt-2 flex items-center gap-3">
-                <span className="flex items-center gap-1 font-black" style={{ fontSize: 10, color: ts.text }}>
-                  <Users size={13} /> {game.players}
-                </span>
-                <span className="font-black" style={{ fontSize: 10, color: "#22c55e" }}>{game.online} o‘yinchi</span>
-              </div>
-              <p className="mt-1" style={{ fontSize: 9, color: ts.textSub }}>{game.tables} ta faol stol</p>
-            </div>
-            <div className="flex items-center justify-center"><ChevronRight size={23} color={ts.textSub} /></div>
+      {/* o'yin tanlash */}
+      <div style={{ display: "flex", gap: 8, padding: "10px 12px", overflowX: "auto" }}>
+        {GAMES.map((g) => (
+          <button
+            key={g.key}
+            onClick={() => { sfx.select(); setTab(g.key); }}
+            style={{
+              flex: "0 0 auto", padding: "9px 16px", borderRadius: 12,
+              fontWeight: 900, fontSize: 13, letterSpacing: "0.04em",
+              color: tab === g.key ? "#08120c" : "rgba(255,255,255,0.75)",
+              background: tab === g.key ? "linear-gradient(135deg,#4ce38a,#19b45f)" : "rgba(255,255,255,0.07)",
+              border: "1px solid rgba(255,255,255,0.12)",
+            }}
+          >
+            {g.title}
           </button>
         ))}
       </div>
 
-      <div className="mx-3 mt-4 rounded-xl px-3 py-3" style={{ background: ts.card, border: `1px solid ${ts.cardBorder}` }}>
-        <p className="font-black" style={{ fontSize: 11, color: ts.text }}>O‘YIN TARTIBI</p>
-        <p className="mt-1" style={{ fontSize: 10, lineHeight: 1.55, color: ts.textSub }}>
-          Stolni tanlang, tikishni belgilang va haqiqiy raqib ulanishini kuting. Kartalar, navbat va natija server tomonidan boshqariladi.
-        </p>
+      {/* stol yaratish */}
+      <div style={{ margin: "4px 12px 14px", padding: 14, borderRadius: 16, background: "rgba(255,255,255,0.05)", border: "1px solid rgba(255,255,255,0.1)" }}>
+        <div style={{ color: "#fff", fontWeight: 900, fontSize: 13, marginBottom: 10, letterSpacing: "0.05em" }}>YANGI STOL</div>
+
+        <div style={{ color: "rgba(255,255,255,0.55)", fontSize: 11, marginBottom: 6 }}>NECHA KISHILIK</div>
+        <div style={{ display: "flex", gap: 8, marginBottom: 12 }}>
+          {(cfg?.maxOptions ?? [2, 3, 4]).map((m) => (
+            <button
+              key={m}
+              onClick={() => { sfx.select(); setMax(m); }}
+              style={{
+                flex: 1, padding: "10px 0", borderRadius: 12, fontWeight: 900, fontSize: 14,
+                color: max === m ? "#08120c" : "#fff",
+                background: max === m ? "linear-gradient(135deg,#ffd85e,#f2a52a)" : "rgba(255,255,255,0.07)",
+                border: "1px solid rgba(255,255,255,0.12)",
+              }}
+            >
+              {m}
+            </button>
+          ))}
+        </div>
+
+        <div style={{ color: "rgba(255,255,255,0.55)", fontSize: 11, marginBottom: 6 }}>TIKISH</div>
+        <div style={{ display: "flex", gap: 8, overflowX: "auto", marginBottom: 12 }}>
+          {(cfg?.stakes ?? []).map((s) => (
+            <button
+              key={s}
+              onClick={() => { sfx.select(); setStake(s); }}
+              style={{
+                flex: "0 0 auto", padding: "9px 14px", borderRadius: 12, fontWeight: 900, fontSize: 13,
+                color: stake === s ? "#08120c" : "#fff",
+                background: stake === s ? "linear-gradient(135deg,#4ce38a,#19b45f)" : "rgba(255,255,255,0.07)",
+                border: "1px solid rgba(255,255,255,0.12)",
+              }}
+            >
+              {money(s)}
+            </button>
+          ))}
+        </div>
+
+        <button
+          onClick={create}
+          disabled={busy || !player || !game.list}
+          style={{
+            width: "100%", padding: "13px 0", borderRadius: 14, fontWeight: 900, fontSize: 15,
+            color: "#08120c", background: "linear-gradient(135deg,#4ce38a,#19b45f)",
+            opacity: busy || !game.list ? 0.5 : 1, letterSpacing: "0.06em",
+          }}
+        >
+          STOL YARATISH
+        </button>
+        {!game.list && (
+          <div style={{ color: "rgba(255,255,255,0.5)", fontSize: 11, marginTop: 8, textAlign: "center" }}>
+            Bu o'yin tez orada lobbi rejimida
+          </div>
+        )}
+        {err && <div style={{ color: "#ff6b6b", fontSize: 12, marginTop: 8 }}>{err}</div>}
+      </div>
+
+      {/* ochiq stollar */}
+      <div style={{ padding: "0 12px", color: "rgba(255,255,255,0.55)", fontSize: 11, marginBottom: 8, letterSpacing: "0.08em" }}>
+        OCHIQ STOLLAR
+      </div>
+
+      {rooms.length === 0 && (
+        <div style={{ margin: "0 12px", padding: 22, borderRadius: 16, textAlign: "center", color: "rgba(255,255,255,0.5)", fontSize: 13, background: "rgba(255,255,255,0.04)", border: "1px dashed rgba(255,255,255,0.12)" }}>
+          Hozircha ochiq stol yo'q — birinchi bo'lib yarating
+        </div>
+      )}
+
+      <div style={{ display: "flex", flexDirection: "column", gap: 10, padding: "0 12px" }}>
+        {rooms.map((room) => {
+          const taken = room.seats.filter(Boolean).length;
+          const mine = !!player && room.seats.some((s) => s?.id === player.telegramId);
+          return (
+            <div
+              key={room.id}
+              style={{
+                borderRadius: 16, padding: 12,
+                background: "linear-gradient(135deg,rgba(255,255,255,0.09),rgba(255,255,255,0.04))",
+                border: `1px solid ${room.started ? "rgba(255,216,94,0.4)" : "rgba(76,227,138,0.35)"}`,
+              }}
+            >
+              <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 10 }}>
+                <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+                  <span style={{ color: "#fff", fontWeight: 900, fontSize: 13 }}>#{room.id}</span>
+                  <span style={{
+                    fontSize: 10, fontWeight: 900, padding: "3px 8px", borderRadius: 8,
+                    color: room.started ? "#4a3200" : "#08120c",
+                    background: room.started ? "#ffd85e" : "#4ce38a",
+                  }}>
+                    {room.started ? "O'YINDA" : `${taken}/${room.max}`}
+                  </span>
+                </div>
+                <div style={{ textAlign: "right" }}>
+                  <div style={{ color: "#ffd85e", fontWeight: 900, fontSize: 14 }}>{money(room.stake)}</div>
+                  <div style={{ color: "rgba(255,255,255,0.5)", fontSize: 10 }}>bank {money(room.prize)}</div>
+                </div>
+              </div>
+
+              <div style={{ display: "flex", gap: 10, alignItems: "flex-start", marginBottom: 10 }}>
+                {room.seats.map((s, i) => (
+                  <div key={i} style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 4, width: 58 }}>
+                    <Avatar seat={s} />
+                    <span style={{ color: s ? "#fff" : "rgba(255,255,255,0.35)", fontSize: 10, fontWeight: 700, maxWidth: 58, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+                      {s ? s.name : "bo'sh"}
+                    </span>
+                    {s && (
+                      <span style={{ color: "rgba(255,255,255,0.4)", fontSize: 9 }}>ID {s.id.slice(-5)}</span>
+                    )}
+                  </div>
+                ))}
+              </div>
+
+              <button
+                onClick={() => join(room)}
+                disabled={busy || (room.started && !mine)}
+                style={{
+                  width: "100%", padding: "11px 0", borderRadius: 12, fontWeight: 900, fontSize: 14,
+                  color: "#08120c",
+                  background: mine
+                    ? "linear-gradient(135deg,#ffd85e,#f2a52a)"
+                    : "linear-gradient(135deg,#4ce38a,#19b45f)",
+                  opacity: room.started && !mine ? 0.4 : 1,
+                }}
+              >
+                {mine ? "STOLGA QAYTISH" : room.started ? "BAND" : "QO'SHILISH"}
+              </button>
+            </div>
+          );
+        })}
       </div>
     </div>
   );
