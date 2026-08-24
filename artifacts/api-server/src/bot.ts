@@ -421,7 +421,8 @@ export async function sendLiveChatVoiceFromApp(opts: { telegramId: string; audio
 }
 const waitingForContestPrizes = new Set<number>();               // admin waiting to type 3 prize amounts
 const waitingForContestTitle = new Set<number>();                // admin waiting to type contest title
-const waitingForContestDesc = new Set<number>();                 // admin waiting to type contest description
+const waitingForContestDesc = new Set<number>();
+const waitingForContestEnd = new Set<number>();                  // admin waiting to type contest end time
 const waitingForRefPrice = new Set<number>();                  // admin waiting to type new referral bonus
 const waitingForBroadcast = new Set<number>();                  // adminId waiting to type broadcast message
 const waitingForSendId = new Set<number>();                    // admin waiting to type target userId
@@ -1416,6 +1417,7 @@ export async function startBot() {
       waitingForContestPrizes.delete(userId);
       waitingForContestTitle.delete(userId);
       waitingForContestDesc.delete(userId);
+      waitingForContestEnd.delete(userId);
       waitingForPromoTarget.delete(userId);
       waitingForNewAdminId.delete(userId);
       waitingForMaxWin.delete(userId);
@@ -1726,6 +1728,39 @@ export async function startBot() {
       await setContestValue("contest_prize_3", String(nums[2]));
       await bot!.sendMessage(chatId,
         `✅ Sovrinlar saqlandi:\n🥇 ${fmt(nums[0]!)} UZS\n🥈 ${fmt(nums[1]!)} UZS\n🥉 ${fmt(nums[2]!)} UZS`,
+        { parse_mode: "HTML", reply_markup: { inline_keyboard: [[{ text: "🏆 Konkurs", callback_data: "admin_contest" }]] } });
+      return;
+    }
+
+    // Admin: konkurs tugash vaqti
+    if (waitingForContestEnd.has(userId)) {
+      const raw = text.trim().toLowerCase();
+      let iso: string | null | undefined;
+      if (raw === "off" || raw === "-" || raw === "0") iso = null;
+      else {
+        const rel = raw.match(/^(\d+)\s*(d|k|kun|h|s|soat)$/);
+        if (rel) {
+          const n = parseInt(rel[1]!, 10);
+          const hours = /^(d|k|kun)$/.test(rel[2]!) ? n * 24 : n;
+          iso = new Date(Date.now() + hours * 3600 * 1000).toISOString();
+        } else {
+          const m = raw.match(/^(\d{1,2})[.\/-](\d{1,2})[.\/-](\d{4})(?:[ ,]+(\d{1,2}):(\d{2}))?$/);
+          if (m) {
+            const [, dd, mm, yyyy, hh, mi] = m;
+            // Toshkent vaqti = UTC+5
+            const ts = Date.UTC(+yyyy!, +mm! - 1, +dd!, (hh ? +hh : 23) - 5, mi ? +mi : 59);
+            if (Number.isFinite(ts)) iso = new Date(ts).toISOString();
+          }
+        }
+      }
+      if (iso === undefined) {
+        await bot!.sendMessage(chatId, "❌ Noto'g'ri format. Masalan: <code>25.08.2026 20:00</code> yoki <code>7d</code>\n<i>Bekor qilish: /cancel</i>", { parse_mode: "HTML" });
+        return;
+      }
+      waitingForContestEnd.delete(userId);
+      await setContestValue("contest_end_at", iso ?? "");
+      const label = iso ? new Date(iso).toLocaleString("uz-UZ", { timeZone: "Asia/Tashkent" }) : "yo'q (cheksiz)";
+      await bot!.sendMessage(chatId, `✅ Tugash vaqti: <b>${label}</b>`,
         { parse_mode: "HTML", reply_markup: { inline_keyboard: [[{ text: "🏆 Konkurs", callback_data: "admin_contest" }]] } });
       return;
     }
@@ -2599,6 +2634,7 @@ Miqdorni tanlang yoki o'zingiz kiriting:`,
         `<i>Eslatma: konkurs boshlangunga qadar chaqirilgan do'stlar hisobga olinmaydi.</i>`;
       const kb: any[][] = [
         [{ text: c.active ? "⛔️ Konkursni to'xtatish" : "▶️ Konkursni boshlash (0 dan)", callback_data: c.active ? "admin_contest_stop" : "admin_contest_start" }],
+        [{ text: "🏁 Tugash vaqtini belgilash", callback_data: "admin_contest_end" }],
         [{ text: "🎁 Sovrinlarni belgilash", callback_data: "admin_contest_prizes" }],
         [{ text: "✏️ Nomi", callback_data: "admin_contest_title" }, { text: "📝 Shartlari", callback_data: "admin_contest_desc" }],
         [{ text: "👥 Kim kimni chaqirgan", callback_data: "admin_contest_who" }],
@@ -2636,6 +2672,18 @@ Miqdorni tanlang yoki o'zingiz kiriting:`,
       await setContestValue("contest_active", "0");
       await bot!.sendMessage(chatId, "⛔️ Konkurs to'xtatildi. Natijalar muzlatildi.", { parse_mode: "HTML" });
       await sendContestPanel(chatId);
+      return;
+    }
+
+    if (data === "admin_contest_end") {
+      if (!contestAllowed(q.from.id)) { await bot!.answerCallbackQuery(q.id, { text: "❌ Ruxsat yo'q" }); return; }
+      await bot!.answerCallbackQuery(q.id);
+      waitingForContestEnd.add(q.from.id);
+      await bot!.sendMessage(chatId,
+        "🏁 <b>Konkurs tugash vaqti</b>\n\nQuyidagi ko'rinishlardan birida yozing (Toshkent vaqti):\n" +
+        "• <code>25.08.2026 20:00</code>\n• <code>7d</code> — 7 kundan keyin\n• <code>12h</code> — 12 soatdan keyin\n• <code>off</code> — tugash vaqtini olib tashlash\n\n" +
+        "<i>Vaqt kelganda konkurs avtomatik yakunlanadi va mini-appdan yo'qoladi.</i>\n<i>Bekor qilish: /cancel</i>",
+        { parse_mode: "HTML" });
       return;
     }
 

@@ -35,6 +35,12 @@ export default function Contest() {
   const { player } = usePlayer();
   const [info, setInfo] = useState<ContestInfo | null>(null);
   const [copied, setCopied] = useState(false);
+  const [now, setNow] = useState(Date.now());
+
+  useEffect(() => {
+    const t = setInterval(() => setNow(Date.now()), 1000);
+    return () => clearInterval(t);
+  }, []);
 
   useEffect(() => {
     let alive = true;
@@ -80,6 +86,12 @@ export default function Contest() {
     if (tg?.openTelegramLink) tg.openTelegramLink(url);
     else window.open(url, "_blank");
   };
+
+  const endTs = info?.endAt ? new Date(info.endAt).getTime() : NaN;
+  const left = Number.isFinite(endTs) ? endTs - now : NaN;
+  const countdown = Number.isFinite(left) && left > 0
+    ? `${Math.floor(left / 86400000)}k ${Math.floor((left % 86400000) / 3600000)}s ${Math.floor((left % 3600000) / 60000)}d`
+    : null;
 
   const dateStr = (v: string | null) =>
     v ? new Date(v).toLocaleDateString("uz-UZ", { day: "2-digit", month: "2-digit", year: "numeric" }) : "—";
@@ -149,10 +161,29 @@ export default function Contest() {
             {info?.active ? "KONKURS DAVOM ETMOQDA" : "KONKURS HOZIRCHA YO'Q"}
           </div>
           <p className="mt-1.5" style={{ fontSize: 11, color: "rgba(255,255,255,.6)" }}>
-            Boshlangan: {dateStr(info?.startAt ?? null)}{info?.endAt ? ` · Tugadi: ${dateStr(info.endAt)}` : ""}
+            Boshlangan: {dateStr(info?.startAt ?? null)}{info?.endAt ? ` · Tugash: ${dateStr(info.endAt)}` : ""}
           </p>
+          {info?.active && countdown && (
+            <p className="mt-1 font-black" style={{ fontSize: 12, color: G.main }}>⏳ Tugashiga: {countdown}</p>
+          )}
         </div>
 
+        {info && !info.active && (
+          <div className="px-4 mt-6">
+            <div className="rounded-3xl p-6 text-center" style={{
+              background: "linear-gradient(160deg, rgba(38,25,6,.86), rgba(12,9,4,.92))",
+              border: `1px solid ${G.border}`,
+            }}>
+              <p style={{ fontSize: 34 }}>🏁</p>
+              <p className="font-black mt-2" style={{ fontSize: 15, color: G.light }}>Konkurs yakunlandi</p>
+              <p className="mt-1.5" style={{ fontSize: 12, color: "rgba(255,255,255,.65)" }}>
+                Hozircha faol konkurs yo'q. Yangi konkurs e'lon qilinishini kuting!
+              </p>
+            </div>
+          </div>
+        )}
+
+        {info?.active && (<>
         {/* SOVRINLAR */}
         <div className="px-4 mt-4 grid grid-cols-3 gap-2">
           {prizes.map((p, i) => (
@@ -280,6 +311,7 @@ export default function Contest() {
             </ul>
           </div>
         </div>
+        </>)}
       </div>
     </div>
   );

@@ -54,8 +54,16 @@ export async function getContest(): Promise<ContestSettings> {
       const n = Number(map.get(k));
       return Number.isFinite(n) && n >= 0 ? Math.round(n) : d;
     };
+    const endRaw = map.get("contest_end_at") || null;
+    const endTs = endRaw ? new Date(endRaw).getTime() : NaN;
+    let active = map.get("contest_active") === "1";
+    // Tugash vaqti kelgan bo'lsa — konkurs avtomatik yakunlanadi
+    if (active && Number.isFinite(endTs) && endTs <= Date.now()) {
+      active = false;
+      void setContestValue("contest_active", "0").catch(() => {});
+    }
     return {
-      active: map.get("contest_active") === "1",
+      active,
       title: (map.get("contest_title") || DEFAULT_CONTEST.title).slice(0, 120),
       desc: (map.get("contest_desc") || DEFAULT_CONTEST.desc).slice(0, 900),
       startAt: map.get("contest_start_at") || null,

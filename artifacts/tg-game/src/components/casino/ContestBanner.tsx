@@ -1,9 +1,29 @@
+import { useEffect, useState } from "react";
 import { useLocation } from "wouter";
 import { Trophy, ChevronRight } from "lucide-react";
 
 /** Bosh sahifa / Referal sahifasidagi oltin konkurs banneri */
 export default function ContestBanner({ className = "" }: { className?: string }) {
   const [, nav] = useLocation();
+  const [active, setActive] = useState<boolean | null>(null);
+
+  useEffect(() => {
+    let alive = true;
+    const load = async () => {
+      try {
+        const res = await fetch("/api/contest");
+        if (!res.ok) return;
+        const j = await res.json();
+        if (alive) setActive(Boolean(j?.active));
+      } catch {}
+    };
+    load();
+    const t = setInterval(load, 30000);
+    return () => { alive = false; clearInterval(t); };
+  }, []);
+
+  // Konkurs tugagan yoki boshlanmagan bo'lsa — banner ko'rinmaydi
+  if (!active) return null;
 
   return (
     <button
