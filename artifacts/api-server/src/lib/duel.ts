@@ -44,6 +44,12 @@ export const DUELS: DuelDef[] = [
   D({ key: "hilobattle", title: "Higher or Lower", sub: "Kartani taxmin qilish", img: "/games/hilo.jpg", emoji: "🔢", kind: "pick", picks: ["Baland", "Past"], rounds: 3, timer: 15000, rule: "Keyingi karta baland yoki pastligini toping." }),
   D({ key: "memoryduel", title: "Memory Cards", sub: "Kim tezroq topsa", img: "/games/luckycard.jpg", emoji: "🧠", kind: "count", count: "memory", rounds: 1, timer: 60000, rule: "Barcha juftliklarni tez toping — qolgan vaqt ochko." }),
   D({ key: "fastclick", title: "Fast Click", sub: "10 soniyada ko'p bosish", img: "/games/fruitblast.jpg", emoji: "⚡", kind: "count", count: "click", rounds: 1, timer: 20000, rule: "10 soniyada imkon qadar ko'p bosing." }),
+  D({ key: "evenodd", title: "Juft yoki Toq", sub: "Zar dueli", img: "/games/dice.jpg", emoji: "\u{1F3B2}", kind: "pick", picks: ["Juft", "Toq"], rounds: 3, timer: 15000, rule: "Zar tashlanadi — juft yoki toqligini to'g'ri topgan raundni yutadi. 3 raund." }),
+  D({ key: "colorduel", title: "Rang Duel", sub: "Ruletka rangi", img: "/games/roulette.jpg", emoji: "\u{1F3A8}", kind: "pick", picks: ["Qizil", "Qora", "Yashil"], rounds: 3, timer: 15000, rule: "Ruletka aylanadi — rangni to'g'ri topgan yutadi. Yashil (0) ikkalasiga ham ochko." }),
+  D({ key: "baccaratduel", title: "Baccarat Duel", sub: "Kim yutadi?", img: "/games/baccarat.jpg", emoji: "\u{1F0CF}", kind: "pick", picks: ["O'yinchi", "Bankir", "Durrang"], rounds: 3, timer: 15000, rule: "Baccarat qo'li ochiladi — g'alabani to'g'ri taxmin qilgan raundni yutadi." }),
+  D({ key: "kenoduel", title: "Keno Duel", sub: "Raqam taxmin", img: "/games/keno.jpg", emoji: "\u{1F522}", kind: "pick", picks: ["1-10", "11-20", "21-30", "31-40"], rounds: 3, timer: 15000, rule: "1-40 dan tasodifiy raqam chiqadi — qaysi oraliqga tushishini to'g'ri topgan yutadi." }),
+  D({ key: "highcard", title: "High Card", sub: "Katta karta", img: "/games/hilo.jpg", emoji: "\u{1F451}", kind: "roll", rounds: 3, timer: 15000, rule: "Har ikkalangizga karta ochiladi — kattasi raundni yutadi." }),
+  D({ key: "plinkoduel", title: "Plinko Duel", sub: "Qayerdan tashlaysiz", img: "/games/plinko.jpg", emoji: "\u{1F4CD}", kind: "pick", picks: ["Chap", "Markaz", "O'ng"], rounds: 3, timer: 15000, rule: "Shardan qaysi tomondan tashlasangiz shu yo'nalishda tushadi — koeffitsiyent ochko bo'ladi." }),
 ];
 
 export const DUEL_MAP = new Map(DUELS.map((d) => [d.key, d]));
@@ -167,6 +173,68 @@ export function resolveRound(def: DuelDef, subs: [Submission, Submission]): Roun
       const cap = def.key === "fastclick" ? 300 : 60000;
       const v = (s: Submission) => Math.max(0, Math.min(cap, Math.round(s.value)));
       return { scores: [v(a), v(b)], detail: "Natija", reveal: {} };
+    }
+    case "evenodd": {
+      const die = 1 + ri(6);
+      const side = die % 2 === 0 ? 0 : 1;
+      return {
+        scores: [a.value === side ? 1 : 0, b.value === side ? 1 : 0],
+        detail: `Zar: ${die} (${side === 0 ? "Juft" : "Toq"})`,
+        reveal: { die, side },
+      };
+    }
+    case "colorduel": {
+      const num = ri(37);
+      const reds = new Set([1,3,5,7,9,12,14,16,18,19,21,23,25,27,30,32,34,36]);
+      const color = num === 0 ? 2 : reds.has(num) ? 0 : 1;
+      const sc = (v: number) => (v === color ? (color === 2 ? 2 : 1) : 0);
+      return {
+        scores: [sc(a.value), sc(b.value)],
+        detail: `Ruletka: ${num} (${def.picks![color]})`,
+        reveal: { num, color },
+      };
+    }
+    case "baccaratduel": {
+      const hand = () => { const c1 = ri(10), c2 = ri(10); return (c1 + c2) % 10; };
+      const pv = hand(), bv = hand();
+      const win = pv === bv ? 2 : pv > bv ? 0 : 1;
+      return {
+        scores: [a.value === win ? 1 : 0, b.value === win ? 1 : 0],
+        detail: `O'yinchi ${pv} — Bankir ${bv}`,
+        reveal: { pv, bv, win },
+      };
+    }
+    case "kenoduel": {
+      const num = 1 + ri(40);
+      const zone = Math.min(3, Math.floor((num - 1) / 10));
+      return {
+        scores: [a.value === zone ? 1 : 0, b.value === zone ? 1 : 0],
+        detail: `Raqam: ${num}`,
+        reveal: { num, zone },
+      };
+    }
+    case "highcard": {
+      const ca = CARD(), cb = CARD();
+      return {
+        scores: [ca, cb],
+        detail: `${ca} vs ${cb}`,
+        reveal: { ca, cb },
+      };
+    }
+    case "plinkoduel": {
+      const slots = [5, 2, 1.2, 0.5, 0.2, 0.5, 1.2, 2, 5];
+      const drop = (side: number) => {
+        let pos = side === 0 ? 1 : side === 1 ? 4 : 7;
+        for (let i = 0; i < 8; i++) pos += Math.random() < 0.5 ? -0.5 : 0.5;
+        return Math.max(0, Math.min(8, Math.round(pos)));
+      };
+      const ia = drop(a.value), ib = drop(b.value);
+      const sc2 = (i2: number) => Math.round(slots[i2]! * 100);
+      return {
+        scores: [sc2(ia), sc2(ib)],
+        detail: `x${slots[ia]} / x${slots[ib]}`,
+        reveal: { ia, ib, slots },
+      };
     }
     default:
       return { scores: [0, 0], detail: "", reveal: {} };
