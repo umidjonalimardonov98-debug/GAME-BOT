@@ -119,6 +119,7 @@ export default function PvpHub() {
 
   const create = async () => {
     if (!player || busy) return;
+    if (!game.list) { sfx.select(); nav(game.path); return; }
     setBusy(true); setErr("");
     try {
       const r = await api("/pvp/create", {
@@ -214,20 +215,15 @@ export default function PvpHub() {
 
         <button
           onClick={create}
-          disabled={busy || !player || !game.list}
+          disabled={busy || !player}
           style={{
             width: "100%", padding: "13px 0", borderRadius: 14, fontWeight: 900, fontSize: 15,
             color: "#08120c", background: "linear-gradient(135deg,#4ce38a,#19b45f)",
-            opacity: busy || !game.list ? 0.5 : 1, letterSpacing: "0.06em",
+            opacity: busy ? 0.5 : 1, letterSpacing: "0.06em",
           }}
         >
-          STOL YARATISH
+          {game.list ? "STOL YARATISH" : "RAQIB QIDIRISH"}
         </button>
-        {!game.list && (
-          <div style={{ color: "rgba(255,255,255,0.5)", fontSize: 11, marginTop: 8, textAlign: "center" }}>
-            Bu o'yin tez orada lobbi rejimida
-          </div>
-        )}
         {err && <div style={{ color: "#ff6b6b", fontSize: 12, marginTop: 8 }}>{err}</div>}
       </div>
 
