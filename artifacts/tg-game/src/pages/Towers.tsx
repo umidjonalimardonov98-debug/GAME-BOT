@@ -101,8 +101,10 @@ export default function Towers() {
             color="linear-gradient(145deg,#1a7d43,#25a55a)" shadow="0 7px 0 #064e3b" />
         ) : (
           <>
-            <BetPanel value={betInput} onChange={setBetInput} onQuick={quick} />
-            <PlayButton label={` ${g("play", lang)} · ${bet.toLocaleString()}`} onClick={start} disabled={!canPlay} />
+            <div className="bet-dock">
+              <BetPanel value={betInput} onChange={setBetInput} onQuick={quick} />
+              <PlayButton label={` ${g("play", lang)} · ${bet.toLocaleString()}`} onClick={start} disabled={!canPlay} />
+            </div>
           </>
         )}
         {saving && <p className="text-xs" style={{ color: ts.textSub }}>...</p>}
