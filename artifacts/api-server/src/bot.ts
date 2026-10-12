@@ -440,6 +440,68 @@ const waitingForNewAdminId = new Set<number>();                  // owner waitin
 const waitingForLiveText = new Map<number, "live_banner_title" | "live_banner_sub">(); // admin -> live banner maydoni
 const waitingForMaxWin = new Map<number, string>();              // admin -> game key (waiting for max win amount)
 
+
+/* ── Ommaviy yuborish: majburiy qayta urinish + yetib bormaganlarni qayta yuborish ── */
+type SendOne = (chatId: number) => Promise<unknown>;
+const lastBroadcastFailed = new Map<number, { ids: number[]; send: SendOne; label: string }>();
+const bcSleep = (ms: number) => new Promise((r) => setTimeout(r, ms));
+
+/** Bitta xabarni majburan yuborish: 429 (flood) bo'lsa kutib qayta urinadi, tarmoq xatosida ham qayta urinadi */
+async function forceSendOne(chatId: number, send: SendOne): Promise<{ ok: boolean; reason?: string }> {
+  for (let attempt = 0; attempt < 6; attempt++) {
+    try { await send(chatId); return { ok: true }; }
+    catch (err: any) {
+      const body = err?.response?.body ?? {};
+      const code = Number(body.error_code ?? err?.response?.statusCode ?? 0);
+      const desc = String(body.description ?? err?.message ?? "");
+      if (code === 429) {
+        const wait = Number(body.parameters?.retry_after ?? 3);
+        await bcSleep((wait + 1) * 1000);
+        continue;
+      }
+      // Bloklagan / o'chirilgan akkaunt / chat topilmadi — bular hech qachon yetib bormaydi
+      if (code === 403 || /chat not found|user is deactivated|bot was blocked|PEER_ID_INVALID/i.test(desc)) {
+        return { ok: false, reason: code === 403 ? "blocked" : "notfound" };
+      }
+      await bcSleep(1500 * (attempt + 1));
+    }
+  }
+  return { ok: false, reason: "error" };
+}
+
+/** Ro'yxatga yuborish, natijani adminga ko'rsatish va yetib bormaganlarni saqlash */
+async function massSend(adminId: number, adminChatId: number, ids: number[], send: SendOne, label: string) {
+  let sent = 0, blocked = 0;
+  const failed: number[] = [];
+  for (const id of ids) {
+    if (!id || Number.isNaN(id)) continue;
+    const r = await forceSendOne(id, send);
+    if (r.ok) sent++;
+    else { failed.push(id); if (r.reason === "blocked") blocked++; }
+    await bcSleep(40); // ~25 xabar/soniya — Telegram limiti ostida
+  }
+  const kb: any[][] = [];
+  if (failed.length) {
+    lastBroadcastFailed.set(adminId, { ids: failed, send, label });
+    kb.push([{ text: `🔁 Yetib bormaganlarga qayta yuborish (${failed.length})`, callback_data: "bc_retry" }]);
+  } else {
+    lastBroadcastFailed.delete(adminId);
+  }
+  kb.push([{ text: "🔙 Admin panel", callback_data: "admin_panel" }]);
+  await bot!.sendMessage(adminChatId,
+    `✅ <b>${label} — yuborish tugadi!</b>\n\n` +
+    `👥 Jami: <b>${ids.length} ta</b>\n` +
+    `📤 Yetib bordi: <b>${sent} ta</b>\n` +
+    `❌ Yetib bormadi: <b>${failed.length} ta</b>` +
+    (failed.length ? `\n   ├ 🚫 Botni bloklagan/o'chirgan: <b>${blocked} ta</b>\n   └ ⚠️ Boshqa xato: <b>${failed.length - blocked} ta</b>` : ""),
+    { parse_mode: "HTML", reply_markup: { inline_keyboard: kb } });
+}
+
+async function allPlayerIds(): Promise<number[]> {
+  const rows = await db.select({ telegramId: playersTable.telegramId }).from(playersTable);
+  return rows.map((r) => Number(r.telegramId)).filter((n) => Number.isFinite(n) && n > 0);
+}
+
 /** Moliya bilan shug'ullanadigan barcha adminlar (owner + finance) */
 const MAX_EXTRA_ADMINS = 2;
 async function financeAdminIds(): Promise<number[]> {
@@ -591,22 +653,14 @@ async function createAndAnnouncePromo(opts: {
     `✅ <b>Promo Kod Yaratildi!</b>\n\n🎫 Kod: <code>${code}</code>\n💰 Miqdor: <b>${fmt(amount)} UZS</b>\n📊 Limit: <b>${maxUses}</b> marta\n\n📢 Hamma foydalanuvchilarga yuborilmoqda...`,
     { parse_mode: "HTML" });
 
-  const allPlayers = await db.select({ telegramId: playersTable.telegramId }).from(playersTable);
   const promoText =
     `🎉 <b>YANGI PROMO KOD!</b>\n\n` +
     `🎫 Kod: <code>${code}</code>\n` +
     `💰 Sovrin: <b>${fmt(amount)} UZS</b>\n` +
     `👥 Faqat dastlabki <b>${maxUses} ta</b> foydalanuvchiga!\n\n` +
     `⚡️ Ulgurib qoling — kodni o'yin ichida "Promo" bo'limidan kiriting!`;
-  let sent = 0, failed = 0;
-  for (const pl of allPlayers) {
-    try { await bot!.sendMessage(Number(pl.telegramId), promoText, { parse_mode: "HTML" }); sent++; }
-    catch { failed++; }
-    await new Promise((r) => setTimeout(r, 35));
-  }
-  await bot!.sendMessage(adminChatId,
-    `✅ <b>Yuborish tugadi!</b>\n\n📤 Yuborildi: <b>${sent}</b>\n❌ Yuborilmadi: <b>${failed}</b>`,
-    { parse_mode: "HTML", reply_markup: backKb });
+  await massSend(adminId, adminChatId, await allPlayerIds(),
+    (id) => bot!.sendMessage(id, promoText, { parse_mode: "HTML" }), "Promo kod");
 }
 
 async function checkSub(userId: number): Promise<boolean> {
@@ -1305,34 +1359,9 @@ export async function startBot() {
   /** Broadcast: har qanday xabarni (rasm/video/ovoz/matn) barcha o'yinchilarga nusxalash */
   const runBroadcastCopy = async (adminId: number, chatId: number, fromChatId: number, messageId: number) => {
     waitingForBroadcast.delete(adminId);
-    const allPlayers = await db.select({ telegramId: playersTable.telegramId }).from(playersTable);
-    await bot!.sendMessage(chatId, `📢 <b>${allPlayers.length} ta foydalanuvchiga yuborilmoqda...</b>`, { parse_mode: "HTML" });
-    let sent = 0, failed = 0;
-    for (const pl of allPlayers) {
-      const target = Number(pl.telegramId);
-      if (!target || Number.isNaN(target)) { failed++; continue; }
-      try {
-        if (typeof (bot as any).copyMessage === "function") {
-          await (bot as any).copyMessage(target, fromChatId, messageId);
-        } else {
-          const token = process.env.TELEGRAM_BOT_TOKEN || process.env.BOT_TOKEN;
-          const res = await fetch(`https://api.telegram.org/bot${token}/copyMessage`, {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({ chat_id: target, from_chat_id: fromChatId, message_id: messageId }),
-          });
-          if (!res.ok) throw new Error(`copyMessage ${res.status}`);
-        }
-        sent++;
-      } catch {
-        failed++;
-      }
-      await new Promise(r => setTimeout(r, 50));
-    }
-    await bot!.sendMessage(chatId,
-      `✅ <b>Yuborildi!</b>\n✅ Muvaffaqiyatli: <b>${sent} ta</b>\n❌ Yuborilmadi: <b>${failed} ta</b>`,
-      { parse_mode: "HTML", reply_markup: { inline_keyboard: [[{ text: "🔙 Admin panel", callback_data: "admin_panel" }]] } }
-    );
+    const ids = await allPlayerIds();
+    await bot!.sendMessage(chatId, `📢 <b>${ids.length} ta foydalanuvchiga yuborilmoqda...</b>`, { parse_mode: "HTML" });
+    await massSend(adminId, chatId, ids, (id) => (bot as any).copyMessage(id, fromChatId, messageId), "Ommaviy xabar");
   };
 
   /** Media (rasm/video/ovoz/hujjat) orqali broadcast — caption bilan birga ketadi */
@@ -1828,44 +1857,18 @@ export async function startBot() {
       await db.insert(appSettingsTable).values({ key: "referral_bonus", value: String(amount) })
         .onConflictDoUpdate({ target: appSettingsTable.key, set: { value: String(amount), updatedAt: new Date() } });
       await bot!.sendMessage(chatId, `✅ Referal narxi <b>${fmt(amount)} UZS</b> qilib belgilandi.\n📢 Barchaga xabar yuborilmoqda...`, { parse_mode: "HTML" });
-      const allPlayers = await db.select({ telegramId: playersTable.telegramId }).from(playersTable);
-      let sent = 0, failed = 0;
-      for (const pl of allPlayers) {
-        try {
-          await bot!.sendMessage(Number(pl.telegramId),
-            `🤝 <b>Referal bonusi yangilandi!</b>\n\nHar bir taklif qilgan do'stingiz uchun endi <b>${fmt(amount)} UZS</b> olasiz.\n\n👥 Havolangizni olish uchun menyudagi <b>Referal</b> bo'limiga kiring.`,
-            { parse_mode: "HTML" });
-          sent++;
-          await new Promise(r => setTimeout(r, 50));
-        } catch { failed++; }
-      }
-      await bot!.sendMessage(chatId,
-        `✅ <b>Xabar yuborildi!</b>\n✅ Muvaffaqiyatli: <b>${sent} ta</b>\n❌ Yuborilmadi: <b>${failed} ta</b>`,
-        { parse_mode: "HTML", reply_markup: { inline_keyboard: [[{ text: "🔙 Admin panel", callback_data: "admin_panel" }]] } }
-      );
+      const refText = `🤝 <b>Referal bonusi yangilandi!</b>\n\nHar bir taklif qilgan do'stingiz uchun endi <b>${fmt(amount)} UZS</b> olasiz.\n\n👥 Havolangizni olish uchun menyudagi <b>Referal</b> bo'limiga kiring.`;
+      await massSend(userId, chatId, await allPlayerIds(), (id) => bot!.sendMessage(id, refText, { parse_mode: "HTML" }), "Referal xabari");
       return;
     }
 
     // Admin broadcast message
     if (waitingForBroadcast.has(userId)) {
       waitingForBroadcast.delete(userId);
-      const allPlayers = await db.select({ telegramId: playersTable.telegramId }).from(playersTable);
-      await bot!.sendMessage(chatId, `📢 <b>${allPlayers.length} ta foydalanuvchiga yuborilmoqda...</b>`, { parse_mode: "HTML" });
-      let sent = 0, failed = 0;
-      for (const pl of allPlayers) {
-        try {
-          await bot!.sendMessage(Number(pl.telegramId),
-            `📢 <b>Admin xabari:</b>\n\n${text}`,
-            { parse_mode: "HTML" }
-          );
-          sent++;
-          await new Promise(r => setTimeout(r, 50)); // rate limit
-        } catch { failed++; }
-      }
-      await bot!.sendMessage(chatId,
-        `✅ <b>Yuborildi!</b>\n✅ Muvaffaqiyatli: <b>${sent} ta</b>\n❌ Yuborilmadi: <b>${failed} ta</b>`,
-        { parse_mode: "HTML", reply_markup: { inline_keyboard: [[{ text: "🔙 Admin panel", callback_data: "admin_panel" }]] } }
-      );
+      const ids = await allPlayerIds();
+      await bot!.sendMessage(chatId, `📢 <b>${ids.length} ta foydalanuvchiga yuborilmoqda...</b>`, { parse_mode: "HTML" });
+      const bcText = `📢 <b>Admin xabari:</b>\n\n${text}`;
+      await massSend(userId, chatId, ids, (id) => bot!.sendMessage(id, bcText, { parse_mode: "HTML" }), "Ommaviy xabar");
       return;
     }
 
@@ -2838,17 +2841,11 @@ Miqdorni tanlang yoki o'zingiz kiriting:`,
       await bot!.answerCallbackQuery(q.id);
       const c = await getContest();
       await bot!.sendMessage(chatId, "📢 Konkurs e'loni yuborilmoqda...");
-      const allPlayers = await db.select({ telegramId: playersTable.telegramId }).from(playersTable);
       const msg =
         `🏆 <b>${c.title}</b>\n\n${c.desc}\n\n` +
         `🎁 Sovrinlar:\n🥇 ${fmt(c.prizes[0])} UZS\n🥈 ${fmt(c.prizes[1])} UZS\n🥉 ${fmt(c.prizes[2])} UZS\n\n` +
         `👥 Ilovadagi <b>KONKURS</b> bo'limiga kiring va do'stlaringizni taklif qiling!`;
-      let sent = 0, failed = 0;
-      for (const pl of allPlayers) {
-        try { await bot!.sendMessage(Number(pl.telegramId), msg, { parse_mode: "HTML" }); sent++; await new Promise(r => setTimeout(r, 50)); }
-        catch { failed++; }
-      }
-      await bot!.sendMessage(chatId, `✅ Yuborildi: <b>${sent}</b> · ❌ Yuborilmadi: <b>${failed}</b>`, { parse_mode: "HTML", reply_markup: { inline_keyboard: [[{ text: "🏆 Konkurs", callback_data: "admin_contest" }]] } });
+      await massSend(q.from.id, chatId, await allPlayerIds(), (id) => bot!.sendMessage(id, msg, { parse_mode: "HTML" }), "Konkurs e'loni");
       return;
     }
 
@@ -2863,6 +2860,32 @@ Miqdorni tanlang yoki o'zingiz kiriting:`,
       return;
     }
 
+    if (data === "bc_retry" || data === "bc_retry_yes" || data === "bc_retry_no") {
+      if (!isAdmin) { await bot!.answerCallbackQuery(q.id, { text: "❌ Ruxsat yo'q" }); return; }
+      const pending = lastBroadcastFailed.get(q.from.id);
+      if (!pending) { await bot!.answerCallbackQuery(q.id, { text: "Qayta yuboriladigan ro'yxat yo'q" }); return; }
+      if (data === "bc_retry") {
+        await bot!.answerCallbackQuery(q.id);
+        await bot!.sendMessage(chatId,
+          `🔁 <b>${pending.ids.length} ta</b> foydalanuvchiga xabar yetib bormagan.\n\nUlarga qayta (majburan) yuboraymi?`,
+          { parse_mode: "HTML", reply_markup: { inline_keyboard: [[
+            { text: "✅ Ha, qayta yuborish", callback_data: "bc_retry_yes" },
+            { text: "❌ Yo'q", callback_data: "bc_retry_no" },
+          ]] } });
+        return;
+      }
+      if (data === "bc_retry_no") {
+        await bot!.answerCallbackQuery(q.id, { text: "Bekor qilindi" });
+        await bot!.sendMessage(chatId, "❌ Qayta yuborilmadi.", { reply_markup: { inline_keyboard: [[{ text: "🔙 Admin panel", callback_data: "admin_panel" }]] } });
+        return;
+      }
+      await bot!.answerCallbackQuery(q.id, { text: "Qayta yuborilmoqda..." });
+      lastBroadcastFailed.delete(q.from.id);
+      await bot!.sendMessage(chatId, `🔁 <b>${pending.ids.length} ta</b> foydalanuvchiga qayta yuborilmoqda...`, { parse_mode: "HTML" });
+      await massSend(q.from.id, chatId, pending.ids, pending.send, `${pending.label} (qayta)`);
+      return;
+    }
+
     if (data === "upd_yes" || data === "upd_no") {
       if (!isAdmin) { await bot!.answerCallbackQuery(q.id, { text: "❌ Ruxsat yo'q" }); return; }
       if (data === "upd_no") {
@@ -2871,23 +2894,8 @@ Miqdorni tanlang yoki o'zingiz kiriting:`,
         return;
       }
       await bot!.answerCallbackQuery(q.id, { text: "Yuborilmoqda..." });
-      const allPlayers = await db.select({ telegramId: playersTable.telegramId }).from(playersTable);
-      let sent = 0, failed = 0;
-      for (const pl of allPlayers) {
-        if (pl.telegramId === "demo_user") continue;
-        try {
-          await bot!.sendMessage(Number(pl.telegramId),
-            `🔄 <b>Bot yangilandi!</b>\n\nIltimos, botni qayta faollashtiring — /start tugmasini bosing.\n\nYangi imkoniyatlar sizni kutmoqda! 🎮`,
-            { parse_mode: "HTML" }
-          );
-          sent++;
-          await new Promise(r => setTimeout(r, 50));
-        } catch { failed++; }
-      }
-      await bot!.sendMessage(chatId,
-        `✅ <b>Yangilanish xabari yuborildi!</b>\n✅ Muvaffaqiyatli: <b>${sent} ta</b>\n❌ Yuborilmadi: <b>${failed} ta</b>`,
-        { parse_mode: "HTML", reply_markup: { inline_keyboard: [[{ text: "🔙 Admin panel", callback_data: "admin_panel" }]] } }
-      );
+      const updText = `🔄 <b>Bot yangilandi!</b>\n\nIltimos, botni qayta faollashtiring — /start tugmasini bosing.\n\nYangi imkoniyatlar sizni kutmoqda! 🎮`;
+      await massSend(q.from.id, chatId, await allPlayerIds(), (id) => bot!.sendMessage(id, updText, { parse_mode: "HTML" }), "Yangilanish xabari");
       return;
     }
 
