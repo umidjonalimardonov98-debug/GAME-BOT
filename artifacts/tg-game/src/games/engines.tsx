@@ -78,7 +78,7 @@ function Shell({
         <GameHeader icon={cfg.syms[0]} title={cfg.name[lang]} subtitle={`x${cfg.mult}`} />
       </div>
       <div className="flex-1 px-4 pb-8 pt-3 flex flex-col gap-3 items-center relative" style={{ zIndex: 1 }}>
-        <div className="w-full rounded-3xl p-3 relative overflow-hidden" style={{
+        <div className="game-stage w-full rounded-3xl p-3 relative overflow-hidden" style={{
           background: ts.card,
           border: "1px solid rgba(247,201,72,0.32)",
           boxShadow: "0 14px 44px rgba(247,201,72,0.14)",
@@ -95,7 +95,7 @@ function Shell({
           text={won ? (refund ? "PUL QAYTARILDI" : "YUTUQ") : "YUTQAZISH"}
           amount={amount}
         />
-        {footer}
+        <div className="bet-dock">{footer}</div>
       </div>
     </div>
   );
