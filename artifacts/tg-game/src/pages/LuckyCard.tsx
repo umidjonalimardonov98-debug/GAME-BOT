@@ -141,8 +141,10 @@ export default function LuckyCard() {
         </p>
 
         <ResultBanner win={won} text={won ? `${g("win", lang)} x${level.mult}` : g("lose", lang)} amount={amount} />
-        <BetPanel value={betInput} onChange={setBetInput} onQuick={quick} disabled={busy} />
-        <PlayButton label={` ${g("play", lang)} · ${bet.toLocaleString()}`} onClick={play} disabled={!canPlay || pick === null} />
+        <div className="bet-dock">
+          <BetPanel value={betInput} onChange={setBetInput} onQuick={quick} disabled={busy} />
+          <PlayButton label={` ${g("play", lang)} · ${bet.toLocaleString()}`} onClick={play} disabled={!canPlay || pick === null} />
+        </div>
         {pick === null && <p className="text-xs" style={{ color: ts.textSub }}>Avval kartani tanlang</p>}
         {saving && <p className="text-xs" style={{ color: ts.textSub }}>...</p>}
       </div>
