@@ -110,8 +110,10 @@ export default function Scratch() {
         </div>
 
         <ResultBanner win={won} text={won ? `${g("win", lang)} x${mult}` : g("lose", lang)} amount={amount} />
-        <BetPanel value={betInput} onChange={setBetInput} onQuick={quick} disabled={busy} />
-        <PlayButton label={busy ? "OCHILMOQDA..." : ` ${g("play", lang)} · ${bet.toLocaleString()}`} onClick={start} disabled={!canPlay || busy} />
+        <div className="bet-dock">
+          <BetPanel value={betInput} onChange={setBetInput} onQuick={quick} disabled={busy} />
+          <PlayButton label={busy ? "OCHILMOQDA..." : ` ${g("play", lang)} · ${bet.toLocaleString()}`} onClick={start} disabled={!canPlay || busy} />
+        </div>
         {saving && <p className="text-xs" style={{ color: ts.textSub }}>...</p>}
       </div>
     </div>
