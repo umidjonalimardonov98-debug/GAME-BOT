@@ -1186,6 +1186,18 @@ export async function startBot() {
     );
   });
 
+  // /yangilash command — admin only: bot yangilanganda barchaga xabar yuborish
+  regText(/^\/yangilash(?:@\w+)?\s*$/, async (msg) => {
+    if (!hasPerm(msg.from?.id, "broadcast")) return;
+    await bot!.sendMessage(msg.chat.id,
+      `🔄 <b>Bot yangilandi!</b>\n\nBarcha foydalanuvchilarga "Botni qayta faollashtiring" xabarini yuboraymi?`,
+      { parse_mode: "HTML", reply_markup: { inline_keyboard: [[
+        { text: "✅ Ha, hammaga yuborish", callback_data: "upd_yes" },
+        { text: "❌ Yo'q", callback_data: "upd_no" },
+      ]]}}
+    );
+  });
+
   // /stat command — admin only
   regText(/^\/stat(?:@\w+)?\s*$/, async (msg) => {
     if (!hasPerm(msg.from?.id, "stats")) return;
@@ -2847,6 +2859,34 @@ Miqdorni tanlang yoki o'zingiz kiriting:`,
       await bot!.sendMessage(chatId,
         `📢 <b>Barchaga Xabar</b>\n\nBarcha o'yinchilarga yuboriladigan xabarni yozing.\n📷 Rasm/video ham yuborishingiz mumkin — izoh (caption) bilan birga ketadi.\n\n<i>Bekor qilish uchun /cancel yozing</i>`,
         { parse_mode: "HTML" }
+      );
+      return;
+    }
+
+    if (data === "upd_yes" || data === "upd_no") {
+      if (!isAdmin) { await bot!.answerCallbackQuery(q.id, { text: "❌ Ruxsat yo'q" }); return; }
+      if (data === "upd_no") {
+        await bot!.answerCallbackQuery(q.id, { text: "Bekor qilindi" });
+        await bot!.sendMessage(chatId, "❌ Xabar hech kimga yuborilmadi.", { reply_markup: { inline_keyboard: [[{ text: "🔙 Admin panel", callback_data: "admin_panel" }]] } });
+        return;
+      }
+      await bot!.answerCallbackQuery(q.id, { text: "Yuborilmoqda..." });
+      const allPlayers = await db.select({ telegramId: playersTable.telegramId }).from(playersTable);
+      let sent = 0, failed = 0;
+      for (const pl of allPlayers) {
+        if (pl.telegramId === "demo_user") continue;
+        try {
+          await bot!.sendMessage(Number(pl.telegramId),
+            `🔄 <b>Bot yangilandi!</b>\n\nIltimos, botni qayta faollashtiring — /start tugmasini bosing.\n\nYangi imkoniyatlar sizni kutmoqda! 🎮`,
+            { parse_mode: "HTML" }
+          );
+          sent++;
+          await new Promise(r => setTimeout(r, 50));
+        } catch { failed++; }
+      }
+      await bot!.sendMessage(chatId,
+        `✅ <b>Yangilanish xabari yuborildi!</b>\n✅ Muvaffaqiyatli: <b>${sent} ta</b>\n❌ Yuborilmadi: <b>${failed} ta</b>`,
+        { parse_mode: "HTML", reply_markup: { inline_keyboard: [[{ text: "🔙 Admin panel", callback_data: "admin_panel" }]] } }
       );
       return;
     }
