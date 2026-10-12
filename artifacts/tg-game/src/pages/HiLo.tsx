@@ -96,8 +96,10 @@ export default function HiLo() {
         ) : (
           <>
             <ResultBanner win={won} text={won ? g("win", lang) : g("lose", lang)} amount={amount} />
-            <BetPanel value={betInput} onChange={setBetInput} onQuick={quick} />
-            <PlayButton label={` ${g("play", lang)} · ${bet.toLocaleString()}`} onClick={start} disabled={!canPlay} />
+            <div className="bet-dock">
+              <BetPanel value={betInput} onChange={setBetInput} onQuick={quick} />
+              <PlayButton label={` ${g("play", lang)} · ${bet.toLocaleString()}`} onClick={start} disabled={!canPlay} />
+            </div>
           </>
         )}
         {saving && <p className="text-xs" style={{ color: ts.textSub }}>...</p>}
