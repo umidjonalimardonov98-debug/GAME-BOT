@@ -220,8 +220,10 @@ export default function Derby() {
         </div>
 
         <ResultBanner win={won} text={won ? g("win", lang) : g("lose", lang)} amount={amount} />
-        <BetPanel value={betInput} onChange={setBetInput} onQuick={quick} disabled={busy} />
-        <PlayButton label={` ${g("play", lang)} · ${bet.toLocaleString()}`} onClick={play} disabled={!canPlay || pick === null} />
+        <div className="bet-dock">
+          <BetPanel value={betInput} onChange={setBetInput} onQuick={quick} disabled={busy} />
+          <PlayButton label={` ${g("play", lang)} · ${bet.toLocaleString()}`} onClick={play} disabled={!canPlay || pick === null} />
+        </div>
         {saving && <p className="text-xs" style={{ color: ts.textSub }}>...</p>}
       </div>
 
