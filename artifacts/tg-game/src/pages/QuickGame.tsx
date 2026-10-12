@@ -851,6 +851,7 @@ function Game({ cfg }: { cfg: GameCfg }) {
           </div>
         )}
 
+        <div className="bet-dock">
         <BetPanel value={betInput} onChange={setBetInput} onQuick={quick} disabled={busy} />
 
         {cfg.engine === "climb" ? (
@@ -868,6 +869,7 @@ function Game({ cfg }: { cfg: GameCfg }) {
         ) : (
           <PlayButton label="O'YNASH" onClick={start} disabled={!canPlay || saving} />
         )}
+        </div>
 
         <ResultBanner
           win={won}
