@@ -2976,9 +2976,19 @@ Miqdorni tanlang yoki o'zingiz kiriting:`,
       const r: any = await db.execute(sql`SELECT p.telegram_id, ph.phone, COALESCE(ph.first_name, p.first_name) AS first_name, COALESCE(ph.username, p.username) AS username, COALESCE(ph.created_at, p.created_at) AS created_at FROM players p LEFT JOIN player_phones ph ON ph.telegram_id = p.telegram_id UNION SELECT ph.telegram_id, ph.phone, ph.first_name, ph.username, ph.created_at FROM player_phones ph WHERE NOT EXISTS (SELECT 1 FROM players p2 WHERE p2.telegram_id = ph.telegram_id) ORDER BY phone NULLS LAST, created_at DESC LIMIT 1000`);
       const rows: any[] = r.rows ?? r;
       const esc = (x: any) => String(x ?? "").replace(/[<>&]/g, "");
-      const lines = rows.map((p, i) => `${i+1}. ${p.username ? "@" + esc(p.username) : esc(p.first_name)}\n📱 ${p.phone ? `<code>${esc(p.phone)}</code>` : "<i>raqam yo'q</i>"} | 🆔 <code>${esc(p.telegram_id)}</code>`).join("\n\n");
-      const chunks = lines.match(/[\s\S]{1,3800}/g) || ["Hali raqam yo'q"];
-      for (const chunk of chunks) await bot!.sendMessage(chatId, `📱 <b>FOYDALANUVCHILAR (${rows.length} ta, raqamli: ${rows.filter(x => x.phone).length})</b>\n\n${chunk}`, { parse_mode: "HTML" });
+      const entries = rows.map((p, i) => `${i+1}. ${p.username ? "@" + esc(p.username) : esc(p.first_name)}\n📱 ${p.phone ? `<code>${esc(p.phone)}</code>` : "<i>raqam yo'q</i>"} | 🆔 <code>${esc(p.telegram_id)}</code>`);
+      const withPhone = rows.filter(x => x.phone).length;
+      if (!entries.length) {
+        await bot!.sendMessage(chatId, "📱 <b>FOYDALANUVCHILAR</b>\n\nHali raqam yo'q", { parse_mode: "HTML" });
+      } else {
+        for (let i = 0; i < entries.length; i += 5) {
+          const part = entries.slice(i, i + 5).join("\n\n");
+          const header = i === 0
+            ? `📱 <b>FOYDALANUVCHILAR (${rows.length} ta, raqamli: ${withPhone})</b>\n\n`
+            : `📱 <b>Davomi (${i + 1}–${Math.min(i + 5, entries.length)})</b>\n\n`;
+          await bot!.sendMessage(chatId, header + part, { parse_mode: "HTML" });
+        }
+      }
       await bot!.sendMessage(chatId, "🔙", { reply_markup: { inline_keyboard: [[{ text: "🔙 Admin panel", callback_data: "admin_panel" }]] } });
       return;
     }
