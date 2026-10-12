@@ -9,12 +9,8 @@ const LS_VOL = "sfx_volume";
 type Listener = (enabled: boolean) => void;
 const listeners = new Set<Listener>();
 
-let enabled = (() =>{
-  try {
-    const v = localStorage.getItem(LS_KEY);
-    return v === null ? true : v === "1";
-  } catch { return true; }
-})();
+// Ovozlar butunlay o'chirilgan (foydalanuvchi so'roviga ko'ra)
+let enabled = false;
 
 let volume = (() =>{
   try {
@@ -42,14 +38,14 @@ function ac(): AudioContext | null {
 
 export function isSoundEnabled() { return enabled; }
 
-export function setSoundEnabled(v: boolean) {
-  enabled = v;
+export function setSoundEnabled(_v: boolean) {
+  enabled = false;
   try { localStorage.setItem(LS_KEY, v ? "1":"0"); } catch {}
   listeners.forEach((l) => l(enabled));
 
 }
 
-export function toggleSound() { setSoundEnabled(!enabled); return enabled; }
+export function toggleSound() { setSoundEnabled(false); return enabled; }
 
 export function setVolume(v: number) {
   volume = Math.min(1, Math.max(0, v));
