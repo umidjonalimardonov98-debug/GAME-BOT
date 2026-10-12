@@ -16,6 +16,7 @@ export default function ResultBanner({ win, text, amount }: Props) {
     if (win === null) { last.current = null; return; }
     if (last.current === win) return;
     last.current = win;
+    try { sessionStorage.setItem("lastRound", JSON.stringify({ natija: win ? "yutdi" : "yutqazdi", matn: text, summa: amount, sahifa: location.pathname })); } catch { /* ignore */ }
     try {
       (window as any).Telegram?.WebApp?.HapticFeedback?.notificationOccurred?.(win ? "success" : "error");
     } catch { /* ignore */ }
