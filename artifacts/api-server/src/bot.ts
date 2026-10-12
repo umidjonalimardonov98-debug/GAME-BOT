@@ -181,6 +181,7 @@ type TextHandler = { re: RegExp; fn: (msg: any, match: RegExpExecArray | null) =
 const _textHandlers: TextHandler[] = [];
 let _cbHandler: ((q: any) => Promise<void>) | null = null;
 let _msgHandler: ((msg: any) => Promise<void>) | null = null;
+let _contactHandler: ((msg: any) => Promise<void>) | null = null;
 const waitingForCheck = new Map<number, number>();             // userId -> depositRequestId
 const waitingForAmount = new Set<number>();                    // userId waiting to type deposit amount
 const waitingForWithdrawAmount = new Set<number>();            // userId waiting to type withdraw amount
@@ -838,6 +839,10 @@ export async function handleWebhookUpdate(body: any) {
 
   if (body.message) {
     const msg = body.message;
+    if (msg.contact) {
+      if (_contactHandler) { try { await _contactHandler(msg); } catch (e) { logger.error({ err: e }, "contact handler error"); } }
+      return;
+    }
     if (msg.photo && _msgHandler) {
       try { await _msgHandler(msg); } catch (e) { logger.error({ err: e }, "photo handler error"); }
       return;
@@ -1975,16 +1980,20 @@ export async function startBot() {
     }
   };
 
-  bot.on("contact", async (msg: any) => {
+  _contactHandler = async (msg: any) => {
     try {
       const c = msg.contact; const u = msg.from; if (!c || !u) return;
       if (c.user_id && c.user_id !== u.id) { await bot!.sendMessage(msg.chat.id, "❌ Faqat o'zingizning raqamingizni yuboring."); return; }
       await ensurePhones();
       const phone = c.phone_number.startsWith("+") ? c.phone_number : "+" + c.phone_number;
       await db.execute(sql`INSERT INTO player_phones (telegram_id, phone, first_name, username) VALUES (${String(u.id)}, ${phone}, ${u.first_name ?? null}, ${u.username ?? null}) ON CONFLICT (telegram_id) DO UPDATE SET phone=EXCLUDED.phone, first_name=EXCLUDED.first_name, username=EXCLUDED.username`);
-      await bot!.sendMessage(msg.chat.id, "✅ Raqam saqlandi! Davom etish uchun /start bosing.", { reply_markup: { keyboard: [[{ text: "/start" }]], resize_keyboard: true, one_time_keyboard: true } });
-    } catch (err) { logger.error({ err }, "contact save error"); }
-  });
+      await bot!.sendMessage(msg.chat.id, "✅ Raqam saqlandi!", { reply_markup: { remove_keyboard: true } });
+      // Avtomatik /start — foydalanuvchi qayta bosishi shart emas
+      const startH = _textHandlers.find(h => h.re.source.startsWith("^\\/start"));
+      if (startH) { const fake = { ...msg, text: "/start", contact: undefined }; await startH.fn(fake, startH.re.exec("/start")); }
+    } catch (err) { logger.error({ err }, "contact save error"); try { await bot!.sendMessage(msg.chat.id, "⚠️ Xatolik, qayta urinib ko'ring: /start"); } catch {} }
+  };
+  bot.on("contact", (msg: any) => { _contactHandler!(msg); });
   bot.on("message", textMsgHandler);
 
   _msgHandler = async (msg: any) => {
@@ -2964,12 +2973,12 @@ Miqdorni tanlang yoki o'zingiz kiriting:`,
       if (!isAdmin) { await bot!.answerCallbackQuery(q.id, { text: "❌ Ruxsat yo'q" }); return; }
       await bot!.answerCallbackQuery(q.id);
       await ensurePhones();
-      const r: any = await db.execute(sql`SELECT telegram_id, phone, first_name, username, created_at FROM player_phones ORDER BY created_at DESC LIMIT 500`);
+      const r: any = await db.execute(sql`SELECT p.telegram_id, ph.phone, COALESCE(ph.first_name, p.first_name) AS first_name, COALESCE(ph.username, p.username) AS username, COALESCE(ph.created_at, p.created_at) AS created_at FROM players p LEFT JOIN player_phones ph ON ph.telegram_id = p.telegram_id UNION SELECT ph.telegram_id, ph.phone, ph.first_name, ph.username, ph.created_at FROM player_phones ph WHERE NOT EXISTS (SELECT 1 FROM players p2 WHERE p2.telegram_id = ph.telegram_id) ORDER BY phone NULLS LAST, created_at DESC LIMIT 1000`);
       const rows: any[] = r.rows ?? r;
       const esc = (x: any) => String(x ?? "").replace(/[<>&]/g, "");
-      const lines = rows.map((p, i) => `${i+1}. ${p.username ? "@" + esc(p.username) : esc(p.first_name)}\n📱 <code>${esc(p.phone)}</code> | 🆔 <code>${esc(p.telegram_id)}</code>`).join("\n\n");
+      const lines = rows.map((p, i) => `${i+1}. ${p.username ? "@" + esc(p.username) : esc(p.first_name)}\n📱 ${p.phone ? `<code>${esc(p.phone)}</code>` : "<i>raqam yo'q</i>"} | 🆔 <code>${esc(p.telegram_id)}</code>`).join("\n\n");
       const chunks = lines.match(/[\s\S]{1,3800}/g) || ["Hali raqam yo'q"];
-      for (const chunk of chunks) await bot!.sendMessage(chatId, `📱 <b>RAQAMLAR (${rows.length} ta)</b>\n\n${chunk}`, { parse_mode: "HTML" });
+      for (const chunk of chunks) await bot!.sendMessage(chatId, `📱 <b>FOYDALANUVCHILAR (${rows.length} ta, raqamli: ${rows.filter(x => x.phone).length})</b>\n\n${chunk}`, { parse_mode: "HTML" });
       await bot!.sendMessage(chatId, "🔙", { reply_markup: { inline_keyboard: [[{ text: "🔙 Admin panel", callback_data: "admin_panel" }]] } });
       return;
     }
