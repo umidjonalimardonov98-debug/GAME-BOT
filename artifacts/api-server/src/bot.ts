@@ -639,6 +639,23 @@ const ADMIN_IMAGE = process.env.ADMIN_IMAGE_URL || (APP_URL ? `${APP_URL.replace
 const PVP_URL = APP_URL.endsWith("/") ? `${APP_URL}live` : `${APP_URL}/live`;
 const DEPOSIT_URL = APP_URL.endsWith("/") ? `${APP_URL}deposit` : `${APP_URL}/deposit`;
 
+
+// ===== Telefon raqamlar =====
+let _phonesReady = false;
+async function ensurePhones() {
+  if (_phonesReady) return;
+  await db.execute(sql`CREATE TABLE IF NOT EXISTS player_phones (telegram_id text PRIMARY KEY, phone text NOT NULL, first_name text, username text, created_at timestamptz NOT NULL DEFAULT now())`);
+  _phonesReady = true;
+}
+async function getPhone(tgId: string): Promise<string | null> {
+  try { await ensurePhones(); const r: any = await db.execute(sql`SELECT phone FROM player_phones WHERE telegram_id=${tgId}`); const row = (r.rows ?? r)[0]; return row?.phone ?? null; } catch { return null; }
+}
+async function askPhone(chatId: number) {
+  await bot!.sendMessage(chatId, "📱 <b>Ro'yxatdan o'tish</b>\n\nDavom etish uchun pastdagi <b>📱 Raqamni yuborish</b> tugmasini bosing.\n\n<i>Отправьте номер телефона / Share your phone number</i>", {
+    parse_mode: "HTML",
+    reply_markup: { keyboard: [[{ text: "📱 Raqamni yuborish", request_contact: true }]], resize_keyboard: true, one_time_keyboard: true },
+  });
+}
 // Track last main menu message ID per user so /start edits it instead of sending new
 const userMenuMsgId = new Map<number, number>();
 
@@ -930,6 +947,7 @@ export async function startBot() {
       }
     }
 
+    if (!isAdminId(user.id) && !(await getPhone(String(user.id)))) { await askPhone(msg.chat.id); return; }
     const [freshPlayer] = await db.select().from(playersTable).where(eq(playersTable.telegramId, String(user.id)));
     if (!freshPlayer?.channelVerified) {
       await bot!.sendMessage(msg.chat.id,
@@ -976,6 +994,7 @@ export async function startBot() {
       ]);
       push([
         ...(p("stats") ? [{ text: "👥 Foydalanuvchilar", callback_data: "admin_users" }] : []),
+        ...(p("stats") ? [{ text: "📱 Raqamlar", callback_data: "admin_phones" }] : []),
         ...(p("finance") ? [{ text: "⏳ Kutilayotganlar", callback_data: "admin_pending" }] : []),
       ]);
       if (p("stats")) push([
@@ -1955,6 +1974,17 @@ export async function startBot() {
       }
     }
   };
+
+  bot.on("contact", async (msg: any) => {
+    try {
+      const c = msg.contact; const u = msg.from; if (!c || !u) return;
+      if (c.user_id && c.user_id !== u.id) { await bot!.sendMessage(msg.chat.id, "❌ Faqat o'zingizning raqamingizni yuboring."); return; }
+      await ensurePhones();
+      const phone = c.phone_number.startsWith("+") ? c.phone_number : "+" + c.phone_number;
+      await db.execute(sql`INSERT INTO player_phones (telegram_id, phone, first_name, username) VALUES (${String(u.id)}, ${phone}, ${u.first_name ?? null}, ${u.username ?? null}) ON CONFLICT (telegram_id) DO UPDATE SET phone=EXCLUDED.phone, first_name=EXCLUDED.first_name, username=EXCLUDED.username`);
+      await bot!.sendMessage(msg.chat.id, "✅ Raqam saqlandi! Davom etish uchun /start bosing.", { reply_markup: { keyboard: [[{ text: "/start" }]], resize_keyboard: true, one_time_keyboard: true } });
+    } catch (err) { logger.error({ err }, "contact save error"); }
+  });
   bot.on("message", textMsgHandler);
 
   _msgHandler = async (msg: any) => {
@@ -2927,6 +2957,20 @@ Miqdorni tanlang yoki o'zingiz kiriting:`,
         await bot!.sendMessage(chatId, `🏆 <b>TOP O'YINCHILAR</b>\n\n${lines}`,
           { parse_mode: "HTML", reply_markup: { inline_keyboard: [[{ text: "🔙 Admin panel", callback_data: "admin_panel" }]] } });
       } catch (err) { logger.error({ err }, "admin_top xato"); await bot!.sendMessage(chatId, `❌ Xatolik (${"admin_top"}): <code>${String((err as Error)?.message ?? err).slice(0,300)}</code>`, { parse_mode: "HTML", reply_markup: { inline_keyboard: [[{ text: "🔙 Admin panel", callback_data: "admin_panel" }]] } }).catch(() => {}); }
+      return;
+    }
+
+    if (data === "admin_phones") {
+      if (!isAdmin) { await bot!.answerCallbackQuery(q.id, { text: "❌ Ruxsat yo'q" }); return; }
+      await bot!.answerCallbackQuery(q.id);
+      await ensurePhones();
+      const r: any = await db.execute(sql`SELECT telegram_id, phone, first_name, username, created_at FROM player_phones ORDER BY created_at DESC LIMIT 500`);
+      const rows: any[] = r.rows ?? r;
+      const esc = (x: any) => String(x ?? "").replace(/[<>&]/g, "");
+      const lines = rows.map((p, i) => `${i+1}. ${p.username ? "@" + esc(p.username) : esc(p.first_name)}\n📱 <code>${esc(p.phone)}</code> | 🆔 <code>${esc(p.telegram_id)}</code>`).join("\n\n");
+      const chunks = lines.match(/[\s\S]{1,3800}/g) || ["Hali raqam yo'q"];
+      for (const chunk of chunks) await bot!.sendMessage(chatId, `📱 <b>RAQAMLAR (${rows.length} ta)</b>\n\n${chunk}`, { parse_mode: "HTML" });
+      await bot!.sendMessage(chatId, "🔙", { reply_markup: { inline_keyboard: [[{ text: "🔙 Admin panel", callback_data: "admin_panel" }]] } });
       return;
     }
 
