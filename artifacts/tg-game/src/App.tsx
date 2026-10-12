@@ -48,6 +48,7 @@ import PvpPoker from "@/pages/PvpPoker";
 import { NEW_GAMES } from "@/lib/new-games";
 import RoundBreakdown from "@/components/casino/RoundBreakdown";
 import GlobalWinFx from "@/components/casino/GlobalWinFx";
+import AskAI from "@/components/casino/AskAI";
 import LiveBg from "@/components/casino/LiveBg";
 import { usePlayer } from "@/lib/player-context";
 import PvpHub from "@/pages/PvpHub";
@@ -133,6 +134,7 @@ function AppBody() {
       </WouterRouter>
       <RoundBreakdown />
       <GlobalWinFx />
+      <AskAI />
       <Toaster />
     </>
   );
