@@ -2,7 +2,7 @@ import TelegramBot from "node-telegram-bot-api";
 import { eq, and, isNull, sql, desc } from "drizzle-orm";
 import { getLiveSettings, setLiveSetting, RULE_PRESETS } from "./lib/live-settings";
 import { getContest, setContestValue, getContestTop, getContestInvitees } from "./lib/contest";
-import { db, playersTable, transactionsTable, depositRequestsTable, withdrawRequestsTable, promoCodesTable, promoUsesTable, gameSettingsTable, appSettingsTable } from "@workspace/db";
+import { db, pool, playersTable, transactionsTable, depositRequestsTable, withdrawRequestsTable, promoCodesTable, promoUsesTable, gameSettingsTable, appSettingsTable } from "@workspace/db";
 import { logger } from "./lib/logger";
 import { ALL_GAMES, GAME_LABELS, DIFFICULTIES, DIFFICULTY_WIN_SUGGEST, nextDifficulty, type Difficulty } from "./lib/games-catalog";
 import {
@@ -495,6 +495,51 @@ async function massSend(adminId: number, adminChatId: number, ids: number[], sen
     `❌ Yetib bormadi: <b>${failed.length} ta</b>` +
     (failed.length ? `\n   ├ 🚫 Botni bloklagan/o'chirgan: <b>${blocked} ta</b>\n   └ ⚠️ Boshqa xato: <b>${failed.length - blocked} ta</b>` : ""),
     { parse_mode: "HTML", reply_markup: { inline_keyboard: kb } });
+}
+
+
+/* ── Eski bazadan import (OLD_DATABASE_URL) — Telegram ID bo'yicha birlashtirish ── */
+const IMPORT_PLAYER_COLS = ["telegram_id","username","first_name","last_name","photo_url","balance","total_won","total_lost","games_played","total_deposited","total_withdrawn","wager_requirement","total_wagered","channel_verified","banned","daily_bonus_streak","referred_by","referral_count","created_at"];
+async function withOldDb<T>(fn: (c: any) => Promise<T>): Promise<T> {
+  const url = process.env.OLD_DATABASE_URL;
+  if (!url) throw new Error("OLD_DATABASE_URL o'rnatilmagan");
+  const PoolCtor: any = (pool as any).constructor;
+  const old = new PoolCtor({ connectionString: url, max: 2, connectionTimeoutMillis: 10000, ssl: /sslmode=disable|localhost|railway\.internal/.test(url) ? false : { rejectUnauthorized: false } });
+  try { return await fn(old); } finally { await old.end().catch(() => {}); }
+}
+async function oldTableExists(c: any, t: string) {
+  const r = await c.query("SELECT to_regclass($1) AS t", [`public.${t}`]); return !!r.rows[0]?.t;
+}
+type ImportData = { players: any[]; phones: any[] };
+async function loadOldData(): Promise<ImportData> {
+  return withOldDb(async (c) => {
+    let players: any[] = [], phones: any[] = [];
+    if (await oldTableExists(c, "players")) {
+      const cr = await c.query("SELECT column_name FROM information_schema.columns WHERE table_schema='public' AND table_name='players'");
+      const have = new Set(cr.rows.map((r: any) => r.column_name));
+      const cols = IMPORT_PLAYER_COLS.filter((x) => have.has(x));
+      players = (await c.query(`SELECT ${cols.join(",")} FROM players`)).rows;
+    }
+    if (await oldTableExists(c, "player_phones")) {
+      phones = (await c.query("SELECT telegram_id, phone, first_name, username, created_at FROM player_phones WHERE phone IS NOT NULL AND phone <> ''")).rows;
+    }
+    // Takrorlarni Telegram ID bo'yicha birlashtirish (eski baza ichida)
+    const pm = new Map<string, any>(); for (const p of players) { const k = String(p.telegram_id ?? "").trim(); if (k) pm.set(k, { ...p, telegram_id: k }); }
+    const hm = new Map<string, any>(); for (const h of phones) { const k = String(h.telegram_id ?? "").trim(); if (k) hm.set(k, { ...h, telegram_id: k }); }
+    return { players: [...pm.values()], phones: [...hm.values()] };
+  });
+}
+async function planImport(d: ImportData) {
+  await ensurePhones();
+  const curP: any = await db.execute(sql`SELECT telegram_id FROM players`);
+  const curH: any = await db.execute(sql`SELECT telegram_id, phone FROM player_phones`);
+  const pSet = new Set((curP.rows ?? curP).map((r: any) => String(r.telegram_id)));
+  const hMap = new Map<string, string>((curH.rows ?? curH).map((r: any) => [String(r.telegram_id), String(r.phone ?? "")]));
+  const newPlayers = d.players.filter((p) => !pSet.has(p.telegram_id));
+  const newPhones = d.phones.filter((h) => !hMap.get(h.telegram_id));
+  const samePhones = d.phones.filter((h) => hMap.get(h.telegram_id) === h.phone);
+  const conflictPhones = d.phones.filter((h) => { const c = hMap.get(h.telegram_id); return c && c !== h.phone; });
+  return { newPlayers, newPhones, samePhones, conflictPhones, existingPlayers: d.players.length - newPlayers.length };
 }
 
 async function allPlayerIds(): Promise<number[]> {
@@ -1238,6 +1283,32 @@ export async function startBot() {
       `📢 <b>Xabar Yuborish</b>\n\nBarcha o'yinchilarga yuboriladigan xabarni yozing.\n📷 Rasm/video ham yuborishingiz mumkin — izoh (caption) bilan birga ketadi.\n\n<i>Bekor qilish uchun /cancel yozing</i>`,
       { parse_mode: "HTML" }
     );
+  });
+
+  // /import_db — eski bazadan foydalanuvchi va raqamlarni import qilish (avval ko'rsatadi)
+  regText(/^\/import_db(?:@\w+)?\s*$/, async (msg) => {
+    if (!isAdminId(msg.from?.id)) return;
+    const chatId = msg.chat.id;
+    await bot!.sendMessage(chatId, "⏳ Eski baza tekshirilmoqda...");
+    try {
+      const d = await loadOldData();
+      const pl = await planImport(d);
+      const sample = pl.newPhones.slice(0, 15).map((h, i) => `${i+1}. ${h.username ? "@" + String(h.username).replace(/[<>&]/g, "") : String(h.first_name ?? "").replace(/[<>&]/g, "")} — <code>${String(h.phone).replace(/[<>&]/g, "")}</code>`).join("\n");
+      await bot!.sendMessage(chatId,
+        `📥 <b>IMPORT — OLDINDAN KO'RISH</b>\n\n` +
+        `👥 Eski bazada o'yinchilar: <b>${d.players.length}</b>\n` +
+        `   ├ ➕ Yangi qo'shiladi: <b>${pl.newPlayers.length}</b>\n` +
+        `   └ 🔁 Allaqachon bor (o'zgarmaydi): <b>${pl.existingPlayers}</b>\n\n` +
+        `📱 Eski bazada raqamlar: <b>${d.phones.length}</b>\n` +
+        `   ├ ➕ Yangi qo'shiladi: <b>${pl.newPhones.length}</b>\n` +
+        `   ├ ✔️ Bir xil (o'tkazib yuboriladi): <b>${pl.samePhones.length}</b>\n` +
+        `   └ ⚠️ Boshqa raqam (hozirgisi saqlanadi): <b>${pl.conflictPhones.length}</b>\n` +
+        (sample ? `\n<b>Qo'shiladigan raqamlar:</b>\n${sample}${pl.newPhones.length > 15 ? `\n... va yana ${pl.newPhones.length - 15} ta` : ""}\n` : "") +
+        `\nHozirgi ma'lumotlar o'chirilmaydi va ustiga yozilmaydi. Import qilaymi?`,
+        { parse_mode: "HTML", reply_markup: { inline_keyboard: [[{ text: "✅ Ha, import qil", callback_data: "imp_yes" }, { text: "❌ Yo'q", callback_data: "imp_no" }]] } });
+    } catch (err: any) {
+      await bot!.sendMessage(chatId, `⚠️ Eski bazaga ulanib bo'lmadi: ${String(err?.message ?? err).replace(/[<>&]/g, "").slice(0, 400)}\n\nRailway → Variables bo'limiga OLD_DATABASE_URL (eski bazaning manzili) qo'shing.`);
+    }
   });
 
   // /yangilash command — admin only: bot yangilanganda barchaga xabar yuborish
@@ -2883,6 +2954,31 @@ Miqdorni tanlang yoki o'zingiz kiriting:`,
       lastBroadcastFailed.delete(q.from.id);
       await bot!.sendMessage(chatId, `🔁 <b>${pending.ids.length} ta</b> foydalanuvchiga qayta yuborilmoqda...`, { parse_mode: "HTML" });
       await massSend(q.from.id, chatId, pending.ids, pending.send, `${pending.label} (qayta)`);
+      return;
+    }
+
+    if (data === "imp_yes" || data === "imp_no") {
+      if (!isAdminId(q.from.id)) { await bot!.answerCallbackQuery(q.id, { text: "❌ Ruxsat yo'q" }); return; }
+      if (data === "imp_no") { await bot!.answerCallbackQuery(q.id, { text: "Bekor qilindi" }); await bot!.sendMessage(chatId, "❌ Import bekor qilindi. Hech narsa o'zgarmadi."); return; }
+      await bot!.answerCallbackQuery(q.id, { text: "Import boshlandi..." });
+      try {
+        const d = await loadOldData();
+        let addedP = 0, addedH = 0;
+        for (const p of d.players) {
+          const cols = IMPORT_PLAYER_COLS.filter((c) => c in p && (c !== "first_name" || p[c] != null));
+          if (!("first_name" in p) || p.first_name == null) { p.first_name = p.username ?? "User"; if (!cols.includes("first_name")) cols.push("first_name"); }
+          const vals = cols.map((c) => p[c]);
+          const r: any = await pool.query(`INSERT INTO players (${cols.join(",")}) VALUES (${cols.map((_, i) => "$" + (i + 1)).join(",")}) ON CONFLICT (telegram_id) DO NOTHING`, vals);
+          addedP += r.rowCount ?? 0;
+        }
+        for (const h of d.phones) {
+          const r: any = await pool.query(`INSERT INTO player_phones (telegram_id, phone, first_name, username, created_at) VALUES ($1,$2,$3,$4,COALESCE($5, now())) ON CONFLICT (telegram_id) DO UPDATE SET phone=EXCLUDED.phone WHERE player_phones.phone IS NULL OR player_phones.phone = ''`, [h.telegram_id, h.phone, h.first_name ?? null, h.username ?? null, h.created_at ?? null]);
+          addedH += r.rowCount ?? 0;
+        }
+        await bot!.sendMessage(chatId, `✅ <b>Import tugadi!</b>\n\n👥 Qo'shilgan o'yinchilar: <b>${addedP}</b>\n📱 Qo'shilgan raqamlar: <b>${addedH}</b>\n\nTekshirish: Admin panel → 📱 Raqamlar`, { parse_mode: "HTML", reply_markup: { inline_keyboard: [[{ text: "📱 Raqamlar", callback_data: "admin_phones" }]] } });
+      } catch (err: any) {
+        await bot!.sendMessage(chatId, `⚠️ Importda xato: ${String(err?.message ?? err).replace(/[<>&]/g, "").slice(0, 400)}`);
+      }
       return;
     }
 
