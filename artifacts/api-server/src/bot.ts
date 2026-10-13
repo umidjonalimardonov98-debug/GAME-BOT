@@ -3021,22 +3021,33 @@ Miqdorni tanlang yoki o'zingiz kiriting:`,
       if (!isAdmin) { await bot!.answerCallbackQuery(q.id, { text: "❌ Ruxsat yo'q" }); return; }
       await bot!.answerCallbackQuery(q.id);
       await ensurePhones();
-      const r: any = await db.execute(sql`SELECT p.telegram_id, ph.phone, COALESCE(ph.first_name, p.first_name) AS first_name, COALESCE(ph.username, p.username) AS username, COALESCE(ph.created_at, p.created_at) AS created_at FROM players p LEFT JOIN player_phones ph ON ph.telegram_id = p.telegram_id UNION SELECT ph.telegram_id, ph.phone, ph.first_name, ph.username, ph.created_at FROM player_phones ph WHERE NOT EXISTS (SELECT 1 FROM players p2 WHERE p2.telegram_id = ph.telegram_id) ORDER BY phone NULLS LAST, created_at DESC LIMIT 1000`);
-      const allRows: any[] = r.rows ?? r;
+      // Raqamlilar to'g'ridan-to'g'ri player_phones jadvalidan (hech kim tushib qolmaydi)
+      let phoneRows: any[] = [];
+      let noPhoneRows: any[] = [];
+      try {
+        const rp: any = await db.execute(sql`SELECT ph.telegram_id, ph.phone, COALESCE(ph.first_name, p.first_name) AS first_name, COALESCE(ph.username, p.username) AS username, ph.created_at FROM player_phones ph LEFT JOIN players p ON p.telegram_id = ph.telegram_id WHERE ph.phone IS NOT NULL AND ph.phone <> '' ORDER BY ph.created_at DESC`);
+        phoneRows = rp.rows ?? rp;
+        const rn: any = await db.execute(sql`SELECT p.telegram_id, NULL AS phone, p.first_name, p.username, p.created_at FROM players p WHERE NOT EXISTS (SELECT 1 FROM player_phones ph WHERE ph.telegram_id = p.telegram_id AND ph.phone IS NOT NULL AND ph.phone <> '') ORDER BY p.created_at DESC`);
+        noPhoneRows = rn.rows ?? rn;
+      } catch (err: any) {
+        await bot!.sendMessage(chatId, `⚠️ Raqamlarni o'qishda xato: ${String(err?.message ?? err).replace(/[<>&]/g, "").slice(0, 500)}`);
+        return;
+      }
       const esc = (x: any) => String(x ?? "").replace(/[<>&]/g, "");
-      const withPhone = allRows.filter(x => x.phone).length;
+      const withPhone = phoneRows.length;
+      const totalCount = phoneRows.length + noPhoneRows.length;
       if (data === "admin_phones") {
         await bot!.sendMessage(chatId,
-          `📱 <b>RAQAMLAR</b>\n\nJami: <b>${allRows.length}</b> ta\n✅ Raqami bor: <b>${withPhone}</b> ta\n🚫 Raqami yo'q: <b>${allRows.length - withPhone}</b> ta\n\nQaysi ro'yxatni ko'rmoqchisiz?`,
+          `📱 <b>RAQAMLAR</b>\n\nJami: <b>${totalCount}</b> ta\n✅ Raqami bor: <b>${withPhone}</b> ta\n🚫 Raqami yo'q: <b>${noPhoneRows.length}</b> ta\n\nQaysi ro'yxatni ko'rmoqchisiz?`,
           { parse_mode: "HTML", reply_markup: { inline_keyboard: [
             [{ text: `✅ Raqami borlar (${withPhone})`, callback_data: "admin_phones_have" }],
-            [{ text: `🚫 Raqami yo'qlar (${allRows.length - withPhone})`, callback_data: "admin_phones_none" }],
+            [{ text: `🚫 Raqami yo'qlar (${noPhoneRows.length})`, callback_data: "admin_phones_none" }],
             [{ text: "🔙 Admin panel", callback_data: "admin_panel" }],
           ] } });
         return;
       }
       const wantPhone = data === "admin_phones_have";
-      const rows = allRows.filter(x => (wantPhone ? !!x.phone : !x.phone));
+      const rows = wantPhone ? phoneRows : noPhoneRows;
       const title = wantPhone ? "✅ RAQAMI BORLAR" : "🚫 RAQAMI YO'QLAR";
       const entries = rows.map((p, i) => `${i+1}. ${p.username ? "@" + esc(p.username) : esc(p.first_name)}\n📱 ${p.phone ? `<code>${esc(p.phone)}</code>` : "<i>raqam yo'q</i>"} | 🆔 <code>${esc(p.telegram_id)}</code>`);
       if (!entries.length) {
