@@ -1917,6 +1917,22 @@ export async function startBot() {
       return;
     }
 
+    // Admin reply to user help question (birinchi tekshiriladi — matn boshqa holatlarga adashmasligi uchun)
+    if (adminReplyTarget.has(userId)) {
+      const targetId = adminReplyTarget.get(userId)!;
+      adminReplyTarget.delete(userId);
+      try {
+        await bot!.sendMessage(targetId,
+          `📩 <b>Admin javobi:</b>\n\n${text}`,
+          { parse_mode: "HTML" }
+        );
+        await bot!.sendMessage(chatId, "✅ Javob yuborildi!", { parse_mode: "HTML" });
+      } catch {
+        await bot!.sendMessage(chatId, "❌ Foydalanuvchiga xabar yuborib bo'lmadi.", { parse_mode: "HTML" });
+      }
+      return;
+    }
+
     // Admin: referal narxini o'zgartirish + barchaga xabar
     if (waitingForRefPrice.has(userId)) {
       const amount = parseInt(text.replace(/[^0-9]/g, ""), 10);
@@ -1940,22 +1956,6 @@ export async function startBot() {
       await bot!.sendMessage(chatId, `📢 <b>${ids.length} ta foydalanuvchiga yuborilmoqda...</b>`, { parse_mode: "HTML" });
       const bcText = `📢 <b>Admin xabari:</b>\n\n${text}`;
       await massSend(userId, chatId, ids, (id) => bot!.sendMessage(id, bcText, { parse_mode: "HTML" }), "Ommaviy xabar");
-      return;
-    }
-
-    // Admin reply to user help question
-    if (adminReplyTarget.has(userId)) {
-      const targetId = adminReplyTarget.get(userId)!;
-      adminReplyTarget.delete(userId);
-      try {
-        await bot!.sendMessage(targetId,
-          `📩 <b>Admin javobi:</b>\n\n${text}`,
-          { parse_mode: "HTML" }
-        );
-        await bot!.sendMessage(chatId, "✅ Javob yuborildi!", { parse_mode: "HTML" });
-      } catch {
-        await bot!.sendMessage(chatId, "❌ Foydalanuvchiga xabar yuborib bo'lmadi.", { parse_mode: "HTML" });
-      }
       return;
     }
 
@@ -3544,6 +3544,23 @@ Miqdorni tanlang yoki o'zingiz kiriting:`,
     if (data.startsWith("reply_help_")) {
       if (!isAdminId(q.from.id)) { await bot!.answerCallbackQuery(q.id, { text: "❌ Ruxsat yo'q" }); return; }
       const targetUserId = Number(data.split("_")[2]);
+      // Boshqa kutish holatlarini tozalash — javob matni ularga adashib ketmasligi uchun
+      waitingForRefPrice.delete(q.from.id);
+      waitingForBroadcast.delete(q.from.id);
+      waitingForContestTitle.delete(q.from.id);
+      waitingForContestDesc.delete(q.from.id);
+      waitingForContestPrizes.delete(q.from.id);
+      waitingForContestEnd.delete(q.from.id);
+      waitingForSendId.delete(q.from.id);
+      waitingForSendMsg.delete(q.from.id);
+      waitingForAddbalId.delete(q.from.id);
+      waitingForAddbalAmount.delete(q.from.id);
+      waitingForBanId.delete(q.from.id);
+      waitingForPromoCode.delete(q.from.id);
+      waitingForPromoPersonalId.delete(q.from.id);
+      waitingForPromoTarget.delete(q.from.id);
+      waitingForPromoAmount.delete(q.from.id);
+      waitingForNewAdminId.delete(q.from.id);
       adminReplyTarget.set(q.from.id, targetUserId);
       await bot!.answerCallbackQuery(q.id, { text: "Javobingizni yozing" });
       await bot!.sendMessage(chatId,
