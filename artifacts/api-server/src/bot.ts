@@ -3042,13 +3042,32 @@ Miqdorni tanlang yoki o'zingiz kiriting:`,
       if (!entries.length) {
         await bot!.sendMessage(chatId, `${title}\n\nHozircha bo'sh`, { parse_mode: "HTML" });
       } else {
-        for (let i = 0; i < entries.length; i += 5) {
-          const part = entries.slice(i, i + 5).join("\n\n");
-          const header = i === 0
+        // Uzunlik bo'yicha bo'laklash: har xabar ~3500 belgigacha, teglar hech qachon kesilmaydi
+        const MAXLEN = 3500;
+        let part: string[] = [];
+        let partLen = 0;
+        let startIdx = 0;
+        let first = true;
+        const flush = async (endIdx: number) => {
+          if (!part.length) return;
+          const header = first
             ? `📱 <b>${title} (${rows.length} ta)</b>\n\n`
-            : `📱 <b>Davomi (${i + 1}–${Math.min(i + 5, entries.length)})</b>\n\n`;
-          await bot!.sendMessage(chatId, header + part, { parse_mode: "HTML" });
+            : `📱 <b>Davomi (${startIdx + 1}–${endIdx})</b>\n\n`;
+          await bot!.sendMessage(chatId, header + part.join("\n\n"), { parse_mode: "HTML" });
+          first = false;
+          part = [];
+          partLen = 0;
+        };
+        for (let i = 0; i < entries.length; i++) {
+          const e = entries[i];
+          if (partLen + e.length + 2 > MAXLEN && part.length) {
+            await flush(i);
+            startIdx = i;
+          }
+          part.push(e);
+          partLen += e.length + 2;
         }
+        await flush(entries.length);
       }
       await bot!.sendMessage(chatId, "🔙", { reply_markup: { inline_keyboard: [[{ text: "🔙 Raqamlar", callback_data: "admin_phones" }, { text: "🔙 Admin panel", callback_data: "admin_panel" }]] } });
       return;
