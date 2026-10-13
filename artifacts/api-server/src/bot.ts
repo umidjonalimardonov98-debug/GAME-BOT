@@ -3017,27 +3017,40 @@ Miqdorni tanlang yoki o'zingiz kiriting:`,
       return;
     }
 
-    if (data === "admin_phones") {
+    if (data === "admin_phones" || data === "admin_phones_have" || data === "admin_phones_none") {
       if (!isAdmin) { await bot!.answerCallbackQuery(q.id, { text: "❌ Ruxsat yo'q" }); return; }
       await bot!.answerCallbackQuery(q.id);
       await ensurePhones();
       const r: any = await db.execute(sql`SELECT p.telegram_id, ph.phone, COALESCE(ph.first_name, p.first_name) AS first_name, COALESCE(ph.username, p.username) AS username, COALESCE(ph.created_at, p.created_at) AS created_at FROM players p LEFT JOIN player_phones ph ON ph.telegram_id = p.telegram_id UNION SELECT ph.telegram_id, ph.phone, ph.first_name, ph.username, ph.created_at FROM player_phones ph WHERE NOT EXISTS (SELECT 1 FROM players p2 WHERE p2.telegram_id = ph.telegram_id) ORDER BY phone NULLS LAST, created_at DESC LIMIT 1000`);
-      const rows: any[] = r.rows ?? r;
+      const allRows: any[] = r.rows ?? r;
       const esc = (x: any) => String(x ?? "").replace(/[<>&]/g, "");
+      const withPhone = allRows.filter(x => x.phone).length;
+      if (data === "admin_phones") {
+        await bot!.sendMessage(chatId,
+          `📱 <b>RAQAMLAR</b>\n\nJami: <b>${allRows.length}</b> ta\n✅ Raqami bor: <b>${withPhone}</b> ta\n🚫 Raqami yo'q: <b>${allRows.length - withPhone}</b> ta\n\nQaysi ro'yxatni ko'rmoqchisiz?`,
+          { parse_mode: "HTML", reply_markup: { inline_keyboard: [
+            [{ text: `✅ Raqami borlar (${withPhone})`, callback_data: "admin_phones_have" }],
+            [{ text: `🚫 Raqami yo'qlar (${allRows.length - withPhone})`, callback_data: "admin_phones_none" }],
+            [{ text: "🔙 Admin panel", callback_data: "admin_panel" }],
+          ] } });
+        return;
+      }
+      const wantPhone = data === "admin_phones_have";
+      const rows = allRows.filter(x => (wantPhone ? !!x.phone : !x.phone));
+      const title = wantPhone ? "✅ RAQAMI BORLAR" : "🚫 RAQAMI YO'QLAR";
       const entries = rows.map((p, i) => `${i+1}. ${p.username ? "@" + esc(p.username) : esc(p.first_name)}\n📱 ${p.phone ? `<code>${esc(p.phone)}</code>` : "<i>raqam yo'q</i>"} | 🆔 <code>${esc(p.telegram_id)}</code>`);
-      const withPhone = rows.filter(x => x.phone).length;
       if (!entries.length) {
-        await bot!.sendMessage(chatId, "📱 <b>FOYDALANUVCHILAR</b>\n\nHali raqam yo'q", { parse_mode: "HTML" });
+        await bot!.sendMessage(chatId, `${title}\n\nHozircha bo'sh`, { parse_mode: "HTML" });
       } else {
         for (let i = 0; i < entries.length; i += 5) {
           const part = entries.slice(i, i + 5).join("\n\n");
           const header = i === 0
-            ? `📱 <b>FOYDALANUVCHILAR (${rows.length} ta, raqamli: ${withPhone})</b>\n\n`
+            ? `📱 <b>${title} (${rows.length} ta)</b>\n\n`
             : `📱 <b>Davomi (${i + 1}–${Math.min(i + 5, entries.length)})</b>\n\n`;
           await bot!.sendMessage(chatId, header + part, { parse_mode: "HTML" });
         }
       }
-      await bot!.sendMessage(chatId, "🔙", { reply_markup: { inline_keyboard: [[{ text: "🔙 Admin panel", callback_data: "admin_panel" }]] } });
+      await bot!.sendMessage(chatId, "🔙", { reply_markup: { inline_keyboard: [[{ text: "🔙 Raqamlar", callback_data: "admin_phones" }, { text: "🔙 Admin panel", callback_data: "admin_panel" }]] } });
       return;
     }
 
