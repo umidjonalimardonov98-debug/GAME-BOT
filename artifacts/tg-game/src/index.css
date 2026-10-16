@@ -754,3 +754,64 @@ button:not(:disabled):active { transform: scale(.955); }
 .ai-fab { animation: aiBob 2.4s ease-in-out infinite; }
 .ai-sheet { animation: dockIn .35s cubic-bezier(.2,1.3,.4,1) both; }
 @keyframes aiBob { 0%,100% { transform: translateY(0) } 50% { transform: translateY(-5px) } }
+
+/* Colorful shared game presentation; game mechanics remain in the pages. */
+:root {
+  --arcade-ink: oklch(0.98 0.015 95);
+  --arcade-muted: oklch(0.77 0.025 250);
+  --arcade-base: oklch(0.19 0.025 265);
+  --arcade-panel: oklch(0.25 0.032 265);
+  --arcade-line: oklch(0.46 0.035 260);
+  --arcade-focus: oklch(0.88 0.17 90);
+  --arcade-dark: oklch(0.14 0.018 265);
+  --arcade-highlight: oklch(1 0 0 / 18%);
+  --arcade-shadow: 0 6px 18px oklch(0.08 0.015 265 / 35%);
+}
+.arcade-gold { --arena-top: oklch(0.39 0.08 55); --arena-bottom: oklch(0.23 0.045 45); --arena-accent: oklch(0.86 0.17 90); --arena-secondary: oklch(0.71 0.16 45); }
+.arcade-blue { --arena-top: oklch(0.41 0.09 230); --arena-bottom: oklch(0.23 0.06 250); --arena-accent: oklch(0.82 0.13 205); --arena-secondary: oklch(0.63 0.17 255); }
+.arcade-green { --arena-top: oklch(0.4 0.08 165); --arena-bottom: oklch(0.22 0.05 170); --arena-accent: oklch(0.81 0.16 155); --arena-secondary: oklch(0.76 0.15 90); }
+.arcade-night { --arena-top: oklch(0.36 0.075 290); --arena-bottom: oklch(0.2 0.04 275); --arena-accent: oklch(0.79 0.14 325); --arena-secondary: oklch(0.77 0.12 215); }
+.arcade-forest { --arena-top: oklch(0.42 0.09 140); --arena-bottom: oklch(0.24 0.055 155); --arena-accent: oklch(0.86 0.18 120); --arena-secondary: oklch(0.74 0.17 55); }
+.arcade-dragon { --arena-top: oklch(0.4 0.12 25); --arena-bottom: oklch(0.23 0.065 15); --arena-accent: oklch(0.77 0.16 40); --arena-secondary: oklch(0.88 0.15 90); }
+.arcade-table {
+  padding: 3px; border-radius: 18px;
+  background: linear-gradient(135deg, var(--arena-accent), var(--arena-secondary));
+  box-shadow: var(--arcade-shadow);
+  animation: arcade-enter 320ms ease-out both;
+}
+.arcade-table-inner {
+  border-radius: 15px;
+  background: linear-gradient(155deg, var(--arena-top), var(--arena-bottom));
+  box-shadow: inset 0 1px 0 var(--arcade-highlight);
+}
+.arcade-title { border-radius: 8px; color: var(--arcade-dark); background: var(--arena-accent); box-shadow: 0 3px 0 var(--arena-secondary); letter-spacing: 0; }
+.arcade-lights { display: flex; justify-content: space-between; gap: 5px; padding: 2px 4px 10px; }
+.arcade-lights span { width: 6px; height: 6px; border-radius: 2px; background: var(--arena-accent); opacity: .8; }
+.arcade-lights span:nth-child(3n + 2) { background: var(--arena-secondary); }
+.arcade-lights.is-running span { animation: arcade-light 1.2s ease-in-out infinite; }
+.arcade-lights.is-running span:nth-child(3n + 2) { animation-delay: 150ms; }
+.arcade-lights.is-running span:nth-child(3n) { animation-delay: 300ms; }
+.arcade-bet { border-radius: 12px; background: var(--arcade-panel); border: 1px solid var(--arcade-line); box-shadow: var(--arcade-shadow); }
+.arcade-bet-label { color: var(--arcade-muted); letter-spacing: 0; }
+.arcade-chip-0 { --chip: oklch(0.47 0.13 235); --chip-edge: oklch(0.72 0.12 220); }
+.arcade-chip-1 { --chip: oklch(0.46 0.115 165); --chip-edge: oklch(0.76 0.14 155); }
+.arcade-chip-2 { --chip: oklch(0.49 0.14 320); --chip-edge: oklch(0.76 0.14 325); }
+.arcade-chip-3 { --chip: oklch(0.49 0.13 55); --chip-edge: oklch(0.8 0.14 75); }
+.arcade-chip-4 { --chip: oklch(0.46 0.16 25); --chip-edge: oklch(0.75 0.15 30); }
+.arcade-chip-5 { --chip: oklch(0.44 0.15 285); --chip-edge: oklch(0.74 0.12 285); }
+.arcade-chip {
+  position: relative; border-radius: 8px; color: var(--arcade-ink);
+  border: 1px solid var(--chip-edge); border-bottom-width: 3px;
+  background: linear-gradient(180deg, var(--chip), color-mix(in oklch, var(--chip), var(--arcade-dark) 22%));
+  box-shadow: inset 0 1px 0 var(--arcade-highlight); letter-spacing: 0;
+}
+.arcade-chip[aria-pressed="true"] { outline: 2px solid var(--arcade-focus); outline-offset: 1px; }
+.arcade-chip:disabled { opacity: .38; }
+.arcade-chip:hover:not(:disabled) { filter: brightness(1.15); }
+.arcade-chip:active:not(:disabled) { transform: translateY(2px); }
+.arcade-quick { border-radius: 8px; color: var(--arcade-ink); border: 1px solid var(--arcade-line); background: var(--arcade-base); letter-spacing: 0; }
+.arcade-input { border-radius: 8px; color: var(--arcade-ink); border: 1px solid var(--arcade-line); background: var(--arcade-dark); font-variant-numeric: tabular-nums; }
+.arcade-input:focus-visible, .arcade-quick:focus-visible, .arcade-chip:focus-visible { outline: 2px solid var(--arcade-focus); outline-offset: 2px; }
+@keyframes arcade-enter { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: none; } }
+@keyframes arcade-light { 0%, 100% { opacity: .4; } 50% { opacity: 1; } }
+@media (prefers-reduced-motion: reduce) { .arcade-table, .arcade-lights.is-running span { animation: none; } }
