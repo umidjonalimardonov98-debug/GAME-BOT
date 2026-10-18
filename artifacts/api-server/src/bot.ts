@@ -1,6 +1,7 @@
 import TelegramBot from "node-telegram-bot-api";
 import { eq, and, isNull, sql, desc } from "drizzle-orm";
 import { getLiveSettings, setLiveSetting, RULE_PRESETS } from "./lib/live-settings";
+import { answerRulesQuestion, splitAnswer, RulesAiError } from "./lib/ai/rules-assistant";
 import { getContest, setContestValue, getContestTop, getContestInvitees } from "./lib/contest";
 import { db, pool, playersTable, transactionsTable, depositRequestsTable, withdrawRequestsTable, promoCodesTable, promoUsesTable, gameSettingsTable, appSettingsTable } from "@workspace/db";
 import { logger } from "./lib/logger";
@@ -187,6 +188,8 @@ const waitingForAmount = new Set<number>();                    // userId waiting
 const waitingForWithdrawAmount = new Set<number>();            // userId waiting to type withdraw amount
 const pendingWithdraw = new Map<number, { amount: number }>(); // userId -> withdraw info
 const waitingForHelp = new Set<number>();                      // userId waiting to type help question
+const rulesQuestions = new Set<number>();                     // userId AI qoidalar savolini kutyapti
+const rulesBusy = new Set<number>();                          // userId uchun AI javob tayyorlanmoqda
 const adminReplyTarget = new Map<number, number>();            // adminId -> targetUserId (for admin replies)
 
 // ===== JONLI SUHBAT (admin <-> foydalanuvchi) =====
@@ -765,6 +768,7 @@ function mainMenuKeyboard(isAdmin: boolean): any[][] {
     [{ text: "💳 To'ldirish", callback_data: "deposit_menu" }, { text: "💸 Yechish", callback_data: "withdraw_menu" }],
     [{ text: "💰 Balans", callback_data: "balance" }, { text: "🤝 Referal", callback_data: "referral_menu" }],
     [{ text: "💬 Admin", callback_data: "live_chat" }, { text: "🆘 Yordam", callback_data: "help_menu" }],
+    [{ text: "📖 Qoidalar (AI)", callback_data: "rules_menu" }],
   ];
   if (isAdmin) kb.push([{ text: "⚙️ ADMIN PANEL", callback_data: "admin_panel" }]);
   return kb;
@@ -1183,9 +1187,24 @@ export async function startBot() {
   // /help command
   regText(/^\/help(?:@\w+)?\s*$/, async (msg) => {
     if (!msg.from) return;
+    waitingForHelp.add(msg.from.id);
     await bot!.sendMessage(msg.chat.id,
-      `❓ <b>Yordam</b>\n\nSavolingizni yozing, admin tez orada javob beradi:`,
+      `❓ <b>Yordam</b>\n\nSavolingizni yozing, admin tez orada javob beradi:\n\n<i>Bekor qilish uchun /cancel</i>`,
       { parse_mode: "HTML" }
+    );
+  });
+
+  // /qoidalar — AI qoidalar yordamchisi
+  regText(/^\/(qoidalar|rules)(?:@\w+)?\s*$/, async (msg) => {
+    if (!msg.from) return;
+    waitingForHelp.delete(msg.from.id);
+    waitingForAmount.delete(msg.from.id);
+    rulesQuestions.add(msg.from.id);
+    await bot!.sendMessage(msg.chat.id,
+      `📖 <b>Qoidalar yordamchisi (AI)</b>\n\n✍️ O'yin qoidalari haqida savolingizni yozing — AI amaldagi qoidalarga tayanib javob beradi.\n\n💬 <i>Masalan: "Mines qanday o'ynaladi?", "Spin bepulmi?", "Blackjack'da yutuq qancha?"</i>`,
+      { parse_mode: "HTML", reply_markup: { inline_keyboard: [[
+        { text: "❌ Bekor qilish", callback_data: "rules_cancel" },
+      ]]}}
     );
   });
 
@@ -1540,6 +1559,8 @@ export async function startBot() {
     if (text === "/cancel") {
       waitingForBroadcast.delete(userId);
       waitingForHelp.delete(userId);
+      rulesQuestions.delete(userId);
+      rulesBusy.delete(userId);
       adminReplyTarget.delete(userId);
       waitingForSendId.delete(userId);
       waitingForSendMsg.delete(userId);
@@ -1559,6 +1580,42 @@ export async function startBot() {
       waitingForMaxWin.delete(userId);
       waitingForLiveText.delete(userId);
       await bot!.sendMessage(chatId, "❌ Bekor qilindi.", { parse_mode: "HTML" });
+      return;
+    }
+
+    // ===== AI QOIDALAR YORDAMCHISI =====
+    if (rulesQuestions.has(userId)) {
+      if (rulesBusy.has(userId)) {
+        await bot!.sendMessage(chatId, "⏳ Oldingi savolingizga javob tayyorlanmoqda, biroz kuting...", { parse_mode: "HTML" });
+        return;
+      }
+      rulesBusy.add(userId);
+      try {
+        await bot!.sendChatAction(chatId, "typing");
+        const answer = await answerRulesQuestion(text.slice(0, 1000));
+        rulesQuestions.delete(userId);
+        const parts = splitAnswer(answer);
+        for (let i = 0; i < parts.length; i++) {
+          await bot!.sendMessage(chatId,
+            `📖 <b>Qoidalar yordamchisi</b>${parts.length > 1 ? ` (${i + 1}/${parts.length})` : ""}\n\n${escHtml(parts[i]!)}`,
+            { parse_mode: "HTML", reply_markup: i === parts.length - 1 ? { inline_keyboard: [[
+              { text: "❓ Yana savol", callback_data: "rules_menu" },
+              { text: "🆘 Admin yordami", callback_data: "help_menu" },
+            ]]} : undefined }
+          );
+        }
+      } catch (e) {
+        rulesQuestions.delete(userId);
+        const msg = e instanceof RulesAiError ? e.message : "Texnik xatolik yuz berdi.";
+        await bot!.sendMessage(chatId,
+          `⚠️ <b>AI yordamchi javob bera olmadi</b>\n\n${escHtml(msg)}\n\n🆘 Admin yordami tugmasi orqali adminga yozishingiz mumkin.`,
+          { parse_mode: "HTML", reply_markup: { inline_keyboard: [[
+            { text: "🆘 Admin yordami", callback_data: "help_menu" },
+          ]]}}
+        );
+      } finally {
+        rulesBusy.delete(userId);
+      }
       return;
     }
 
@@ -3517,6 +3574,27 @@ Miqdorni tanlang yoki o'zingiz kiriting:`,
       if (inLiveChat(q.from.id)) {
         await endLiveChat(q.from.id, liveChatAdminToUser.has(q.from.id) ? "admin" : "user");
       }
+      return;
+    }
+
+    // AI qoidalar yordamchisi menyusi
+    if (data === "rules_menu") {
+      await bot!.answerCallbackQuery(q.id);
+      waitingForHelp.delete(q.from.id);
+      waitingForAmount.delete(q.from.id);
+      rulesQuestions.add(q.from.id);
+      await bot!.sendMessage(chatId,
+        `📖 <b>Qoidalar yordamchisi (AI)</b>\n\n✍️ O'yin qoidalari haqida savolingizni yozing — AI amaldagi qoidalarga tayanib javob beradi.\n\n💬 <i>Masalan: "Mines qanday o'ynaladi?", "Spin bepulmi?"</i>`,
+        { parse_mode: "HTML", reply_markup: { inline_keyboard: [[
+          { text: "❌ Bekor qilish", callback_data: "rules_cancel" },
+        ]]}}
+      );
+      return;
+    }
+
+    if (data === "rules_cancel") {
+      rulesQuestions.delete(q.from.id);
+      await bot!.answerCallbackQuery(q.id, { text: "Bekor qilindi" });
       return;
     }
 
