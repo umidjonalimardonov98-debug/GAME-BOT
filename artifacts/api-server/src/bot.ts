@@ -3224,7 +3224,7 @@ Miqdorni tanlang yoki o'zingiz kiriting:`,
         };
         for (let i = 0; i < entries.length; i++) {
           const e = entries[i];
-          if (partLen + e.length + 2 > MAXLEN && part.length) {
+          if ((part.length >= 5 || partLen + e.length + 2 > MAXLEN) && part.length) {
             await flush(i);
             startIdx = i;
           }
