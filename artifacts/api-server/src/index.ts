@@ -26,15 +26,20 @@ async function runMigrations() {
     logger.warn("DATABASE_URL not set — skipping migrations");
     return;
   }
-  try {
-    logger.info("Running database migrations...");
-    execSync("pnpm --filter @workspace/db run push-force", {
-      stdio: "inherit",
-      cwd: "/app",
-    });
-    logger.info("Database migrations complete");
-  } catch (err) {
-    logger.error({ err }, "Migration failed — continuing anyway");
+  // DIQQAT: `push-force` sxemada yo'q jadval/ustunlarni O'CHIRADI (masalan, raqamlar).
+  // Shuning uchun u faqat RUN_DB_PUSH=1 bo'lganda ishlaydi. Oddiy holatda
+  // jadvallar ensureExtraSchema / CREATE TABLE IF NOT EXISTS orqali xavfsiz yaratiladi.
+  if (process.env.RUN_DB_PUSH === "1") {
+    try {
+      logger.info("Running database migrations (push-force)...");
+      execSync("pnpm --filter @workspace/db run push-force", {
+        stdio: "inherit",
+        cwd: "/app",
+      });
+      logger.info("Database migrations complete");
+    } catch (err) {
+      logger.error({ err }, "Migration failed — continuing anyway");
+    }
   }
   await ensureGameSettingsColumns(db, sql);
   const schemaFailed = await ensureExtraSchema(db, sql);
