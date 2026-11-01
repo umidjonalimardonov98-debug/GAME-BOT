@@ -3111,8 +3111,8 @@ Miqdorni tanlang yoki o'zingiz kiriting:`,
         const res: any = await db.execute(sql`
           SELECT game,
                  count(*) FILTER (WHERE type = 'bet')::int AS rounds,
-                 coalesce(sum(amount) FILTER (WHERE type = 'bet'), 0)::int AS wagered,
-                 coalesce(sum(amount) FILTER (WHERE type = 'win'), 0)::int AS paid
+                 coalesce(sum(amount) FILTER (WHERE type = 'bet'), 0)::bigint AS wagered,
+                 coalesce(sum(amount) FILTER (WHERE type = 'win'), 0)::bigint AS paid
           FROM transactions
           WHERE game IS NOT NULL
           GROUP BY game
@@ -3131,9 +3131,11 @@ Miqdorni tanlang yoki o'zingiz kiriting:`,
           return `${i + 1}. <b>${r.game}</b>\n   🎲 ${r.rounds} raund | 💰 ${fmt(w)}\n   🏆 To'langan: ${fmt(pd)} | RTP: <b>${rtp}%</b>\n   📈 Foyda: <b>${fmt(w - pd)} UZS</b>`;
         }).join("\n\n");
         const allRtp = totalW > 0 ? ((totalP / totalW) * 100).toFixed(1) : "0.0";
-        await bot!.sendMessage(chatId,
-          `🎮 <b>O'YIN STATISTIKASI</b>\n\n${lines}\n\n➖➖➖➖➖➖\n💰 Jami tikilgan: <b>${fmt(totalW)} UZS</b>\n🏆 Jami to'langan: <b>${fmt(totalP)} UZS</b>\n📊 Umumiy RTP: <b>${allRtp}%</b>\n📈 Sof foyda: <b>${fmt(totalW - totalP)} UZS</b>`,
-          { parse_mode: "HTML", reply_markup: { inline_keyboard: [[{ text: "🔙 Admin panel", callback_data: "admin_panel" }]] } });
+        const statText = `🎮 <b>O'YIN STATISTIKASI</b>\n\n${lines}\n\n➖➖➖➖➖➖\n💰 Jami tikilgan: <b>${fmt(totalW)} UZS</b>\n🏆 Jami to'langan: <b>${fmt(totalP)} UZS</b>\n📊 Umumiy RTP: <b>${allRtp}%</b>\n📈 Sof foyda: <b>${fmt(totalW - totalP)} UZS</b>`;
+        for (const part of splitAnswer(statText)) {
+          await bot!.sendMessage(chatId, part,
+            { parse_mode: "HTML", reply_markup: { inline_keyboard: [[{ text: "🔙 Admin panel", callback_data: "admin_panel" }]] } });
+        }
       } catch (err) { logger.error({ err }, "admin_gamestat xato"); await bot!.sendMessage(chatId, `❌ Xatolik (${"admin_gamestat"}): <code>${String((err as Error)?.message ?? err).slice(0,300)}</code>`, { parse_mode: "HTML", reply_markup: { inline_keyboard: [[{ text: "🔙 Admin panel", callback_data: "admin_panel" }]] } }).catch(() => {}); }
       return;
     }
@@ -3306,8 +3308,8 @@ Miqdorni tanlang yoki o'zingiz kiriting:`,
         SELECT
           count(*)::int as cnt,
           count(distinct telegram_id)::int as users,
-          coalesce(sum(amount), 0)::int as total,
-          coalesce(sum(bonus_amount), 0)::int as bonus
+          coalesce(sum(amount), 0)::bigint as total,
+          coalesce(sum(bonus_amount), 0)::bigint as bonus
         FROM deposit_requests
         WHERE status = 'approved'
       `);
@@ -3359,7 +3361,7 @@ Miqdorni tanlang yoki o'zingiz kiriting:`,
         SELECT
           count(*)::int as cnt,
           count(distinct telegram_id)::int as users,
-          coalesce(sum(amount), 0)::int as total
+          coalesce(sum(amount), 0)::bigint as total
         FROM withdraw_requests
         WHERE status = 'approved'
       `);
@@ -3411,7 +3413,7 @@ Miqdorni tanlang yoki o'zingiz kiriting:`,
         SELECT
           status,
           count(*)::int as cnt,
-          coalesce(sum(amount), 0)::int as total
+          coalesce(sum(amount), 0)::bigint as total
         FROM withdraw_requests
         GROUP BY status
         ORDER BY status
