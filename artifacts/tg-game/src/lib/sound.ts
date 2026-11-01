@@ -39,8 +39,8 @@ function ac(): AudioContext | null {
 export function isSoundEnabled() { return enabled; }
 
 export function setSoundEnabled(_v: boolean) {
-  enabled = false;
-  try { localStorage.setItem(LS_KEY, v ? "1":"0"); } catch {}
+  enabled = false; // ovoz butunlay o'chirilgan (foydalanuvchi so'roviga ko'ra)
+  try { localStorage.setItem(LS_KEY, "0"); } catch {}
   listeners.forEach((l) => l(enabled));
 
 }
