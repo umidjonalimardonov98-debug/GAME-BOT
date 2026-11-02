@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState , useEffect} from "react";
 import { Copy, Check, Loader2 } from "lucide-react";
 import { usePlayer } from "@/lib/player-context";
 import { useLang } from "@/lib/lang-context";
@@ -8,8 +8,8 @@ import GameHeader from "@/components/GameHeader";
 import Sym from "@/components/casino/Sym";
 import { useU } from "@/lib/ui-i18n";
 
-const CARD = "5614680577167758";
-const HOLDER = "Alimardonov Umidjon";
+const DEFAULT_CARD = "5614680577167758";
+const DEFAULT_HOLDER = "Alimardonov Umidjon";
 const BONUS = 20;
 const MIN_DEPOSIT = 25_000;
 
@@ -41,6 +41,11 @@ export default function Deposit() {
   const [loading, setLoading] = useState(false);
   const [done, setDone] = useState(false);
   const [error, setError] = useState("");
+  const [CARD, setCard] = useState(DEFAULT_CARD);
+  const [HOLDER, setHolder] = useState(DEFAULT_HOLDER);
+  useEffect(() => {
+    fetch("/api/payment-card").then(r => r.json()).then(d => { if (d?.cardNumber) setCard(String(d.cardNumber)); if (d?.cardHolder) setHolder(String(d.cardHolder)); }).catch(() => {});
+  }, []);
 
   const isLight = false;
   const amount = custom ? Number(custom) : selected;

@@ -12,7 +12,7 @@ import {
   PlaceBetBody,
   GetTransactionsParams,
 } from "@workspace/api-zod";
-import { notifyAdminWithdraw, isAdminTelegramId, ADMIN_INFINITE_BALANCE, getBotUsername, getReferralBonusPublic, REFERRAL_GOAL, isDailyBonusEnabled, notifyAdminsReferralGoal } from "../bot";
+import { notifyAdminWithdraw, isAdminTelegramId, ADMIN_INFINITE_BALANCE, getBotUsername, getReferralBonusPublic, REFERRAL_GOAL, isDailyBonusEnabled, loadPaymentCard, notifyAdminsReferralGoal } from "../bot";
 
 const router: IRouter = Router();
 const MIN_WITHDRAW_AMOUNT = 20000;
@@ -294,6 +294,11 @@ router.get("/players/:telegramId/history", async (req, res): Promise<void> => {
     games: games.map(t => ({ id: t.id, type: t.type, amount: t.amount, game: t.game, createdAt: t.createdAt.toISOString() })),
     withdrawals: withdrawals.map(w => ({ id: w.id, amount: w.amount, status: w.status, cardNumber: `•••• ${w.cardNumber.slice(-4)}`, createdAt: w.createdAt.toISOString() })),
   });
+});
+
+// To'lov kartasi (admin o'zgartiradi)
+router.get("/payment-card", async (_req, res): Promise<void> => {
+  res.json(await loadPaymentCard());
 });
 
 // Daily bonus status (admin yoqadi/o'chiradi)

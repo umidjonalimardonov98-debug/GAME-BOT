@@ -24,8 +24,8 @@ const ADMIN_IDS = new Set(
 );
 // Dynamic admins added at runtime via /addadmin command
 const DYNAMIC_ADMIN_IDS = new Set<number>();
-const CARD_NUMBER = process.env.CARD_NUMBER || process.env.PAYMENT_CARD || "5614680577167758";
-const CARD_HOLDER = process.env.CARD_HOLDER || process.env.PAYMENT_NAME || "Alimardonov Umidjon";
+let CARD_NUMBER = process.env.CARD_NUMBER || process.env.PAYMENT_CARD || "5614680577167758";
+let CARD_HOLDER = process.env.CARD_HOLDER || process.env.PAYMENT_NAME || "Alimardonov Umidjon";
 const DOMAINS = process.env.REPLIT_DOMAINS || "";
 const RENDER_URL = process.env.RENDER_EXTERNAL_URL || "";
 const RAILWAY_DOMAIN = process.env.RAILWAY_PUBLIC_DOMAIN || process.env.RAILWAY_STATIC_URL || "";
@@ -64,6 +64,25 @@ export async function getBotUsername(): Promise<string> {
 export async function getReferralBonusPublic() { return getReferralBonus(); }
 
 export const REFERRAL_GOAL = 5;
+
+/** To'lov kartasi — admin panelidan o'zgartiriladi (app_settings.card_number / card_holder) */
+export async function loadPaymentCard() {
+  try {
+    const rows = await db.select().from(appSettingsTable);
+    const m = new Map(rows.map((r: any) => [r.key, r.value]));
+    if (m.get("card_number")) CARD_NUMBER = String(m.get("card_number"));
+    if (m.get("card_holder")) CARD_HOLDER = String(m.get("card_holder"));
+  } catch {}
+  return { cardNumber: CARD_NUMBER, cardHolder: CARD_HOLDER };
+}
+setTimeout(() => { loadPaymentCard(); }, 2000);
+async function savePaymentCard(num: string, holder: string) {
+  for (const [key, value] of [["card_number", num], ["card_holder", holder]] as const) {
+    await db.insert(appSettingsTable).values({ key, value })
+      .onConflictDoUpdate({ target: appSettingsTable.key, set: { value, updatedAt: new Date() } });
+  }
+  CARD_NUMBER = num; CARD_HOLDER = holder;
+}
 
 /** Kunlik bonus yoqilganmi — admin panelidan boshqariladi (app_settings.daily_bonus_enabled) */
 export async function isDailyBonusEnabled(): Promise<boolean> {
@@ -439,6 +458,7 @@ const waitingForContestPrizes = new Set<number>();               // admin waitin
 const waitingForContestTitle = new Set<number>();                // admin waiting to type contest title
 const waitingForContestDesc = new Set<number>();
 const waitingForContestEnd = new Set<number>();                  // admin waiting to type contest end time
+const waitingForCard = new Set<number>();                       // admin waiting to type new payment card
 const waitingForRefPrice = new Set<number>();                  // admin waiting to type new referral bonus
 const waitingForBroadcast = new Set<number>();                  // adminId waiting to type broadcast message
 const waitingForSendId = new Set<number>();                    // admin waiting to type target userId
@@ -1139,6 +1159,7 @@ export async function startBot() {
         const dbOn = await isDailyBonusEnabled();
         push([{ text: dbOn ? "🎁 Kunlik bonus: ✅ YOQIQ (o'chirish)" : "🎁 Kunlik bonus: ❌ O'CHIQ (yoqish)", callback_data: "admin_daily_toggle" }]);
       }
+      if (p("finance") || p("admins")) push([{ text: "💳 Karta raqamini o'zgartirish", callback_data: "admin_card" }]);
       if (p("finance") || p("admins")) push([{ text: "🤝 Referal narxi", callback_data: "admin_ref_price" }]);
       if (p("finance") || p("admins")) push([{ text: "🏆 KONKURS (referal)", callback_data: "admin_contest" }]);
       // Faqat egasi (owner) adminlarni boshqaradi
@@ -2006,6 +2027,21 @@ export async function startBot() {
       return;
     }
 
+    // Admin: to'lov kartasini o'zgartirish
+    if (waitingForCard.has(userId)) {
+      const lines = text.split("\n").map((l: string) => l.trim()).filter(Boolean);
+      const num = (lines[0] || "").replace(/[^0-9]/g, "");
+      const holder = (lines.slice(1).join(" ") || CARD_HOLDER).slice(0, 60);
+      if (num.length < 16 || num.length > 19) {
+        await bot!.sendMessage(chatId, "❌ Karta raqami 16 xonali bo'lishi kerak. Qaytadan yozing yoki /cancel", { parse_mode: "HTML" });
+        return;
+      }
+      waitingForCard.delete(userId);
+      await savePaymentCard(num, holder);
+      await bot!.sendMessage(chatId, `✅ <b>Karta yangilandi!</b>\n\n💳 <code>${num}</code>\n👤 ${holder}\n\nEndi depozitda shu karta ko'rsatiladi.`, { parse_mode: "HTML" });
+      return;
+    }
+
     // Admin: referal narxini o'zgartirish + barchaga xabar
     if (waitingForRefPrice.has(userId)) {
       const amount = parseInt(text.replace(/[^0-9]/g, ""), 10);
@@ -2806,6 +2842,17 @@ Miqdorni tanlang yoki o'zingiz kiriting:`,
       await db.insert(appSettingsTable).values({ key, value }).onConflictDoUpdate({ target: appSettingsTable.key, set: { value, updatedAt: new Date() } });
       await bot!.answerCallbackQuery(q.id, { text: "✅ Dizayn yangilandi" });
       await sendAdminMenu(chatId, q.from.id);
+      return;
+    }
+
+    if (data === "admin_card") {
+      if (!(hasPerm(q.from.id, "finance") || hasPerm(q.from.id, "admins"))) { await bot!.answerCallbackQuery(q.id, { text: "❌ Ruxsat yo'q" }); return; }
+      await bot!.answerCallbackQuery(q.id);
+      waitingForCard.add(q.from.id);
+      await bot!.sendMessage(chatId,
+        `💳 <b>To'lov kartasi</b>\n\nHozirgi: <code>${CARD_NUMBER}</code>\n👤 ${CARD_HOLDER}\n\nYangi kartani yozing:\n1-qator — karta raqami\n2-qator — egasining ismi (ixtiyoriy)\n\nMasalan:\n<code>8600123412341234\nAli Valiyev</code>\n\n<i>Bekor qilish: /cancel</i>`,
+        { parse_mode: "HTML" }
+      );
       return;
     }
 
@@ -3652,6 +3699,7 @@ Miqdorni tanlang yoki o'zingiz kiriting:`,
       const targetUserId = Number(data.split("_")[2]);
       // Boshqa kutish holatlarini tozalash — javob matni ularga adashib ketmasligi uchun
       waitingForRefPrice.delete(q.from.id);
+      waitingForCard.delete(q.from.id);
       waitingForBroadcast.delete(q.from.id);
       waitingForContestTitle.delete(q.from.id);
       waitingForContestDesc.delete(q.from.id);

@@ -73,6 +73,7 @@ export function initTelegramApp() {
   wa?.ready?.();
   // To'liq (fullscreen) emas — oddiy kengaytirilgan holat
   wa?.expand?.();
+  try { (wa as any)?.requestFullscreen?.(); } catch {}
   // Pastga/tepaga surganda mini app yopilib/qimirlab ketmasin
   wa?.disableVerticalSwipes?.();
   applyViewportHeight();
