@@ -162,12 +162,12 @@ export default function Blackjack() {
         {/* Dealer */}
         <div className="rounded-2xl p-4"
           style={{
-            background: cardBg,
-            border: `1px solid ${cardBorder}`,
+            background: "radial-gradient(ellipse at 50% 20%,#1d7a4c 0%,#0e4a2e 60%,#06261a 100%)",
+            border: "2px solid #b8892a",
             boxShadow: isLight ? "0 4px 0 rgba(22,104,227,0.1), 0 6px 20px rgba(22,104,227,0.08), inset 0 1px 0 rgba(255,255,255,0.8)":"0 4px 0 rgba(0,0,0,0.2)",
           }}>
           <div className="flex items-center justify-between mb-3">
-            <p className="text-xs font-bold tracking-widest" style={{ color: ts.textSub }}>{t.dealer}</p>
+            <p className="text-xs font-bold tracking-widest" style={{ color: "#f7e59b" }}>{t.dealer}</p>
             {gameState !== "idle" && (
               <span className="text-sm font-black px-2.5 py-1 rounded-xl"
                 style={{ background: isLight ? "rgba(22,104,227,0.12)":"rgba(255,255,255,0.1)", color: ts.text }}>
@@ -177,7 +177,7 @@ export default function Blackjack() {
           </div>
           <div className="flex gap-2 flex-wrap min-h-[80px] items-center">
             {dealerCards.map((c, i) => <CardUI key={i} card={c} hidden={i === 1 && !dealerRevealed} theme={theme} />)}
-            {gameState === "idle" && <span className="text-sm" style={{ color: ts.textSub }}>{t.cardsLoading}</span>}
+            {gameState === "idle" && [0, 1].map(k => <div key={k} className="rounded-lg" style={{ width: 62, height: 88, border: "2px dashed rgba(247,229,155,.35)", background: "rgba(0,0,0,.15)" }} />)}
           </div>
         </div>
 
@@ -196,8 +196,8 @@ export default function Blackjack() {
         {/* Player hand */}
         <div className="rounded-2xl p-4"
           style={{
-            background: cardBg,
-            border: `1px solid ${cardBorder}`,
+            background: "radial-gradient(ellipse at 50% 20%,#1d7a4c 0%,#0e4a2e 60%,#06261a 100%)",
+            border: "2px solid #b8892a",
             boxShadow: isLight ? "0 4px 0 rgba(22,104,227,0.1), 0 6px 20px rgba(22,104,227,0.08), inset 0 1px 0 rgba(255,255,255,0.8)":"0 4px 0 rgba(0,0,0,0.2)",
           }}>
           <div className="flex items-center justify-between mb-3">
@@ -211,7 +211,7 @@ export default function Blackjack() {
           </div>
           <div className="flex gap-2 flex-wrap min-h-[80px] items-center">
             {playerCards.map((c, i) => <CardUI key={i} card={c} theme={theme} />)}
-            {gameState === "idle" && <span className="text-sm" style={{ color: ts.textSub }}>{t.cardsLoading}</span>}
+            {gameState === "idle" && [0, 1].map(k => <div key={k} className="rounded-lg" style={{ width: 62, height: 88, border: "2px dashed rgba(247,229,155,.35)", background: "rgba(0,0,0,.15)" }} />)}
           </div>
         </div>
 

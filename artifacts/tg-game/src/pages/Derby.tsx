@@ -136,6 +136,7 @@ export default function Derby() {
 
       <div className="flex-1 px-3 pb-8 flex flex-col gap-3 items-center">
 
+        <style>{`@keyframes dby-dust{0%{transform:translateX(0) scale(.6);opacity:.9}100%{transform:translateX(-18px) scale(1.6);opacity:0}}`}</style>
         {/* ——— IPPODROM ——— */}
         <div className="w-full rounded-3xl overflow-hidden relative"
           style={{ border: `1px solid ${ts.cardBorder}`, boxShadow: "0 10px 30px rgba(0,0,0,.35)" }}>
@@ -170,6 +171,11 @@ export default function Derby() {
                   {/* ot */}
                   <div className="absolute top-1/2 -translate-y-1/2 z-[5]"
                     style={{ left: `calc(${6 + pos[i] * 0.84}% )`, transition: busy ? "none" : "left .32s ease" }}>
+                    {busy && [0, 1, 2].map(k => (
+                      <span key={k} className="absolute rounded-full pointer-events-none" style={{ left: -6 - k * 8, bottom: 2, width: 10 - k * 2, height: 10 - k * 2,
+                        background: "rgba(214,184,130,.55)", filter: "blur(2px)", animation: `dby-dust .45s ${k * .12}s linear infinite` }} />
+                    ))}
+                    {busy && pos[i] === Math.max(...pos) && pos[i] > 0 && <img src="/symbols/crown.png" alt="" className="absolute" style={{ width: 16, left: 20, top: -12, filter: "drop-shadow(0 0 4px #ffd54a)" }} />}
                     <img src={h.img} alt={h.name[lang]} width={54} height={54} loading="lazy" draggable={false}
                       className={busy ? "gallop" : ""}
                       style={{ width: 54, height: 40, objectFit: "contain", filter: `drop-shadow(0 2px 6px rgba(0,0,0,.6))` }} />

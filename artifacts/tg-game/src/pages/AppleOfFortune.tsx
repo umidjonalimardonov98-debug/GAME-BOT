@@ -196,10 +196,10 @@ export default function AppleOfFortune() {
                       let extraClass = "";
 
                       if (isActive) {
-                        bg = "linear-gradient(135deg, rgba(21,128,61,0.4), rgba(5,46,22,0.6))";
+                        bg = "radial-gradient(circle at 50% 35%, rgba(74,222,128,0.35), rgba(5,46,22,0.75))";
                         border = "1px solid rgba(37,165,90,0.6)";
                         shadow = "0 0 10px rgba(37,165,90,0.25)";
-                        content = <div className="w-3 h-3 rounded-full pulse-ring"style={{ background:"radial-gradient(circle, #39c46f, #25a55a)" }} />;
+                        content = <Sym n="apple" s={22} className="idle-bob" style={{ opacity: .55, filter: "grayscale(.3)" }} />;
                       }
 
                       if (isRev && cell === "apple") {
@@ -207,7 +207,7 @@ export default function AppleOfFortune() {
                         border = "1px solid #39c46f66";
                         shadow = "0 0 12px rgba(74,222,128,0.4)";
                         extraClass = "pop-in";
-                        content = <Sym n="apple" s={26} />;
+                        content = <Sym n="apple" s={30} glow />;
                       }
 
                       if (isRev && cell === "bomb") {
@@ -215,7 +215,7 @@ export default function AppleOfFortune() {
                         border = "1px solid #ef444466";
                         shadow = "0 0 14px rgba(239,68,68,0.6)";
                         extraClass = "shake-anim";
-                        content = <Sym n="apple" s={26} />;
+                        content = <span className="relative flex items-center justify-center"><Sym n="boom" s={34} className="pop-in" style={{ position: "absolute" }} /><Sym n="bomb" s={26} /></span>;
                       }
 
                       if (!isRev && isPast && cell === "apple") {

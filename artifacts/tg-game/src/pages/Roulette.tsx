@@ -194,15 +194,18 @@ export default function Roulette() {
                   onClick={() => setPick(k)}
                   className="py-3 rounded-2xl flex flex-col items-center gap-0.5 active:scale-95 transition-all"
                   style={{
-                    background: sel ? `${b.color}22` : ts.input,
-                    border: sel ? `1.5px solid ${b.color}88` : `1px solid ${ts.inputBorder}`,
-                    boxShadow: sel ? `0 4px 18px ${b.color}44` : "0 2px 0 rgba(0,0,0,0.12)",
+                    position: "relative",
+                    background: k === "red" ? "linear-gradient(160deg,#c81e2e,#7a0a14)" : k === "black" ? "linear-gradient(160deg,#2a2f3a,#0b0d12)" : k === "zero" ? "linear-gradient(160deg,#17924d,#0a4d27)" : "linear-gradient(160deg,#145c38,#0a3320)",
+                    border: sel ? "2px solid #f7e59b" : "1px solid rgba(247,229,155,.35)",
+                    boxShadow: sel ? "0 0 18px rgba(247,229,155,.5), inset 0 0 12px rgba(0,0,0,.4)" : "inset 0 0 12px rgba(0,0,0,.4)",
+                    transform: sel ? "translateY(-2px)" : undefined,
                   }}
                 >
-                  <span className="text-xs font-bold" style={{ color: sel ? b.color : ts.textSub }}>
+                  {sel && <img src="/symbols/chip.png" alt="" className="absolute pop-in" style={{ width: 26, right: -6, top: -8, filter: "drop-shadow(0 3px 4px rgba(0,0,0,.6))" }} />}
+                  <span className="text-xs font-bold" style={{ color: "#f7e59b" }}>
                     {b.label}
                   </span>
-                  <span className="font-black text-base" style={{ color: sel ? b.color : ts.text }}>
+                  <span className="font-black text-base" style={{ color: "#fff" }}>
                     x{b.mult}
                   </span>
                 </button>
