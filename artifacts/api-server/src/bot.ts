@@ -65,6 +65,18 @@ export async function getReferralBonusPublic() { return getReferralBonus(); }
 
 export const REFERRAL_GOAL = 5;
 
+/** Kunlik bonus yoqilganmi — admin panelidan boshqariladi (app_settings.daily_bonus_enabled) */
+export async function isDailyBonusEnabled(): Promise<boolean> {
+  try {
+    const [row] = await db.select().from(appSettingsTable).where(eq(appSettingsTable.key, "daily_bonus_enabled"));
+    return (row?.value ?? "1") !== "0";
+  } catch { return true; }
+}
+async function setDailyBonusEnabled(on: boolean) {
+  await db.insert(appSettingsTable).values({ key: "daily_bonus_enabled", value: on ? "1" : "0" })
+    .onConflictDoUpdate({ target: appSettingsTable.key, set: { value: on ? "1" : "0", updatedAt: new Date() } });
+}
+
 /** 5 ta referal to'lganda — adminlarga avtomatik so'rov (promokod berish uchun) */
 export async function notifyAdminsReferralGoal(referrerId: string) {
   if (!bot) return;
@@ -1123,6 +1135,10 @@ export async function startBot() {
       ]);
       if (p("admins")) push([{ text: "🎮 O'yin va tema sozlamalari", callback_data: "admin_game_settings" }]);
       if (p("admins")) push([{ text: "🔴 LIVE PVP sozlamalari", callback_data: "admin_live" }]);
+      if (p("finance") || p("admins")) {
+        const dbOn = await isDailyBonusEnabled();
+        push([{ text: dbOn ? "🎁 Kunlik bonus: ✅ YOQIQ (o'chirish)" : "🎁 Kunlik bonus: ❌ O'CHIQ (yoqish)", callback_data: "admin_daily_toggle" }]);
+      }
       if (p("finance") || p("admins")) push([{ text: "🤝 Referal narxi", callback_data: "admin_ref_price" }]);
       if (p("finance") || p("admins")) push([{ text: "🏆 KONKURS (referal)", callback_data: "admin_contest" }]);
       // Faqat egasi (owner) adminlarni boshqaradi
@@ -2592,6 +2608,16 @@ Miqdorni tanlang yoki o'zingiz kiriting:`,
     if (data === "admin_panel") {
       if (!isAdmin) { await bot!.answerCallbackQuery(q.id, { text: "❌ Ruxsat yo'q" }); return; }
       await bot!.answerCallbackQuery(q.id);
+      await sendAdminMenu(chatId, q.from.id);
+      return;
+    }
+
+    if (data === "admin_daily_toggle") {
+      if (!hasPerm(q.from.id, "finance") && !hasPerm(q.from.id, "admins")) { await bot!.answerCallbackQuery(q.id, { text: "❌ Ruxsat yo'q" }); return; }
+      const next = !(await isDailyBonusEnabled());
+      await setDailyBonusEnabled(next);
+      await bot!.answerCallbackQuery(q.id, { text: next ? "✅ Kunlik bonus yoqildi" : "❌ Kunlik bonus o'chirildi", show_alert: true });
+      try { await bot!.deleteMessage(chatId, q.message!.message_id); } catch {}
       await sendAdminMenu(chatId, q.from.id);
       return;
     }

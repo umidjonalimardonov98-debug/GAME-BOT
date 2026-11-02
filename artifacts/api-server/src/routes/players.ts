@@ -12,7 +12,7 @@ import {
   PlaceBetBody,
   GetTransactionsParams,
 } from "@workspace/api-zod";
-import { notifyAdminWithdraw, isAdminTelegramId, ADMIN_INFINITE_BALANCE, getBotUsername, getReferralBonusPublic, REFERRAL_GOAL, notifyAdminsReferralGoal } from "../bot";
+import { notifyAdminWithdraw, isAdminTelegramId, ADMIN_INFINITE_BALANCE, getBotUsername, getReferralBonusPublic, REFERRAL_GOAL, isDailyBonusEnabled, notifyAdminsReferralGoal } from "../bot";
 
 const router: IRouter = Router();
 const MIN_WITHDRAW_AMOUNT = 20000;
@@ -296,9 +296,15 @@ router.get("/players/:telegramId/history", async (req, res): Promise<void> => {
   });
 });
 
+// Daily bonus status (admin yoqadi/o'chiradi)
+router.get("/daily-bonus/status", async (_req, res): Promise<void> => {
+  res.json({ enabled: await isDailyBonusEnabled() });
+});
+
 // Daily bonus
 router.post("/players/:telegramId/daily-bonus", async (req, res): Promise<void> => {
   const { telegramId } = req.params;
+  if (!(await isDailyBonusEnabled())) { res.json({ success: false, error: "Kunlik bonus hozircha o'chirilgan" }); return; }
   const [player] = await db.select().from(playersTable).where(eq(playersTable.telegramId, telegramId));
   if (!player) { res.status(404).json({ error: "Player not found" }); return; }
 

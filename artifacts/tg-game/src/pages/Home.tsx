@@ -83,6 +83,10 @@ export default function Home() {
   const [promoMsg, setPromoMsg] = useState("");
   const [claiming, setClaiming] = useState(false);
   const [claimMsg, setClaimMsg] = useState("");
+  const [dailyOn, setDailyOn] = useState(true);
+  useEffect(() => {
+    fetch(`${BASE}/daily-bonus/status`).then(r => r.json()).then(d => setDailyOn(d?.enabled !== false)).catch(() => {});
+  }, []);
   const [enabledGames, setEnabledGames] = useState<Record<string, boolean>>({});
   const [cols, setCols] = useState<number>(3);
   useEffect(() => {
@@ -277,7 +281,7 @@ export default function Home() {
 
 
       {/* ─── 4 ACTION BUTTONS ─── */}
-      <div className="grid grid-cols-4 gap-2 mx-4 mb-4">
+      <div className={`grid ${dailyOn ? "grid-cols-4" : "grid-cols-3"} gap-2 mx-4 mb-4`}>
         <button onClick={() => nav("/deposit")}
           className="flex flex-col items-center gap-1.5 py-3 rounded-2xl active:scale-95 transition-transform"
           style={{ background: CARD_BG, border: `1px solid ${CARD_BORDER}`, boxShadow: "0 2px 12px rgba(0,0,0,0.08)" }}>
@@ -296,7 +300,7 @@ export default function Home() {
             {u("withdrawShort")}
           </span>
         </button>
-        <button onClick={handleDailyBonus} disabled={claiming}
+        {dailyOn && <button onClick={handleDailyBonus} disabled={claiming}
           className="flex flex-col items-center gap-1.5 py-3 rounded-2xl active:scale-95 transition-transform disabled:opacity-60"
           style={{ background: CARD_BG, border: `1px solid ${CARD_BORDER}`, boxShadow: "0 2px 12px rgba(0,0,0,0.08)" }}>
           <span className="w-9 h-9 rounded-xl flex items-center justify-center text-lg"
@@ -304,7 +308,7 @@ export default function Home() {
           <span className="text-xs font-bold text-center leading-tight" style={{ color: TEXT, fontSize: 10 }}>
             {claiming ? t.claiming : t.dailyBonus}
           </span>
-        </button>
+        </button>}
         <button onClick={() =>{ setTab("promo"); setShowPromo(true); }}
           className="flex flex-col items-center gap-1.5 py-3 rounded-2xl active:scale-95 transition-transform"
           style={{ background: CARD_BG, border: `1px solid ${CARD_BORDER}`, boxShadow: "0 2px 12px rgba(0,0,0,0.08)" }}>
