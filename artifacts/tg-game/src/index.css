@@ -815,3 +815,26 @@ button:not(:disabled):active { transform: scale(.955); }
 @keyframes arcade-enter { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: none; } }
 @keyframes arcade-light { 0%, 100% { opacity: .4; } 50% { opacity: 1; } }
 @media (prefers-reduced-motion: reduce) { .arcade-table, .arcade-lights.is-running span { animation: none; } }
+
+/* ===== Global bosish effekti (TapFx) ===== */
+.tapfx-ring {
+  position: fixed; z-index: 9999; pointer-events: none; width: 12px; height: 12px; margin: -6px 0 0 -6px;
+  border-radius: 9999px; border: 2px solid rgba(255,215,110,.9);
+  box-shadow: 0 0 12px rgba(255,200,80,.7);
+  animation: tapfxRing .55s cubic-bezier(.2,.8,.3,1) forwards;
+}
+@keyframes tapfxRing { 0% { transform: scale(.4); opacity: 1; } 100% { transform: scale(5.5); opacity: 0; } }
+.tapfx-spark {
+  position: fixed; z-index: 9999; pointer-events: none; width: 5px; height: 5px; margin: -2.5px 0 0 -2.5px;
+  border-radius: 9999px; background: radial-gradient(circle, #fff7d1, #fbbf24 60%, transparent);
+  animation: tapfxSpark .5s ease-out forwards;
+}
+@keyframes tapfxSpark { 0% { transform: translate(0,0) scale(1); opacity: 1; } 100% { transform: translate(var(--tx), var(--ty)) scale(.2); opacity: 0; } }
+
+/* ===== Sahifa kirish animatsiyasi ===== */
+.page-enter { animation: pageEnter .38s cubic-bezier(.2,.8,.25,1) both; }
+@keyframes pageEnter { 0% { opacity: 0; transform: translateY(14px) scale(.985); filter: blur(4px); } 100% { opacity: 1; transform: none; filter: none; } }
+
+/* Tugmalar bosilganda chuqurroq "jonli" reaksiya */
+button:not(:disabled):active { transform: scale(.94) translateY(1px); filter: brightness(1.15); }
+@media (prefers-reduced-motion: reduce) { .page-enter, .tapfx-ring, .tapfx-spark { animation: none !important; } }

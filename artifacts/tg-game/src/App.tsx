@@ -55,6 +55,7 @@ import PvpHub from "@/pages/PvpHub";
 import Duel from "@/pages/Duel";
 import Contest from "@/pages/Contest";
 import SocialHub from "@/pages/social/SocialHub";
+import { TapFx, PageTransition } from "@/components/TapFx";
 import LoveMatch from "@/pages/social/LoveMatch";
 import { LoveQuiz, TruthOrDare, QuizBattle, PartyRoom, Challenge, RulesPage } from "@/pages/social/SocialGames";
 
@@ -130,10 +131,11 @@ function AppBody() {
     <>
       <WouterRouter base={import.meta.env.BASE_URL.replace(/\/$/, "")}>
         <LiveBg />
-        <Router />
+        <PageTransition><Router /></PageTransition>
       </WouterRouter>
       <RoundBreakdown />
       <GlobalWinFx />
+      <TapFx />
       <AskAI />
       <Toaster />
     </>
