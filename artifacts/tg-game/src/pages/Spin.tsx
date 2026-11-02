@@ -1,3 +1,4 @@
+import StageFx from "@/components/casino/StageFx";
 import { useState, useEffect, useRef } from "react";
 import { usePlayer } from "@/lib/player-context";
 import { useTheme, pageBg, GAME_BG, GOLD } from "@/lib/theme-context";
@@ -143,6 +144,7 @@ export default function Spin() {
       <div className="flex-1 flex flex-col items-center px-4 pb-6 gap-5">
 
         {/* ─── CHARX ─── */}
+        <StageFx result={result ? result.prize > 0 : null} active={spinning} big>
         <div className="relative flex flex-col items-center" style={{ width: size + 24 }}>
           {/* oltin ramka + lampalar */}
           <div
@@ -277,6 +279,7 @@ export default function Spin() {
             }}
           />
         </div>
+        </StageFx>
 
         {/* Natija */}
         {result && !spinning && (

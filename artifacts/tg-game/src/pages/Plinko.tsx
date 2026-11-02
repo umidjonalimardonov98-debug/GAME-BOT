@@ -1,3 +1,4 @@
+import StageFx from "@/components/casino/StageFx";
 import { useState, useRef, useEffect } from "react";
 import { useLang } from "@/lib/lang-context";
 import { useTheme, GAME_BG, pageBg, GOLD } from "@/lib/theme-context";
@@ -115,6 +116,7 @@ export default function Plinko() {
           ))}
         </div>
 
+        <StageFx result={won} active={busy} big>
         <TableFrame skin="blue" title="PLINKO PRO" bulbs bulbsActive={busy}>
           <div ref={wrapRef} className="rounded-2xl overflow-hidden"
             style={{
@@ -125,6 +127,7 @@ export default function Plinko() {
             <PlinkoBoard rows={rows} mults={mults} width={width} drop={drop} onLanded={onLanded} onPeg={onPeg} />
           </div>
         </TableFrame>
+        </StageFx>
 
         {/* qatorlar */}
         <div className="w-full grid grid-cols-3 gap-2">
