@@ -64,10 +64,19 @@ export default function Towers() {
       <GameHeader icon="gem" title={` ${GAME_NAMES.towers[lang]}`} subtitle="x20" />
       <div className="flex-1 px-4 pb-8 flex flex-col gap-4 items-center">
 
-        <div className="w-full rounded-3xl p-3 flex flex-col-reverse gap-1.5"
-          style={{ background: ts.card, border: `1px solid ${ts.cardBorder}` }}>
+        <style>{`
+          @keyframes twRow { 0%,100%{box-shadow:0 0 0 1px rgba(251,191,36,.5),0 0 14px rgba(251,191,36,.25)} 50%{box-shadow:0 0 0 1px rgba(251,191,36,.9),0 0 24px rgba(251,191,36,.55)} }
+          @keyframes twPop { 0%{transform:scale(.4) rotate(-20deg);opacity:0} 70%{transform:scale(1.2)} 100%{transform:scale(1);opacity:1} }
+          @keyframes twShake { 0%,100%{transform:none} 25%{transform:translateX(-5px) rotate(-2deg)} 75%{transform:translateX(5px) rotate(2deg)} }
+        `}</style>
+        <div className="w-full rounded-3xl p-3 flex flex-col-reverse gap-1.5 relative overflow-hidden"
+          style={{
+            background: "linear-gradient(180deg,rgba(20,14,6,.85),rgba(40,26,10,.92)), repeating-linear-gradient(0deg,#3b2a14 0 22px,#2c1f0e 22px 24px)",
+            border: "2px solid #8a6b2a", boxShadow: "inset 0 0 40px rgba(0,0,0,.7), 0 14px 30px rgba(0,0,0,.5)",
+            animation: boom ? "twShake .5s" : undefined,
+          }}>
           {Array.from({ length: LEVELS }).map((_, lvl) => (
-            <div key={lvl} className="flex items-center gap-2">
+            <div key={lvl} className="flex items-center gap-2 rounded-xl px-1 py-0.5" style={{ animation: active && lvl === level ? "twRow 1.2s ease-in-out infinite" : undefined }}>
               <span className="font-black w-10 text-right"style={{ fontSize: 10, color: lvl === level && active ?"#fbbf24" : ts.textSub }}>
                 x{MULTS[lvl]}
               </span>
@@ -78,13 +87,19 @@ export default function Towers() {
                   const current = active && lvl === level;
                   return (
                     <button key={col} disabled={!current} onClick={() => choose(col)}
-                      className="py-2.5 rounded-lg font-black text-sm active:scale-95 transition-all"
+                      className="h-11 rounded-lg font-black text-sm active:scale-95 transition-all flex items-center justify-center relative overflow-hidden"
                       style={{
-                        background: exploded ? "#dc2626": done ?"#25a55a": current ?"linear-gradient(135deg,#1668e3,#0d4fb0)":"rgba(255,255,255,0.05)",
+                        background: exploded ? "radial-gradient(circle,#ef4444,#7f1d1d)" : done ? "radial-gradient(circle,#2dd47a,#0b5b33)" : current
+                          ? "linear-gradient(180deg,#d6a547,#8a5a17)" : "linear-gradient(180deg,#5a4220,#3a2a12)",
+                        border: `1px solid ${current ? "#ffd77a" : "rgba(0,0,0,.5)"}`,
+                        boxShadow: "inset 0 2px 0 rgba(255,255,255,.25), inset 0 -3px 0 rgba(0,0,0,.35), 0 3px 0 rgba(0,0,0,.45)",
                         color: "#fff",
-                        opacity: current || done || exploded ? 1 : 0.45,
+                        opacity: current || done || exploded ? 1 : lvl < level ? 0.55 : 0.75,
                       }}>
-                      {exploded ? <Sym n="boom" s={26} className="idle-tilt" /> : done ? <Sym n="star" s={24} className="idle-glow" /> : current ? "?" : ""}
+                      {current && <span className="absolute inset-0 pointer-events-none" style={{ background: "linear-gradient(110deg,transparent 30%,rgba(255,255,255,.35) 50%,transparent 70%)", animation: "proShine 2.2s ease-in-out infinite" }} />}
+                      {exploded ? <span style={{ animation: "twPop .45s ease-out" }}><Sym n="boom" s={34} /></span>
+                        : done ? <span style={{ animation: "twPop .4s ease-out" }}><Sym n="gem" s={30} glow /></span>
+                        : current ? <Sym n="question" s={22} /> : null}
                     </button>
                   );
                 })}

@@ -224,15 +224,13 @@ export default function Mines() {
                     {/* orqa yuz — yopiq katak */}
                     <div style={{
                       position: "absolute", inset: 0, borderRadius: 14, backfaceVisibility: "hidden",
-                      background: "linear-gradient(145deg,#312e81,#0d4fb0)",
-                      border: "1px solid rgba(255,255,255,0.14)",
-                      boxShadow: "0 4px 0 rgba(0,0,0,0.35), inset 0 1px 0 rgba(255,255,255,0.2)",
-                      display: "flex", alignItems: "center", justifyContent: "center",
+                      background: "radial-gradient(circle at 30% 25%,#4f7dff 0%,#1d3fae 45%,#0b1d5c 100%)",
+                      border: "1px solid rgba(160,200,255,0.35)",
+                      boxShadow: "0 4px 0 rgba(0,0,0,0.45), inset 0 2px 0 rgba(255,255,255,0.3), inset 0 -4px 8px rgba(0,0,0,0.35)",
+                      display: "flex", alignItems: "center", justifyContent: "center", overflow: "hidden",
                     }}>
-                      <span style={{
-                        width: "42%", height: "42%", borderRadius: 6,
-                        background: "linear-gradient(135deg,rgba(255,255,255,0.16),rgba(255,255,255,0.03))",
-                      }} />
+                      <span style={{ position: "absolute", inset: 0, background: "linear-gradient(115deg,transparent 35%,rgba(255,255,255,.28) 50%,transparent 65%)", animation: state === "playing" ? `proShine 2.6s ease-in-out ${(i % 5) * 0.12}s infinite` : undefined }} />
+                      <Sym n="gem" s={20} style={{ opacity: 0.22, filter: "grayscale(1) brightness(1.6)" }} />
                     </div>
                     {/* old yuz — natija */}
                     <div style={{

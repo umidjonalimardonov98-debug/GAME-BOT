@@ -61,17 +61,39 @@ export default function Keno() {
 
         <p className="text-xs font-bold" style={{ color: ts.textSub }}>{g("pickNums", lang)} ({picks.length}/{PICKS})</p>
 
-        <div className="w-full grid grid-cols-8 gap-1.5">
+        <style>{`
+          @keyframes knDrop { 0%{transform:translateY(-40px) scale(.4);opacity:0} 60%{transform:translateY(4px) scale(1.15);opacity:1} 100%{transform:none} }
+          @keyframes knHit { 0%,100%{box-shadow:0 0 0 2px #fde68a,0 0 10px #f59e0b} 50%{box-shadow:0 0 0 2px #fff,0 0 22px #fbbf24} }
+        `}</style>
+        <div className="w-full flex justify-center gap-2 min-h-[46px] rounded-2xl py-2 px-2" style={{ background: "linear-gradient(180deg,#0b1424,#050a14)", border: "1px solid rgba(251,191,36,.3)", boxShadow: "inset 0 4px 14px rgba(0,0,0,.7)" }}>
+          {drawn.map(n => {
+            const hit = picks.includes(n);
+            return (
+              <span key={n} className="w-[38px] h-[38px] rounded-full flex items-center justify-center font-black text-sm"
+                style={{
+                  background: hit ? "radial-gradient(circle at 35% 30%,#fff7c2,#f59e0b 55%,#92400e)" : "radial-gradient(circle at 35% 30%,#ffffff,#cbd5e1 55%,#64748b)",
+                  color: hit ? "#451a03" : "#0f172a", boxShadow: "0 4px 8px rgba(0,0,0,.6), inset 0 -3px 6px rgba(0,0,0,.25)",
+                  animation: "knDrop .45s cubic-bezier(.2,.9,.3,1.3)",
+                }}>{n}</span>
+            );
+          })}
+        </div>
+        <div className="w-full grid grid-cols-8 gap-1.5 rounded-2xl p-2" style={{ background: "linear-gradient(180deg,rgba(12,22,40,.9),rgba(5,10,20,.95))", border: "1px solid rgba(120,170,255,.2)" }}>
           {Array.from({ length: TOTAL }, (_, i) => i + 1).map(n =>{
             const sel = picks.includes(n);
             const hit = drawn.includes(n);
             return (
               <button key={n} onClick={() => toggle(n)} disabled={busy}
-                className="aspect-square rounded-lg font-black text-xs active:scale-90 transition-all"
+                className="aspect-square rounded-full font-black text-xs active:scale-90 transition-all"
                 style={{
-                  background: hit && sel ? "#25a55a": hit ?"#f59e0b": sel ?"linear-gradient(135deg,#1668e3,#0d4fb0)":"rgba(255,255,255,0.06)",
-                  color: sel || hit ? "#fff" : ts.textSub,
-                  border: `1px solid ${sel ? "rgba(47,143,255,0.6)" : ts.cardBorder}`,
+                  background: hit && sel ? "radial-gradient(circle at 35% 30%,#bbf7d0,#22c55e 55%,#14532d)"
+                    : hit ? "radial-gradient(circle at 35% 30%,#fff7c2,#f59e0b 55%,#92400e)"
+                    : sel ? "radial-gradient(circle at 35% 30%,#bfdbfe,#2563eb 55%,#1e3a8a)"
+                    : "radial-gradient(circle at 35% 30%,#2a3a55,#121c2e 70%)",
+                  color: sel || hit ? "#fff" : "rgba(255,255,255,.55)",
+                  boxShadow: "0 3px 6px rgba(0,0,0,.55), inset 0 -2px 4px rgba(0,0,0,.35)",
+                  animation: hit && sel ? "knHit 1s ease-in-out infinite" : hit ? "knDrop .4s ease-out" : undefined,
+                  transform: sel ? "scale(1.06)" : undefined,
                 }}>
                 {n}
               </button>
