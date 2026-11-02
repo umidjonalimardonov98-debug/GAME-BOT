@@ -13,6 +13,7 @@ import ResultBanner from "@/components/casino/ResultBanner";
 /** Money Wheel — 12 sektor, tanlagan sektoringiz tushsa yutuq */
 const SECTORS = [2, 5, 2, 10, 2, 5, 2, 20, 2, 5, 2, 40];
 const COLORS = ["#1668e3", "#0b3f8f"];
+const SECT_COL: Record<number, string> = { 2: "#1f6fe0", 5: "#16a34a", 10: "#9333ea", 20: "#ea580c", 40: "#dc2626" };
 
 export default function MoneyWheel() {
   const { lang } = useLang();
@@ -45,15 +46,17 @@ export default function MoneyWheel() {
   };
 
   const gradient = `conic-gradient(${SECTORS.map((v, i) =>
-    `${COLORS[i % 2]} ${i * step}deg ${(i + 1) * step}deg`).join(",")})`;
+    `${SECT_COL[v] ?? COLORS[i % 2]} ${i * step}deg ${(i + 1) * step - 0.6}deg, #f7e59b ${(i + 1) * step - 0.6}deg ${(i + 1) * step}deg`).join(",")})`;
 
   return (
     <div className="min-h-screen flex flex-col" style={{ background: pageBg(theme, GAME_BG.moneywheel) }}>
       <GameHeader icon="wheel" title={` ${GAME_NAMES.moneywheel[lang]}`} subtitle="x2 · x5 · x10 · x20 · x40" />
       <div className="flex-1 px-4 pb-8 flex flex-col gap-4 items-center">
 
-        <div className="w-full rounded-3xl py-8 flex items-center justify-center relative"
-          style={{ background: ts.card, border: `1px solid ${ts.cardBorder}` }}>
+        <div className="w-full rounded-3xl py-8 flex items-center justify-center relative overflow-hidden"
+          style={{ background: "radial-gradient(circle at 50% 45%,#3a2a0a 0%,#140d02 70%)", border: "1px solid #d4af3755", boxShadow: "inset 0 0 60px rgba(0,0,0,.7)" }}>
+          <div className="absolute rounded-full" style={{ width: 320, height: 320, background: "conic-gradient(from 0deg,transparent,rgba(255,213,74,.25),transparent 30%)", animation: busy ? "mw-rays 1.2s linear infinite" : "mw-rays 8s linear infinite" }} />
+          <style>{`@keyframes mw-rays{to{transform:rotate(360deg)}}@keyframes mw-bulb{0%,100%{opacity:1}50%{opacity:.25}}`}</style>
           <div className="absolute z-10" style={{ top: 14 }}>
             <div style={{
               width: 0, height: 0,
@@ -61,13 +64,13 @@ export default function MoneyWheel() {
               borderTop: "22px solid #f7e59b", filter: "drop-shadow(0 3px 6px rgba(0,0,0,.6))",
             }} />
           </div>
-          <div className="rounded-full p-[6px]"
+          <div className="rounded-full p-[6px] relative"
             style={{ background: "linear-gradient(150deg,#fff6cf,#d4af37,#6d4a08)", boxShadow: "0 0 34px rgba(212,175,55,.45)" }}>
             <div className="rounded-full relative"
               style={{
                 width: 250, height: 250, background: gradient,
                 transform: `rotate(${angle}deg)`,
-                transition: "transform 1.6s cubic-bezier(0.16,0.76,0.06,1)",
+                transition: "transform 1.6s cubic-bezier(0.16,0.76,0.06,1)", boxShadow: "inset 0 0 30px rgba(0,0,0,.5)",
               }}>
               {SECTORS.map((v, i) => (
                 <span key={i} className="absolute font-black text-sm"
@@ -77,7 +80,12 @@ export default function MoneyWheel() {
                     textShadow: "0 2px 4px rgba(0,0,0,.7)",
                   }}>x{v}</span>
               ))}
+              <div className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 rounded-full" style={{ width: 54, height: 54, background: "radial-gradient(circle at 35% 30%,#fff6cf,#d4af37 45%,#6d4a08)", boxShadow: "0 4px 12px rgba(0,0,0,.6)" }} />
             </div>
+            {Array.from({ length: 24 }).map((_, k) => (
+              <span key={k} className="absolute rounded-full" style={{ width: 7, height: 7, left: "50%", top: "50%", background: "#fff3b0", boxShadow: "0 0 6px #ffd54a",
+                transform: `rotate(${k * 15}deg) translateY(-128px) translate(-50%,-50%)`, animation: `mw-bulb ${busy ? .3 : 1.4}s ${k % 2 ? .15 : 0}s infinite` }} />
+            ))}
           </div>
         </div>
 
@@ -86,8 +94,8 @@ export default function MoneyWheel() {
             <button key={v} disabled={busy} onClick={() => { setPick(v); sfx.select(); }}
               className="py-3 rounded-xl font-black active:scale-95 disabled:opacity-40"
               style={{
-                background: pick === v ? "linear-gradient(145deg,#f7e59b,#d4af37)" : ts.btnSecondary,
-                color: pick === v ? "#2b1c02" : ts.btnSecondaryText,
+                background: pick === v ? "linear-gradient(145deg,#f7e59b,#d4af37)" : `linear-gradient(160deg,${SECT_COL[v]}cc,${SECT_COL[v]}55)`, boxShadow: pick === v ? "0 0 16px rgba(247,229,155,.6)" : undefined,
+                color: pick === v ? "#2b1c02" : "#fff",
                 border: `1px solid ${ts.cardBorder}`,
               }}>x{v}</button>
           ))}

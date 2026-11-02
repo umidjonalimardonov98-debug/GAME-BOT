@@ -126,8 +126,18 @@ export default function CaseOpen() {
         </div>
 
         {/* lenta */}
+        <div className="w-full flex justify-center" style={{ marginBottom: -8 }}>
+          <div style={{ animation: spin ? "co-shake .25s ease-in-out infinite" : hit ? "co-open .6s cubic-bezier(.2,1.5,.4,1)" : "co-float 2.4s ease-in-out infinite", filter: `drop-shadow(0 0 22px ${box.c1})` }}>
+            <Sym n={box.icon} s={110} />
+          </div>
+        </div>
+        <style>{`@keyframes co-shake{0%,100%{transform:rotate(0)}25%{transform:rotate(-6deg) scale(1.04)}75%{transform:rotate(6deg) scale(1.04)}}
+          @keyframes co-open{0%{transform:scale(.7)}100%{transform:scale(1)}}@keyframes co-float{0%,100%{transform:translateY(0)}50%{transform:translateY(-8px)}}
+          @keyframes co-win{0%,100%{box-shadow:0 0 0 rgba(0,0,0,0)}50%{box-shadow:0 0 26px 4px var(--c)}}`}</style>
         <div className="w-full rounded-3xl py-6 relative overflow-hidden"
-          style={{ background: ts.card, border: `1px solid ${ts.cardBorder}` }}>
+          style={{ background: "linear-gradient(180deg,#0d0f18,#1a1d2b 50%,#0d0f18)", border: `1px solid ${box.c1}66`, boxShadow: `inset 0 0 40px rgba(0,0,0,.8), 0 0 24px ${box.c1}33` }}>
+          <div className="absolute inset-y-0 left-0 w-16 z-[3] pointer-events-none" style={{ background: "linear-gradient(90deg,#0d0f18,transparent)" }} />
+          <div className="absolute inset-y-0 right-0 w-16 z-[3] pointer-events-none" style={{ background: "linear-gradient(270deg,#0d0f18,transparent)" }} />
           <div style={{
             position: "absolute", left: "50%", top: 0, bottom: 0, width: 3,
             background: box.c1, boxShadow: `0 0 16px ${box.c1}`, zIndex: 2, transform: "translateX(-50%)",
@@ -141,7 +151,8 @@ export default function CaseOpen() {
                 style={{
                   width: CELL - 4, height: 100,
                   background: `linear-gradient(180deg,${p.color}33,rgba(0,0,0,.55))`,
-                  border: `1px solid ${p.color}66`,
+                  border: `1px solid ${p.color}66`, borderBottom: `3px solid ${p.color}`,
+                  ...(hit && !spin && i === 48 + PRIZES.indexOf(hit) ? { animation: "co-win 1s ease-in-out infinite", ["--c" as any]: hit.color, transform: "scale(1.06)" } : {}),
                 }}>
                 <Sym n={p.icon} s={50} />
                 <span className="font-black" style={{ fontSize: 10, color: p.color }}>{p.m > 0 ? `x${p.m}` : "—"}</span>

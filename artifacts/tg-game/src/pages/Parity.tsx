@@ -178,13 +178,15 @@ export default function Parity() {
                                     u("result").toUpperCase()}
           </p>
 
-          <div className="w-36 h-36 rounded-3xl flex items-center justify-center relative"
-            style={{ background: numBg, border: `3px solid ${numBorder}`, boxShadow: numShadow, transition: "background 0.22s, border-color 0.22s" }}>
-            <div className="absolute inset-0 rounded-3xl pointer-events-none"
-              style={{ background: "linear-gradient(135deg,rgba(255,255,255,0.18) 0%,transparent 50%)" }} />
+          <style>{`@keyframes pr-spin{0%{transform:rotate(0) scale(1)}50%{transform:rotate(180deg) scale(.94)}100%{transform:rotate(360deg) scale(1)}}@keyframes pr-land{0%{transform:scale(1.35)}60%{transform:scale(.92)}100%{transform:scale(1)}}`}</style>
+          <div className="w-40 h-40 rounded-full flex items-center justify-center relative"
+            style={{ background: `radial-gradient(circle at 32% 28%,rgba(255,255,255,.75) 0%,transparent 22%),${numBg}`, border: `4px solid ${numBorder}`,
+              boxShadow: `${numShadow}, inset -14px -18px 30px rgba(0,0,0,.45)`, transition: "background 0.22s, border-color 0.22s",
+              animation: isSpinning ? "pr-spin .5s linear infinite" : phase === "result" ? "pr-land .5s ease-out" : undefined }}>
+            <div className="absolute rounded-full" style={{ width: 84, height: 84, background: "radial-gradient(circle,#fff,#e8e8e8)", boxShadow: "inset 0 -4px 8px rgba(0,0,0,.2)" }} />
             <span className="relative font-black" style={{
-              fontSize: displayNum !== null && displayNum >= 10 ? 48 : 60,
-              color: "white", textShadow: "0 4px 12px rgba(0,0,0,0.5)", lineHeight: 1,
+              fontSize: displayNum !== null && displayNum >= 10 ? 40 : 48,
+              color: "#111", lineHeight: 1,
             }}>
               {displayNum !== null ? displayNum : "?"}
             </span>

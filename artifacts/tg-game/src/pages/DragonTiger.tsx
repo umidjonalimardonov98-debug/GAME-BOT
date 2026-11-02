@@ -10,6 +10,7 @@ import BetPanel from "@/components/casino/BetPanel";
 import PlayButton from "@/components/casino/PlayButton";
 import ResultBanner from "@/components/casino/ResultBanner";
 import Sym from "@/components/casino/Sym";
+import PlayingCard, { type Suit } from "@/components/casino/PlayingCard";
 
 const FACES = ["A", "2", "3", "4", "5", "6", "7", "8", "9", "10", "J", "Q", "K"];
 type Side = "dragon"|"tiger"|"tie";
@@ -55,9 +56,10 @@ export default function DragonTiger() {
         <Sym n={icon} s={26} className="idle-tilt" />
         <p className="font-black text-xs tracking-widest" style={{ color }}>{label}</p>
       </div>
-      <div className="rounded-2xl flex items-center justify-center font-black"
-        style={{ width: 92, height: 128, fontSize: 38, background: v === null ? "rgba(255,255,255,0.07)":"#fff", color: v === null ? ts.textSub : "#111", boxShadow: "0 8px 22px rgba(0,0,0,0.35)" }}>
-        {v === null ? "?" : FACES[v]}
+      <div style={{ filter: `drop-shadow(0 0 ${v !== null && won !== null ? 14 : 0}px ${color})`, transition: "filter .3s" }}>
+        {v === null
+          ? <div style={{ animation: busy ? "dt-wait .6s ease-in-out infinite" : undefined }}><PlayingCard suit="♠" value="A" hidden w={88} /></div>
+          : <PlayingCard key={v + label} suit={(["♠","♥","♦","♣"][v % 4]) as Suit} value={FACES[v]} w={88} />}
       </div>
     </div>
   );
@@ -67,7 +69,9 @@ export default function DragonTiger() {
       <GameHeader icon="dragon" title={` ${GAME_NAMES.dragontiger[lang]}`} subtitle="x9" />
       <div className="flex-1 px-4 pb-8 flex flex-col gap-4 items-center">
 
-        <div className="w-full rounded-3xl py-6 flex" style={{ background: ts.card, border: `1px solid ${ts.cardBorder}` }}>
+        <div className="w-full rounded-3xl py-6 flex relative overflow-hidden" style={{ background: "radial-gradient(ellipse at 50% 25%,#1d7a4c 0%,#0e4a2e 55%,#06261a 100%)", border: "3px solid #8a5a1c", boxShadow: "inset 0 0 0 2px #d4af37, inset 0 0 50px rgba(0,0,0,.6), 0 12px 30px rgba(0,0,0,.5)" }}>
+          <style>{`@keyframes dt-wait{0%,100%{transform:translateY(0)}50%{transform:translateY(-6px)}}`}</style>
+          <div className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 font-black text-lg px-2 py-1 rounded-full" style={{ color: "#ffd54a", background: "rgba(0,0,0,.55)", border: "1px solid #d4af37", zIndex: 2 }}>VS</div>
           <CardBox v={d} icon="dragon" color="#f87171" label={g("dragon", lang)} />
           <CardBox v={t} icon="tiger" color="#fbbf24" label={g("tiger", lang)} />
         </div>

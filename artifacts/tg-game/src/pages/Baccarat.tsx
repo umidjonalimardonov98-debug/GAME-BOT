@@ -5,6 +5,7 @@ import { useBet } from "@/lib/use-bet";
 import { riggedWin } from "@/lib/odds";
 import { sfx } from "@/lib/sound";
 import { g, GAME_NAMES } from "@/lib/game-i18n";
+import PlayingCard, { type Suit } from "@/components/casino/PlayingCard";
 import GameHeader from "@/components/GameHeader";
 import BetPanel from "@/components/casino/BetPanel";
 import PlayButton from "@/components/casino/PlayButton";
@@ -61,17 +62,16 @@ export default function Baccarat() {
 
   const Hand = ({ h, label }: { h: number[]; label: string }) => (
     <div className="flex-1 flex flex-col items-center gap-2">
-      <p className="text-xs font-black tracking-widest" style={{ color: ts.textSub }}>{label}</p>
+      <p className="text-xs font-black tracking-widest" style={{ color: "#f7e59b" }}>{label}</p>
       <div className="flex gap-1.5">
         {(h.length ? h : [-1, -1]).map((c, i) => (
-          <div key={i} className="rounded-xl flex flex-col items-center justify-center font-black"
-            style={{ width: 46, height: 66, background: c < 0 ? "rgba(255,255,255,0.07)":"#fff", color: c < 0 ? "transparent":"#111" }}>
-            <span style={{ fontSize: 16 }}>{c < 0 ? "?" : FACES[c]}</span>
-            <span style={{ fontSize: 12, color: c < 0 ? "transparent":"#dc2626" }}>{SUITS[i % 4]}</span>
+          <div key={i} style={{ transform: `rotate(${i === 0 ? -5 : 5}deg)`, marginLeft: i ? -14 : 0 }}>
+            {c < 0 ? <PlayingCard suit="♠" value="A" hidden w={58} />
+              : <PlayingCard suit={SUITS[(c + i) % 4] as Suit} value={FACES[c]} w={58} />}
           </div>
         ))}
       </div>
-      <p className="font-black"style={{ color:"#fbbf24"}}>{h.length ? total(h) :"-"}</p>
+      <p className="font-black rounded-full px-3" style={{ color: "#2b1c02", background: "linear-gradient(180deg,#f7e59b,#b98c14)", minWidth: 34, textAlign: "center" }}>{h.length ? total(h) : "-"}</p>
     </div>
   );
 
@@ -80,7 +80,8 @@ export default function Baccarat() {
       <GameHeader icon="cardback" title={` ${GAME_NAMES.baccarat[lang]}`} subtitle="x8" />
       <div className="flex-1 px-4 pb-8 flex flex-col gap-4 items-center">
 
-        <div className="w-full rounded-3xl py-6 flex" style={{ background: ts.card, border: `1px solid ${ts.cardBorder}` }}>
+        <div className="w-full rounded-3xl py-6 flex relative" style={{ background: "radial-gradient(ellipse at 50% 25%,#1d7a4c 0%,#0e4a2e 55%,#06261a 100%)", border: "3px solid #8a5a1c", boxShadow: "inset 0 0 0 2px #d4af37, inset 0 0 50px rgba(0,0,0,.6), 0 12px 30px rgba(0,0,0,.5)" }}>
+          <div className="absolute left-1/2 top-3 bottom-3 w-px" style={{ background: "rgba(212,175,55,.4)" }} />
           <Hand h={pc} label={g("player", lang)} />
           <Hand h={bc} label={g("banker", lang)} />
         </div>
