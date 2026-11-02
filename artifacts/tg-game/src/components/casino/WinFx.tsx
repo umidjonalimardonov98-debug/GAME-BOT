@@ -51,131 +51,52 @@ export default function WinFx({ open, win, amount = 0, multiplier, onClose, big 
 
   useEffect(() => {
     if (!open) return;
-    const t = setTimeout(() => onClose?.(), win ? 3200 : 2200);
+    const t = setTimeout(() => onClose?.(), win ? 2200 : 1400);
     return () => clearTimeout(t);
   }, [open, win, big, onClose]);
 
   if (!open) return null;
+  void confetti;
 
   return (
-    <div
-      className="fixed inset-0 z-[999] flex items-center justify-center px-6"
-      onClick={onClose}
-      style={{ background: "rgba(3,8,16,0.72)", backdropFilter: "blur(3px)" }}
-    >
-      {/* Konfetti */}
-      {win && (
-        <div className="absolute inset-0 overflow-hidden pointer-events-none">
-          {confetti.map((c, i) => (
-            <span
-              key={i}
-              className="fx-confetti"
-              style={{
-                left: `${c.left}%`,
-                width: c.size,
-                height: c.round ? c.size : c.size * 2,
-                background: c.color,
-                borderRadius: c.round ? "50%" : 2,
-                animationDelay: `${c.delay}s`,
-                animationDuration: `${c.dur}s`,
-                transform: `rotate(${c.rot}deg)`,
-              }}
-            />
-          ))}
-          {coins.map((c, i) => (
-            <img
-              key={`c${i}`}
-              src="/symbols/coin.png"
-              alt=""
-              className="fx-coin"
-              style={{
-                left: `${c.left}%`,
-                width: c.size,
-                height: c.size,
-                animationDelay: `${c.delay}s`,
-                animationDuration: `${c.dur}s`,
-              }}
-            />
-          ))}
-        </div>
-      )}
-
-      {/* Markaziy panel */}
-      <div
-        className="relative rounded-3xl p-[2px] w-full max-w-[330px] pop-in"
+    <div className="fixed inset-x-0 z-[999] flex justify-center px-4 pointer-events-none"
+      style={{ top: "calc(env(safe-area-inset-top) + 64px)" }}>
+      <style>{`
+        @keyframes wt-in{0%{transform:translateY(-30px) scale(.8);opacity:0}60%{transform:translateY(4px) scale(1.04);opacity:1}100%{transform:none}}
+        @keyframes wt-shake{0%,100%{transform:none}25%{transform:translateX(-6px)}75%{transform:translateX(6px)}}
+        @keyframes wt-shine{0%{transform:translateX(-120%) skewX(-20deg)}100%{transform:translateX(320%) skewX(-20deg)}}
+        @keyframes wt-coin{0%{transform:translate(0,0) scale(.4);opacity:1}100%{transform:translate(var(--x),var(--y)) scale(1) rotate(360deg);opacity:0}}
+      `}</style>
+      <div onClick={onClose} className="pointer-events-auto relative rounded-2xl p-[1.5px]"
         style={{
-          background: win
-            ? "linear-gradient(135deg,#ffe9a8,#c89b3c 45%,#ffe9a8)"
-            : "linear-gradient(135deg,#5a1f1f,#a52a2a)",
-          boxShadow: win ? "0 0 60px rgba(255,207,74,0.4)" : "0 0 40px rgba(165,42,42,0.35)",
-        }}
-      >
-        <div
-          className="rounded-[22px] px-6 py-7 text-center relative overflow-hidden"
-          style={{
-            background: win
-              ? "linear-gradient(180deg,#0f2a17,#061109)"
-              : "linear-gradient(180deg,#2a0f0f,#110606)",
-          }}
-        >
-          <div className="fx-shine" />
-
-          {/* Haqiqiy suratcha (emoji emas) */}
-          <div className="flex justify-center mb-2">
-            <div
-              className="rounded-2xl flex items-center justify-center"
-              style={{
-                width: big ? 86 : 72,
-                height: big ? 86 : 72,
-                background: win
-                  ? "radial-gradient(circle at 50% 35%, rgba(255,207,74,0.35), rgba(255,207,74,0.05) 70%)"
-                  : "radial-gradient(circle at 50% 35%, rgba(255,90,90,0.28), rgba(255,90,90,0.04) 70%)",
-                border: `1px solid ${win ? "rgba(255,214,102,0.45)" : "rgba(255,120,120,0.3)"}`,
-                boxShadow: win ? "0 0 34px rgba(255,207,74,0.35)" : "0 0 22px rgba(200,60,60,0.28)",
-              }}
-            >
-              <img
-                src={win ? (big ? "/symbols/crown.png" : "/symbols/trophy.png") : "/symbols/skull.png"}
-                alt=""
-                width={big ? 56 : 46}
-                height={big ? 56 : 46}
-                className={win ? "fx-pop-img" : ""}
-                style={{ filter: win ? "drop-shadow(0 4px 14px rgba(255,207,74,0.65))" : "grayscale(0.35) opacity(0.9)" }}
-              />
-            </div>
+          animation: win ? "wt-in .45s cubic-bezier(.2,1.4,.4,1) both" : "wt-in .3s ease-out both, wt-shake .35s .3s ease",
+          background: win ? "linear-gradient(135deg,#fff3c4,#d4af37 50%,#fff3c4)" : "linear-gradient(135deg,#ff8b8b,#7a1d1d)",
+          boxShadow: win ? "0 10px 30px rgba(0,0,0,.5),0 0 26px rgba(255,207,74,.45)" : "0 10px 26px rgba(0,0,0,.5)",
+        }}>
+        <div className="relative overflow-hidden rounded-[15px] flex items-center gap-3 pl-2 pr-4 py-2"
+          style={{ background: win ? "linear-gradient(180deg,#14361f,#07160c)" : "linear-gradient(180deg,#3a1212,#160606)", minWidth: 220 }}>
+          {win && <span className="absolute inset-y-0 w-10" style={{ background: "linear-gradient(90deg,transparent,rgba(255,255,255,.35),transparent)", animation: "wt-shine 1.2s .2s ease-out" }} />}
+          <img src={win ? (big ? "/symbols/crown.png" : "/symbols/coin.png") : "/symbols/skull.png"} alt="" width={38} height={38}
+            style={{ filter: win ? "drop-shadow(0 0 8px rgba(255,207,74,.8))" : "grayscale(.4)" }} />
+          <div className="flex-1 leading-tight">
+            <p className="font-black text-[11px] tracking-[0.15em]" style={{ color: win ? "#ffcf4a" : "#ff9b9b" }}>
+              {win ? (big ? u("bigWin") : u("youWin")) : u("youLose")}
+            </p>
+            {win && amount > 0
+              ? <p className="font-black text-lg" style={{ color: "#fff" }}>+{amount.toLocaleString()} <span className="text-[10px] opacity-60">UZS</span></p>
+              : !win && <p className="text-[11px] font-bold" style={{ color: "rgba(255,255,255,.55)" }}>Yana urinib ko'ring</p>}
           </div>
-
-          <p
-            className="font-black tracking-[0.14em]"
-            style={{
-              fontSize: big ? 24 : 20,
-              color: win ? "#ffcf4a" : "#ff8b8b",
-              textShadow: win ? "0 0 22px rgba(255,207,74,0.6)" : "none",
-            }}
-          >
-            {win ? (big ? u("bigWin") : u("youWin")) : u("youLose")}
-          </p>
-
-          {typeof multiplier === "number" && (
-            <p
-              className="mt-2 font-black glow-pulse"
-              style={{ fontSize: 40, color: win ? "#39c46f" : "rgba(255,255,255,0.35)" }}
-            >
+          {typeof multiplier === "number" && multiplier > 0 && (
+            <span className="font-black text-sm px-2 py-1 rounded-lg" style={{ background: win ? "rgba(57,196,111,.2)" : "rgba(255,255,255,.08)", color: win ? "#4ade80" : "rgba(255,255,255,.5)" }}>
               x{multiplier.toFixed(2)}
-            </p>
+            </span>
           )}
-
-          {win && amount > 0 && (
-            <p className="mt-1 font-black" style={{ fontSize: 22, color: "#ffffff" }}>
-              +{amount.toLocaleString()}
-              <span style={{ fontSize: 12, opacity: 0.6 }}> UZS</span>
-            </p>
-          )}
-
-          <p className="mt-4 text-[10px] tracking-[0.18em]" style={{ color: "rgba(255,255,255,0.4)" }}>
-            {u("tapToClose").toUpperCase()}
-          </p>
         </div>
+        {win && coins.slice(0, 8).map((c, i) => (
+          <img key={i} src="/symbols/coin.png" alt="" className="absolute left-1/2 top-1/2"
+            style={{ width: 16, ["--x" as any]: `${Math.cos(i * 0.785) * 140}px`, ["--y" as any]: `${Math.sin(i * 0.785) * 60 + 30}px`,
+              animation: `wt-coin ${c.dur}s ease-out ${i * .04}s both` }} />
+        ))}
       </div>
     </div>
   );

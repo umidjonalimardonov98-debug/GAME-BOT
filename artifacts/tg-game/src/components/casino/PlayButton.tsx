@@ -21,14 +21,14 @@ export default function PlayButton({ label, icon = "chip", onClick, disabled, co
     <button
       onClick={press}
       disabled={disabled}
-      className="pro-btn w-full py-4 rounded-xl font-black text-lg tracking-wide uppercase text-white relative overflow-hidden disabled:opacity-40"
+      className="pro-btn w-full py-3 rounded-2xl font-black text-base tracking-wide uppercase text-white relative overflow-hidden disabled:opacity-40"
       style={{
         background: color ?? XGREEN.grad,
         boxShadow: disabled ? "none" : (shadow ?? XGREEN.shadow),
       }}
     >
       <span className="relative z-10 inline-flex items-center justify-center gap-2">
-        {icon && <Sym n={icon} s={24} className="idle-tilt" />}
+        {icon && <Sym n={icon} s={20} className="idle-tilt" />}
         {label.trim()}
       </span>
       <span className="pro-btn-shine" aria-hidden />
