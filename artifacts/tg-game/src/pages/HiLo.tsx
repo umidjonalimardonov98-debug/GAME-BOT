@@ -6,6 +6,7 @@ import { riggedWin } from "@/lib/odds";
 import { sfx } from "@/lib/sound";
 import { g, GAME_NAMES } from "@/lib/game-i18n";
 import GameHeader from "@/components/GameHeader";
+import PlayingCard from "@/components/casino/PlayingCard";
 import BetPanel from "@/components/casino/BetPanel";
 import PlayButton from "@/components/casino/PlayButton";
 import ResultBanner from "@/components/casino/ResultBanner";
@@ -61,10 +62,9 @@ export default function HiLo() {
     setAmount(w); setWon(true); setActive(false); setBusy(false);
   };
 
-  const Card = ({ c, hidden }: { c: { f: number; s: number }; hidden?: boolean }) => (
-    <div className="rounded-2xl flex flex-col items-center justify-center font-black"
-      style={{ width: 96, height: 132, background: hidden ? "linear-gradient(135deg,#0d4fb0,#1668e3)":"#fff", color: hidden ? "#fff": (c.s === 1 || c.s === 2 ?"#dc2626":"#111"), boxShadow: "0 8px 22px rgba(0,0,0,0.35)" }}>
-      {hidden ? <span style={{ fontSize: 40 }}>?</span> : <><span style={{ fontSize: 34 }}>{FACES[c.f]}</span><span style={{ fontSize: 26 }}>{SUITS[c.s]}</span></>}
+  const Card = ({ c, hidden, k }: { c: { f: number; s: number }; hidden?: boolean; k?: string }) => (
+    <div key={k} style={{ animation: "hlDeal .45s cubic-bezier(.2,.9,.3,1.2)" }}>
+      <PlayingCard suit={SUITS[c.s] as any} value={FACES[c.f]} hidden={hidden} w={104} />
     </div>
   );
 
@@ -73,11 +73,20 @@ export default function HiLo() {
       <GameHeader icon="cardback" title={` ${GAME_NAMES.hilo[lang]}`} subtitle="x1.65 / qadam" />
       <div className="flex-1 px-4 pb-8 flex flex-col gap-4 items-center">
 
-        <div className="w-full rounded-3xl py-6 flex items-center justify-center gap-4"
-          style={{ background: ts.card, border: `1px solid ${ts.cardBorder}` }}>
-          <Card c={card} />
-          <span className="font-black text-2xl" style={{ color: ts.textSub }}>→</span>
-          {next ? <Card c={next} /> : <Card c={card} hidden />}
+        <style>{`
+          @keyframes hlDeal { 0%{transform:translateY(-30px) rotateY(90deg) scale(.85);opacity:0} 100%{transform:none;opacity:1} }
+          @keyframes hlArrow { 0%,100%{transform:translateX(0);opacity:.6} 50%{transform:translateX(6px);opacity:1} }
+        `}</style>
+        <div className="w-full rounded-3xl py-7 flex items-center justify-center gap-4 relative overflow-hidden"
+          style={{
+            background: "radial-gradient(ellipse at 50% 40%, #1f7a4a 0%, #0f4a2c 60%, #06261a 100%)",
+            border: "3px solid #6b4a1f", boxShadow: "inset 0 0 40px rgba(0,0,0,.7), 0 14px 30px rgba(0,0,0,.5), 0 0 0 2px #c9a24a",
+            perspective: 800,
+          }}>
+          <Card c={card} k={`c${card.f}-${card.s}`} />
+          <span className="font-black text-3xl" style={{ color: "#fde68a", animation: "hlArrow 1s ease-in-out infinite", textShadow: "0 0 12px rgba(251,191,36,.8)" }}>›</span>
+          {next ? <Card c={next} k={`n${next.f}-${next.s}`} /> : <Card c={card} hidden k="hidden" />}
+          <div className="absolute top-2 left-3 rounded-full px-3 py-1 font-black text-xs" style={{ background: "rgba(0,0,0,.45)", color: "#fbbf24", border: "1px solid rgba(251,191,36,.5)" }}>x{mult.toFixed(2)}</div>
         </div>
 
         <p className="font-black text-lg"style={{ color:"#fbbf24" }}>x{mult.toFixed(2)}</p>
@@ -85,10 +94,10 @@ export default function HiLo() {
         {active ? (
           <>
             <div className="w-full grid grid-cols-2 gap-3">
-              <button onClick={() => guess(true)} className="py-4 rounded-2xl font-black text-white active:scale-95"
-                style={{ background: "linear-gradient(145deg,#1a7d43,#25a55a)", boxShadow: "0 6px 0 #064e3b" }}>{g("higher", lang)}</button>
-              <button onClick={() => guess(false)} className="py-4 rounded-2xl font-black text-white active:scale-95"
-                style={{ background: "linear-gradient(145deg,#dc2626,#ef4444)", boxShadow: "0 6px 0 #7f1d1d" }}>{g("lower", lang)}</button>
+              <button onClick={() => guess(true)} className="py-4 rounded-2xl font-black text-white active:scale-95 text-lg"
+                style={{ background: "linear-gradient(145deg,#1a7d43,#25a55a)", boxShadow: "0 6px 0 #064e3b, 0 0 18px rgba(37,165,90,.4)" }}>▲ {g("higher", lang)}</button>
+              <button onClick={() => guess(false)} className="py-4 rounded-2xl font-black text-white active:scale-95 text-lg"
+                style={{ background: "linear-gradient(145deg,#dc2626,#ef4444)", boxShadow: "0 6px 0 #7f1d1d, 0 0 18px rgba(239,68,68,.4)" }}>▼ {g("lower", lang)}</button>
             </div>
             <PlayButton label={` ${g("cashout", lang)} · x${mult.toFixed(2)}`} onClick={cashout} disabled={mult <= 1}
               color="linear-gradient(145deg,#b45309,#f59e0b)" shadow="0 7px 0 #78350f" />

@@ -6,6 +6,7 @@ import { riggedWin } from "@/lib/odds";
 import { sfx, startTicker } from "@/lib/sound";
 import { g, GAME_NAMES } from "@/lib/game-i18n";
 import GameHeader from "@/components/GameHeader";
+import Sym from "@/components/casino/Sym";
 import BetPanel from "@/components/casino/BetPanel";
 import PlayButton from "@/components/casino/PlayButton";
 import ResultBanner from "@/components/casino/ResultBanner";
@@ -57,16 +58,55 @@ export default function Limbo() {
       <GameHeader icon="rocket" title={` ${GAME_NAMES.limbo[lang]}`} subtitle="x100" />
       <div className="flex-1 px-4 pb-8 flex flex-col gap-4 items-center">
 
-        <div className="w-full rounded-3xl py-10 flex flex-col items-center justify-center"
-          style={{ background: ts.card, border: `1px solid ${ts.cardBorder}` }}>
-          <p className="font-black" style={{
-            fontSize: 54,
-            color: final === null ? "#78b6ff": final >= tgt ?"#39c46f":"#f87171",
-            textShadow: "0 0 28px rgba(47,143,255,0.5)",
+        <style>{`
+          @keyframes lbStar { 0%{transform:translateY(-20px)} 100%{transform:translateY(300px)} }
+          @keyframes lbFlame { 0%,100%{transform:scaleY(1);opacity:.95} 50%{transform:scaleY(1.35);opacity:.75} }
+          @keyframes lbShake { 0%,100%{translate:0 0} 25%{translate:-1.5px 1px} 75%{translate:1.5px -1px} }
+          @keyframes lbBoom { 0%{transform:scale(.3);opacity:1} 100%{transform:scale(2.4);opacity:0} }
+          @keyframes lbWin { 0%{transform:scale(.7)} 60%{transform:scale(1.18)} 100%{transform:scale(1)} }
+        `}</style>
+        <div className="w-full rounded-3xl relative overflow-hidden" style={{
+          height: 270,
+          background: "radial-gradient(ellipse at 50% 120%, #1e3a8a 0%, #0b1530 45%, #02050f 100%)",
+          border: "1px solid rgba(120,170,255,.3)", boxShadow: "inset 0 0 40px rgba(0,0,0,.8), 0 14px 30px rgba(0,0,0,.5)",
+        }}>
+          {Array.from({ length: 26 }).map((_, i) => (
+            <span key={i} className="absolute rounded-full" style={{
+              left: `${(i * 37) % 100}%`, top: `${(i * 53) % 100}%`, width: i % 4 ? 2 : 3, height: busy ? 18 : (i % 4 ? 2 : 3),
+              background: "rgba(255,255,255,.75)", opacity: .6,
+              animation: busy ? `lbStar ${0.35 + (i % 5) * 0.08}s linear infinite` : undefined, transition: "height .3s",
+            }} />
+          ))}
+          <div className="absolute inset-x-0 top-6 text-center">
+            <p className="font-black" style={{
+              fontSize: 56, lineHeight: 1,
+              color: final === null ? "#e0edff" : final >= tgt ? "#4ade80" : "#f87171",
+              textShadow: final === null ? "0 0 26px rgba(96,165,250,.8)" : final >= tgt ? "0 0 30px rgba(74,222,128,.9)" : "0 0 30px rgba(248,113,113,.9)",
+              animation: final !== null ? "lbWin .5s ease-out" : undefined,
+            }}>{(final ?? display).toFixed(2)}x</p>
+            <p className="text-xs mt-2 font-bold tracking-widest" style={{ color: "rgba(200,220,255,.7)" }}>{g("target", lang).toUpperCase()}: x{tgt.toFixed(2)}</p>
+          </div>
+          <div className="absolute left-1/2 -translate-x-1/2" style={{
+            bottom: busy ? 70 : final !== null && final >= tgt ? 150 : 24,
+            transition: busy ? "bottom .9s cubic-bezier(.3,.7,.3,1)" : "bottom .5s ease-out",
+            animation: busy ? "lbShake .08s linear infinite" : undefined,
           }}>
-            {(final ?? display).toFixed(2)}x
-          </p>
-          <p className="text-xs mt-1" style={{ color: ts.textSub }}>{g("target", lang)}: x{tgt.toFixed(2)}</p>
+            {final !== null && final < tgt ? (
+              <div className="relative w-[70px] h-[70px]">
+                <span className="absolute inset-0 rounded-full" style={{ background: "radial-gradient(circle,#fde68a,#f97316 45%,transparent 70%)", animation: "lbBoom .7s ease-out forwards" }} />
+                <Sym n="boom" s={70} />
+              </div>
+            ) : (
+              <div className="relative flex flex-col items-center">
+                <Sym n="rocket" s={70} style={{ transform: "rotate(-45deg)" }} />
+                {(busy || (final !== null && final >= tgt)) && (
+                  <span className="rounded-full" style={{ width: 16, height: 38, marginTop: -10, transformOrigin: "top",
+                    background: "linear-gradient(180deg,#fff7c2,#fb923c 40%,#ef4444 75%,transparent)", filter: "blur(1px)", animation: "lbFlame .12s ease-in-out infinite" }} />
+                )}
+              </div>
+            )}
+          </div>
+          <div className="absolute inset-x-0 bottom-0 h-6" style={{ background: "linear-gradient(0deg,rgba(30,58,138,.6),transparent)" }} />
         </div>
 
         <div className="w-full rounded-2xl p-4" style={{ background: ts.card, border: `1px solid ${ts.cardBorder}` }}>

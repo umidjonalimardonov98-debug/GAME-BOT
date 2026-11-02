@@ -83,23 +83,38 @@ export default function Scratch() {
           {busy ? "Kartochka o'zi qirilmoqda..." : "3 ta bir xil belgi - yutuq"}
         </p>
 
-        <div className="w-full rounded-3xl p-4 grid grid-cols-3 gap-2"
-          style={{ background: ts.card, border: `1px solid ${ts.cardBorder}` }}>
-          {Array.from({ length: 9 }).map((_, i) => (
-            <div key={i}
-              className="aspect-square rounded-2xl flex items-center justify-center transition-all duration-300"
+        <style>{`
+          @keyframes scScratch { 0%{clip-path:inset(0 0 0 0)} 100%{clip-path:inset(0 0 0 100%)} }
+          @keyframes scDust { 0%{opacity:1;transform:translate(0,0)} 100%{opacity:0;transform:translate(var(--dx),18px)} }
+          @keyframes scReveal { 0%{transform:scale(.5) rotate(-12deg);opacity:0} 70%{transform:scale(1.15)} 100%{transform:scale(1);opacity:1} }
+        `}</style>
+        <div className="w-full rounded-3xl p-3 relative" style={{
+          background: "linear-gradient(160deg,#f6d77a,#c8961f 45%,#8a5d0b)", boxShadow: "0 14px 30px rgba(0,0,0,.5), inset 0 2px 0 rgba(255,255,255,.5)",
+        }}>
+          <p className="text-center font-black tracking-[0.3em] mb-2" style={{ fontSize: 11, color: "#3b2503" }}>LUCKY SCRATCH</p>
+          <div className="grid grid-cols-3 gap-2 rounded-2xl p-2" style={{ background: "#2a1a03", boxShadow: "inset 0 4px 12px rgba(0,0,0,.6)" }}>
+          {Array.from({ length: 9 }).map((_, i) => {
+            const winCell = won && open[i] && cells.filter(c => c === cells[i]).length >= 3;
+            return (
+            <div key={i} className="aspect-square rounded-xl relative overflow-hidden flex items-center justify-center"
               style={{
-                background: open[i]
-                  ? "linear-gradient(180deg,rgba(251,191,36,0.22),rgba(0,0,0,0.5))"
-                  : "linear-gradient(135deg,#cbd5e1,#6b7280 55%,#9ca3af)",
-                border: `1px solid ${open[i] ? "rgba(251,191,36,.6)" : ts.cardBorder}`,
-                transform: open[i] ? "scale(1)" : "scale(0.985)",
+                background: "radial-gradient(circle at 50% 40%, #fff8e1, #f3e3b3 70%)",
+                boxShadow: winCell ? "0 0 0 2px #22c55e, 0 0 18px rgba(34,197,94,.8)" : "inset 0 2px 6px rgba(0,0,0,.25)",
               }}>
-              {open[i]
-                ? <Sym n={cells[i]} s={42} className="idle-float" />
-                : <Sym n="question" s={28} style={{ opacity: 0.6 }} />}
+              {open[i] && <span style={{ animation: "scReveal .45s cubic-bezier(.2,.9,.3,1.3)" }}><Sym n={cells[i]} s={46} glow={!!winCell} /></span>}
+              <div className="absolute inset-0" style={{
+                background: "linear-gradient(135deg,#e5e7eb,#9ca3af 40%,#d1d5db 60%,#6b7280)",
+                animation: open[i] ? "scScratch .35s ease-in forwards" : undefined,
+              }}>
+                <div className="absolute inset-0" style={{ background: "repeating-linear-gradient(45deg,rgba(255,255,255,.18) 0 2px,transparent 2px 6px)" }} />
+                {!open[i] && <div className="absolute inset-0 flex items-center justify-center"><Sym n="coin" s={26} style={{ opacity: .5, filter: "grayscale(1)" }} /></div>}
+              </div>
+              {open[i] && [0, 1, 2, 3].map(d => (
+                <span key={d} className="absolute w-1.5 h-1.5 rounded-full" style={{ top: `${30 + d * 12}%`, right: 4, background: "#9ca3af", ["--dx" as any]: `${8 + d * 5}px`, animation: `scDust .5s ease-out ${d * 0.05}s forwards` }} />
+              ))}
             </div>
-          ))}
+          ); })}
+          </div>
         </div>
 
         <div className="w-full grid grid-cols-6 gap-1">

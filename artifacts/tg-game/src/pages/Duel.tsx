@@ -3,6 +3,7 @@ import { useLocation } from "wouter";
 import { usePlayer } from "@/lib/player-context";
 import { useTheme, pageBg, GOLD } from "@/lib/theme-context";
 import { sfx } from "@/lib/sound";
+import Sym from "@/components/casino/Sym";
 import GameHeader from "@/components/GameHeader";
 import { Send, Flag, Users } from "lucide-react";
 import { imgFx, symFx } from "@/lib/live-fx";
@@ -215,7 +216,7 @@ export default function Duel({ gameKey }: { gameKey: string }) {
               <Row k="Tikishdan keyin" v={`${Math.max(0, (player?.balance ?? 0) - slip).toLocaleString()} UZS`} />
             </div>
 
-            <p className="mt-2 font-bold" style={{ fontSize: 10, color: ts.textSub }}>📜 {cfg.rules}</p>
+            <p className="mt-2 font-bold" style={{ fontSize: 10, color: ts.textSub }}>{cfg.rules}</p>
             {err && (
               <p className="mt-2 rounded-xl px-3 py-2 font-black" style={{ fontSize: 11, color: "#ff9b9b", background: "rgba(239,68,68,0.12)", border: "1px solid rgba(239,68,68,0.4)" }}>⚠️ {err}</p>
             )}
@@ -255,7 +256,7 @@ export default function Duel({ gameKey }: { gameKey: string }) {
         <>
           <div className="mx-4 mt-2 flex items-center justify-between">
             <span className="font-black px-2 py-0.5 rounded-full" style={{ fontSize: 9, color: transport === "sse" ? "#34d399" : "#fbbf24", background: "rgba(0,0,0,0.35)" }}>
-              {transport === "sse" ? "⚡ real-time" : "🔄 zaxira rejim"}
+              {transport === "sse" ? "● real-time" : "○ zaxira rejim"}
             </span>
             {err && <span className="font-bold" style={{ fontSize: 9, color: "#ff9b9b" }}>{err}</span>}
           </div>
@@ -268,7 +269,7 @@ export default function Duel({ gameKey }: { gameKey: string }) {
                 border: `1px solid ${GOLD.border}`,
               }}>
               <p className="font-black text-2xl" style={{ color: "#fff" }}>
-                {st.winner === "me" ? "🏆 SIZ YUTDINGIZ!" : st.winner === "draw" ? "🤝 DURANG" : "😔 YUTQAZDINGIZ"}
+                {st.winner === "me" ? "SIZ YUTDINGIZ!" : st.winner === "draw" ? "DURANG" : "YUTQAZDINGIZ"}
               </p>
               <p className="font-bold text-sm mt-1" style={{ color: "rgba(255,255,255,0.85)" }}>
                 {st.winner === "me" ? `+${st.prize.toLocaleString()} UZS` : st.winner === "draw" ? "Pul qaytarildi" : `-${st.stake.toLocaleString()} UZS`}
@@ -294,7 +295,7 @@ export default function Duel({ gameKey }: { gameKey: string }) {
               ))}
             </div>
             <div className="max-h-28 overflow-y-auto flex flex-col gap-1 mb-2">
-              {chat.length === 0 && <p className="text-[11px] font-bold" style={{ color: ts.textSub }}>Raqib bilan yozishing 💬</p>}
+              {chat.length === 0 && <p className="text-[11px] font-bold" style={{ color: ts.textSub }}>Raqib bilan yozishing</p>}
               {chat.map((c) => (
                 <p key={c.n} className="text-[11px] font-bold" style={{ color: "#fff" }}>
                   <span style={{ color: GOLD.light }}>{c.name}:</span> <span style={{ fontSize: c.emoji ? 16 : 11 }}>{c.text}</span>
@@ -353,7 +354,7 @@ function Lobby({ def, stakes, onJoin, err, ts, onBack, rules, enabled = true, sc
           <p className="font-bold text-[11px]" style={{ color: "rgba(255,255,255,0.82)" }}>{def.rule}</p>
         </div>
         <span className="absolute top-2 right-2 px-2 py-0.5 rounded-full font-black"
-          style={{ fontSize: 9, background: "rgba(16,185,129,0.9)", color: "#fff" }}>{def.live} 🟢 online</span>
+          style={{ fontSize: 9, background: "rgba(16,185,129,0.9)", color: "#fff" }}>{def.live} online</span>
       </div>
 
       {/* TIKISH MIQDORI — toza, bir xil o'lchamli kartalar */}
@@ -394,7 +395,7 @@ function Lobby({ def, stakes, onJoin, err, ts, onBack, rules, enabled = true, sc
 
       {rules && (
         <div className="mt-3 rounded-3xl p-3" style={{ background: ts.card, border: `1px solid ${GOLD.border}` }}>
-          <p className="font-black" style={{ fontSize: 10, color: GOLD.light, letterSpacing: "0.1em" }}>📜 QOIDALAR</p>
+          <p className="font-black" style={{ fontSize: 10, color: GOLD.light, letterSpacing: "0.1em" }}>QOIDALAR</p>
           <p className="font-bold mt-1" style={{ fontSize: 11, color: ts.textSub, lineHeight: 1.5 }}>{rules}</p>
         </div>
       )}
@@ -587,7 +588,7 @@ function TilesArena({ def, locked, onSubmit }: any) {
             onClick={() => setSel((p) => p.includes(i) ? p.filter((x) => x !== i) : p.length < choose ? [...p, i] : p)}
             className="aspect-square rounded-xl font-black text-lg active:scale-95 transition disabled:opacity-45"
             style={{ background: sel.includes(i) ? GOLD.grad : "rgba(255,255,255,0.07)" }}>
-            {sel.includes(i) ? "💎" : "?"}
+            {sel.includes(i) ? <Sym n="gem" s={26} /> : "?"}
           </button>
         ))}
       </div>
@@ -626,7 +627,7 @@ function ClickArena({ locked, onSubmit }: any) {
           style={{ background: GOLD.grad, color: "#1a1200" }}>BOSHLASH</button>
       ) : (
         <button onClick={hit} className="w-full py-10 rounded-3xl font-black text-2xl active:scale-95 transition"
-          style={{ background: "linear-gradient(135deg,#b91c1c,#ef4444)", color: "#fff" }}>⚡ BOS!</button>
+          style={{ background: "linear-gradient(135deg,#b91c1c,#ef4444)", color: "#fff" }}>BOS!</button>
       )}
     </div>
   );
@@ -634,7 +635,7 @@ function ClickArena({ locked, onSubmit }: any) {
 
 function MemoryArena({ locked, onSubmit }: any) {
   const deck = useMemo(() => {
-    const s = ["🍒", "🔔", "💎", "7️⃣", "🍋", "⭐"];
+    const s = ["cherry", "bell", "gem", "seven", "lemon", "star"];
     return [...s, ...s].sort(() => Math.random() - 0.5);
   }, []);
   const [open, setOpen] = useState<number[]>([]);
@@ -673,8 +674,10 @@ function MemoryArena({ locked, onSubmit }: any) {
               className="aspect-square rounded-xl text-2xl font-black active:scale-95 transition"
               style={{
                 background: vis ? GOLD.grad : "rgba(255,255,255,0.08)",
-                transform: vis ? "rotateY(0deg)" : "rotateY(0deg)",
-              }}>{vis ? c : "🂠"}</button>
+                transform: vis ? "rotateY(0deg) scale(1.04)" : "rotateY(0deg)",
+                boxShadow: done.includes(i) ? "0 0 14px rgba(251,191,36,.7)" : "0 3px 0 rgba(0,0,0,.4)",
+                display: "flex", alignItems: "center", justifyContent: "center",
+              }}>{vis ? <Sym n={c} s={34} className="pop-in" /> : <Sym n="cardback" s={34} />}</button>
           );
         })}
       </div>
