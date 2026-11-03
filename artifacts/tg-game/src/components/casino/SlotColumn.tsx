@@ -13,11 +13,17 @@ interface Props {
   cell: number;
   strip: string[];         // aralashtirish uchun belgilar
   highlight?: boolean[];   // qaysi kataklar yonadi
+  /** baraban ramkasi rangi — har o'yinda o'zi */
+  accent?: string;
 }
 
 const BLUR_ROWS = 14;
 
-export default function SlotColumn({ target, spinning, idx, cell, strip, highlight }: Props) {
+export default function SlotColumn({ target, spinning, idx, cell, strip, highlight, accent = "#d4af37" }: Props) {
+  /** lenta harakatlanyapti — belgilar cho'zilib, xiralashadi */
+  const [moving, setMoving] = useState(false);
+  /** ustun to'xtagan lahza — chaqnash va silkinish */
+  const [stopKey, setStopKey] = useState(0);
   const [items, setItems] = useState<string[]>(target);
   const [y, setY] = useState(0);
   const [dur, setDur] = useState(0);
@@ -37,11 +43,19 @@ export default function SlotColumn({ target, spinning, idx, cell, strip, highlig
     setItems(next);
     setY(0);
 
+    const d = 900 + idx * 260;
     const t1 = setTimeout(() => {
-      setDur(900 + idx * 260);
+      setDur(d);
       setY(-(BLUR_ROWS * cell));
+      setMoving(true);
     }, 30);
-    timers.current.push(t1);
+    // oxirgi 25% da lenta sekinlashadi — cho'zilish olinadi
+    const t2 = setTimeout(() => setMoving(false), 30 + d * 0.72);
+    const t3 = setTimeout(() => {
+      setStopKey((k) => k + 1);
+      try { (window as any).Telegram?.WebApp?.HapticFeedback?.impactOccurred?.("light"); } catch { /* ignore */ }
+    }, 30 + d);
+    timers.current.push(t1, t2, t3);
 
     return () => timers.current.forEach(clearTimeout);
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -65,14 +79,15 @@ export default function SlotColumn({ target, spinning, idx, cell, strip, highlig
         overflow: "hidden",
         position: "relative",
         background: "linear-gradient(180deg,#1a1207 0%,#0d0903 50%,#050301 100%)",
-        border: "1px solid rgba(212,175,55,0.45)",
+        border: `1px solid ${accent}88`,
         boxShadow: "inset 0 8px 18px rgba(0,0,0,0.75), inset 0 -8px 18px rgba(0,0,0,0.7)",
       }}
     >
       <div
         style={{
           transform: `translateY(${y}px)`,
-          transition: dur ? `transform ${dur}ms cubic-bezier(.16,.9,.24,1)` : "none",
+          // oxirida biroz o'tib ketib, orqaga "tiq" etib qaytadi — haqiqiy baraban
+          transition: dur ? `transform ${dur}ms cubic-bezier(.2,.85,.3,1.08)` : "none",
         }}
       >
         {items.map((s, i) => {
@@ -90,11 +105,16 @@ export default function SlotColumn({ target, spinning, idx, cell, strip, highlig
                 background: hot ? "radial-gradient(circle,rgba(255,215,102,0.30),transparent 70%)" : "none",
               }}
             >
-              <Sym n={s} s={cell * 0.7} glow={!!hot} />
+              <Sym n={s} s={cell * 0.7} glow={!!hot}
+                style={moving ? { transform: "scaleY(1.28)", opacity: 0.78, filter: "brightness(1.15)" } : { transition: "transform .18s ease-out" }} />
             </div>
           );
         })}
       </div>
+      {stopKey > 0 && (
+        <div key={stopKey} className="pointer-events-none absolute inset-0 slot-stop-flash"
+          style={{ ["--acc" as any]: accent }} />
+      )}
       <div
         className="pointer-events-none absolute inset-0"
         style={{

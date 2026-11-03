@@ -195,7 +195,7 @@ export default function PvpPoker() {
 
   const v = view;
   return (
-    <div className="min-h-screen flex flex-col overflow-x-hidden relative isolate" style={{ background: BG }}>
+    <div className="min-h-screen flex flex-col overflow-x-hidden relative isolate deal-top" style={{ background: BG }}>
       <Ambient behind color="#7c3aed" layer="smoke" syms={["chip", "crown"]} />
       <GameHeader icon="cardback" title=" POKER PVP" subtitle={v ? `${v.stake.toLocaleString()} · ${v.foeName}` : "..."} />
       <div className="flex-1 px-3 pb-6 flex flex-col gap-3">

@@ -110,7 +110,7 @@ export default function Spin() {
     const jitter = (Math.random() - 0.5) * (SEG * 0.5);
     const targetAngle = segIdx * SEG + SEG / 2 + jitter;
     const landAngle = (360 - targetAngle + 360) % 360;
-    const total = rotRef.current + 360 * 6 + landAngle;
+    const total = rotRef.current + 360 * 9 + landAngle;
     rotRef.current = total;
     setRotation(total);
 
@@ -120,7 +120,7 @@ export default function Spin() {
       setSpinning(false);
       if (free) { setCanFree(false); setNextSpinAt(nextSpinAtFromApi); }
       refresh();
-    }, 1700);
+    }, 3550);
   };
 
   const size = 288;
@@ -190,7 +190,7 @@ export default function Spin() {
                 height: size,
                 borderRadius: "50%",
                 overflow: "hidden",
-                transition: spinning ? "transform 1.6s cubic-bezier(0.16,0.76,0.06,1)":"none",
+                transition: spinning ? "transform 3.4s cubic-bezier(0.1,0.72,0.04,1)":"none",
                 transform: `rotate(${rotation}deg)`,
                 boxShadow: "inset 0 0 40px rgba(0,0,0,0.55)",
               }}
@@ -314,7 +314,7 @@ export default function Spin() {
         {!spinning && !result && !loading && countdown && (
           <div className="text-center">
             <p className="text-sm" style={{ color: ts.textSub }}>Tekin spin:</p>
-            <p className="font-black text-xl" style={{ color: GOLD.light }}>⏳ {countdown}</p>
+            <p className="font-black text-xl" style={{ color: GOLD.light }}>{countdown}</p>
           </div>
         )}
 
@@ -346,7 +346,7 @@ export default function Spin() {
               background: "linear-gradient(145deg,#1668e3,#c026d3)",
               boxShadow: "0 7px 0 #0d4fb0, 0 12px 28px rgba(192,38,211,0.5)",
             }}>
-            {loading ? "Yuklanmoqda...": canFree ?" TEKIN AYLANTIRISH": `⏳ ${countdown ||"Kutilmoqda..."}`}
+            {loading ? "Yuklanmoqda...": canFree ?" TEKIN AYLANTIRISH": `${countdown ||"Kutilmoqda..."}`}
           </button>
 
           {result && !spinning && (

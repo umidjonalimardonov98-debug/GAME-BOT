@@ -68,7 +68,7 @@ export default function FruitBlast() {
               <p className="text-center font-black tracking-[0.3em] mb-3" style={{ color: "#ffd54a", textShadow: "0 0 12px rgba(255,213,74,.7)", fontSize: 13 }}>FRUIT BLAST · x{MULT}</p>
               <div className="relative rounded-2xl p-2 flex justify-center gap-2" style={{ background: "#14040a", boxShadow: "inset 0 0 20px rgba(0,0,0,.9)" }}>
                 {cells.map((c, i) => (
-                  <SlotReel key={i} strip={[...FRUITS]} target={c} spinning={spin && spinId > 0} idx={i} cell={92} />
+                  <SlotReel key={i} strip={[...FRUITS]} target={c} spinning={spin && spinId > 0} idx={i} cell={92} accent="#f97316" />
                 ))}
                 <div className="absolute left-1 right-1 top-1/2 -translate-y-1/2 pointer-events-none" style={{ height: 2, background: won ? "#ffd54a" : "rgba(255,213,74,.35)", boxShadow: won ? "0 0 12px #ffd54a" : undefined }} />
               </div>

@@ -78,7 +78,7 @@ export default function Baccarat() {
   );
 
   return (
-    <div className="min-h-screen flex flex-col relative isolate" style={{ background: pageBg(theme, GAME_BG.baccarat) }}>
+    <div className="min-h-screen flex flex-col relative isolate deal-top" style={{ background: pageBg(theme, GAME_BG.baccarat) }}>
       <Ambient behind color="#d4af37" layer="rays" syms={["cardback", "chip"]} live={busy} />
       <GameHeader icon="cardback" title={` ${GAME_NAMES.baccarat[lang]}`} subtitle="x8" />
       <div className="flex-1 px-4 pb-8 flex flex-col gap-4 items-center">

@@ -67,7 +67,7 @@ export default function DragonTiger() {
   );
 
   return (
-    <div className="min-h-screen flex flex-col relative isolate" style={{ background: pageBg(theme, GAME_BG.dragontiger) }}>
+    <div className="min-h-screen flex flex-col relative isolate deal-slam" style={{ background: pageBg(theme, GAME_BG.dragontiger) }}>
       <Ambient behind color="#dc2626" layer="smoke" syms={["dragon", "tiger"]} live={busy} />
       <GameHeader icon="dragon" title={` ${GAME_NAMES.dragontiger[lang]}`} subtitle="x9" />
       <div className="flex-1 px-4 pb-8 flex flex-col gap-4 items-center">

@@ -151,7 +151,7 @@ export default function PvpDurak() {
   const seats = view?.seats ?? [];
 
   return (
-    <div className="min-h-screen pb-28 relative isolate" style={{ background: pageBg(theme) }}>
+    <div className="min-h-screen pb-28 relative isolate deal-left" style={{ background: pageBg(theme) }}>
       <Ambient behind color="#0891b2" layer="stars" syms={["cardback", "crown"]} />
       <GameHeader
         icon="cardback"

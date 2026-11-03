@@ -164,7 +164,7 @@ export default function Contest() {
             Boshlangan: {dateStr(info?.startAt ?? null)}{info?.endAt ? ` · Tugash: ${dateStr(info.endAt)}` : ""}
           </p>
           {info?.active && countdown && (
-            <p className="mt-1 font-black" style={{ fontSize: 12, color: G.main }}>⏳ Tugashiga: {countdown}</p>
+            <p className="mt-1 font-black" style={{ fontSize: 12, color: G.main }}>Tugashiga: {countdown}</p>
           )}
         </div>
 

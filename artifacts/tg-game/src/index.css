@@ -934,3 +934,31 @@ button:not(:disabled):active { transform: scale(.94) translateY(1px); filter: br
 @keyframes fhSplash { from { transform: scale(.3); opacity: 1 } to { transform: scale(1.4); opacity: 0 } }
 body[data-gh="1"] .ai-fab { display: none; }
 @media (max-width: 430px) { .gh-icon { display: none !important; } }
+
+/* ══════════ Pro 11-to'plam: o'yin ichidagi harakatlar ══════════ */
+/* Zar yerga tushganda "do'q" etib siqiladi */
+@keyframes dice-land { 0% { transform: translateY(-6px) scale(1.04,.96) } 35% { transform: translateY(2px) scale(1.1,.86) } 65% { transform: translateY(-3px) scale(.97,1.04) } 100% { transform: none } }
+.dice-land { animation: dice-land .38s cubic-bezier(.3,.8,.4,1); }
+
+/* Baraban to'xtash chaqnashi */
+@keyframes slot-stop { 0% { box-shadow: inset 0 0 0 2px var(--acc), inset 0 0 26px var(--acc); opacity: 1 } 100% { box-shadow: inset 0 0 0 0 transparent; opacity: 0 } }
+.slot-stop-flash { animation: slot-stop .45s ease-out forwards; border-radius: inherit; }
+
+/* Karta tarqatish: kolodadan yoy bo'ylab uchib, aylanib tushadi (har o'yinda o'z yo'nalishi) */
+@keyframes card-deal {
+  0% { transform: translate(var(--deal-x, 120px), var(--deal-y, -150px)) rotate(var(--deal-r, 28deg)) scale(var(--deal-s, .72)); opacity: 0; }
+  20% { opacity: 1; }
+  72% { transform: translate(0, -6px) rotate(-2deg) scale(1.05); }
+  100% { transform: none; opacity: 1; }
+}
+@keyframes card-face { 0% { transform: translate(var(--deal-x, 120px), var(--deal-y, -150px)) rotate(var(--deal-r, 28deg)) rotateY(90deg) scale(var(--deal-s, .72)); opacity: 0 }
+  45% { transform: translate(calc(var(--deal-x, 120px) * .2), calc(var(--deal-y, -150px) * .2)) rotateY(90deg) scale(.95); opacity: 1 }
+  80% { transform: translateY(-5px) rotateY(-8deg) scale(1.05) } 100% { transform: none; opacity: 1 } }
+.card-deal { animation: card-deal .55s cubic-bezier(0.2, 0.9, 0.25, 1.05) backwards; }
+.card-deal.card-face { animation-name: card-face; animation-duration: .62s; }
+.deal-shoe { --deal-x: 140px; --deal-y: -170px; --deal-r: 32deg; }
+.deal-top { --deal-x: 0px; --deal-y: -220px; --deal-r: 0deg; --deal-s: .6; }
+.deal-left { --deal-x: -170px; --deal-y: -60px; --deal-r: -34deg; }
+.deal-bottom { --deal-x: 0px; --deal-y: 200px; --deal-r: -18deg; }
+.deal-slam { --deal-x: 0px; --deal-y: -40px; --deal-r: 0deg; --deal-s: 1.9; }
+@media (prefers-reduced-motion: reduce) { .card-deal, .dice-land, .slot-stop-flash { animation-duration: .01s !important; } }

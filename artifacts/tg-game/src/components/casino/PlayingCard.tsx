@@ -124,7 +124,7 @@ export default function PlayingCard({ suit, value, hidden, w = 76, delay = 0, di
 
   return (
     <div
-      className="card-deal"
+      className="card-deal card-face"
       style={{
         width: w,
         height: h,

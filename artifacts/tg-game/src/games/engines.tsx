@@ -8,6 +8,7 @@ import GameHeader from "@/components/GameHeader";
 import BetPanel from "@/components/casino/BetPanel";
 import PlayButton from "@/components/casino/PlayButton";
 import ResultBanner from "@/components/casino/ResultBanner";
+import Dice3D from "@/components/casino/Dice3D";
 import StageFx, { type FxPattern } from "@/components/casino/StageFx";
 const FX_PATTERN: Record<string, FxPattern> = {mines: "burst", crash: "sweep", sicbo: "burst", roulette: "spiral", hilo: "rain", war: "slam", plinko: "rain", keno: "rain", scratch: "burst", match3: "fountain", bingo: "rain", lotto: "spiral", memory: "spiral", fishing: "sweep", wheel: "spiral", reel: "fountain", race: "sweep", climb: "slam", board: "burst"};
 import GameAtmosphere from "@/components/casino/GameAtmosphere";
@@ -265,29 +266,6 @@ function CrashGame({ cfg }: EProps) {
 }
 
 /* ════════════════ 3. SIC BO (3 zar) ════════════════ */
-const PIPS: Record<number, [number, number][]> = {
-  1: [[50, 50]], 2: [[28, 28], [72, 72]], 3: [[26, 26], [50, 50], [74, 74]],
-  4: [[28, 28], [72, 28], [28, 72], [72, 72]],
-  5: [[28, 28], [72, 28], [50, 50], [28, 72], [72, 72]],
-  6: [[28, 24], [72, 24], [28, 50], [72, 50], [28, 76], [72, 76]],
-};
-function Die({ v, spin }: { v: number; spin: boolean }) {
-  return (
-    <div className="relative rounded-xl" style={{
-      width: 58, height: 58,
-      background: "linear-gradient(160deg,#fffdf5,#d7cdb4)",
-      boxShadow: "inset 0 -4px 8px rgba(0,0,0,0.25), 0 8px 18px rgba(0,0,0,0.5)",
-      animation: spin ? "dice-bounce 0.45s linear infinite" : undefined,
-    }}>
-      {(PIPS[v] ?? []).map(([x, y], i) => (
-        <span key={i} className="absolute rounded-full" style={{
-          left: `${x}%`, top: `${y}%`, width: 10, height: 10,
-          transform: "translate(-50%,-50%)", background: "#14100a",
-        }} />
-      ))}
-    </div>
-  );
-}
 function SicBoGame({ cfg }: EProps) {
   const g = useGame(cfg);
   const BETS = [
@@ -302,34 +280,37 @@ function SicBoGame({ cfg }: EProps) {
 
   const roll = () => {
     if (!g.canPlay) return;
-    g.begin(); setSpin(true);
+    g.begin();
     const win = rollOutcome() === "win";
-    const iv = window.setInterval(() => setDice([1 + rnd(6), 1 + rnd(6), 1 + rnd(6)]), 90);
+    let d: number[] = [];
+    for (let i = 0; i < 400; i++) {
+      const c = [1 + rnd(6), 1 + rnd(6), 1 + rnd(6)];
+      const s = c[0] + c[1] + c[2];
+      const trip = c[0] === c[1] && c[1] === c[2];
+      const hit =
+        pick === "small" ? s >= 4 && s <= 10 && !trip :
+        pick === "big" ? s >= 11 && s <= 17 && !trip :
+        pick === "even" ? s % 2 === 0 && !trip : trip;
+      if (hit === win) { d = c; break; }
+    }
+    if (!d.length) d = [1 + rnd(6), 1 + rnd(6), 1 + rnd(6)];
+    // zarlar havoda 3D ag'anaydi va aynan shu yuzlarda to'xtaydi
+    setDice(d); setSpin(true);
     window.setTimeout(() => {
-      clearInterval(iv);
-      let d: number[] = [];
-      for (let i = 0; i < 400; i++) {
-        const c = [1 + rnd(6), 1 + rnd(6), 1 + rnd(6)];
-        const s = c[0] + c[1] + c[2];
-        const trip = c[0] === c[1] && c[1] === c[2];
-        const hit =
-          pick === "small" ? s >= 4 && s <= 10 && !trip :
-          pick === "big" ? s >= 11 && s <= 17 && !trip :
-          pick === "even" ? s % 2 === 0 && !trip : trip;
-        if (hit === win) { d = c; break; }
-      }
-      if (!d.length) d = [1 + rnd(6), 1 + rnd(6), 1 + rnd(6)];
-      setDice(d); setSpin(false);
+      setSpin(false);
       g.finish(win ? (BETS.find((b) => b.k === pick)?.m ?? cfg.mult) : 0);
-    }, 1400);
+    }, 1900);
   };
 
   return (
     <Shell cfg={cfg} busy={g.busy} won={g.won} amount={g.amount} refund={g.refund}
-      hint={`Yig'indi: ${dice[0] + dice[1] + dice[2]}`}
+      hint={spin ? "Zarlar havoda..." : `Yig'indi: ${dice[0] + dice[1] + dice[2]}`}
       footer={<><Bet g={g} /><PlayButton label="ZAR TASHLASH" icon="dice" onClick={roll} disabled={!g.canPlay} /></>}>
       <div className="flex justify-center gap-3 py-6">
-        {dice.map((d, i) => <Die key={i} v={d} spin={spin} />)}
+        {dice.map((d, i) => (
+          <Dice3D key={i} value={d} rolling={spin} seed={i} size={64} duration={1700 + i * 100}
+            skin={cfg.key === "dicetriple" ? "ruby" : "gold"} />
+        ))}
       </div>
       <div className="grid grid-cols-2 gap-2">
         {BETS.map((b) => (
@@ -1385,29 +1366,6 @@ function ClimbGame({ cfg }: EProps) {
 }
 
 /* ════════════════ 19. NARD DUELI (zarlar) ════════════════ */
-const BPIPS: Record<number, number[]> = {
-  1: [4], 2: [0, 8], 3: [0, 4, 8], 4: [0, 2, 6, 8], 5: [0, 2, 4, 6, 8], 6: [0, 2, 3, 5, 6, 8],
-};
-function BoardDie({ v, rolling }: { v: number; rolling?: boolean }) {
-  return (
-    <div className="grid grid-cols-3 gap-[2px] p-1.5 rounded-xl"
-      style={{
-        width: 52, height: 52,
-        background: "linear-gradient(160deg,#fffdf5,#d8cfb4)",
-        boxShadow: "inset 0 -3px 6px rgba(0,0,0,.25), 0 4px 12px rgba(0,0,0,.5)",
-        transform: rolling ? "rotate(12deg) scale(.94)" : "none",
-        transition: "transform .12s linear",
-      }}>
-      {Array.from({ length: 9 }).map((_, i) => (
-        <span key={i} className="rounded-full" style={{
-          width: 10, height: 10,
-          background: BPIPS[v]?.includes(i) ? "#12161f" : "transparent",
-        }} />
-      ))}
-    </div>
-  );
-}
-
 function BoardGame({ cfg }: EProps) {
   const g = useGame(cfg);
   const [me, setMe] = useState<[number, number]>([1, 1]);
@@ -1417,28 +1375,26 @@ function BoardGame({ cfg }: EProps) {
 
   const play = async () => {
     if (!g.canPlay) return;
-    g.begin(); setRolling(true); setScore([0, 0]);
+    g.begin(); setScore([0, 0]);
     const outcome = rollOutcome();
     let mine = 0, theirs = 0;
     // 3 raunddan g'olibi natijaga mos bo'lishi uchun oldindan belgilanadi
     const wins = outcome === "win" ? [true, false, true] : [false, true, false];
     for (let round = 0; round < 3; round++) {
-      for (let t = 0; t < 8; t++) {
-        // eslint-disable-next-line no-await-in-loop
-        await sleep(70);
-        setMe([1 + rnd(6), 1 + rnd(6)]);
-        setOp([1 + rnd(6), 1 + rnd(6)]);
-      }
       const winRound = wins[round];
       const a = winRound ? 4 + rnd(3) : 1 + rnd(3);
       const b = winRound ? 1 + rnd(3) : 4 + rnd(3);
       const c = winRound ? 4 + rnd(3) : 2 + rnd(2);
       const d = winRound ? 2 + rnd(2) : 4 + rnd(3);
-      setMe([a, c]); setOp([b, d]);
+      // har raundda taxtada 4 ta zar 3D ag'anab, natija yuzida to'xtaydi
+      setMe([a, c]); setOp([b, d]); setRolling(true);
+      // eslint-disable-next-line no-await-in-loop
+      await sleep(950);
+      setRolling(false);
       if (winRound) mine += 1; else theirs += 1;
       setScore([mine, theirs]);
       // eslint-disable-next-line no-await-in-loop
-      await sleep(520);
+      await sleep(480);
     }
     setRolling(false);
     g.finish(outcome === "win" ? winMult(cfg.mult, cfg.key) : outcome === "refund" ? 1 : 0);
@@ -1456,14 +1412,14 @@ function BoardGame({ cfg }: EProps) {
         </div>
         <div className="w-full flex items-center justify-center gap-3 py-2 rounded-2xl"
           style={{ background: "linear-gradient(180deg,rgba(34,197,94,.12),rgba(11,14,23,.85))", border: "1px solid rgba(247,201,72,.22)" }}>
-          <BoardDie v={me[0]} rolling={rolling} /><BoardDie v={me[1]} rolling={rolling} />
-          <span className="text-lg font-black" style={{ color: "#f7c948" }}>{sum(me)}</span>
+          <Dice3D value={me[0]} rolling={rolling} seed={0} size={50} duration={850} skin="wood" /><Dice3D value={me[1]} rolling={rolling} seed={1} size={50} duration={900} skin="wood" />
+          <span className="text-lg font-black" style={{ color: "#f7c948" }}>{rolling ? "?" : sum(me)}</span>
         </div>
         <span className="text-[10px] font-black tracking-widest" style={{ color: "#64748b" }}>VS</span>
         <div className="w-full flex items-center justify-center gap-3 py-2 rounded-2xl"
           style={{ background: "linear-gradient(180deg,rgba(239,68,68,.12),rgba(11,14,23,.85))", border: "1px solid rgba(148,163,184,.22)" }}>
-          <BoardDie v={op[0]} rolling={rolling} /><BoardDie v={op[1]} rolling={rolling} />
-          <span className="text-lg font-black" style={{ color: "#f87171" }}>{sum(op)}</span>
+          <Dice3D value={op[0]} rolling={rolling} seed={2} size={50} duration={880} skin="ivory" /><Dice3D value={op[1]} rolling={rolling} seed={3} size={50} duration={930} skin="ivory" />
+          <span className="text-lg font-black" style={{ color: "#f87171" }}>{rolling ? "?" : sum(op)}</span>
         </div>
       </div>
     </Shell>

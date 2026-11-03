@@ -391,7 +391,7 @@ function Lobby({ def, stakes, onJoin, err, ts, onBack, rules, enabled = true, sc
 
       {!enabled && (
         <p className="text-center mt-3 rounded-2xl px-3 py-2 font-black" style={{ fontSize: 11, color: "#fbbf24", background: "rgba(251,191,36,0.12)", border: "1px solid rgba(251,191,36,0.35)" }}>
-          ⏸ LIVE o'yinlar vaqtincha o'chirilgan. Keyinroq urinib ko'ring.
+          LIVE o'yinlar vaqtincha o'chirilgan. Keyinroq urinib ko'ring.
         </p>
       )}
 

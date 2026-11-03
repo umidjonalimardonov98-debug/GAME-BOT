@@ -41,9 +41,22 @@ interface Props {
   seed?: number;
   /** aylanish davomiyligi (ms) */
   duration?: number;
+  /** o'yinga xos zar ko'rinishi */
+  skin?: DiceSkin;
 }
 
-export default function Dice3D({ value, rolling, size = 88, seed = 0, duration = 3000 }: Props) {
+export type DiceSkin = "ivory" | "ruby" | "gold" | "wood" | "emerald";
+const SKINS: Record<DiceSkin, { face: string; pip: string; edge: string }> = {
+  ivory: { face: "radial-gradient(circle at 30% 25%, #ffffff 0%, #f6f3e8 45%, #ddd6c1 100%)", pip: "radial-gradient(circle at 35% 30%, #8a6a14 0%, #3a2a05 60%, #120c00 100%)", edge: "rgba(120,100,50,0.3)" },
+  ruby: { face: "radial-gradient(circle at 30% 25%, #ff8a8a 0%, #d61f2c 45%, #7a0610 100%)", pip: "radial-gradient(circle at 35% 30%, #ffffff 0%, #f1e6e6 60%, #c9b7b7 100%)", edge: "rgba(255,180,180,0.45)" },
+  gold: { face: "radial-gradient(circle at 30% 25%, #fff6c8 0%, #f2c94c 45%, #a0700e 100%)", pip: "radial-gradient(circle at 35% 30%, #4a2f00 0%, #241600 60%, #0d0800 100%)", edge: "rgba(255,240,180,0.6)" },
+  wood: { face: "repeating-linear-gradient(115deg, #b77a3e 0 6px, #a86c33 6px 11px, #c4884a 11px 15px)", pip: "radial-gradient(circle at 35% 30%, #f6e7c8 0%, #e2cfa6 60%, #b49a6c 100%)", edge: "rgba(60,30,5,0.5)" },
+  emerald: { face: "radial-gradient(circle at 30% 25%, #9ff5c8 0%, #17a560 45%, #04512b 100%)", pip: "radial-gradient(circle at 35% 30%, #ffffff 0%, #e6f5ec 60%, #b2cdbd 100%)", edge: "rgba(180,255,210,0.45)" },
+};
+
+export default function Dice3D({ value, rolling, size = 88, seed = 0, duration = 3000, skin = "ivory" }: Props) {
+  const sk = SKINS[skin];
+  const [landed, setLanded] = useState(0);
   const clamp = (v: number) => Math.max(1, Math.min(6, Math.round(v) || 1));
   const [rot, setRot] = useState<[number, number]>(() => SHOW[clamp(value)]);
   const [spinning, setSpinning] = useState(false);
@@ -68,7 +81,11 @@ export default function Dice3D({ value, rolling, size = 88, seed = 0, duration =
       spins.current += 1;
       const base = 360 * spins.current * (5 + seed);
       setRot([tx + (base + 360 * turnsX) * dir, ty + base + 360 * turnsY]);
-      timer.current = setTimeout(() => setSpinning(false), duration);
+      timer.current = setTimeout(() => {
+        setSpinning(false);
+        setLanded((n) => n + 1);
+        try { (window as any).Telegram?.WebApp?.HapticFeedback?.impactOccurred?.(seed === 0 ? "medium" : "light"); } catch { /* ignore */ }
+      }, duration);
     } else {
       setSpinning(false);
     }
@@ -80,7 +97,8 @@ export default function Dice3D({ value, rolling, size = 88, seed = 0, duration =
   const s = size;
   return (
     <div
-      className={rolling ? "dice-scene dice-bounce" : "dice-scene"}
+      key={`land-${landed}`}
+      className={rolling ? "dice-scene dice-bounce" : landed ? "dice-scene dice-land" : "dice-scene"}
       style={{
         animationDuration: rolling ? `${duration}ms` : undefined,
         width: s,
@@ -114,7 +132,7 @@ export default function Dice3D({ value, rolling, size = 88, seed = 0, duration =
           transformStyle: "preserve-3d",
           transform: `rotateX(${rot[0]}deg) rotateY(${rot[1]}deg)`,
           transition: rolling
-            ? "transform 1.4s cubic-bezier(0.15,0.62,0.2,1)"
+            ? `transform ${Math.round(duration * 0.86)}ms cubic-bezier(0.12,0.7,0.16,1)`
             : "transform 0.6s cubic-bezier(0.18,0.9,0.22,1.02)",
           willChange: "transform",
           // @ts-expect-error css var
@@ -129,10 +147,9 @@ export default function Dice3D({ value, rolling, size = 88, seed = 0, duration =
               inset: 0,
               borderRadius: s * 0.18,
               transform: FACE_TRANSFORM[f],
-              background:
-                "radial-gradient(circle at 30% 25%, #ffffff 0%, #f6f3e8 45%, #ddd6c1 100%)",
+              background: sk.face,
               boxShadow:
-                "inset 0 0 0 1px rgba(120,100,50,0.3), inset 0 6px 14px rgba(255,255,255,0.9), inset 0 -8px 16px rgba(120,100,60,0.3)",
+                `inset 0 0 0 1px ${sk.edge}, inset 0 6px 14px rgba(255,255,255,0.55), inset 0 -8px 16px rgba(0,0,0,0.3)`,
               backfaceVisibility: "hidden",
             }}
           >
@@ -147,8 +164,7 @@ export default function Dice3D({ value, rolling, size = 88, seed = 0, duration =
                   height: s * 0.17,
                   transform: "translate(-50%,-50%)",
                   borderRadius: "50%",
-                  background:
-                    "radial-gradient(circle at 35% 30%, #8a6a14 0%, #3a2a05 60%, #120c00 100%)",
+                  background: sk.pip,
                   boxShadow:
                     "inset 0 2px 3px rgba(0,0,0,0.8), 0 1px 0 rgba(255,255,255,0.55)",
                 }}

@@ -179,7 +179,7 @@ export default function Parity() {
 
           <p className="text-xs font-black tracking-widest" style={{ color: ts.textSub }}>
             {phase === "idle"?"SON (1–90)" :
-             isSpinning           ? "⏳ SON AYLANMOQDA..." :
+             isSpinning           ? "SON AYLANMOQDA..." :
                                     u("result").toUpperCase()}
           </p>
 
@@ -323,7 +323,7 @@ export default function Parity() {
         {isSpinning && (
           <div className="text-center py-6">
             <p className="font-black text-lg animate-pulse"style={{ color:"#78b6ff" }}>
-              ⏳ Son chiqmoqda...
+              Son chiqmoqda...
             </p>
             <p className="text-sm mt-2" style={{ color: ts.textSub }}>
               {lockedType.current === "small"?" Kichik (1–44)" :

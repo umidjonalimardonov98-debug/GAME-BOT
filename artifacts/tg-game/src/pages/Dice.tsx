@@ -129,7 +129,7 @@ export default function Dice() {
               {gameState !== "idle" && (
                 <div className="absolute left-1/2 -translate-x-1/2 -bottom-3 px-4 py-1 rounded-full"
                   style={{ background: "linear-gradient(180deg,#f7e59b,#b98c14)", boxShadow: "0 4px 12px rgba(0,0,0,0.6)" }}>
-                  <span className="font-black text-lg" style={{ color: "#2b1c02" }}>{sum}</span>
+                  <span className="font-black text-lg" style={{ color: "#2b1c02" }}>{gameState === "rolling" ? "?" : sum}</span>
                 </div>
               )}
             </div>

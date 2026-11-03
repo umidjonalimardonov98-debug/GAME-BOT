@@ -38,13 +38,13 @@ export default function MoneyWheel() {
     sfx.spin();
     // sektor markazi ko'rsatkich ostiga aniq to'g'ri keladi
     const target = (360 - (idx * step + step / 2)) % 360;
-    setAngle(a => a + 360 * 6 + (((target - (a % 360)) % 360) + 360) % 360);
+    setAngle(a => a + 360 * 9 + (((target - (a % 360)) % 360) + 360) % 360);
     setTimeout(async () => {
       stopTick();
       const realWin = SECTORS[idx] === pick;
       const w = await settle(realWin ? SECTORS[idx] : 0);
       setAmount(w); setWon(realWin); setBusy(false);
-    }, 1700);
+    }, 3550);
   };
 
   const gradient = `conic-gradient(${SECTORS.map((v, i) =>
@@ -62,7 +62,7 @@ export default function MoneyWheel() {
           <div className="absolute rounded-full" style={{ width: 320, height: 320, background: "conic-gradient(from 0deg,transparent,rgba(255,213,74,.25),transparent 30%)", animation: busy ? "mw-rays 1.2s linear infinite" : "mw-rays 8s linear infinite" }} />
           <style>{`@keyframes mw-rays{to{transform:rotate(360deg)}}@keyframes mw-bulb{0%,100%{opacity:1}50%{opacity:.25}}`}</style>
           <div className="absolute z-10" style={{ top: 14 }}>
-            <div style={{
+            <div className={busy ? "pointer-tick" : ""} style={{
               width: 0, height: 0,
               borderLeft: "12px solid transparent", borderRight: "12px solid transparent",
               borderTop: "22px solid #f7e59b", filter: "drop-shadow(0 3px 6px rgba(0,0,0,.6))",
@@ -74,7 +74,7 @@ export default function MoneyWheel() {
               style={{
                 width: 250, height: 250, background: gradient,
                 transform: `rotate(${angle}deg)`,
-                transition: "transform 1.6s cubic-bezier(0.16,0.76,0.06,1)", boxShadow: "inset 0 0 30px rgba(0,0,0,.5)",
+                transition: "transform 3.4s cubic-bezier(0.1,0.72,0.04,1)", boxShadow: "inset 0 0 30px rgba(0,0,0,.5)",
               }}>
               {SECTORS.map((v, i) => (
                 <span key={i} className="absolute font-black text-sm"

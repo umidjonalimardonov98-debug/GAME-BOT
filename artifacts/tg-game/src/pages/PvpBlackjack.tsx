@@ -204,7 +204,7 @@ export default function PvpBlackjack() {
 
   const v = view;
   return (
-    <div className="min-h-screen flex flex-col overflow-x-hidden relative isolate" style={{ background: BG }}>
+    <div className="min-h-screen flex flex-col overflow-x-hidden relative isolate deal-shoe" style={{ background: BG }}>
       <Ambient behind color="#059669" layer="grid" syms={["cardback", "chip"]} />
       <GameHeader icon="cardback" title=" BLACKJACK PVP" subtitle={v ? `${v.stake.toLocaleString()} · ${v.foeName}` : "..."} />
       <div className="flex-1 px-3 pb-6 flex flex-col gap-3">
