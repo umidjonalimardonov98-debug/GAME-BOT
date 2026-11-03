@@ -25,6 +25,15 @@ export default function PlinkoBoard({ rows, mults, width, drop, onLanded, onPeg 
   const ballsRef = useRef<Ball[]>([]);
   const partRef = useRef<Particle[]>([]);
   const pegsRef = useRef<{ x: number; y: number; hit: number }[]>([]);
+  /** to'siqqa urilganda tarqaladigan to'lqin halqalari */
+  const ringsRef = useRef<{ x: number; y: number; t: number }[]>([]);
+  /** shar — haqiqiy oltin tanga surati, urilganda aylanadi */
+  const coinRef = useRef<HTMLImageElement | null>(null);
+  const spinRef = useRef(0);
+  const lastHaptic = useRef(0);
+  useEffect(() => {
+    const im = new Image(); im.src = "/symbols/coin1.png"; coinRef.current = im;
+  }, []);
   const targetRef = useRef(0);
   const flashRef = useRef<{ idx: number; t: number } | null>(null);
   const doneRef = useRef(false);
@@ -112,6 +121,13 @@ export default function PlinkoBoard({ rows, mults, width, drop, onLanded, onPeg 
           b.vx += rand(-26, 26);
           b.vy *= 0.7;
           p.hit = 1;
+          ringsRef.current.push({ x: p.x, y: p.y, t: 0 });
+          if (ringsRef.current.length > 12) ringsRef.current.shift();
+          const now = performance.now();
+          if (now - lastHaptic.current > 120) {
+            lastHaptic.current = now;
+            try { (window as any).Telegram?.WebApp?.HapticFeedback?.selectionChanged?.(); } catch { /* ignore */ }
+          }
           partRef.current.push(...spawnBurst(p.x, p.y, 3, ["#ffe9a8", "#ffd766", "#9fd8ff"], 90));
           onPeg?.();
         }
@@ -211,14 +227,40 @@ export default function PlinkoBoard({ rows, mults, width, drop, onLanded, onPeg 
       ctx.arc(b.x, b.y, b.r * 2.1, 0, Math.PI * 2);
       ctx.fillStyle = "rgba(255,214,102,0.15)";
       ctx.fill();
-      const g = ctx.createRadialGradient(b.x - b.r * 0.4, b.y - b.r * 0.5, b.r * 0.1, b.x, b.y, b.r);
-      g.addColorStop(0, "#fffdf2");
-      g.addColorStop(0.45, "#ffd766");
-      g.addColorStop(1, "#b45309");
+      const coin = coinRef.current;
+      if (coin && coin.complete && coin.naturalWidth) {
+        spinRef.current += b.vx * 0.0009 + 0.02;
+        const d = b.r * 2.5;
+        ctx.save();
+        ctx.translate(b.x, b.y);
+        ctx.rotate(spinRef.current);
+        // tanga o'z o'qida aylanayotgandek — eni o'zgarib turadi
+        ctx.scale(0.75 + 0.25 * Math.abs(Math.cos(spinRef.current * 2.2)), 1);
+        ctx.drawImage(coin, -d / 2, -d / 2, d, d);
+        ctx.restore();
+      } else {
+        const g = ctx.createRadialGradient(b.x - b.r * 0.4, b.y - b.r * 0.5, b.r * 0.1, b.x, b.y, b.r);
+        g.addColorStop(0, "#fffdf2");
+        g.addColorStop(0.45, "#ffd766");
+        g.addColorStop(1, "#b45309");
+        ctx.beginPath();
+        ctx.arc(b.x, b.y, b.r, 0, Math.PI * 2);
+        ctx.fillStyle = g;
+        ctx.fill();
+      }
+    }
+
+    // to'lqin halqalari
+    const rings = ringsRef.current;
+    for (let k = rings.length - 1; k >= 0; k--) {
+      const rg = rings[k];
+      rg.t += 1 / 60 * 2.6;
+      if (rg.t >= 1) { rings.splice(k, 1); continue; }
       ctx.beginPath();
-      ctx.arc(b.x, b.y, b.r, 0, Math.PI * 2);
-      ctx.fillStyle = g;
-      ctx.fill();
+      ctx.arc(rg.x, rg.y, 5 + rg.t * 18, 0, Math.PI * 2);
+      ctx.strokeStyle = `rgba(255,233,168,${(1 - rg.t) * 0.7})`;
+      ctx.lineWidth = 2 * (1 - rg.t) + 0.5;
+      ctx.stroke();
     }
 
     drawParticles(ctx, partRef.current);

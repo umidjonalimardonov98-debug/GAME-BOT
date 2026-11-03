@@ -5,9 +5,9 @@ import type { Lang } from "@/lib/i18n";
 import { sfx } from "@/lib/sound";
 
 const LANGS: { code: Lang; flag: string; label: string; name: string }[] = [
-  { code: "uz", flag: "\u{1F1FA}\u{1F1FF}", label: "UZ", name: "O'zbekcha" },
-  { code: "ru", flag: "\u{1F1F7}\u{1F1FA}", label: "RU", name: "Русский" },
-  { code: "en", flag: "\u{1F1EC}\u{1F1E7}", label: "EN", name: "English" },
+  { code: "uz", flag: "uz", label: "UZ", name: "O'zbekcha" },
+  { code: "ru", flag: "ru", label: "RU", name: "Русский" },
+  { code: "en", flag: "en", label: "EN", name: "English" },
 ];
 
 export default function LangSwitcher() {
@@ -31,7 +31,7 @@ export default function LangSwitcher() {
           border: `1px solid ${isLight ? "rgba(22,104,227,0.22)" : "rgba(255,255,255,0.14)"}`,
         }}
       >
-        <span style={{ fontSize: 16, lineHeight: 1 }}>{cur.flag}</span>
+        <Flag code={cur.flag} w={20} />
         <span
           className="font-black"
           style={{ fontSize: 11, color: isLight ? "#0b3f8f" : "#bcdcff" }}
@@ -71,7 +71,7 @@ export default function LangSwitcher() {
                       : "transparent",
                   }}
                 >
-                  <span style={{ fontSize: 18, lineHeight: 1 }}>{l.flag}</span>
+                  <Flag code={l.flag} w={24} />
                   <span
                     className="text-[12px] font-black flex-1"
                     style={{
@@ -98,5 +98,30 @@ export default function LangSwitcher() {
         </>
       )}
     </div>
+  );
+}
+
+/** Vektor bayroqlar — emoji o'rniga (hamma telefonda bir xil ko'rinadi) */
+function Flag({ code, w }: { code: string; w: number }) {
+  const h = Math.round(w * 0.68);
+  const box = { display: "block", borderRadius: 3, overflow: "hidden", boxShadow: "0 0 0 1px rgba(255,255,255,.25)" } as const;
+  if (code === "uz") return (
+    <svg width={w} height={h} viewBox="0 0 30 20" style={box} aria-hidden>
+      <rect width="30" height="20" fill="#fff" /><rect width="30" height="6.4" fill="#0099b5" /><rect y="13.6" width="30" height="6.4" fill="#1eb53a" />
+      <rect y="6.4" width="30" height="0.6" fill="#ce1126" /><rect y="13" width="30" height="0.6" fill="#ce1126" />
+      <circle cx="5" cy="3.2" r="2.2" fill="#fff" /><circle cx="5.9" cy="3.2" r="2" fill="#0099b5" />
+    </svg>
+  );
+  if (code === "ru") return (
+    <svg width={w} height={h} viewBox="0 0 30 20" style={box} aria-hidden>
+      <rect width="30" height="20" fill="#fff" /><rect y="6.67" width="30" height="6.67" fill="#0039a6" /><rect y="13.33" width="30" height="6.67" fill="#d52b1e" />
+    </svg>
+  );
+  return (
+    <svg width={w} height={h} viewBox="0 0 30 20" style={box} aria-hidden>
+      <rect width="30" height="20" fill="#012169" />
+      <path d="M0 0L30 20M30 0L0 20" stroke="#fff" strokeWidth="4" /><path d="M0 0L30 20M30 0L0 20" stroke="#c8102e" strokeWidth="1.6" />
+      <path d="M15 0V20M0 10H30" stroke="#fff" strokeWidth="6" /><path d="M15 0V20M0 10H30" stroke="#c8102e" strokeWidth="3.4" />
+    </svg>
   );
 }

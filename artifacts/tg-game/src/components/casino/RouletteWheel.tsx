@@ -26,6 +26,8 @@ export default function RouletteWheel({ size, spin, onSettled, onTick }: Props) 
   const cvRef = useRef<HTMLCanvasElement | null>(null);
   const ctxRef = useRef<CanvasRenderingContext2D | null>(null);
   const partRef = useRef<Particle[]>([]);
+  /** shar izi — tezlikda orqasida yorug' dum qoldiradi */
+  const trailRef = useRef<{ a: number; r: number }[]>([]);
   const st = useRef({
     rot: 0, rotV: 0,
     ballA: 0, ballV: 0, ballR: 1, targetR: 1,
@@ -52,6 +54,7 @@ export default function RouletteWheel({ size, spin, onSettled, onTick }: Props) 
     s.settleT = 0;
     s.flash = 0;
     partRef.current = [];
+    trailRef.current = [];
   }, [spin]);
 
   useRaf((dt, time) => {
@@ -218,6 +221,32 @@ export default function RouletteWheel({ size, spin, onSettled, onTick }: Props) 
     ctx.closePath();
     ctx.fillStyle = "#fff3c4";
     ctx.fill();
+
+    // yutgan uyaga pulsatsiyalanuvchi halqa
+    if (s.phase === "done") {
+      const idx = WHEEL.indexOf(s.num);
+      const a = s.rot + (idx + 0.5) * SEG;
+      const pulse = 0.5 + 0.5 * Math.sin(time * 6);
+      const col = s.num === 0 ? "#22c55e" : REDS.has(s.num) ? "#ef4444" : "#e5e7eb";
+      ctx.save();
+      ctx.beginPath(); ctx.arc(cx, cy, R * 0.79, a - SEG / 2, a + SEG / 2);
+      ctx.strokeStyle = col; ctx.lineWidth = R * (0.16 + pulse * 0.04);
+      ctx.globalAlpha = 0.35 + pulse * 0.35; ctx.shadowColor = col; ctx.shadowBlur = 18;
+      ctx.stroke(); ctx.restore();
+    }
+
+    // shar izi
+    const tr = trailRef.current;
+    if (s.phase === "spin" || s.phase === "drop") {
+      tr.push({ a: s.ballA, r: s.ballR });
+      if (tr.length > 14) tr.shift();
+    } else if (tr.length) tr.shift();
+    for (let k = 0; k < tr.length; k++) {
+      const q = tr[k]; const f = (k + 1) / (tr.length + 1);
+      ctx.beginPath();
+      ctx.arc(cx + Math.cos(q.a) * R * q.r, cy + Math.sin(q.a) * R * q.r, R * 0.05 * (0.4 + f * 0.6), 0, Math.PI * 2);
+      ctx.fillStyle = `rgba(255,243,196,${0.05 + f * 0.35})`; ctx.fill();
+    }
 
     // shar
     if (s.phase !== "idle") {

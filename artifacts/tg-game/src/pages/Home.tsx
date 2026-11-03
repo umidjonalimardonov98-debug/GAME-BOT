@@ -262,7 +262,7 @@ export default function Home() {
             <img src="/games/pvppoker.jpg" alt="" loading="lazy" decoding="async" />
           </div>
           <div className="absolute inset-0" style={{ background: "linear-gradient(150deg,rgba(6,4,10,0.9) 20%,rgba(6,4,10,0.35))" }} />
-          <span className="fx-spin absolute right-1 bottom-1" style={{ fontSize: 30, opacity: 0.85 }}>♠️</span>
+          <img src="/symbols/cardback.png" alt="" className="fx-spin absolute right-1 bottom-1" style={{ width: 30, height: 30, objectFit: "contain", opacity: 0.85 }} />
           <div className="relative p-3 flex flex-col h-full">
             <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded-full font-black self-start"
               style={{ fontSize: 8, background: "rgba(239,68,68,0.92)", color: "#fff", letterSpacing: "0.14em" }}>

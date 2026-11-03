@@ -9,6 +9,9 @@ import BetPanel from "@/components/casino/BetPanel";
 import PlayButton from "@/components/casino/PlayButton";
 import ResultBanner from "@/components/casino/ResultBanner";
 import Dice3D from "@/components/casino/Dice3D";
+import RouletteWheel from "@/components/casino/RouletteWheel";
+import PlinkoBoard from "@/components/casino/PlinkoBoard";
+import AutoWidth from "@/components/casino/AutoWidth";
 import StageFx, { type FxPattern } from "@/components/casino/StageFx";
 const FX_PATTERN: Record<string, FxPattern> = {mines: "burst", crash: "sweep", sicbo: "burst", roulette: "spiral", hilo: "rain", war: "slam", plinko: "rain", keno: "rain", scratch: "burst", match3: "fountain", bingo: "rain", lotto: "spiral", memory: "spiral", fishing: "sweep", wheel: "spiral", reel: "fountain", race: "sweep", climb: "slam", board: "burst"};
 import GameAtmosphere from "@/components/casino/GameAtmosphere";
@@ -335,9 +338,10 @@ const REDS = new Set([32, 19, 21, 25, 34, 27, 36, 30, 23, 5, 16, 1, 14, 9, 18, 7
 function RouletteGame({ cfg }: EProps) {
   const g = useGame(cfg);
   const [pick, setPick] = useState<"red" | "black" | "even" | "dozen">("red");
-  const [ang, setAng] = useState(0);
   const [num, setNum] = useState(0);
   const [spin, setSpin] = useState(false);
+  const [cmd, setCmd] = useState<{ id: number; num: number } | null>(null);
+  const pending = useRef<{ win: boolean; k: string } | null>(null);
   const M: Record<string, number> = { red: 1.95, black: 1.95, even: 1.95, dozen: cfg.mult };
 
   const play = () => {
@@ -350,51 +354,37 @@ function RouletteGame({ cfg }: EProps) {
       return hit === win;
     });
     const res = pool[rnd(pool.length)] ?? 0;
-    const idx = WHEEL_NUMS.indexOf(res);
-    const seg = 360 / WHEEL_NUMS.length;
-    setNum(res);
-    setAng((a) => a + 1800 + ((360 - idx * seg - seg / 2) - (a % 360) + 720) % 360);
-    window.setTimeout(() => { setSpin(false); g.finish(win ? M[pick] : 0); }, 4200);
+    pending.current = { win, k: pick };
+    // haqiqiy ruletka: g'ildirak aylanadi, shar teskari yuguradi, uyaga sakrab tushadi
+    setCmd({ id: Date.now(), num: res });
   };
+
+  const settled = useCallback((n: number) => {
+    const p = pending.current;
+    if (!p) return;
+    pending.current = null;
+    setNum(n); setSpin(false);
+    g.finish(p.win ? M[p.k] : 0);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [g]);
+
+  // xavfsizlik: shar biror sababdan to'xtamasa — natija baribir yopiladi
+  useEffect(() => {
+    if (!spin || !cmd) return;
+    const t = window.setTimeout(() => settled(cmd.num), 15000);
+    return () => window.clearTimeout(t);
+  }, [spin, cmd, settled]);
+
+  const onTick = useCallback(() => {
+    try { (window as any).Telegram?.WebApp?.HapticFeedback?.selectionChanged?.(); } catch { /* ignore */ }
+  }, []);
 
   return (
     <Shell cfg={cfg} busy={g.busy} won={g.won} amount={g.amount} refund={g.refund}
       hint={spin ? "Shar aylanmoqda..." : `Oxirgi raqam: ${num}`}
       footer={<><Bet g={g} /><PlayButton label="AYLANTIRISH" icon="chip" onClick={play} disabled={!g.canPlay} /></>}>
-      <div className="relative mx-auto" style={{ width: 250, height: 250 }}>
-        <div className="absolute left-1/2 -translate-x-1/2 -top-1 z-20" style={{
-          width: 0, height: 0, borderLeft: "9px solid transparent", borderRight: "9px solid transparent",
-          borderTop: "16px solid #f7c948",
-        }} />
-        <div className="absolute inset-0 rounded-full" style={{
-          transform: `rotate(${ang}deg)`,
-          transition: "transform 4s cubic-bezier(0.16,0.9,0.2,1)",
-          background: `conic-gradient(${WHEEL_NUMS.map((n, i) => {
-            const seg = 360 / WHEEL_NUMS.length;
-            const col = n === 0 ? "#16a34a" : REDS.has(n) ? "#c1121f" : "#0b1220";
-            return `${col} ${i * seg}deg ${(i + 1) * seg}deg`;
-          }).join(",")})`,
-          border: "6px solid #f7c948",
-          boxShadow: "0 0 34px rgba(247,201,72,0.35), inset 0 0 30px rgba(0,0,0,0.7)",
-        }}>
-          {WHEEL_NUMS.map((n, i) => {
-            const seg = 360 / WHEEL_NUMS.length;
-            return (
-              <span key={n} className="absolute left-1/2 top-1/2 font-black text-[9px] text-white"
-                style={{ transform: `rotate(${i * seg + seg / 2}deg) translateY(-104px)`, transformOrigin: "0 0" }}>
-                {n}
-              </span>
-            );
-          })}
-        </div>
-        <div className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 rounded-full flex items-center justify-center font-black"
-          style={{
-            width: 92, height: 92, fontSize: 30, color: "#1a1204",
-            background: "radial-gradient(circle at 35% 30%,#fff6cf,#f7c948 55%,#8a5a09)",
-            boxShadow: "0 8px 22px rgba(0,0,0,0.55)",
-          }}>
-          {spin ? "…" : num}
-        </div>
+      <div className="mx-auto flex justify-center" style={{ width: 260, maxWidth: "100%" }}>
+        <RouletteWheel size={260} spin={cmd} onSettled={settled} onTick={onTick} />
       </div>
       <div className="grid grid-cols-4 gap-2 mt-3">
         {([["red", "QIZIL"], ["black", "QORA"], ["even", "JUFT"], ["dozen", "1-12"]] as const).map(([k, l]) => (
@@ -535,7 +525,8 @@ function PlinkoGame({ cfg }: EProps) {
     }
     return arr;
   }, [ROWS, cfg.mult]);
-  const [pos, setPos] = useState<{ x: number; y: number } | null>(null);
+  const [dropCmd, setDropCmd] = useState<{ id: number; target: number } | null>(null);
+  const winRef = useRef(false);
   const [land, setLand] = useState<number | null>(null);
 
   const drop = () => {
@@ -546,53 +537,27 @@ function PlinkoGame({ cfg }: EProps) {
       ? (Math.random() < 0.5 ? 0 : slots.length - 1) + (win ? 0 : 0)
       : Math.floor(slots.length / 2) + (rnd(3) - 1);
     const t = Math.max(0, Math.min(slots.length - 1, target));
-    let step = 0;
-    setPos({ x: 50, y: 0 });
-    const iv = window.setInterval(() => {
-      step++;
-      const p = step / ROWS;
-      const x = 50 + (t / (slots.length - 1) - 0.5) * 88 * p + (Math.random() - 0.5) * 6;
-      setPos({ x, y: p * 100 });
-      if (step >= ROWS) {
-        clearInterval(iv);
-        setLand(t);
-        g.finish(win ? slots[t] : 0);
-      }
-    }, 130);
+    winRef.current = win;
+    // haqiqiy fizika: tanga mixlardan sakrab, aynan shu katakka tushadi
+    setDropCmd({ id: Date.now(), target: t });
   };
+
+  const onLanded = useCallback((idx: number) => {
+    setLand(idx);
+    g.finish(winRef.current ? slots[idx] : 0);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [g, slots]);
 
   return (
     <Shell cfg={cfg} busy={g.busy} won={g.won} amount={g.amount} refund={g.refund}
       hint={`${ROWS} qator · chetdagi kataklar eng katta koeffitsiyent`}
       footer={<><Bet g={g} /><PlayButton label="SHAR TASHLASH" icon={cfg.syms[0]} onClick={drop} disabled={!g.canPlay} /></>}>
-      <div className="relative h-[230px] rounded-2xl overflow-hidden" style={{ background: `linear-gradient(180deg,${cfg.c2},#03060c)` }}>
-        {Array.from({ length: ROWS }).map((_, r) => (
-          <div key={r} className="absolute flex justify-center gap-3 w-full"
-            style={{ top: `${8 + (r / ROWS) * 78}%` }}>
-            {Array.from({ length: r + 2 }).map((_, i) => (
-              <span key={i} className="rounded-full" style={{ width: 6, height: 6, background: `${cfg.c1}cc` }} />
-            ))}
-          </div>
-        ))}
-        {pos && (
-          <span className="absolute rounded-full" style={{
-            left: `${pos.x}%`, top: `${6 + pos.y * 0.78}%`, width: 14, height: 14,
-            transform: "translate(-50%,-50%)", transition: "all 0.13s linear",
-            background: "radial-gradient(circle at 30% 30%,#fff,#f7c948)",
-            boxShadow: `0 0 14px ${cfg.c1}`,
-          }} />
-        )}
+      <div className="rounded-2xl overflow-hidden" style={{ background: `radial-gradient(ellipse at 50% 0%, ${cfg.c1}33 0%, ${cfg.c2} 55%, #03060c 100%)`, border: `1px solid ${cfg.c1}55` }}>
+        <AutoWidth min={240}>{(w) => <PlinkoBoard rows={ROWS} mults={slots} width={w} drop={dropCmd} onLanded={onLanded} />}</AutoWidth>
       </div>
-      <div className="flex gap-1 mt-2">
-        {slots.map((m, i) => (
-          <span key={i} className="flex-1 text-center py-1 rounded-md font-black text-[9px]"
-            style={{
-              background: land === i ? "linear-gradient(180deg,#f7c948,#a16207)" : "rgba(0,0,0,0.5)",
-              color: land === i ? "#1a1204" : "#ffe9a8",
-              border: "1px solid rgba(247,201,72,0.25)",
-            }}>x{m}</span>
-        ))}
-      </div>
+      {land !== null && (
+        <p className="text-center mt-2 font-black text-[12px]" style={{ color: "#ffe9a8" }}>Tushdi: x{slots[land]}</p>
+      )}
     </Shell>
   );
 }
@@ -974,7 +939,7 @@ function MemoryGame({ cfg }: EProps) {
                 transition: "background 0.25s ease, transform 0.15s ease",
                 opacity: done.includes(i) ? 0.55 : 1,
               }}>
-              {shown ? <Sym n={s} s={26} /> : <span className="font-black text-[18px]" style={{ color: "#f7c948" }}>★</span>}
+              {shown ? <Sym n={s} s={26} /> : <Sym n="question" s={26} style={{ opacity: 0.85 }} />}
             </button>
           );
         })}

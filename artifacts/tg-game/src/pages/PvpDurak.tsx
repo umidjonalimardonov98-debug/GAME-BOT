@@ -64,7 +64,7 @@ const api = (p: string, body?: unknown) =>
     return j as any;
   });
 
-const money = (n: number) => n.toLocaleString("ru-RU");
+const money = (n?: number) => (Number(n) || 0).toLocaleString("ru-RU");
 
 function Seat({ info, foe, me }: { info: SeatInfo; foe?: Foe; me?: boolean }) {
   const letter = (info?.name || "P").trim().charAt(0).toUpperCase();
