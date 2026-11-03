@@ -1,3 +1,4 @@
+import StageFx from "@/components/casino/StageFx";
 import BetPanel from "@/components/casino/BetPanel";
 import { useState, useCallback } from "react";
 import { usePlayer } from "@/lib/player-context";
@@ -160,6 +161,7 @@ export default function Blackjack() {
 
       <div className="flex-1 px-4 pb-6 flex flex-col gap-3">
 
+        <StageFx result={result === "blackjack" || result === "win" ? true : result === "bust" || result === "lose" ? false : null} innerClassName="flex flex-col gap-3">
         {/* Dealer */}
         <div className="rounded-2xl p-4"
           style={{
@@ -215,6 +217,7 @@ export default function Blackjack() {
             {gameState === "idle" && [0, 1].map(k => <div key={k} className="rounded-lg" style={{ width: 62, height: 88, border: "2px dashed rgba(247,229,155,.35)", background: "rgba(0,0,0,.15)" }} />)}
           </div>
         </div>
+        </StageFx>
 
         {/* Bet input */}
         {(gameState === "idle"|| gameState ==="result") && (

@@ -1,3 +1,4 @@
+import StageFx from "@/components/casino/StageFx";
 import { useState } from "react";
 import { useLang } from "@/lib/lang-context";
 import { useTheme, GAME_BG, pageBg } from "@/lib/theme-context";
@@ -93,6 +94,7 @@ export default function LuckyCard() {
     <div className="min-h-screen flex flex-col" style={{ background: pageBg(theme, GAME_BG.luckycard) }}>
       <GameHeader icon="cardback" title={` ${GAME_NAMES.luckycard[lang]}`} subtitle={`x${level.mult} · 36 karta`} />
       <div className="flex-1 px-4 pb-8 flex flex-col gap-4 items-center">
+        <StageFx result={won} innerClassName="w-full flex flex-col gap-4 items-center">
 
         {/* qiyinlik tanlash */}
         <div className="w-full grid grid-cols-4 gap-1.5">
@@ -140,6 +142,7 @@ export default function LuckyCard() {
           Eng baland kartani toping — {level.cards} tadan 1 ta
         </p>
 
+        </StageFx>
         <ResultBanner win={won} text={won ? `${g("win", lang)} x${level.mult}` : g("lose", lang)} amount={amount} />
         <div className="bet-dock">
           <BetPanel value={betInput} onChange={setBetInput} onQuick={quick} disabled={busy} />

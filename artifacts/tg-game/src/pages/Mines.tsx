@@ -1,3 +1,4 @@
+import StageFx from "@/components/casino/StageFx";
 import BetPanel from "@/components/casino/BetPanel";
 import { useState, useCallback } from "react";
 import { usePlayer } from "@/lib/player-context";
@@ -186,6 +187,7 @@ export default function Mines() {
         </div>
 
         {/* Grid — GEMS MINES (ko'k kristall skin) */}
+        <StageFx result={state === "over" ? boom === null : null} active={state === "playing"}>
         <TableFrame skin="blue" title="GEMS MINES" bulbs bulbsActive={state === "playing"}>
           <div
             className="rounded-2xl p-3"
@@ -275,6 +277,7 @@ export default function Mines() {
           )}
           </div>
         </TableFrame>
+        </StageFx>
 
         {/* Mines count */}
         <div className="rounded-2xl p-4" style={{ background: ts.card, border: `1px solid ${ts.cardBorder}` }}>

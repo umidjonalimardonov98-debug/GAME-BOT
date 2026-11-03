@@ -1,3 +1,4 @@
+import StageFx from "@/components/casino/StageFx";
 import { useState, useRef, useEffect } from "react";
 import { useLang } from "@/lib/lang-context";
 import { useTheme, GAME_BG, pageBg } from "@/lib/theme-context";
@@ -57,6 +58,7 @@ export default function Limbo() {
     <div className="min-h-screen flex flex-col" style={{ background: pageBg(theme, GAME_BG.limbo) }}>
       <GameHeader icon="rocket" title={` ${GAME_NAMES.limbo[lang]}`} subtitle="x100" />
       <div className="flex-1 px-4 pb-8 flex flex-col gap-4 items-center">
+        <StageFx result={won} innerClassName="w-full flex flex-col gap-4 items-center">
 
         <style>{`
           @keyframes lbStar { 0%{transform:translateY(-20px)} 100%{transform:translateY(300px)} }
@@ -125,6 +127,7 @@ export default function Limbo() {
             style={{ background: ts.input, border: `1px solid ${ts.inputBorder}`, color: ts.text }} />
         </div>
 
+        </StageFx>
         <ResultBanner win={won} text={won ? g("win", lang) : g("lose", lang)} amount={amount} />
         <div className="bet-dock">
           <BetPanel value={betInput} onChange={setBetInput} onQuick={quick} disabled={busy} />

@@ -8,6 +8,7 @@ import GameHeader from "@/components/GameHeader";
 import BetPanel from "@/components/casino/BetPanel";
 import PlayButton from "@/components/casino/PlayButton";
 import ResultBanner from "@/components/casino/ResultBanner";
+import StageFx from "@/components/casino/StageFx";
 import Sym from "@/components/casino/Sym";
 import PlayingCard from "@/components/casino/PlayingCard";
 
@@ -78,6 +79,7 @@ function Shell({
         <GameHeader icon={cfg.syms[0]} title={cfg.name[lang]} subtitle={`x${cfg.mult}`} />
       </div>
       <div className="flex-1 px-4 pb-8 pt-3 flex flex-col gap-3 items-center relative" style={{ zIndex: 1 }}>
+        <StageFx result={won}>
         <div className="game-stage w-full rounded-3xl p-3 relative overflow-hidden" style={{
           background: ts.card,
           border: "1px solid rgba(247,201,72,0.32)",
@@ -87,6 +89,7 @@ function Shell({
             style={{ background: "linear-gradient(90deg,transparent,#f7c948,transparent)" }} />
           <div className="relative">{children}</div>
         </div>
+        </StageFx>
         {hint && (
           <p className="text-[11px] font-bold tracking-wide text-center" style={{ color: "#c9b071" }}>{hint}</p>
         )}

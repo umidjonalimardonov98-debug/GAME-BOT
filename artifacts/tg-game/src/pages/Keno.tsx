@@ -1,3 +1,4 @@
+import StageFx from "@/components/casino/StageFx";
 import { useState } from "react";
 import { useLang } from "@/lib/lang-context";
 import { useTheme, GAME_BG, pageBg } from "@/lib/theme-context";
@@ -58,6 +59,7 @@ export default function Keno() {
     <div className="min-h-screen flex flex-col" style={{ background: pageBg(theme, GAME_BG.keno) }}>
       <GameHeader icon="ticket" title={` ${GAME_NAMES.keno[lang]}`} subtitle="x60" />
       <div className="flex-1 px-4 pb-8 flex flex-col gap-4 items-center">
+        <StageFx result={won} innerClassName="w-full flex flex-col gap-4 items-center">
 
         <p className="text-xs font-bold" style={{ color: ts.textSub }}>{g("pickNums", lang)} ({picks.length}/{PICKS})</p>
 
@@ -107,6 +109,7 @@ export default function Keno() {
           </p>
         )}
 
+        </StageFx>
         <ResultBanner win={won} text={won ? g("win", lang) : g("lose", lang)} amount={amount} />
         <div className="bet-dock">
           <BetPanel value={betInput} onChange={setBetInput} onQuick={quick} disabled={busy} />

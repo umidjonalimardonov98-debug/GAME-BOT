@@ -1,3 +1,4 @@
+import StageFx from "@/components/casino/StageFx";
 import { useState } from "react";
 import { useLang } from "@/lib/lang-context";
 import { useTheme, GAME_BG, pageBg } from "@/lib/theme-context";
@@ -40,6 +41,7 @@ export default function CoinFlip() {
     <div className="min-h-screen flex flex-col" style={{ background: pageBg(theme, GAME_BG.coinflip) }}>
       <GameHeader icon="coin" title={` ${GAME_NAMES.coinflip[lang]}`} subtitle="x1.9" />
       <div className="flex-1 px-4 pb-8 flex flex-col gap-4 items-center">
+        <StageFx result={won} innerClassName="w-full flex flex-col gap-4 items-center">
 
         <div className="w-full rounded-3xl relative overflow-hidden flex items-center justify-center" style={{
           height: 260, perspective: 900,
@@ -83,6 +85,7 @@ export default function CoinFlip() {
           ))}
         </div>
 
+        </StageFx>
         <ResultBanner win={won} text={won ? g("win", lang) : g("lose", lang)} amount={amount} />
         <div className="bet-dock">
           <BetPanel value={betInput} onChange={setBetInput} onQuick={quick} disabled={busy} />

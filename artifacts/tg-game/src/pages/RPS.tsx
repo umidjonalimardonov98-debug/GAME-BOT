@@ -1,3 +1,4 @@
+import StageFx from "@/components/casino/StageFx";
 import { useState } from "react";
 import { useLang } from "@/lib/lang-context";
 import { useTheme, GAME_BG, pageBg } from "@/lib/theme-context";
@@ -46,6 +47,7 @@ export default function RPS() {
     <div className="min-h-screen flex flex-col" style={{ background: pageBg(theme, GAME_BG.rps) }}>
       <GameHeader icon="rock" title={` ${GAME_NAMES.rps[lang]}`} subtitle="x1.9" />
       <div className="flex-1 px-4 pb-8 flex flex-col gap-4 items-center">
+        <StageFx result={won} innerClassName="w-full flex flex-col gap-4 items-center">
 
         <div className="w-full rounded-3xl relative overflow-hidden py-6 px-3"
           style={{ background: "linear-gradient(90deg,#0b2a5c 0%,#0a1630 50%,#5c0b1a 100%)",
@@ -98,6 +100,7 @@ export default function RPS() {
           ))}
         </div>
 
+        </StageFx>
         <ResultBanner win={won} text={won ? g("win", lang) : g("lose", lang)} amount={amount} />
         <div className="bet-dock">
           <BetPanel value={betInput} onChange={setBetInput} onQuick={quick} disabled={busy} />

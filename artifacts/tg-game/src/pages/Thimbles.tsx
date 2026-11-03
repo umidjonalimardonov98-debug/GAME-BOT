@@ -1,3 +1,4 @@
+import StageFx from "@/components/casino/StageFx";
 import { useState } from "react";
 import { useLang } from "@/lib/lang-context";
 import { useTheme, GAME_BG, pageBg } from "@/lib/theme-context";
@@ -53,6 +54,7 @@ export default function Thimbles() {
     <div className="min-h-screen flex flex-col" style={{ background: pageBg(theme, GAME_BG.thimbles) }}>
       <GameHeader icon="question" title={` ${GAME_NAMES.thimbles[lang]}`} subtitle={`x${MULT}`} />
       <div className="flex-1 px-4 pb-8 flex flex-col gap-4 items-center">
+        <StageFx result={won} innerClassName="w-full flex flex-col gap-4 items-center">
 
         <div className="w-full rounded-3xl relative overflow-hidden" style={{
           height: 250,
@@ -101,6 +103,7 @@ export default function Thimbles() {
           {shuffling ? "..." : g("choose", lang)}
         </p>
 
+        </StageFx>
         <ResultBanner win={won} text={won ? g("win", lang) : g("lose", lang)} amount={amount} />
         <div className="bet-dock">
           <BetPanel value={betInput} onChange={setBetInput} onQuick={quick} disabled={busy} />

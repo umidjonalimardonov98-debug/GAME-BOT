@@ -12,9 +12,11 @@ interface Props {
   active?: boolean;
   big?: boolean;
   className?: string;
+  /** ichki konteyner uchun klasslar (masalan flex/gap saqlash uchun) */
+  innerClassName?: string;
 }
 
-export default function StageFx({ children, result, active, big, className }: Props) {
+export default function StageFx({ children, result, active, big, className, innerClassName }: Props) {
   const [fx, setFx] = useState<null | "win" | "lose">(null);
   const [key, setKey] = useState(0);
 
@@ -30,6 +32,7 @@ export default function StageFx({ children, result, active, big, className }: Pr
       return () => clearTimeout(t);
     }
     setFx(null);
+    return undefined;
   }, [result]);
 
   const coins = big ? 22 : 14;
@@ -56,7 +59,7 @@ export default function StageFx({ children, result, active, big, className }: Pr
         }} />
       )}
 
-      <div className="relative" style={{ zIndex: 1 }}>{children}</div>
+      <div className={`relative ${innerClassName ?? ""}`} style={{ zIndex: 1 }}>{children}</div>
 
       {fx === "win" && (
         <div key={key} className="absolute inset-0 pointer-events-none overflow-hidden rounded-3xl" style={{ zIndex: 5 }}>

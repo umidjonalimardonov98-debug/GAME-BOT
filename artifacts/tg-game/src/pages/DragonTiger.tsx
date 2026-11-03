@@ -1,3 +1,4 @@
+import StageFx from "@/components/casino/StageFx";
 import { useState } from "react";
 import { useLang } from "@/lib/lang-context";
 import { useTheme, GAME_BG, pageBg } from "@/lib/theme-context";
@@ -68,6 +69,7 @@ export default function DragonTiger() {
     <div className="min-h-screen flex flex-col" style={{ background: pageBg(theme, GAME_BG.dragontiger) }}>
       <GameHeader icon="dragon" title={` ${GAME_NAMES.dragontiger[lang]}`} subtitle="x9" />
       <div className="flex-1 px-4 pb-8 flex flex-col gap-4 items-center">
+        <StageFx result={won} innerClassName="w-full flex flex-col gap-4 items-center">
 
         <div className="w-full rounded-3xl py-6 flex relative overflow-hidden" style={{ background: "radial-gradient(ellipse at 50% 25%,#1d7a4c 0%,#0e4a2e 55%,#06261a 100%)", border: "3px solid #8a5a1c", boxShadow: "inset 0 0 0 2px #d4af37, inset 0 0 50px rgba(0,0,0,.6), 0 12px 30px rgba(0,0,0,.5)" }}>
           <style>{`@keyframes dt-wait{0%,100%{transform:translateY(0)}50%{transform:translateY(-6px)}}`}</style>
@@ -89,6 +91,7 @@ export default function DragonTiger() {
           ))}
         </div>
 
+        </StageFx>
         <ResultBanner win={won} text={won ? g("win", lang) : g("lose", lang)} amount={amount} />
         <div className="bet-dock">
           <BetPanel value={betInput} onChange={setBetInput} onQuick={quick} disabled={busy} />

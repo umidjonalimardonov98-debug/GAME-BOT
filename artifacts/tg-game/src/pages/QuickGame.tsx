@@ -9,6 +9,7 @@ import GameHeader from "@/components/GameHeader";
 import BetPanel from "@/components/casino/BetPanel";
 import PlayButton from "@/components/casino/PlayButton";
 import ResultBanner from "@/components/casino/ResultBanner";
+import StageFx from "@/components/casino/StageFx";
 import NewEngineGame, { NEW_ENGINE_SET } from "@/games/engines";
 
 /* ─────────────────── umumiy yordamchilar ─────────────────── */
@@ -808,6 +809,7 @@ function Game({ cfg }: { cfg: GameCfg }) {
 
       </div>
       <div className="flex-1 px-4 pb-8 flex flex-col gap-4 items-center relative" style={{ zIndex: 1 }}>
+        <StageFx result={won} active={busy}>
         <div className="w-full rounded-3xl p-3 relative overflow-hidden"
           style={{
             background: ts.card,
@@ -840,6 +842,7 @@ function Game({ cfg }: { cfg: GameCfg }) {
           )}
           </div>
         </div>
+        </StageFx>
 
         {cfg.engine === "climb" && step > 0 && (
           <div className="w-full text-center py-2 rounded-2xl font-black"

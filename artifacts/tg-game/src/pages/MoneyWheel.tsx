@@ -1,3 +1,4 @@
+import StageFx from "@/components/casino/StageFx";
 import { useState } from "react";
 import { useLang } from "@/lib/lang-context";
 import { useTheme, GAME_BG, pageBg } from "@/lib/theme-context";
@@ -52,6 +53,7 @@ export default function MoneyWheel() {
     <div className="min-h-screen flex flex-col" style={{ background: pageBg(theme, GAME_BG.moneywheel) }}>
       <GameHeader icon="wheel" title={` ${GAME_NAMES.moneywheel[lang]}`} subtitle="x2 · x5 · x10 · x20 · x40" />
       <div className="flex-1 px-4 pb-8 flex flex-col gap-4 items-center">
+        <StageFx result={won} innerClassName="w-full flex flex-col gap-4 items-center">
 
         <div className="w-full rounded-3xl py-8 flex items-center justify-center relative overflow-hidden"
           style={{ background: "radial-gradient(circle at 50% 45%,#3a2a0a 0%,#140d02 70%)", border: "1px solid #d4af3755", boxShadow: "inset 0 0 60px rgba(0,0,0,.7)" }}>
@@ -101,6 +103,7 @@ export default function MoneyWheel() {
           ))}
         </div>
 
+        </StageFx>
         <ResultBanner win={won} text={won ? g("win", lang) : g("lose", lang)} amount={amount} />
         <div className="bet-dock">
           <BetPanel value={betInput} onChange={setBetInput} onQuick={quick} disabled={busy} />

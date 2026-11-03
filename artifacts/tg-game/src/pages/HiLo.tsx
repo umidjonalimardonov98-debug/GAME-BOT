@@ -1,3 +1,4 @@
+import StageFx from "@/components/casino/StageFx";
 import { useState } from "react";
 import { useLang } from "@/lib/lang-context";
 import { useTheme, GAME_BG, pageBg } from "@/lib/theme-context";
@@ -77,6 +78,7 @@ export default function HiLo() {
           @keyframes hlDeal { 0%{transform:translateY(-30px) rotateY(90deg) scale(.85);opacity:0} 100%{transform:none;opacity:1} }
           @keyframes hlArrow { 0%,100%{transform:translateX(0);opacity:.6} 50%{transform:translateX(6px);opacity:1} }
         `}</style>
+        <StageFx result={active ? null : won}>
         <div className="w-full rounded-3xl py-7 flex items-center justify-center gap-4 relative overflow-hidden"
           style={{
             background: "radial-gradient(ellipse at 50% 40%, #1f7a4a 0%, #0f4a2c 60%, #06261a 100%)",
@@ -88,6 +90,7 @@ export default function HiLo() {
           {next ? <Card c={next} k={`n${next.f}-${next.s}`} /> : <Card c={card} hidden k="hidden" />}
           <div className="absolute top-2 left-3 rounded-full px-3 py-1 font-black text-xs" style={{ background: "rgba(0,0,0,.45)", color: "#fbbf24", border: "1px solid rgba(251,191,36,.5)" }}>x{mult.toFixed(2)}</div>
         </div>
+        </StageFx>
 
         <p className="font-black text-lg"style={{ color:"#fbbf24" }}>x{mult.toFixed(2)}</p>
 

@@ -1,3 +1,4 @@
+import StageFx from "@/components/casino/StageFx";
 import BetPanel from "@/components/casino/BetPanel";
 import { useState, useCallback, useEffect, useRef } from "react";
 import { usePlayer } from "@/lib/player-context";
@@ -125,6 +126,7 @@ export default function Roulette() {
 
       <div className="flex-1 px-4 pb-8 flex flex-col gap-4">
         {/* Wheel */}
+        <StageFx result={result === null || spinning || prize === bet ? null : prize > bet} active={spinning} big>
         <TableFrame skin="green" title="ROULETTE" bulbs bulbsActive={spinning}>
         <div
           className="rounded-2xl p-4 flex flex-col items-center gap-4 relative overflow-hidden"
@@ -178,6 +180,7 @@ export default function Roulette() {
           )}
         </div>
         </TableFrame>
+        </StageFx>
 
         {/* Bet types */}
         <div className="rounded-2xl p-4" style={{ background: ts.card, border: `1px solid ${ts.cardBorder}` }}>
