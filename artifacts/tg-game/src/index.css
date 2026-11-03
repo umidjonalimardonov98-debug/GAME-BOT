@@ -918,3 +918,19 @@ button:not(:disabled):active { transform: scale(.94) translateY(1px); filter: br
 @media (prefers-reduced-motion: reduce) {
   .ga-root *, .gh-hero *, .game-stage.is-live { animation: none !important; }
 }
+
+/* Baliq ovi hovuzi */
+.fh-rays { position: absolute; inset: -20% -10% 30%; background: repeating-linear-gradient(100deg, rgba(255,255,255,.10) 0 14px, transparent 14px 46px); filter: blur(3px); animation: fhRay 6s ease-in-out infinite alternate; }
+.fh-sand { position: absolute; left: 0; right: 0; bottom: 0; height: 26px; background: radial-gradient(120% 100% at 50% 100%, rgba(214,180,110,.45), transparent 70%); }
+.fh-bub { position: absolute; bottom: -12px; border-radius: 50%; border: 1px solid rgba(255,255,255,.55); background: radial-gradient(circle at 30% 30%, rgba(255,255,255,.7), transparent 60%); animation: fhRise linear infinite; }
+.fh-demo { position: absolute; left: -15%; animation: fhSwim linear infinite; opacity: .9; }
+.fh-cta { display: inline-block; padding: 6px 14px; border-radius: 999px; font-size: 11px; font-weight: 900; letter-spacing: .16em; color: #fff;
+  background: rgba(0,0,0,.45); border: 1px solid color-mix(in srgb, var(--ga) 70%, transparent); box-shadow: 0 0 16px color-mix(in srgb, var(--ga) 45%, transparent); animation: ghBlink 1.6s ease-in-out infinite; }
+.fh-splash { position: absolute; left: 50%; top: 50%; width: 64px; height: 64px; margin: -32px; border-radius: 50%; border: 3px solid #fff3b0; animation: fhSplash .35s ease-out forwards; pointer-events: none; }
+@keyframes fhRay { from { transform: translateX(-6%) } to { transform: translateX(6%) } }
+@keyframes fhRise { to { transform: translateY(-270px) translateX(8px) } }
+@keyframes fhSwim { 0% { transform: translateX(0) translateY(0) } 25% { transform: translateX(32vw) translateY(-8px) } 50% { transform: translateX(64vw) translateY(6px) } 100% { transform: translateX(125vw) translateY(0) } }
+@keyframes fhBob { 0%,100% { translate: 0 0 } 50% { translate: 0 -6px } }
+@keyframes fhSplash { from { transform: scale(.3); opacity: 1 } to { transform: scale(1.4); opacity: 0 } }
+body[data-gh="1"] .ai-fab { display: none; }
+@media (max-width: 430px) { .gh-icon { display: none !important; } }

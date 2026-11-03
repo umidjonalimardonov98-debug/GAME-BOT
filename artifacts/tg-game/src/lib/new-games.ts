@@ -108,7 +108,7 @@ export const NEW_GAMES: GameCfg[] = [
   G("secretpairs", "memory", "#0ea5e9", "#0c4a6e", ["chest", "gift", "trophy", "clover", "ticket", "medal-gold"], 8, 6, "smoke", "Sirli Juftlik", "Тайные Пары", "Secret Pairs"),
 
   /* ── OV ── */
-  G("fishhunt",    "fishing", "#0ea5e9", "#082f49", ["target"], 6,  5, "bubbles", "Baliq Ovi", "Рыбалка", "Fish Hunt"),
+  G("fishhunt",    "fishing", "#0ea5e9", "#082f49", ["fish", "target"], 6,  5, "bubbles", "Baliq Ovi", "Рыбалка", "Fish Hunt"),
   G("pearlhunt",   "fishing", "#a78bfa", "#1e1b4b", ["gem"],    9,  5, "stars",   "Marvarid Ovi", "Охота за Жемчугом", "Pearl Hunt"),
 
   /* ── RAQAMLI G'ILDIRAK ── */

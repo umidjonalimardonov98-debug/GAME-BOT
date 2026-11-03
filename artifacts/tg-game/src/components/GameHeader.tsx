@@ -1,3 +1,4 @@
+import { useEffect } from "react";
 import { useLocation } from "wouter";
 import { ArrowLeft } from "lucide-react";
 import { usePlayer } from "@/lib/player-context";
@@ -26,6 +27,12 @@ export default function GameHeader({ title, icon, subtitle, hideTheme }: Props) 
 
   const isLight = false;
 
+  // Sarlavhada yordam tugmasi bor — ekrandagi suzuvchi "?" yashiriladi (banner/maydon ustiga tushmasin)
+  useEffect(() => {
+    document.body.dataset.gh = "1";
+    return () => { delete document.body.dataset.gh; };
+  }, []);
+
   return (
     <div
       className="flex items-center gap-2 px-3 py-2.5 relative z-50"
@@ -48,7 +55,7 @@ export default function GameHeader({ title, icon, subtitle, hideTheme }: Props) 
       </button>
 
       {/* Sarlavha */}
-      {icon && <Sym n={icon} s={26} className="idle-float shrink-0" />}
+      {icon && <Sym n={icon} s={22} className="idle-float shrink-0 gh-icon" />}
       <div className="flex-1 min-w-0">
         <p className="font-black text-base leading-tight truncate" style={{ color: ts.text }}>
           {title.trim()}
@@ -77,6 +84,10 @@ export default function GameHeader({ title, icon, subtitle, hideTheme }: Props) 
       {!hideTheme && <ThemeSwitcher compact />}
 
       {/* Ovoz */}
+      <button type="button" aria-label="AI yordamchi" onClick={() => window.dispatchEvent(new Event("askai:open"))}
+        className="w-9 h-9 rounded-lg shrink-0 font-black text-base active:scale-90 transition-transform"
+        style={{ background: "linear-gradient(145deg,#f7c948,#b45309)", color: "#1a1204", border: "1px solid rgba(255,243,176,.6)" }}>?</button>
+
       <SoundToggle light={isLight} />
 
       {/* Til */}

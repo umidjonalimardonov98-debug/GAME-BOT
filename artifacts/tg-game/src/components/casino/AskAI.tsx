@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useLocation } from "wouter";
 
 // Lovable'da e'lon qilingan AI yordamchi manzili
@@ -11,6 +11,11 @@ export default function AskAI() {
   const [q, setQ] = useState("");
   const [a, setA] = useState("");
   const [busy, setBusy] = useState(false);
+  useEffect(() => {
+    const o = () => setOpen(true);
+    window.addEventListener("askai:open", o);
+    return () => window.removeEventListener("askai:open", o);
+  }, []);
   if (HIDE.includes(loc)) return null;
   const game = loc.replace(/^\//, "").replace(/[-/]/g, " ") || "o'yin";
 
@@ -30,8 +35,8 @@ export default function AskAI() {
   return (
     <>
       <button onClick={() => setOpen(true)} aria-label="AI yordamchi"
-        className="fixed z-40 right-3 top-[72px] w-11 h-11 rounded-full font-black text-lg ai-fab"
-        style={{ background: "linear-gradient(145deg,#f7c948,#b45309)", color: "#1a1204", boxShadow: "0 6px 22px rgba(247,201,72,.5)" }}>?</button>
+        className="fixed z-40 right-3 w-10 h-10 rounded-full font-black text-base ai-fab"
+        style={{ bottom: "calc(236px + env(safe-area-inset-bottom))", background: "linear-gradient(145deg,#f7c948,#b45309)", color: "#1a1204", boxShadow: "0 6px 22px rgba(247,201,72,.5)", border: "2px solid rgba(255,243,176,.7)" }}>?</button>
       {open && (
         <div className="fixed inset-0 z-50 flex items-end" style={{ background: "rgba(0,0,0,.6)" }} onClick={() => setOpen(false)}>
           <div onClick={(e) => e.stopPropagation()} className="w-full rounded-t-3xl p-4 flex flex-col gap-3 ai-sheet"

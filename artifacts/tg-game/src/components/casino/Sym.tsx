@@ -14,6 +14,7 @@ const URL: Record<string, string> = {
   question: "/symbols/question.png", chip: "/symbols/chip.png", cardback: "/symbols/cardback.png",
   "medal-gold": "/symbols/medal-gold.png", "medal-silver": "/symbols/medal-silver.png",
   "medal-bronze": "/symbols/medal-bronze.png",
+  fish: "/symbols/fish.png",
 };
 
 export function symUrl(n: string) { return URL[n] ?? ""; }

@@ -1056,18 +1056,44 @@ function FishingGame({ cfg }: EProps) {
     <Shell cfg={cfg} busy={g.busy} won={g.won} amount={g.amount} refund={g.refund}
       hint={live ? `Nishon: ${hits}/${NEED} · vaqt ${Math.ceil(left / 3)}s` : `${NEED} ta nishonni 8 soniyada uring`}
       footer={<><Bet g={g} />{!live && <PlayButton label="OVNI BOSHLASH" icon={cfg.syms[0]} onClick={start} disabled={!g.canPlay} />}</>}>
-      <div className="relative h-[240px] rounded-2xl overflow-hidden"
-        style={{ background: `linear-gradient(180deg,${cfg.c1}33,${cfg.c2} 55%,#03060c)` }}>
+      <div className="fh-pool relative h-[250px] rounded-2xl overflow-hidden"
+        style={{ ["--ga" as any]: cfg.c1, background: `linear-gradient(180deg,${cfg.c1}55 0%,${cfg.c2} 50%,#020611 100%)` }}>
+        <span className="fh-rays" aria-hidden />
+        <span className="fh-sand" aria-hidden />
+        {Array.from({ length: 9 }, (_, i) => (
+          <span key={i} className="fh-bub" aria-hidden style={{ left: `${(i * 23) % 96}%`, width: 5 + (i % 3) * 4, height: 5 + (i % 3) * 4,
+            animationDuration: `${3.5 + (i % 4)}s`, animationDelay: `${-i * 0.7}s` }} />
+        ))}
+        {live && (
+          <div className="absolute left-3 right-3 top-2 z-10 h-1.5 rounded-full overflow-hidden" style={{ background: "rgba(0,0,0,.45)" }}>
+            <div className="h-full rounded-full" style={{ width: `${(left / 24) * 100}%`, transition: "width .33s linear",
+              background: left < 8 ? "linear-gradient(90deg,#ef4444,#f97316)" : `linear-gradient(90deg,${cfg.c1},#fff3b0)` }} />
+          </div>
+        )}
+        {!live && targets.length === 0 && (
+          <>
+            {Array.from({ length: 5 }, (_, i) => (
+              <span key={i} className="fh-demo" aria-hidden style={{ top: `${14 + i * 15}%`, animationDuration: `${6 + (i % 3) * 2}s`, animationDelay: `${-i * 1.6}s` }}>
+                <Sym n={cfg.syms[0]} s={30 + (i % 3) * 8} />
+              </span>
+            ))}
+            <div className="absolute inset-x-0 bottom-4 z-10 text-center">
+              <span className="fh-cta">{NEED} TA NISHON · 8 SONIYA</span>
+            </div>
+          </>
+        )}
         {targets.map((t) => (
-          <button key={t.id} onClick={() => shoot(t.id)} disabled={!live}
-            className="absolute"
+          <button key={t.id} onClick={() => shoot(t.id)} disabled={!live} aria-label="nishon"
+            className="absolute z-[5] p-1"
             style={{
               left: `${t.x}%`, top: `${t.y}%`,
-              transition: "left 0.33s linear, transform 0.2s ease",
-              transform: t.hit ? "scale(1.6) rotate(20deg)" : "scale(1)",
-              opacity: t.hit ? 0.3 : 1,
+              transition: "left 0.33s linear, transform 0.2s ease, opacity .2s",
+              transform: t.hit ? "scale(1.5) rotate(25deg)" : "scale(1)",
+              opacity: t.hit ? 0.25 : 1,
+              animation: t.hit ? undefined : `fhBob ${1.4 + (t.id % 3) * 0.3}s ease-in-out infinite`,
             }}>
-            <Sym n={cfg.syms[0]} s={38} />
+            <Sym n={cfg.syms[0]} s={40} glow={!t.hit} />
+            {t.hit && <span className="fh-splash" aria-hidden />}
           </button>
         ))}
       </div>
