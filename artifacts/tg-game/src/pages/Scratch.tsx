@@ -81,7 +81,7 @@ export default function Scratch() {
       <Ambient behind color="#c084fc" layer="stars" syms={["ticket", "seven"]} live={busy} />
       <GameHeader icon="ticket" title={` ${GAME_NAMES.scratch[lang]}`} subtitle="x1.1 - x15" />
       <div className="flex-1 px-4 pb-8 flex flex-col gap-4 items-center">
-        <StageFx result={won} innerClassName="w-full flex flex-col gap-4 items-center">
+        <StageFx pattern="burst" syms={["seven", "star"]} color="#c084fc" result={won} innerClassName="w-full flex flex-col gap-4 items-center">
 
         <p className="text-xs font-bold" style={{ color: ts.textSub }}>
           {busy ? "Kartochka o'zi qirilmoqda..." : "3 ta bir xil belgi - yutuq"}

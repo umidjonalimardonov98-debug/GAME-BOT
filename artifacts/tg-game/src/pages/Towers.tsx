@@ -66,7 +66,7 @@ export default function Towers() {
       <Ambient behind color="#a3e635" layer="grid" syms={["crown", "bomb"]} live={busy} />
       <GameHeader icon="gem" title={` ${GAME_NAMES.towers[lang]}`} subtitle="x20" />
       <div className="flex-1 px-4 pb-8 flex flex-col gap-4 items-center">
-        <StageFx result={won} innerClassName="w-full flex flex-col gap-4 items-center">
+        <StageFx pattern="slam" syms={["crown"]} color="#a3e635" result={won} innerClassName="w-full flex flex-col gap-4 items-center">
 
         <style>{`
           @keyframes twRow { 0%,100%{box-shadow:0 0 0 1px rgba(251,191,36,.5),0 0 14px rgba(251,191,36,.25)} 50%{box-shadow:0 0 0 1px rgba(251,191,36,.9),0 0 24px rgba(251,191,36,.55)} }

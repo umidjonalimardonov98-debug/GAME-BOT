@@ -146,7 +146,7 @@ export default function Spin() {
       <div className="flex-1 flex flex-col items-center px-4 pb-6 gap-5">
 
         {/* ─── CHARX ─── */}
-        <StageFx result={result ? result.prize > 0 : null} active={spinning} big>
+        <StageFx pattern="spiral" syms={["gift", "coin"]} color="#fb923c" result={result ? result.prize > 0 : null} active={spinning} big>
         <div className="relative flex flex-col items-center" style={{ width: size + 24 }}>
           {/* oltin ramka + lampalar */}
           <div

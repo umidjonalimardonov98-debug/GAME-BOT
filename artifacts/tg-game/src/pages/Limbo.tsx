@@ -60,7 +60,7 @@ export default function Limbo() {
       <Ambient behind color="#38bdf8" layer="stars" syms={["rocket", "star"]} live={busy} />
       <GameHeader icon="rocket" title={` ${GAME_NAMES.limbo[lang]}`} subtitle="x100" />
       <div className="flex-1 px-4 pb-8 flex flex-col gap-4 items-center">
-        <StageFx result={won} innerClassName="w-full flex flex-col gap-4 items-center">
+        <StageFx pattern="sweep" syms={["rocket"]} color="#38bdf8" result={won} innerClassName="w-full flex flex-col gap-4 items-center">
 
         <style>{`
           @keyframes lbStar { 0%{transform:translateY(-20px)} 100%{transform:translateY(300px)} }

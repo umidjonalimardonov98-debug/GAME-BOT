@@ -56,7 +56,7 @@ export default function Thimbles() {
       <Ambient behind color="#b45309" layer="smoke" syms={["coin", "question"]} live={busy} />
       <GameHeader icon="question" title={` ${GAME_NAMES.thimbles[lang]}`} subtitle={`x${MULT}`} />
       <div className="flex-1 px-4 pb-8 flex flex-col gap-4 items-center">
-        <StageFx result={won} innerClassName="w-full flex flex-col gap-4 items-center">
+        <StageFx pattern="fountain" syms={["coin", "gem"]} color="#f59e0b" result={won} innerClassName="w-full flex flex-col gap-4 items-center">
 
         <div className="w-full rounded-3xl relative overflow-hidden" style={{
           height: 250,

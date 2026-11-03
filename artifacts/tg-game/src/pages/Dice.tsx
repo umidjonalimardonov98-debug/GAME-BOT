@@ -95,7 +95,7 @@ export default function Dice() {
       <div className="flex-1 px-4 pb-6 flex flex-col gap-4">
 
         {/* UNDER & OVER 7 — oltin doira arena */}
-        <StageFx result={gameState === "result" ? won : null} active={gameState === "rolling"} big>
+        <StageFx pattern="burst" syms={["dice"]} color="#22c55e" result={gameState === "result" ? won : null} active={gameState === "rolling"} big>
         <TableFrame skin="green" title="UNDER & OVER 7" bulbs bulbsActive={gameState === "rolling"}>
           <div className="relative flex flex-col items-center gap-4 py-4 rounded-2xl overflow-hidden"
             style={{

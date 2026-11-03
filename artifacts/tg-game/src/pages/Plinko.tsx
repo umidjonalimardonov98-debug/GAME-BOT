@@ -118,7 +118,7 @@ export default function Plinko() {
           ))}
         </div>
 
-        <StageFx result={won} active={busy} big>
+        <StageFx pattern="rain" syms={["coin1", "star"]} color="#ec4899" result={won} active={busy} big>
         <TableFrame skin="blue" title="PLINKO PRO" bulbs bulbsActive={busy}>
           <div ref={wrapRef} className="rounded-2xl overflow-hidden"
             style={{

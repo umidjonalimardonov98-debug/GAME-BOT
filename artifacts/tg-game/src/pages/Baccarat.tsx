@@ -82,7 +82,7 @@ export default function Baccarat() {
       <Ambient behind color="#d4af37" layer="rays" syms={["cardback", "chip"]} live={busy} />
       <GameHeader icon="cardback" title={` ${GAME_NAMES.baccarat[lang]}`} subtitle="x8" />
       <div className="flex-1 px-4 pb-8 flex flex-col gap-4 items-center">
-        <StageFx result={won} innerClassName="w-full flex flex-col gap-4 items-center">
+        <StageFx pattern="fountain" syms={["chip", "cardback"]} color="#d4af37" result={won} innerClassName="w-full flex flex-col gap-4 items-center">
 
         <div className="w-full rounded-3xl py-6 flex relative" style={{ background: "radial-gradient(ellipse at 50% 25%,#1d7a4c 0%,#0e4a2e 55%,#06261a 100%)", border: "3px solid #8a5a1c", boxShadow: "inset 0 0 0 2px #d4af37, inset 0 0 50px rgba(0,0,0,.6), 0 12px 30px rgba(0,0,0,.5)" }}>
           <div className="absolute left-1/2 top-3 bottom-3 w-px" style={{ background: "rgba(212,175,55,.4)" }} />

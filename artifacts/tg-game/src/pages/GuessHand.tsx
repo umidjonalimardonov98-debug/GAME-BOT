@@ -46,7 +46,7 @@ export default function GuessHand() {
       <Ambient behind color="#e879f9" layer="stars" syms={["coin", "question"]} live={busy} />
       <GameHeader icon="coin" title={` ${GAME_NAMES.hands[lang]}`} subtitle={`x${MULT}`} />
       <div className="flex-1 px-4 pb-8 flex flex-col gap-4 items-center">
-        <StageFx result={won} innerClassName="w-full flex flex-col gap-4 items-center">
+        <StageFx pattern="spiral" syms={["coin", "gem"]} color="#e879f9" result={won} innerClassName="w-full flex flex-col gap-4 items-center">
 
         <div className="w-full rounded-3xl relative overflow-hidden px-4 pt-6 pb-8"
           style={{ background: "radial-gradient(ellipse at 50% 30%,#2a6b45 0%,#123b26 60%,#0a2416 100%)",

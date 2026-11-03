@@ -166,7 +166,7 @@ export default function Parity() {
       <div className="flex-1 px-4 pb-6 flex flex-col gap-4">
 
         {/* Number display */}
-        <StageFx result={phase === "result" ? won : null} active={isSpinning} big>
+        <StageFx pattern="fountain" syms={["coin", "chip"]} color="#818cf8" result={phase === "result" ? won : null} active={isSpinning} big>
         <div className="rounded-3xl p-5 flex flex-col items-center gap-3 relative overflow-hidden"
           style={{
             background: isLight

@@ -105,7 +105,7 @@ export default function Slots() {
       <div className="flex-1 px-2.5 pb-6 flex flex-col gap-3 items-center">
 
         {/* ===== KABINET ===== */}
-        <StageFx result={result ? result.totalWin > 0 : null} active={spinning} big>
+        <StageFx pattern="fountain" syms={["seven", "cherry", "bell"]} color="#facc15" result={result ? result.totalWin > 0 : null} active={spinning} big>
         <div className="w-full rounded-[24px] p-[3px] relative"
           style={{ background: GOLD.frame, boxShadow: `0 14px 40px rgba(0,0,0,0.62), 0 0 40px ${GOLD.glow}` }}>
           <div className="rounded-[21px] p-2.5 relative overflow-hidden"

@@ -189,7 +189,7 @@ export default function Mines() {
         </div>
 
         {/* Grid — GEMS MINES (ko'k kristall skin) */}
-        <StageFx result={state === "over" ? boom === null : null} active={state === "playing"}>
+        <StageFx pattern="burst" syms={["gem"]} color="#0ea5e9" result={state === "over" ? boom === null : null} active={state === "playing"}>
         <TableFrame skin="blue" title="GEMS MINES" bulbs bulbsActive={state === "playing"}>
           <div
             className="rounded-2xl p-3"

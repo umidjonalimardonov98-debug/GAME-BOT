@@ -49,7 +49,7 @@ export default function RPS() {
       <Ambient behind color="#f43f5e" layer="smoke" syms={["rock", "paper", "scissors"]} live={busy} />
       <GameHeader icon="rock" title={` ${GAME_NAMES.rps[lang]}`} subtitle="x1.9" />
       <div className="flex-1 px-4 pb-8 flex flex-col gap-4 items-center">
-        <StageFx result={won} innerClassName="w-full flex flex-col gap-4 items-center">
+        <StageFx pattern="slam" syms={["trophy"]} color="#f43f5e" result={won} innerClassName="w-full flex flex-col gap-4 items-center">
 
         <div className="w-full rounded-3xl relative overflow-hidden py-6 px-3"
           style={{ background: "linear-gradient(90deg,#0b2a5c 0%,#0a1630 50%,#5c0b1a 100%)",

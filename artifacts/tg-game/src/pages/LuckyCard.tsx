@@ -96,7 +96,7 @@ export default function LuckyCard() {
       <Ambient behind color="#f472b6" layer="rays" syms={["cardback", "crown"]} live={busy} />
       <GameHeader icon="cardback" title={` ${GAME_NAMES.luckycard[lang]}`} subtitle={`x${level.mult} · 36 karta`} />
       <div className="flex-1 px-4 pb-8 flex flex-col gap-4 items-center">
-        <StageFx result={won} innerClassName="w-full flex flex-col gap-4 items-center">
+        <StageFx pattern="spiral" syms={["crown", "cardback"]} color="#f472b6" result={won} innerClassName="w-full flex flex-col gap-4 items-center">
 
         {/* qiyinlik tanlash */}
         <div className="w-full grid grid-cols-4 gap-1.5">

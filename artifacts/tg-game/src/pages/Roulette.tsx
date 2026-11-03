@@ -128,7 +128,7 @@ export default function Roulette() {
 
       <div className="flex-1 px-4 pb-8 flex flex-col gap-4">
         {/* Wheel */}
-        <StageFx result={result === null || spinning || prize === bet ? null : prize > bet} active={spinning} big>
+        <StageFx pattern="spiral" syms={["chip"]} color="#22c55e" result={result === null || spinning || prize === bet ? null : prize > bet} active={spinning} big>
         <TableFrame skin="green" title="ROULETTE" bulbs bulbsActive={spinning}>
         <div
           className="rounded-2xl p-4 flex flex-col items-center gap-4 relative overflow-hidden"

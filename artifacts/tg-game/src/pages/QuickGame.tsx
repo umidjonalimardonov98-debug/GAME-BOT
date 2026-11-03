@@ -9,7 +9,8 @@ import GameHeader from "@/components/GameHeader";
 import BetPanel from "@/components/casino/BetPanel";
 import PlayButton from "@/components/casino/PlayButton";
 import ResultBanner from "@/components/casino/ResultBanner";
-import StageFx from "@/components/casino/StageFx";
+import StageFx, { type FxPattern } from "@/components/casino/StageFx";
+const FX_PATTERN: Record<string, FxPattern> = {mines: "burst", crash: "sweep", sicbo: "burst", roulette: "spiral", hilo: "rain", war: "slam", plinko: "rain", keno: "rain", scratch: "burst", match3: "fountain", bingo: "rain", lotto: "spiral", memory: "spiral", fishing: "sweep", wheel: "spiral", reel: "fountain", race: "sweep", climb: "slam", board: "burst"};
 import GameAtmosphere from "@/components/casino/GameAtmosphere";
 import GameHero from "@/components/casino/GameHero";
 import NewEngineGame, { NEW_ENGINE_SET } from "@/games/engines";
@@ -813,7 +814,7 @@ function Game({ cfg }: { cfg: GameCfg }) {
       </div>
       <div className="flex-1 px-4 pb-8 flex flex-col gap-4 items-center relative" style={{ zIndex: 1 }}>
         <GameHero cfg={cfg} lang={lang} live={busy} />
-        <StageFx result={won} active={busy} big={cfg.mult >= 8}>
+        <StageFx result={won} active={busy} big={cfg.mult >= 8} syms={cfg.syms} color={cfg.c1} pattern={FX_PATTERN[cfg.engine] ?? "rain"}>
         <div className={`game-stage has-acc w-full rounded-3xl p-3 relative overflow-hidden ${busy ? "is-live" : ""}`}
           style={{
             ["--ga" as any]: cfg.c1,

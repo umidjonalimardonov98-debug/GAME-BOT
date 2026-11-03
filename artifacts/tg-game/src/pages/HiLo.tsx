@@ -80,7 +80,7 @@ export default function HiLo() {
           @keyframes hlDeal { 0%{transform:translateY(-30px) rotateY(90deg) scale(.85);opacity:0} 100%{transform:none;opacity:1} }
           @keyframes hlArrow { 0%,100%{transform:translateX(0);opacity:.6} 50%{transform:translateX(6px);opacity:1} }
         `}</style>
-        <StageFx result={active ? null : won}>
+        <StageFx pattern="rain" syms={["crown", "coin"]} color="#34d399" result={active ? null : won}>
         <div className="w-full rounded-3xl py-7 flex items-center justify-center gap-4 relative overflow-hidden"
           style={{
             background: "radial-gradient(ellipse at 50% 40%, #1f7a4a 0%, #0f4a2c 60%, #06261a 100%)",

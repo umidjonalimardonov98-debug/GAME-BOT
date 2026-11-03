@@ -168,7 +168,7 @@ export default function AppleOfFortune() {
 
       {/* GAME GRID */}
       {(gameState === "playing"|| gameState ==="won"|| gameState ==="lost") && (
-        <StageFx result={gameState === "won" ? true : gameState === "lost" ? false : null} className="flex-1 flex flex-col" innerClassName="flex-1 flex flex-col">
+        <StageFx pattern="burst" syms={["apple"]} color="#25a55a" result={gameState === "won" ? true : gameState === "lost" ? false : null} className="flex-1 flex flex-col" innerClassName="flex-1 flex flex-col">
         <div className="flex-1 overflow-hidden px-2 py-1">
           <div className="h-full flex flex-col gap-1">
             {rows.map((rowIdx) =>{

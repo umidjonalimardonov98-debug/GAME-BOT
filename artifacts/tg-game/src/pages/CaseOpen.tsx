@@ -111,7 +111,7 @@ export default function CaseOpen() {
       <Ambient behind color="#f59e0b" layer="rays" syms={["chest", "gem"]} live={busy} />
       <GameHeader icon="chest" title={` ${GAME_NAMES.case[lang]}`} subtitle={`${box.uz} · x${top}`} />
       <div className="flex-1 px-4 pb-8 flex flex-col gap-4 items-center">
-        <StageFx result={won} innerClassName="w-full flex flex-col gap-4 items-center">
+        <StageFx pattern="slam" syms={["chest"]} color="#f59e0b" result={won} innerClassName="w-full flex flex-col gap-4 items-center">
 
         {/* keys tanlash */}
         <div className="w-full grid grid-cols-3 gap-2">

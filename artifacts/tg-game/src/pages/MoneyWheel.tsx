@@ -55,7 +55,7 @@ export default function MoneyWheel() {
       <Ambient behind color="#eab308" layer="rays" syms={["money", "wheel"]} live={busy} />
       <GameHeader icon="wheel" title={` ${GAME_NAMES.moneywheel[lang]}`} subtitle="x2 · x5 · x10 · x20 · x40" />
       <div className="flex-1 px-4 pb-8 flex flex-col gap-4 items-center">
-        <StageFx result={won} innerClassName="w-full flex flex-col gap-4 items-center">
+        <StageFx pattern="rain" syms={["money", "coin"]} color="#eab308" result={won} innerClassName="w-full flex flex-col gap-4 items-center">
 
         <div className="w-full rounded-3xl py-8 flex items-center justify-center relative overflow-hidden"
           style={{ background: "radial-gradient(circle at 50% 45%,#3a2a0a 0%,#140d02 70%)", border: "1px solid #d4af3755", boxShadow: "inset 0 0 60px rgba(0,0,0,.7)" }}>

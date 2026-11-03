@@ -163,7 +163,7 @@ export default function Blackjack() {
 
       <div className="flex-1 px-4 pb-6 flex flex-col gap-3">
 
-        <StageFx result={result === "blackjack" || result === "win" ? true : result === "bust" || result === "lose" ? false : null} innerClassName="flex flex-col gap-3">
+        <StageFx pattern="burst" syms={["chip", "cardback"]} color="#10b981" result={result === "blackjack" || result === "win" ? true : result === "bust" || result === "lose" ? false : null} innerClassName="flex flex-col gap-3">
         {/* Dealer */}
         <div className="rounded-2xl p-4"
           style={{

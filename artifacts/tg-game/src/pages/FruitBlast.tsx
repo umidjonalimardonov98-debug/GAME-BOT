@@ -52,7 +52,7 @@ export default function FruitBlast() {
       <Ambient behind color="#f97316" layer="bubbles" syms={["cherry", "lemon", "grape", "melon"]} live={busy} />
       <GameHeader icon="cherry" title={` ${GAME_NAMES.fruitblast[lang]}`} subtitle={`x${MULT}`} />
       <div className="flex-1 px-4 pb-8 flex flex-col gap-4 items-center">
-        <StageFx result={won} innerClassName="w-full flex flex-col gap-4 items-center">
+        <StageFx pattern="fountain" syms={["cherry", "lemon", "grape", "melon", "orange"]} color="#f97316" result={won} innerClassName="w-full flex flex-col gap-4 items-center">
 
         <style>{`@keyframes fb-bulb{0%,100%{opacity:1}50%{opacity:.2}}@keyframes fb-lever{0%{transform:rotate(0)}40%{transform:rotate(38deg)}100%{transform:rotate(0)}}
           @keyframes fb-win{0%,100%{box-shadow:0 0 0 rgba(255,213,74,0)}50%{box-shadow:0 0 40px 8px rgba(255,213,74,.8)}}

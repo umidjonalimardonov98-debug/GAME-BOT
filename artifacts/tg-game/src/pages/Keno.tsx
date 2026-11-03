@@ -61,7 +61,7 @@ export default function Keno() {
       <Ambient behind color="#8b5cf6" layer="grid" syms={["ticket", "star"]} live={busy} />
       <GameHeader icon="ticket" title={` ${GAME_NAMES.keno[lang]}`} subtitle="x60" />
       <div className="flex-1 px-4 pb-8 flex flex-col gap-4 items-center">
-        <StageFx result={won} innerClassName="w-full flex flex-col gap-4 items-center">
+        <StageFx pattern="rain" syms={["ticket", "star"]} color="#8b5cf6" result={won} innerClassName="w-full flex flex-col gap-4 items-center">
 
         <p className="text-xs font-bold" style={{ color: ts.textSub }}>{g("pickNums", lang)} ({picks.length}/{PICKS})</p>
 

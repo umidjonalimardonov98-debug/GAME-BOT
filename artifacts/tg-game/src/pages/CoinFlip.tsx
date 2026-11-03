@@ -43,7 +43,7 @@ export default function CoinFlip() {
       <Ambient behind color="#fbbf24" layer="stars" syms={["coin", "coin1"]} live={busy} />
       <GameHeader icon="coin" title={` ${GAME_NAMES.coinflip[lang]}`} subtitle="x1.9" />
       <div className="flex-1 px-4 pb-8 flex flex-col gap-4 items-center">
-        <StageFx result={won} innerClassName="w-full flex flex-col gap-4 items-center">
+        <StageFx pattern="spiral" syms={["coin", "coin1"]} color="#fbbf24" result={won} innerClassName="w-full flex flex-col gap-4 items-center">
 
         <div className="w-full rounded-3xl relative overflow-hidden flex items-center justify-center" style={{
           height: 260, perspective: 900,

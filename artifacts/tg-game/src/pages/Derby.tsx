@@ -138,7 +138,7 @@ export default function Derby() {
       <GameHeader icon="trophy" title={` ${GAME_NAMES.derby[lang]}`} subtitle="x2.6 — x12" />
 
       <div className="flex-1 px-3 pb-8 flex flex-col gap-3 items-center">
-        <StageFx result={won} innerClassName="w-full flex flex-col gap-3 items-center">
+        <StageFx pattern="sweep" syms={["medal-gold", "trophy"]} color="#eab308" result={won} innerClassName="w-full flex flex-col gap-3 items-center">
 
         <style>{`@keyframes dby-dust{0%{transform:translateX(0) scale(.6);opacity:.9}100%{transform:translateX(-18px) scale(1.6);opacity:0}}`}</style>
         {/* ——— IPPODROM ——— */}

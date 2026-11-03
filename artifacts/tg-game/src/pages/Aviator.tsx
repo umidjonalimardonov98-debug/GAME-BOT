@@ -180,7 +180,7 @@ export default function Aviator() {
         </div>
 
         {/* Sky screen — HAQIQIY canvas uchish dvigateli */}
-        <StageFx result={result ? result.won : null} active={phase === "flying"} big>
+        <StageFx pattern="sweep" syms={["plane"]} color="#ef4444" result={result ? result.won : null} active={phase === "flying"} big>
         <TableFrame skin="night" className="!p-[2px]">
           <div className="rounded-2xl overflow-hidden"
             style={{ border: "1px solid rgba(224,72,63,0.35)", boxShadow: "inset 0 0 60px rgba(0,0,0,0.8)" }}>
