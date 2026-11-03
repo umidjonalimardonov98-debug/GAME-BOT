@@ -10,6 +10,8 @@ import BetPanel from "@/components/casino/BetPanel";
 import PlayButton from "@/components/casino/PlayButton";
 import ResultBanner from "@/components/casino/ResultBanner";
 import StageFx from "@/components/casino/StageFx";
+import GameAtmosphere from "@/components/casino/GameAtmosphere";
+import GameHero from "@/components/casino/GameHero";
 import NewEngineGame, { NEW_ENGINE_SET } from "@/games/engines";
 
 /* ─────────────────── umumiy yordamchilar ─────────────────── */
@@ -804,17 +806,20 @@ function Game({ cfg }: { cfg: GameCfg }) {
             style={{ zIndex: 0, background: `linear-gradient(180deg, rgba(3,6,12,0.55) 0%, ${cfg.c2}99 55%, rgba(3,6,12,0.92) 100%)` }} />
         </>
       )}
+      <GameAtmosphere cfg={cfg} live={busy} />
       <div className="relative" style={{ zIndex: 1 }}>
       <GameHeader icon={cfg.syms[0]} title={cfg.name[lang]} subtitle={`x${cfg.mult}`} />
 
       </div>
       <div className="flex-1 px-4 pb-8 flex flex-col gap-4 items-center relative" style={{ zIndex: 1 }}>
-        <StageFx result={won} active={busy}>
-        <div className="w-full rounded-3xl p-3 relative overflow-hidden"
+        <GameHero cfg={cfg} lang={lang} live={busy} />
+        <StageFx result={won} active={busy} big={cfg.mult >= 8}>
+        <div className={`game-stage has-acc w-full rounded-3xl p-3 relative overflow-hidden ${busy ? "is-live" : ""}`}
           style={{
-            background: ts.card,
-            border: "1px solid rgba(247,201,72,0.32)",
-            boxShadow: "0 14px 44px rgba(247,201,72,0.14)",
+            ["--ga" as any]: cfg.c1,
+            background: `linear-gradient(180deg, ${cfg.c2}f2 0%, rgba(5,8,15,0.96) 100%)`,
+            border: `1px solid ${cfg.c1}88`,
+            boxShadow: `0 14px 44px ${cfg.c1}33`,
           }}>
           {cover && (
             <>

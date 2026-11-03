@@ -9,6 +9,8 @@ import BetPanel from "@/components/casino/BetPanel";
 import PlayButton from "@/components/casino/PlayButton";
 import ResultBanner from "@/components/casino/ResultBanner";
 import StageFx from "@/components/casino/StageFx";
+import GameAtmosphere from "@/components/casino/GameAtmosphere";
+import GameHero from "@/components/casino/GameHero";
 import Sym from "@/components/casino/Sym";
 import PlayingCard from "@/components/casino/PlayingCard";
 
@@ -47,8 +49,9 @@ function useGame(cfg: GameCfg) {
 type EProps = { cfg: GameCfg };
 
 function Shell({
-  cfg, children, footer, won, amount, refund, hint,
+  cfg, children, footer, won, amount, refund, hint, busy,
 }: {
+  busy?: boolean;
   cfg: GameCfg;
   children: React.ReactNode;
   footer: React.ReactNode;
@@ -75,18 +78,21 @@ function Shell({
           }} />
         </>
       )}
+      <GameAtmosphere cfg={cfg} live={busy} />
       <div className="relative" style={{ zIndex: 1 }}>
         <GameHeader icon={cfg.syms[0]} title={cfg.name[lang]} subtitle={`x${cfg.mult}`} />
       </div>
       <div className="flex-1 px-4 pb-8 pt-3 flex flex-col gap-3 items-center relative" style={{ zIndex: 1 }}>
-        <StageFx result={won}>
-        <div className="game-stage w-full rounded-3xl p-3 relative overflow-hidden" style={{
-          background: ts.card,
-          border: "1px solid rgba(247,201,72,0.32)",
-          boxShadow: "0 14px 44px rgba(247,201,72,0.14)",
+        <GameHero cfg={cfg} lang={lang} live={busy} />
+        <StageFx result={won} active={busy} big={cfg.mult >= 8}>
+        <div className={`game-stage has-acc w-full rounded-3xl p-3 relative overflow-hidden ${busy ? "is-live" : ""}`} style={{
+          ["--ga" as any]: cfg.c1,
+          background: `linear-gradient(180deg, ${cfg.c2}f2 0%, rgba(5,8,15,0.96) 100%)`,
+          border: `1px solid ${cfg.c1}88`,
+          boxShadow: `0 14px 44px ${cfg.c1}33, inset 0 1px 0 rgba(255,255,255,0.08)`,
         }}>
           <span className="absolute inset-x-0 top-0 h-[2px]"
-            style={{ background: "linear-gradient(90deg,transparent,#f7c948,transparent)" }} />
+            style={{ background: `linear-gradient(90deg,transparent,${cfg.c1},transparent)` }} />
           <div className="relative">{children}</div>
         </div>
         </StageFx>
@@ -144,7 +150,7 @@ function MinesGame({ cfg }: EProps) {
   const cash = () => { if (!live || !open.length) return; setLive(false); g.finish(mult); };
 
   return (
-    <Shell cfg={cfg} won={g.won} amount={g.amount} refund={g.refund}
+    <Shell cfg={cfg} busy={g.busy} won={g.won} amount={g.amount} refund={g.refund}
       hint={live ? `Joriy koeffitsiyent x${mult} · ${bombs} ta mina` : `${bombs} ta minadan qoching`}
       footer={
         <>
@@ -220,7 +226,7 @@ function CrashGame({ cfg }: EProps) {
   const prog = Math.min(1, (mult - 1) / Math.max(0.5, cfg.mult - 1));
 
   return (
-    <Shell cfg={cfg} won={g.won} amount={g.amount} refund={g.refund}
+    <Shell cfg={cfg} busy={g.busy} won={g.won} amount={g.amount} refund={g.refund}
       hint={live ? "Portlashdan oldin pulni oling!" : `Maksimal x${cfg.mult}`}
       footer={
         <>
@@ -318,7 +324,7 @@ function SicBoGame({ cfg }: EProps) {
   };
 
   return (
-    <Shell cfg={cfg} won={g.won} amount={g.amount} refund={g.refund}
+    <Shell cfg={cfg} busy={g.busy} won={g.won} amount={g.amount} refund={g.refund}
       hint={`Yig'indi: ${dice[0] + dice[1] + dice[2]}`}
       footer={<><Bet g={g} /><PlayButton label="ZAR TASHLASH" icon="dice" onClick={roll} disabled={!g.canPlay} /></>}>
       <div className="flex justify-center gap-3 py-6">
@@ -370,7 +376,7 @@ function RouletteGame({ cfg }: EProps) {
   };
 
   return (
-    <Shell cfg={cfg} won={g.won} amount={g.amount} refund={g.refund}
+    <Shell cfg={cfg} busy={g.busy} won={g.won} amount={g.amount} refund={g.refund}
       hint={spin ? "Shar aylanmoqda..." : `Oxirgi raqam: ${num}`}
       footer={<><Bet g={g} /><PlayButton label="AYLANTIRISH" icon="chip" onClick={play} disabled={!g.canPlay} /></>}>
       <div className="relative mx-auto" style={{ width: 250, height: 250 }}>
@@ -462,7 +468,7 @@ function HiLoGame({ cfg }: EProps) {
   const cash = () => { if (!live || !streak) return; setLive(false); g.finish(mult); };
 
   return (
-    <Shell cfg={cfg} won={g.won} amount={g.amount} refund={g.refund}
+    <Shell cfg={cfg} busy={g.busy} won={g.won} amount={g.amount} refund={g.refund}
       hint={live ? `Seriya ${streak}/${cfg.n} · x${mult}` : `Har to'g'ri javob x${cfg.mult}`}
       footer={
         <>
@@ -517,7 +523,7 @@ function WarGame({ cfg }: EProps) {
   };
 
   return (
-    <Shell cfg={cfg} won={g.won} amount={g.amount} refund={g.refund}
+    <Shell cfg={cfg} busy={g.busy} won={g.won} amount={g.amount} refund={g.refund}
       hint="Kartangiz dilernikidan baland bo'lsa yutasiz · teng bo'lsa pul qaytadi"
       footer={<><Bet g={g} /><PlayButton label="KARTA TARQATISH" icon="cardback" onClick={play} disabled={!g.canPlay} /></>}>
       <div className="grid grid-cols-2 gap-3 py-5 place-items-center">
@@ -574,7 +580,7 @@ function PlinkoGame({ cfg }: EProps) {
   };
 
   return (
-    <Shell cfg={cfg} won={g.won} amount={g.amount} refund={g.refund}
+    <Shell cfg={cfg} busy={g.busy} won={g.won} amount={g.amount} refund={g.refund}
       hint={`${ROWS} qator · chetdagi kataklar eng katta koeffitsiyent`}
       footer={<><Bet g={g} /><PlayButton label="SHAR TASHLASH" icon={cfg.syms[0]} onClick={drop} disabled={!g.canPlay} /></>}>
       <div className="relative h-[230px] rounded-2xl overflow-hidden" style={{ background: `linear-gradient(180deg,${cfg.c2},#03060c)` }}>
@@ -645,7 +651,7 @@ function KenoGame({ cfg }: EProps) {
   };
 
   return (
-    <Shell cfg={cfg} won={g.won} amount={g.amount} refund={g.refund}
+    <Shell cfg={cfg} busy={g.busy} won={g.won} amount={g.amount} refund={g.refund}
       hint={`${NEED} ta raqam tanlang · 10 ta shar tortiladi`}
       footer={
         <>
@@ -721,7 +727,7 @@ function ScratchGame({ cfg }: EProps) {
   };
 
   return (
-    <Shell cfg={cfg} won={g.won} amount={g.amount} refund={g.refund}
+    <Shell cfg={cfg} busy={g.busy} won={g.won} amount={g.amount} refund={g.refund}
       hint={live ? "Kataklar ochilmoqda..." : "Kartochka oling - o'zi qiriladi"}
       footer={
         <>
@@ -782,7 +788,7 @@ function Match3Game({ cfg }: EProps) {
   };
 
   return (
-    <Shell cfg={cfg} won={g.won} amount={g.amount} refund={g.refund}
+    <Shell cfg={cfg} busy={g.busy} won={g.won} amount={g.amount} refund={g.refund}
       hint={combo ? `Kaskad x${combo}` : "Bir qatorda 5 ta bir xil belgi — yutuq"}
       footer={<><Bet g={g} /><PlayButton label="PORTLATISH" icon={cfg.syms[0]} onClick={play} disabled={!g.canPlay} /></>}>
       <div className="grid gap-1.5" style={{ gridTemplateColumns: `repeat(${N},1fr)` }}>
@@ -835,7 +841,7 @@ function BingoGame({ cfg }: EProps) {
   };
 
   return (
-    <Shell cfg={cfg} won={g.won} amount={g.amount} refund={g.refund}
+    <Shell cfg={cfg} busy={g.busy} won={g.won} amount={g.amount} refund={g.refund}
       hint="Bir qatorni to'liq yopsangiz — BINGO!"
       footer={<><Bet g={g} /><PlayButton label="BINGO O'YNASH" icon="chip" onClick={play} disabled={!g.canPlay} /></>}>
       <div className="grid gap-1.5 mb-3" style={{ gridTemplateColumns: `repeat(${N},1fr)` }}>
@@ -891,7 +897,7 @@ function LottoGame({ cfg }: EProps) {
   };
 
   return (
-    <Shell cfg={cfg} won={g.won} amount={g.amount} refund={g.refund}
+    <Shell cfg={cfg} busy={g.busy} won={g.won} amount={g.amount} refund={g.refund}
       hint={`Sizning raqamlaringiz: ${mine.join(" · ")}`}
       footer={
         <>
@@ -971,7 +977,7 @@ function MemoryGame({ cfg }: EProps) {
   };
 
   return (
-    <Shell cfg={cfg} won={g.won} amount={g.amount} refund={g.refund}
+    <Shell cfg={cfg} busy={g.busy} won={g.won} amount={g.amount} refund={g.refund}
       hint={live ? `Urinish: ${tries}/${PAIRS + 2} · barcha juftlikni toping` : `${PAIRS} juftlikni ${PAIRS + 2} urinishda toping`}
       footer={<><Bet g={g} />{!live && <PlayButton label="BOSHLASH" icon={cfg.syms[0]} onClick={start} disabled={!g.canPlay} />}</>}>
       <div className="grid grid-cols-4 gap-2">
@@ -1047,7 +1053,7 @@ function FishingGame({ cfg }: EProps) {
   };
 
   return (
-    <Shell cfg={cfg} won={g.won} amount={g.amount} refund={g.refund}
+    <Shell cfg={cfg} busy={g.busy} won={g.won} amount={g.amount} refund={g.refund}
       hint={live ? `Nishon: ${hits}/${NEED} · vaqt ${Math.ceil(left / 3)}s` : `${NEED} ta nishonni 8 soniyada uring`}
       footer={<><Bet g={g} />{!live && <PlayButton label="OVNI BOSHLASH" icon={cfg.syms[0]} onClick={start} disabled={!g.canPlay} />}</>}>
       <div className="relative h-[240px] rounded-2xl overflow-hidden"
@@ -1108,7 +1114,7 @@ function WheelGame({ cfg }: EProps) {
 
   const R = 46;
   return (
-    <Shell cfg={cfg} won={g.won} amount={g.amount} refund={g.refund}
+    <Shell cfg={cfg} busy={g.busy} won={g.won} amount={g.amount} refund={g.refund}
       hint={pick !== null ? `Sektor: x${segs[pick]}` : `${N} sektor · eng yuqori x${cfg.mult}`}
       footer={<><Bet g={g} /><PlayButton label="AYLANTIRISH" icon="wheel" onClick={spin} disabled={!g.canPlay || g.busy} /></>}>
       <div className="relative w-full aspect-square max-w-[320px] mx-auto">
@@ -1198,7 +1204,7 @@ function ReelGame({ cfg }: EProps) {
   };
 
   return (
-    <Shell cfg={cfg} won={g.won} amount={g.amount} refund={g.refund}
+    <Shell cfg={cfg} busy={g.busy} won={g.won} amount={g.amount} refund={g.refund}
       hint="Markaziy chiziqda 3+ bir xil belgi — yutuq"
       footer={<><Bet g={g} /><PlayButton label="AYLANTIRISH" icon="seven" onClick={spin} disabled={!g.canPlay || g.busy} /></>}>
       <div className="grid grid-cols-5 gap-1.5">
@@ -1254,7 +1260,7 @@ function RaceGame({ cfg }: EProps) {
   };
 
   return (
-    <Shell cfg={cfg} won={g.won} amount={g.amount} refund={g.refund}
+    <Shell cfg={cfg} busy={g.busy} won={g.won} amount={g.amount} refund={g.refund}
       hint={winner === null ? `Chopqichni tanlang · x${cfg.mult}` : `G'olib: №${winner + 1}`}
       footer={<><Bet g={g} /><PlayButton label="POYGA" icon="trophy" onClick={start} disabled={!g.canPlay || g.busy} /></>}>
       <div className="flex flex-col gap-2">
@@ -1310,7 +1316,7 @@ function ClimbGame({ cfg }: EProps) {
   const cash = () => { if (!live || floor < 1) return; setLive(false); setFloor(0); g.finish(mult); };
 
   return (
-    <Shell cfg={cfg} won={g.won} amount={g.amount} refund={g.refund}
+    <Shell cfg={cfg} busy={g.busy} won={g.won} amount={g.amount} refund={g.refund}
       hint={live ? `${floor + 1}/${FLOORS} qavat · x${mult}` : `${FLOORS} qavat · har qavatda 1 ta xavf`}
       footer={
         <>
@@ -1413,7 +1419,7 @@ function BoardGame({ cfg }: EProps) {
 
   const sum = (p: [number, number]) => p[0] + p[1];
   return (
-    <Shell cfg={cfg} won={g.won} amount={g.amount} refund={g.refund}
+    <Shell cfg={cfg} busy={g.busy} won={g.won} amount={g.amount} refund={g.refund}
       hint={`3 raund · yig'indisi katta bo'lgan g'olib · x${cfg.mult}`}
       footer={<><Bet g={g} /><PlayButton label="ZAR TASHLASH" icon="dice" onClick={play} disabled={!g.canPlay || g.busy} /></>}>
       <div className="flex flex-col gap-3 items-center py-2">
