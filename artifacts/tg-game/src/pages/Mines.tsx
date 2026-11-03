@@ -1,3 +1,4 @@
+import BetPanel from "@/components/casino/BetPanel";
 import { useState, useCallback } from "react";
 import { usePlayer } from "@/lib/player-context";
 import { useTheme, pageBg, GAME_BG } from "@/lib/theme-context";
@@ -308,32 +309,8 @@ export default function Mines() {
           <p className="text-xs font-bold mb-3 tracking-widest" style={{ color: ts.textSub }}>
              TIKISH MIQDORI
           </p>
-          <div className="grid grid-cols-4 gap-1.5 mb-3">
-            {["MIN", "X2", "X/2", "MAX"].map((a) => (
-              <button
-                key={a}
-                disabled={state === "playing"}
-                onClick={() => quick(a)}
-                className="py-2 rounded-xl text-xs font-bold active:scale-95 transition-transform"
-                style={{
-                  background: ts.btnSecondary,
-                  color: ts.btnSecondaryText,
-                  border: `1px solid ${ts.cardBorder}`,
-                }}
-              >
-                {a}
-              </button>
-            ))}
-          </div>
-          <input
-            type="number"
-            value={betInput}
-            disabled={state === "playing"}
-            onChange={(e) => setBetInput(e.target.value)}
-            placeholder="min 2 000"
-            className="w-full rounded-xl px-4 py-3 font-black text-lg outline-none"
-            style={{ background: ts.input, border: `1px solid ${ts.inputBorder}`, color: ts.text }}
-          />
+          <BetPanel value={betInput} onChange={setBetInput} disabled={state === "playing"}
+            onQuick={(a) => quick(a === "1/2" ? "X/2" : a)} />
         </div>
 
         {/* Action */}

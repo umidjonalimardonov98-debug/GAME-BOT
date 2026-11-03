@@ -1,3 +1,4 @@
+import BetPanel from "@/components/casino/BetPanel";
 import { useState, useCallback } from "react";
 import { usePlayer } from "@/lib/player-context";
 import { useLang } from "@/lib/lang-context";
@@ -220,19 +221,7 @@ export default function Blackjack() {
           <div className="rounded-2xl p-4"
             style={{ background: ts.card, border: `1px solid ${ts.cardBorder}`, boxShadow: isLight ? "0 4px 16px rgba(22,104,227,0.08)":"none" }}>
             <p className="text-xs font-bold mb-3 tracking-widest" style={{ color: ts.textSub }}>{t.betAmount}</p>
-            <div className="grid grid-cols-4 gap-2 mb-3">
-              {["MIN","1/2","X2","MAX"].map(a => (
-                <button key={a} onClick={() => setQuickBet(a)}
-                  className="py-2 rounded-xl text-xs font-bold active:scale-95 transition-transform"
-                  style={{ background: ts.btnSecondary, color: ts.btnSecondaryText, border: `1px solid ${ts.cardBorder}`, boxShadow: "0 2px 0 rgba(0,0,0,0.1)" }}>
-                  {a}
-                </button>
-              ))}
-            </div>
-            <input type="number" value={betInput} onChange={e => setBetInput(e.target.value)}
-              className="w-full rounded-xl px-4 py-3 font-black text-center text-lg outline-none"
-              style={{ background: ts.input, border: `1px solid ${ts.inputBorder}`, color: ts.text }}
-              placeholder="2000" min={2000} />
+            <BetPanel value={betInput} onChange={setBetInput} onQuick={setQuickBet} />
             <p className="text-xs mt-2 text-center" style={{ color: ts.textSub }}>{t.bjPayout}</p>
           </div>
         )}

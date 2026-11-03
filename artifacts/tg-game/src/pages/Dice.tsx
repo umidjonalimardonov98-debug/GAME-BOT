@@ -1,3 +1,4 @@
+import BetPanel from "@/components/casino/BetPanel";
 import StageFx from "@/components/casino/StageFx";
 import { useState, useCallback } from "react";
 import { usePlayer } from "@/lib/player-context";
@@ -182,27 +183,11 @@ export default function Dice() {
         {/* Bet controls */}
         <div className="rounded-2xl p-4" style={{ background: ts.card, border: `1px solid ${ts.cardBorder}` }}>
           <p className="text-xs font-bold mb-3 tracking-widest" style={{ color: ts.textSub }}> TIKISH MIQDORI</p>
-          <div className="grid grid-cols-4 gap-1.5 mb-3">
-            {["MIN","X2","X/2","MAX"].map((a) => (
-              <button key={a} disabled={gameState === "rolling"} onClick={() => setQuickBet(a)}
-                className="py-2 rounded-xl text-xs font-bold active:scale-95 transition-transform"
-                style={{ background: ts.btnSecondary, color: ts.btnSecondaryText, border: `1px solid ${ts.cardBorder}`, boxShadow: "0 2px 0 rgba(0,0,0,0.1)" }}>
-                {a}
-              </button>
-            ))}
-          </div>
-          <div className="relative mb-1">
-            <input type="number" placeholder="min 2 000" value={betInput}
-              disabled={gameState === "rolling"}
-              onChange={(e) => setBetInput(e.target.value)}
-              className="w-full rounded-xl px-4 py-3 font-black text-lg outline-none"
-              style={{ background: ts.input, border: `1px solid ${ts.inputBorder}`, color: ts.text }} />
-            {betType && activeBet >= 2000 && (
-              <span className="absolute right-4 top-1/2 -translate-y-1/2 text-sm font-black"style={{ color:"#39c46f" }}>
-                → {potential.toLocaleString()}
-              </span>
-            )}
-          </div>
+          <BetPanel value={betInput} onChange={setBetInput} disabled={gameState === "rolling"}
+            onQuick={(a) => setQuickBet(a === "1/2" ? "X/2" : a)} />
+          {betType && activeBet >= 2000 && (
+            <p className="text-center text-xs font-black mt-1.5" style={{ color: "#39c46f" }}>Yutuq: {potential.toLocaleString()} UZS</p>
+          )}
         </div>
 
         {/* Roll buttons */}

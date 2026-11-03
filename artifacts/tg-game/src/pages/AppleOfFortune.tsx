@@ -1,3 +1,4 @@
+import BetPanel from "@/components/casino/BetPanel";
 import { useState, useEffect, type ReactNode } from "react";
 import { useLocation } from "wouter";
 import { ArrowLeft } from "lucide-react";
@@ -252,28 +253,10 @@ export default function AppleOfFortune() {
       {/* Controls (idle) */}
       {gameState === "idle" && (
         <div className="px-4 pb-5 shrink-0">
-          <div className="grid grid-cols-4 gap-1.5 mb-2">
-            {["MIN", "X2", "X/2", "MAX"].map((a) => (
-              <button key={a} onClick={() =>{
-                const bal = player?.balance ?? 0;
-                let v = activeBet;
-                if (a === "MIN") v = 2000;
-                else if (a === "MAX") v = Math.min(bal, 500000);
-                else if (a === "X2") v = Math.min(activeBet * 2, bal, 500000);
-                else v = Math.max(Math.floor(activeBet / 2), 2000);
-                setCustomBet(String(v)); setBet(v);
-              }} className="py-2 rounded-xl text-xs font-bold active:scale-95"
-                style={a === "MAX"
-                  ? { background: "rgba(22,163,74,0.25)", border: "1px solid rgba(74,222,128,0.55)", color: "#39c46f" }
-                  : { background: "rgba(255,255,255,0.06)", border: "1px solid rgba(255,255,255,0.1)", color: "rgba(255,255,255,0.6)" }}>
-                {a}
-              </button>
-            ))}
-          </div>
-          <input type="number" placeholder="Miqdor (min 2 000)" value={customBet}
-            onChange={(e) => setCustomBet(e.target.value)}
-            className="w-full rounded-2xl px-4 py-3 font-black text-base focus:outline-none mb-2"
-            style={{ background: "rgba(255,255,255,0.06)", border: "1px solid rgba(37,165,90,0.25)", color: "#39c46f" }} />
+          <div className="mb-2"><BetPanel value={customBet || String(bet)} onChange={(v) => { setCustomBet(v); const n = Number(v); if (n >= 2000) setBet(n); }}
+            onQuick={(a) => { const bal = player?.balance ?? 0; let v = activeBet;
+              if (a === "MAX") v = Math.min(bal, 500000); else if (a === "X2") v = Math.min(activeBet * 2, bal, 500000); else v = Math.max(Math.floor(activeBet / 2), 2000);
+              setCustomBet(String(v)); setBet(v); }} /></div>
           <button onClick={start}
             disabled={!player || player.balance < activeBet || activeBet < 2000}
             className="w-full py-3.5 rounded-2xl font-black text-base active:scale-95 transition-all disabled:opacity-40"
@@ -309,28 +292,10 @@ export default function AppleOfFortune() {
             </p>
 
             {/* Controls inside overlay */}
-            <div className="grid grid-cols-4 gap-1.5 mb-2">
-              {["MIN", "X2", "X/2", "MAX"].map((a) => (
-                <button key={a} onClick={() =>{
-                  const bal = player?.balance ?? 0;
-                  let v = activeBet;
-                  if (a === "MIN") v = 2000;
-                  else if (a === "MAX") v = Math.min(bal, 500000);
-                  else if (a === "X2") v = Math.min(activeBet * 2, bal, 500000);
-                  else v = Math.max(Math.floor(activeBet / 2), 2000);
-                  setCustomBet(String(v)); setBet(v);
-                }} className="py-2 rounded-xl text-xs font-bold active:scale-95"
-                  style={a === "MAX"
-                    ? { background: "rgba(22,163,74,0.25)", border: "1px solid rgba(74,222,128,0.55)", color: "#39c46f" }
-                    : { background: "rgba(255,255,255,0.08)", border: "1px solid rgba(255,255,255,0.12)", color: "rgba(255,255,255,0.6)" }}>
-                  {a}
-                </button>
-              ))}
-            </div>
-            <input type="number" placeholder="Miqdor (min 2 000)" value={customBet}
-              onChange={(e) => setCustomBet(e.target.value)}
-              className="w-full rounded-2xl px-4 py-3 font-black text-base focus:outline-none mb-3"
-              style={{ background: "rgba(255,255,255,0.06)", border: "1px solid rgba(37,165,90,0.25)", color: "#39c46f" }} />
+            <div className="mb-3"><BetPanel value={customBet || String(bet)} onChange={(v) => { setCustomBet(v); const n = Number(v); if (n >= 2000) setBet(n); }}
+              onQuick={(a) => { const bal = player?.balance ?? 0; let v = activeBet;
+                if (a === "MAX") v = Math.min(bal, 500000); else if (a === "X2") v = Math.min(activeBet * 2, bal, 500000); else v = Math.max(Math.floor(activeBet / 2), 2000);
+                setCustomBet(String(v)); setBet(v); }} /></div>
 
             <button onClick={start}
               disabled={!player || player.balance < activeBet || activeBet < 2000}
