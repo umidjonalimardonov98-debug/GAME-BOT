@@ -1,3 +1,4 @@
+import { Ambient } from "@/components/casino/GameAtmosphere";
 import StageFx from "@/components/casino/StageFx";
 import { useState } from "react";
 import { useLang } from "@/lib/lang-context";
@@ -56,7 +57,8 @@ export default function Keno() {
   };
 
   return (
-    <div className="min-h-screen flex flex-col" style={{ background: pageBg(theme, GAME_BG.keno) }}>
+    <div className="min-h-screen flex flex-col relative isolate" style={{ background: pageBg(theme, GAME_BG.keno) }}>
+      <Ambient behind color="#8b5cf6" layer="grid" syms={["ticket", "star"]} live={busy} />
       <GameHeader icon="ticket" title={` ${GAME_NAMES.keno[lang]}`} subtitle="x60" />
       <div className="flex-1 px-4 pb-8 flex flex-col gap-4 items-center">
         <StageFx result={won} innerClassName="w-full flex flex-col gap-4 items-center">

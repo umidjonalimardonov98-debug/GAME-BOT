@@ -1,3 +1,4 @@
+import { Ambient } from "@/components/casino/GameAtmosphere";
 import StageFx from "@/components/casino/StageFx";
 import { useState } from "react";
 import { useLang } from "@/lib/lang-context";
@@ -70,7 +71,8 @@ export default function HiLo() {
   );
 
   return (
-    <div className="min-h-screen flex flex-col" style={{ background: pageBg(theme, GAME_BG.hilo) }}>
+    <div className="min-h-screen flex flex-col relative isolate" style={{ background: pageBg(theme, GAME_BG.hilo) }}>
+      <Ambient behind color="#34d399" layer="grid" syms={["cardback", "crown"]} live={busy} />
       <GameHeader icon="cardback" title={` ${GAME_NAMES.hilo[lang]}`} subtitle="x1.65 / qadam" />
       <div className="flex-1 px-4 pb-8 flex flex-col gap-4 items-center">
 

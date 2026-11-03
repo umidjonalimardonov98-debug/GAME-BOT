@@ -1,3 +1,4 @@
+import { Ambient } from "@/components/casino/GameAtmosphere";
 import StageFx from "@/components/casino/StageFx";
 import { useState } from "react";
 import { useLang } from "@/lib/lang-context";
@@ -41,7 +42,8 @@ export default function GuessHand() {
   };
 
   return (
-    <div className="min-h-screen flex flex-col" style={{ background: pageBg(theme, GAME_BG.hands) }}>
+    <div className="min-h-screen flex flex-col relative isolate" style={{ background: pageBg(theme, GAME_BG.hands) }}>
+      <Ambient behind color="#e879f9" layer="stars" syms={["coin", "question"]} live={busy} />
       <GameHeader icon="coin" title={` ${GAME_NAMES.hands[lang]}`} subtitle={`x${MULT}`} />
       <div className="flex-1 px-4 pb-8 flex flex-col gap-4 items-center">
         <StageFx result={won} innerClassName="w-full flex flex-col gap-4 items-center">

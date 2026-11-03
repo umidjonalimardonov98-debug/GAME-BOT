@@ -1,3 +1,4 @@
+import { Ambient } from "@/components/casino/GameAtmosphere";
 import BetPanel from "@/components/casino/BetPanel";
 import StageFx from "@/components/casino/StageFx";
 import { useState, useEffect, useRef } from "react";
@@ -153,7 +154,8 @@ export default function Aviator() {
   const planeY = Math.max(10, 80 - (multiplier - 1) * 15);
 
   return (
-    <div className="min-h-screen flex flex-col" style={{ background: pageBg(theme, GAME_BG.aviator) }}>
+    <div className="min-h-screen flex flex-col relative isolate" style={{ background: pageBg(theme, GAME_BG.aviator) }}>
+      <Ambient behind color="#ef4444" layer="smoke" syms={["plane", "rocket"]} live={phase === "flying" || phase === "countdown"} />
       <style>{`
         @keyframes float { 0%,100%{transform:translateY(0) rotate(-8deg)} 50%{transform:translateY(-8px) rotate(-8deg)} }
         @keyframes twinkle { 0%,100%{opacity:0.15} 50%{opacity:0.55} }

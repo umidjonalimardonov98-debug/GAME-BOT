@@ -1,3 +1,4 @@
+import { Ambient } from "@/components/casino/GameAtmosphere";
 import StageFx from "@/components/casino/StageFx";
 import { useState, useRef, useEffect } from "react";
 import { useLang } from "@/lib/lang-context";
@@ -100,7 +101,8 @@ export default function Plinko() {
   };
 
   return (
-    <div className="min-h-screen flex flex-col" style={{ background: pageBg(theme, GAME_BG.plinko) }}>
+    <div className="min-h-screen flex flex-col relative isolate" style={{ background: pageBg(theme, GAME_BG.plinko) }}>
+      <Ambient behind color="#ec4899" layer="bubbles" syms={["coin1", "star"]} live={busy} />
       <GameHeader icon="gem" title={` ${GAME_NAMES.plinko[lang]}`} subtitle={`x${Math.max(...mults)}`} />
       <div className="flex-1 px-4 pb-8 flex flex-col gap-3 items-center">
 

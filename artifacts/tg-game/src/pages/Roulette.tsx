@@ -1,3 +1,4 @@
+import { Ambient } from "@/components/casino/GameAtmosphere";
 import StageFx from "@/components/casino/StageFx";
 import BetPanel from "@/components/casino/BetPanel";
 import { useState, useCallback, useEffect, useRef } from "react";
@@ -121,7 +122,8 @@ export default function Roulette() {
   }, []);
 
   return (
-    <div className="min-h-screen flex flex-col" style={{ background: pageBg(theme, GAME_BG.roulette) }}>
+    <div className="min-h-screen flex flex-col relative isolate" style={{ background: pageBg(theme, GAME_BG.roulette) }}>
+      <Ambient behind color="#16a34a" layer="rays" syms={["chip", "coin"]} live={spinning} />
       <GameHeader icon="wheel" title=" RULETKA" subtitle="Yevropa ruletkasi · 0–36" />
 
       <div className="flex-1 px-4 pb-8 flex flex-col gap-4">

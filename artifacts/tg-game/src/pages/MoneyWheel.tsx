@@ -1,3 +1,4 @@
+import { Ambient } from "@/components/casino/GameAtmosphere";
 import StageFx from "@/components/casino/StageFx";
 import { useState } from "react";
 import { useLang } from "@/lib/lang-context";
@@ -50,7 +51,8 @@ export default function MoneyWheel() {
     `${SECT_COL[v] ?? COLORS[i % 2]} ${i * step}deg ${(i + 1) * step - 0.6}deg, #f7e59b ${(i + 1) * step - 0.6}deg ${(i + 1) * step}deg`).join(",")})`;
 
   return (
-    <div className="min-h-screen flex flex-col" style={{ background: pageBg(theme, GAME_BG.moneywheel) }}>
+    <div className="min-h-screen flex flex-col relative isolate" style={{ background: pageBg(theme, GAME_BG.moneywheel) }}>
+      <Ambient behind color="#eab308" layer="rays" syms={["money", "wheel"]} live={busy} />
       <GameHeader icon="wheel" title={` ${GAME_NAMES.moneywheel[lang]}`} subtitle="x2 · x5 · x10 · x20 · x40" />
       <div className="flex-1 px-4 pb-8 flex flex-col gap-4 items-center">
         <StageFx result={won} innerClassName="w-full flex flex-col gap-4 items-center">

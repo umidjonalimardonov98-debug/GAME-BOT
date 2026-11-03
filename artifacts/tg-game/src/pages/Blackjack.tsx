@@ -1,3 +1,4 @@
+import { Ambient } from "@/components/casino/GameAtmosphere";
 import StageFx from "@/components/casino/StageFx";
 import BetPanel from "@/components/casino/BetPanel";
 import { useState, useCallback } from "react";
@@ -156,7 +157,8 @@ export default function Blackjack() {
 
 
   return (
-    <div className="min-h-screen flex flex-col" style={{ background: pageBg(theme, GAME_BG.blackjack) }}>
+    <div className="min-h-screen flex flex-col relative isolate" style={{ background: pageBg(theme, GAME_BG.blackjack) }}>
+      <Ambient behind color="#10b981" layer="grid" syms={["cardback", "chip"]} live={gameState === "playing" || gameState === "dealer"} />
       <GameHeader icon="cardback" title={` ${t.blackjackTitle}`} subtitle={t.bjPayout} />
 
       <div className="flex-1 px-4 pb-6 flex flex-col gap-3">

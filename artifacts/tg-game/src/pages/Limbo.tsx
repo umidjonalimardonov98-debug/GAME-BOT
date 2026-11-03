@@ -1,3 +1,4 @@
+import { Ambient } from "@/components/casino/GameAtmosphere";
 import StageFx from "@/components/casino/StageFx";
 import { useState, useRef, useEffect } from "react";
 import { useLang } from "@/lib/lang-context";
@@ -55,7 +56,8 @@ export default function Limbo() {
   };
 
   return (
-    <div className="min-h-screen flex flex-col" style={{ background: pageBg(theme, GAME_BG.limbo) }}>
+    <div className="min-h-screen flex flex-col relative isolate" style={{ background: pageBg(theme, GAME_BG.limbo) }}>
+      <Ambient behind color="#38bdf8" layer="stars" syms={["rocket", "star"]} live={busy} />
       <GameHeader icon="rocket" title={` ${GAME_NAMES.limbo[lang]}`} subtitle="x100" />
       <div className="flex-1 px-4 pb-8 flex flex-col gap-4 items-center">
         <StageFx result={won} innerClassName="w-full flex flex-col gap-4 items-center">

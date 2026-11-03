@@ -1,3 +1,4 @@
+import { Ambient } from "@/components/casino/GameAtmosphere";
 import StageFx from "@/components/casino/StageFx";
 import BetPanel from "@/components/casino/BetPanel";
 import { useState, useEffect, type ReactNode } from "react";
@@ -119,8 +120,9 @@ export default function AppleOfFortune() {
   const rows = Array.from({ length: ROWS }, (_, i) => ROWS - 1 - i);
 
   return (
-    <div className="h-screen flex flex-col relative overflow-hidden"
+    <div className="h-screen flex flex-col relative overflow-hidden isolate"
       style={{ background: "linear-gradient(180deg, rgba(10,7,2,0.84) 0%, rgba(14,9,3,0.76) 45%, rgba(6,4,1,0.94) 100%), url('/bg/apple.jpg') center / cover no-repeat fixed" }}>
+      <Ambient behind color="#25a55a" layer="bubbles" syms={["apple", "bomb"]} live={gameState === "playing"} />
 
       <div className="fixed pointer-events-none"style={{ top: -50, left: -50, width: 200, height: 200, borderRadius:"50%", background: "radial-gradient(circle, #25a55a33 0%, transparent 70%)", filter: "blur(50px)" }} />
 

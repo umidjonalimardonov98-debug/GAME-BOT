@@ -1,3 +1,4 @@
+import { Ambient } from "@/components/casino/GameAtmosphere";
 import StageFx from "@/components/casino/StageFx";
 import { useState } from "react";
 import { useLang } from "@/lib/lang-context";
@@ -91,7 +92,8 @@ export default function LuckyCard() {
   const reset = () => { setCards([]); setOpen([]); setPick(null); setWon(null); };
 
   return (
-    <div className="min-h-screen flex flex-col" style={{ background: pageBg(theme, GAME_BG.luckycard) }}>
+    <div className="min-h-screen flex flex-col relative isolate" style={{ background: pageBg(theme, GAME_BG.luckycard) }}>
+      <Ambient behind color="#f472b6" layer="rays" syms={["cardback", "crown"]} live={busy} />
       <GameHeader icon="cardback" title={` ${GAME_NAMES.luckycard[lang]}`} subtitle={`x${level.mult} · 36 karta`} />
       <div className="flex-1 px-4 pb-8 flex flex-col gap-4 items-center">
         <StageFx result={won} innerClassName="w-full flex flex-col gap-4 items-center">

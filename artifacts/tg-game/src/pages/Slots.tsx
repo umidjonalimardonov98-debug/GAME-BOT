@@ -1,3 +1,4 @@
+import { Ambient } from "@/components/casino/GameAtmosphere";
 import StageFx from "@/components/casino/StageFx";
 import { useState, useCallback, useMemo, useRef, useEffect } from "react";
 import { usePlayer } from "@/lib/player-context";
@@ -97,7 +98,8 @@ export default function Slots() {
   }, [auto, spinning, canSpin, doSpin]);
 
   return (
-    <div className="min-h-screen flex flex-col" style={{ background: pageBg(theme, GAME_BG.slots) }}>
+    <div className="min-h-screen flex flex-col relative isolate" style={{ background: pageBg(theme, GAME_BG.slots) }}>
+      <Ambient behind color="#facc15" layer="rays" syms={["seven", "cherry", "bell"]} live={spinning} />
       <GameHeader icon="seven" title="Diamond Slots 5×3" subtitle="10 liniya · Wild · Scatter" />
 
       <div className="flex-1 px-2.5 pb-6 flex flex-col gap-3 items-center">

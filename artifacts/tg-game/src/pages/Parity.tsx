@@ -1,3 +1,4 @@
+import { Ambient } from "@/components/casino/GameAtmosphere";
 import StageFx from "@/components/casino/StageFx";
 import BetPanel from "@/components/casino/BetPanel";
 import { useState, useCallback, useRef, useEffect } from "react";
@@ -158,7 +159,8 @@ export default function Parity() {
       : { opacity: 0.7 };
 
   return (
-    <div className="min-h-screen flex flex-col" style={{ background: pageBg(theme, GAME_BG.parity) }}>
+    <div className="min-h-screen flex flex-col relative isolate" style={{ background: pageBg(theme, GAME_BG.parity) }}>
+      <Ambient behind color="#6366f1" layer="bubbles" syms={["coin", "chip"]} live={isSpinning} />
       <GameHeader icon="target" title={` ${t.parityTitle}`} subtitle="1-90 son | x2 | x20" hideTheme />
 
       <div className="flex-1 px-4 pb-6 flex flex-col gap-4">

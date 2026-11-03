@@ -1,3 +1,4 @@
+import { Ambient } from "@/components/casino/GameAtmosphere";
 import StageFx from "@/components/casino/StageFx";
 import BetPanel from "@/components/casino/BetPanel";
 import { useState, useCallback } from "react";
@@ -144,7 +145,8 @@ export default function Mines() {
   };
 
   return (
-    <div className="min-h-screen flex flex-col" style={{ background: pageBg(theme, GAME_BG.mines) }}>
+    <div className="min-h-screen flex flex-col relative isolate" style={{ background: pageBg(theme, GAME_BG.mines) }}>
+      <Ambient behind color="#0ea5e9" layer="stars" syms={["gem", "bomb"]} live={state === "playing"} />
       <style>{`
         @keyframes mn-pop { 0%{transform:rotateY(180deg) scale(.7)} 60%{transform:rotateY(180deg) scale(1.12)} 100%{transform:rotateY(180deg) scale(1)} }
         @keyframes mn-boom { 0%{transform:rotateY(180deg) scale(.6);filter:brightness(2.2)} 45%{transform:rotateY(180deg) scale(1.28);filter:brightness(1.6)} 100%{transform:rotateY(180deg) scale(1);filter:brightness(1)} }

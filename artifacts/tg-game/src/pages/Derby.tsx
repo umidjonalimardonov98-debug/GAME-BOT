@@ -1,3 +1,4 @@
+import { Ambient } from "@/components/casino/GameAtmosphere";
 import StageFx from "@/components/casino/StageFx";
 import { useEffect, useRef, useState } from "react";
 import { useLang } from "@/lib/lang-context";
@@ -132,7 +133,8 @@ export default function Derby() {
   const rank = (i: number) => (order ? order.indexOf(i) : -1);
 
   return (
-    <div className="min-h-screen flex flex-col" style={{ background: pageBg(theme, GAME_BG.derby) }}>
+    <div className="min-h-screen flex flex-col relative isolate" style={{ background: pageBg(theme, GAME_BG.derby) }}>
+      <Ambient behind color="#a16207" layer="smoke" syms={["trophy", "medal-gold"]} live={busy} />
       <GameHeader icon="trophy" title={` ${GAME_NAMES.derby[lang]}`} subtitle="x2.6 — x12" />
 
       <div className="flex-1 px-3 pb-8 flex flex-col gap-3 items-center">

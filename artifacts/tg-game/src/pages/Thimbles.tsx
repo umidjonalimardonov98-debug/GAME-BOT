@@ -1,3 +1,4 @@
+import { Ambient } from "@/components/casino/GameAtmosphere";
 import StageFx from "@/components/casino/StageFx";
 import { useState } from "react";
 import { useLang } from "@/lib/lang-context";
@@ -51,7 +52,8 @@ export default function Thimbles() {
   };
 
   return (
-    <div className="min-h-screen flex flex-col" style={{ background: pageBg(theme, GAME_BG.thimbles) }}>
+    <div className="min-h-screen flex flex-col relative isolate" style={{ background: pageBg(theme, GAME_BG.thimbles) }}>
+      <Ambient behind color="#b45309" layer="smoke" syms={["coin", "question"]} live={busy} />
       <GameHeader icon="question" title={` ${GAME_NAMES.thimbles[lang]}`} subtitle={`x${MULT}`} />
       <div className="flex-1 px-4 pb-8 flex flex-col gap-4 items-center">
         <StageFx result={won} innerClassName="w-full flex flex-col gap-4 items-center">

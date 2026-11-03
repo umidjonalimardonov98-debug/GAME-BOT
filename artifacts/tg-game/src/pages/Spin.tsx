@@ -1,3 +1,4 @@
+import { Ambient } from "@/components/casino/GameAtmosphere";
 import StageFx from "@/components/casino/StageFx";
 import { useState, useEffect, useRef } from "react";
 import { usePlayer } from "@/lib/player-context";
@@ -138,7 +139,8 @@ export default function Spin() {
   }
 
   return (
-    <div className="min-h-screen flex flex-col" style={{ background: pageBg(theme, GAME_BG.spin) }}>
+    <div className="min-h-screen flex flex-col relative isolate" style={{ background: pageBg(theme, GAME_BG.spin) }}>
+      <Ambient behind color="#fb923c" layer="rays" syms={["wheel", "gift"]} live={spinning} />
       <GameHeader icon="wheel" title={u("wheelOfLuck")} subtitle="Har kuni bepul aylantirish!" />
 
       <div className="flex-1 flex flex-col items-center px-4 pb-6 gap-5">

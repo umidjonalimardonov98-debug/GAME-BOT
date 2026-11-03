@@ -6,12 +6,15 @@ import type { GameCfg } from "@/lib/new-games";
  * pufakchalar yoki tutun + o'yinning o'z 3D belgilari sekin suzib yuradi.
  * Faqat CSS animatsiya — telefonda yengil ishlaydi.
  */
-function GameAtmosphere({ cfg, live }: { cfg: GameCfg; live?: boolean }) {
-  const c = cfg.c1;
-  const syms = cfg.syms.length ? cfg.syms : ["coin"];
+export type Layer = GameCfg["layer"];
+
+/** Umumiy jonli fon — istalgan o'yin sahifasiga: rang, fon turi va o'yinning o'z belgilari. */
+export function Ambient({ color, layer, syms: symList, live, behind }: { color: string; layer: Layer; syms: string[]; live?: boolean; behind?: boolean }) {
+  const cfg = { layer } as { layer: Layer };
+  const syms = symList.length ? symList : ["coin"];
   return (
     <div aria-hidden className={`ga-root ga-${cfg.layer} ${live ? "ga-live" : ""}`}
-      style={{ ["--ga" as any]: c }}>
+      style={{ ["--ga" as any]: color, zIndex: behind ? -1 : 0 }}>
       {cfg.layer === "rays" && <div className="ga-rays" />}
       {cfg.layer === "grid" && <div className="ga-grid" />}
       {cfg.layer === "stars" && Array.from({ length: 26 }, (_, i) => (
@@ -44,6 +47,10 @@ function GameAtmosphere({ cfg, live }: { cfg: GameCfg; live?: boolean }) {
       <div className="ga-vignette" />
     </div>
   );
+}
+
+function GameAtmosphere({ cfg, live }: { cfg: GameCfg; live?: boolean }) {
+  return <Ambient color={cfg.c1} layer={cfg.layer} syms={cfg.syms} live={live} />;
 }
 
 export default memo(GameAtmosphere);

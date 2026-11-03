@@ -1,3 +1,4 @@
+import { Ambient } from "@/components/casino/GameAtmosphere";
 import BetPanel from "@/components/casino/BetPanel";
 import StageFx from "@/components/casino/StageFx";
 import { useState, useCallback } from "react";
@@ -87,7 +88,8 @@ export default function Dice() {
   const accentShadow = "0 8px 0 #4a3305, 0 10px 30px rgba(212,175,55,0.45)";
 
   return (
-    <div className="min-h-screen flex flex-col" style={{ background: pageBg(theme, GAME_BG.dice) }}>
+    <div className="min-h-screen flex flex-col relative isolate" style={{ background: pageBg(theme, GAME_BG.dice) }}>
+      <Ambient behind color="#22c55e" layer="bubbles" syms={["dice"]} live={gameState === "rolling"} />
       <GameHeader icon="dice" title=" DICE" subtitle="7 dan Kam · Teng · 7 dan Ko'p" />
 
       <div className="flex-1 px-4 pb-6 flex flex-col gap-4">
