@@ -1,3 +1,4 @@
+import BetPanel from "@/components/casino/BetPanel";
 import StageFx from "@/components/casino/StageFx";
 import { useState, useEffect, useRef } from "react";
 import { usePlayer } from "@/lib/player-context";
@@ -209,28 +210,16 @@ export default function Aviator() {
         {/* Bet controls */}
         {(phase === "idle"|| phase ==="done") && (
           <>
-            <div className="grid grid-cols-4 gap-1.5">
-              {["MIN","X2","X/2","MAX"].map(a => (
-                <button key={a} onClick={() =>{
-                  const bal = player?.balance ?? 0;
-                  let v = betAmt;
-                  if (a === "MIN") v = 2000;
-                  else if (a === "MAX") v = Math.min(bal, 500000);
-                  else if (a === "X2") v = Math.min(betAmt * 2, bal, 500000);
-                  else v = Math.max(Math.floor(betAmt / 2), 2000);
-                  setBetAmt(v); setBetInput(String(v)); betRef.current = v;
-                }}
-                  className="py-2 rounded-xl text-xs font-bold active:scale-95"
-                  style={{ background: ts.btnSecondary, color: ts.btnSecondaryText, border: `1px solid ${ts.cardBorder}` }}>
-                  {a}
-                </button>
-              ))}
-            </div>
-
-            <input type="number" placeholder={u("betMin")} value={betInput}
-              onChange={(e) =>{ setBetInput(e.target.value); const v = Number(e.target.value) || 2000; setBetAmt(v); betRef.current = v; }}
-              className="w-full rounded-2xl px-4 py-3.5 font-black text-lg focus:outline-none"
-              style={{ background: ts.input, border: `1px solid ${ts.inputBorder}`, color: ts.text }} />
+            <BetPanel value={betInput}
+              onChange={(s) => { setBetInput(s); const v = Number(s) || 2000; setBetAmt(v); betRef.current = v; }}
+              onQuick={(a) => {
+                const bal = player?.balance ?? 0;
+                let v = betAmt;
+                if (a === "MAX") v = Math.min(bal, 500000);
+                else if (a === "X2") v = Math.min(betAmt * 2, bal, 500000);
+                else v = Math.max(Math.floor(betAmt / 2), 2000);
+                setBetAmt(v); setBetInput(String(v)); betRef.current = v;
+              }} />
 
             {/* Auto cash out */}
             <div className="flex items-center gap-3 px-3 py-3 rounded-2xl"

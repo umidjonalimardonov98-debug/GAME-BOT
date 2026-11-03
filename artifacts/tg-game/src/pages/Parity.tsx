@@ -1,3 +1,4 @@
+import BetPanel from "@/components/casino/BetPanel";
 import { useState, useCallback, useRef, useEffect } from "react";
 import { useLocation } from "wouter";
 import { usePlayer } from "@/lib/player-context";
@@ -295,19 +296,7 @@ export default function Parity() {
               <p className="text-xs font-bold mb-3 tracking-widest" style={{ color: ts.textSub }}>
                  {t.betAmount}
               </p>
-              <div className="grid grid-cols-4 gap-2 mb-3">
-                {["MIN","1/2","X2","MAX"].map(a => (
-                  <button key={a} onClick={() => setQuickBet(a)}
-                    className="py-2 rounded-xl text-xs font-bold active:scale-95"
-                    style={{ background: ts.btnSecondary, color: ts.btnSecondaryText, border: `1px solid ${ts.cardBorder}` }}>
-                    {a}
-                  </button>
-                ))}
-              </div>
-              <input type="number" value={betInput} onChange={e => setBetInput(e.target.value)}
-                className="w-full rounded-xl px-4 py-3 font-black text-center text-lg outline-none"
-                style={{ background: ts.input, border: `1px solid ${ts.inputBorder}`, color: ts.text }}
-                placeholder="2000" min={2000} />
+              <BetPanel value={betInput} onChange={setBetInput} onQuick={setQuickBet} />
             </div>
 
             <button onClick={startGame}
