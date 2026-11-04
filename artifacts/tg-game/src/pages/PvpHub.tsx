@@ -4,6 +4,7 @@ import { usePlayer } from "@/lib/player-context";
 import { useTheme, pageBg } from "@/lib/theme-context";
 import GameHeader from "@/components/GameHeader";
 import { sfx } from "@/lib/sound";
+import ArenaGrid from "@/components/casino/ArenaGrid";
 
 /**
  * LIVE O'YINLAR LOBBISI — ochiq stollar ro'yxati.
@@ -153,6 +154,9 @@ export default function PvpHub() {
   return (
     <div className="min-h-screen pb-24" style={{ background: pageBg(theme) }}>
       <GameHeader icon="cardback" title="LIVE O'YINLAR" subtitle={`Onlayn: ${cfg?.online ?? 0}`} />
+
+      <ArenaGrid />
+      <p style={{ margin: "14px 12px 0", color: "rgba(255,255,255,0.55)", fontWeight: 900, fontSize: 11, letterSpacing: "0.12em" }}>KARTA STOLLARI</p>
 
       {/* o'yin tanlash */}
       <div style={{ display: "flex", gap: 8, padding: "10px 12px", overflowX: "auto" }}>

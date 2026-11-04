@@ -41,6 +41,7 @@ import MoneyWheel from "@/pages/MoneyWheel";
 import NotFound from "@/pages/not-found";
 import Banned from "@/pages/Banned";
 import QuickGame from "@/pages/QuickGame";
+import Arena from "@/pages/Arena";
 import GlobalChat from "@/pages/GlobalChat";
 import PvpDurak from "@/pages/PvpDurak";
 import PvpBlackjack from "@/pages/PvpBlackjack";
@@ -76,6 +77,7 @@ function Router() {
       <Route path="/social/challenge" component={Challenge} />
       <Route path="/rules" component={RulesPage} />
       <Route path="/duel/:key">{(p:any) => <Duel gameKey={p.key} />}</Route>
+      <Route path="/arena/:key">{(p:any) => <Arena key={p.key} gameKey={p.key} />}</Route>
       <Route path="/" component={Home} />
       <Route path="/apple" component={AppleOfFortune} />
       <Route path="/dice" component={Dice} />
