@@ -10,7 +10,7 @@ import ThemeSwitcher from "@/components/ThemeSwitcher";
 import LangSwitcher from "@/components/LangSwitcher";
 import SoundToggle from "@/components/SoundToggle";
 import Odometer from "@/components/casino/Odometer";
-import { Wallet, Banknote, Gift, Ticket, Home as HomeIcon, History, MessageCircle, BookOpen, Trophy, Swords } from "lucide-react";
+import { Wallet, Banknote, Gift, Ticket, Home as HomeIcon, History, MessageCircle, BookOpen, Trophy, Swords, SlidersHorizontal } from "lucide-react";
 
 const BASE = "/api";
 
@@ -103,6 +103,7 @@ export default function Home() {
   const [enabledGames, setEnabledGames] = useState<Record<string, boolean>>({});
   const [cols, setCols] = useState<number>(3);
   const [cat, setCat] = useState<string>("all");
+  const [menu, setMenu] = useState(false);
   useEffect(() => {
     const saved = Number(localStorage.getItem("gridCols") || 0);
     if (saved >= 3 && saved <= 5) { setCols(saved); return; }
@@ -156,42 +157,41 @@ export default function Home() {
   return (
     <div className="min-h-screen flex flex-col"style={{ background: pageBg(theme, GAME_BG.home), fontFamily:"'Inter', system-ui, sans-serif" }}>
 
-      {/* ─── TOP HEADER ─── */}
-      <div className="relative z-50 flex items-center gap-2 px-3 pt-4 pb-2 w-full max-w-full">
-
-        {/* Avatar + name */}
-        <div className="flex items-center gap-2 min-w-0 flex-1">
-          <div className="w-10 h-10 rounded-full overflow-hidden flex items-center justify-center text-white font-black text-lg flex-shrink-0"
-            style={{ background: "linear-gradient(135deg,#1668e3,#0d4fb0)", border: "2px solid rgba(47,143,255,0.5)" }}>
-            {avatar ? <img src={avatar} className="w-full h-full object-cover" /> : initials}
-          </div>
-          <div className="min-w-0">
-            <p className="font-black text-sm leading-tight truncate" style={{ color: TEXT }}>
-              {loading ? "...": player?.firstName ?? u("player")}
-            </p>
-            <p className="text-xs truncate"style={{ color: TEXT_SUB }}>@{player?.username ??"player"}</p>
-          </div>
+      {/* ─── TOP HEADER (pro) ─── */}
+      <div className="pro-header home-top z-50 px-3 py-2 flex items-center gap-2.5">
+        <div className="ht-ava">
+          {avatar ? <img src={avatar} alt="" className="w-full h-full object-cover" /> : <span>{initials}</span>}
+          <i className="ht-dot" />
+        </div>
+        <div className="min-w-0 flex-1">
+          <p className="font-black text-[13px] leading-tight truncate" style={{ color: TEXT }}>
+            {loading ? "..." : player?.firstName ?? u("player")}
+          </p>
+          <p className="text-[11px] leading-tight truncate" style={{ color: TEXT_SUB }}>@{player?.username ?? "player"}</p>
         </div>
 
-        {/* Mavzu (kichik suratcha) + til + balans */}
-        <div className="flex items-center gap-1.5 shrink-0">
-          <ThemeSwitcher />
-          <SoundToggle />
-          <LangSwitcher />
+        <button onClick={() => nav("/deposit")} className="ht-bal active:scale-95" aria-label="balance">
+          <img src="/symbols/coin.png" alt="" width={18} height={18} />
+          {loading ? <span>...</span> : <Odometer value={player?.balance ?? 0} compact className="whitespace-nowrap" />}
+          <span className="ht-plus">+</span>
+        </button>
 
-          {/* Tanga balansi */}
-          <div className="flex items-center gap-1 px-2 py-1.5 rounded-2xl shrink-0"
-            style={{ background: GOLD.soft, border: `1px solid ${GOLD.border}`, boxShadow: `0 6px 18px ${GOLD.glow}` }}>
-            <img src="/symbols/coin.png" alt="" width={16} height={16} style={{ filter: "drop-shadow(0 0 6px rgba(255,207,74,.6))" }} />
-            {loading ? (
-              <span className="font-black text-sm" style={{ color: GOLD.light }}>...</span>
-            ) : (
-              <Odometer value={player?.balance ?? 0} compact className="font-black text-xs whitespace-nowrap" style={{ color: GOLD.light }} />
-            )}
-          </div>
-        </div>
+        <button onClick={() => setMenu((v) => !v)} className="ht-icon active:scale-90" aria-label="settings" data-on={menu ? "1" : "0"}>
+          <SlidersHorizontal size={17} />
+        </button>
 
+        {menu && (
+          <>
+            <div className="fixed inset-0 z-40" onClick={() => setMenu(false)} />
+            <div className="ht-menu z-50">
+              <div className="ht-row"><span>Mavzu</span><ThemeSwitcher /></div>
+              <div className="ht-row"><span>Ovoz</span><SoundToggle /></div>
+              <div className="ht-row"><span>Til</span><LangSwitcher /></div>
+            </div>
+          </>
+        )}
       </div>
+      <div className="h-3" />
 
       {/* ─── BALANCE CARD (birinchi o'rinda) ─── */}
       <div className="mx-4 rounded-3xl px-4 py-3.5 mb-3 relative overflow-hidden pro-sheen"
