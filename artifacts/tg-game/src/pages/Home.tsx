@@ -71,6 +71,19 @@ const GAMES = [
   })),
 ];
 
+
+/* ─── O'yin bo'limlari ─── */
+const CATS: { id: string; uz: string; ru: string; en: string; keys: string[] }[] = [
+  { id: "top",    uz: "Mashhur",          ru: "Популярные",      en: "Popular",         keys: ["apple","aviator","mines","slots","roulette","dice","plinko","spin"] },
+  { id: "crash",  uz: "Kresh va tezkor",  ru: "Краш и быстрые",  en: "Crash & Instant", keys: ["aviator","limbo","rocketcrash","jetx","coinflip","rps","parity","hands","thimbles"] },
+  { id: "cards",  uz: "Karta o'yinlari",  ru: "Карточные",       en: "Card games",      keys: ["blackjack","baccarat","hilo","dragontiger","luckycard","hilostreak","kingsroad","casinowar","dragoncard"] },
+  { id: "table",  uz: "Ruletka va zar",   ru: "Рулетка и кости", en: "Roulette & Dice", keys: ["roulette","dice","moneywheel","euroroulette","goldroulette","sicbo","dicetriple","vipwheel","neonwheel","nardgold"] },
+  { id: "slots",  uz: "Slotlar",          ru: "Слоты",           en: "Slots",           keys: ["slots","fruitblast","goldenpharaoh","diamondbonanza","crystalblast","royalcascade"] },
+  { id: "risk",   uz: "Mina va minora",   ru: "Мины и башни",    en: "Mines & Towers",  keys: ["mines","towers","minesfield","diamondmine","goldtower","plinko","plinkogold","plinkoneon"] },
+  { id: "lotto",  uz: "Lotereya va keno", ru: "Лотерея и кено",  en: "Lottery & Keno",  keys: ["keno","scratch","case","keno40","turbokeno","silvercard","goldcard","bingo75","speedbingo","lottodrum","megalotto"] },
+  { id: "arcade", uz: "Arkada",           ru: "Аркада",          en: "Arcade",          keys: ["derby","camelrace","fishhunt","pearlhunt","memorypairs","secretpairs"] },
+];
+
 export default function Home() {
   const [, nav] = useLocation();
   const { player, loading, refresh } = usePlayer();
@@ -89,6 +102,7 @@ export default function Home() {
   }, []);
   const [enabledGames, setEnabledGames] = useState<Record<string, boolean>>({});
   const [cols, setCols] = useState<number>(3);
+  const [cat, setCat] = useState<string>("all");
   useEffect(() => {
     const saved = Number(localStorage.getItem("gridCols") || 0);
     if (saved >= 3 && saved <= 5) { setCols(saved); return; }
@@ -446,11 +460,30 @@ export default function Home() {
             </div>
           </div>
 
-          <div className="grid gap-2" style={{ gridTemplateColumns: `repeat(${cols}, minmax(0, 1fr))` }}>
-            {GAMES.filter(g => enabledGames[g.key] !== false).map((g) => (
+          <div className="cat-chips">
+            {[{ id: "all", uz: "Barchasi", ru: "Все", en: "All" }, ...CATS].map((c) => (
+              <button key={c.id} data-on={cat === c.id ? "1" : "0"} onClick={() => setCat(c.id)} className="cat-chip active:scale-95">
+                {(c as any)[lang] ?? c.uz}
+              </button>
+            ))}
+          </div>
+          {CATS.filter((c) => cat === "all" || c.id === cat).map((c) => {
+            const list = c.keys.map((k) => GAMES.find((g) => g.key === k)).filter((g): g is (typeof GAMES)[number] => !!g && enabledGames[g.key] !== false);
+            if (!list.length) return null;
+            return (
+              <section key={c.id + cat} className="pro-rise">
+                <div className="cat-head">
+                  <span className="bar" />
+                  <span className="ttl">{(c as any)[lang] ?? c.uz}</span>
+                  <span className="cnt">{list.length}</span>
+                  <span className="ln" />
+                </div>
+                <div className="grid gap-2" style={{ gridTemplateColumns: `repeat(${cols}, minmax(0, 1fr))` }}>
+            {list.map((g, idx) => (
               <button key={g.path} onClick={() => nav(g.path)}
-                className="relative overflow-hidden active:scale-[0.93] transition-all pro-tile"
+                className="relative overflow-hidden active:scale-[0.93] pro-tile pro-rise"
                 style={{
+                  animationDelay: `${Math.min(idx, 12) * 35}ms`,
                   background: CARD_BG,
                   borderRadius: 12,
                   aspectRatio: "1 / 1",
@@ -522,7 +555,10 @@ export default function Home() {
 
               </button>
             ))}
-          </div>
+                </div>
+              </section>
+            );
+          })}
         </div>
       )}
 

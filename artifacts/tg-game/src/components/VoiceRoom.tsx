@@ -235,7 +235,7 @@ export default function VoiceRoom() {
         </span>
         {nowPlaying && (
           <span className="text-[11px] font-black ml-auto" style={{ color: GOLD.light }}>
-            🔊 {nowPlaying} · {t("playing")}
+            {nowPlaying} · {t("playing")}
           </span>
         )}
       </div>
@@ -248,7 +248,7 @@ export default function VoiceRoom() {
               border: `1px solid ${m.talking ? GOLD.border : ts.cardBorder}`,
               color: m.talking ? GOLD.light : ts.textSub,
             }}>
-            {m.talking ? "🎙 " : ""}{m.id === String(player?.telegramId) ? t("you") : m.name}
+            {m.talking ? "" : ""}{m.id === String(player?.telegramId) ? t("you") : m.name}
           </span>
         ))}
       </div>

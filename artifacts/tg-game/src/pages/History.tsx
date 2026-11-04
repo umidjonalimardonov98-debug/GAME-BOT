@@ -44,11 +44,11 @@ export default function History() {
 
   return (
     <div className="min-h-screen" style={{ background: pageBg(theme, GAME_BG.home) }}>
-      <GameHeader icon="ticket" title={`🧾 ${u("navHistory").toUpperCase()}`} subtitle={u("historySub")} />
+      <GameHeader icon="ticket" title={`${u("navHistory").toUpperCase()}`} subtitle={u("historySub")} />
       <main className="px-4 pb-10">
         <div className="grid grid-cols-2 gap-2 mb-4 p-1 rounded-2xl"
           style={{ background: ts.card, border: `1px solid ${ts.cardBorder}` }}>
-          {([["games", `🎮 ${u("tabGames")}`], ["withdrawals", `💸 ${u("tabWithdrawals")}`]] as const).map(([key, label]) => (
+          {([["games", `${u("tabGames")}`], ["withdrawals", `${u("tabWithdrawals")}`]] as const).map(([key, label]) => (
             <button key={key} onClick={() => setTab(key)}
               className="py-3 rounded-xl text-sm font-black transition-transform active:scale-95"
               style={{ background: tab === key ? GOLD.grad : "transparent", color: tab === key ? "#211604" : ts.textSub }}>

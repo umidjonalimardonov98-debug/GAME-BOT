@@ -35,11 +35,7 @@ export default function GameHeader({ title, icon, subtitle, hideTheme }: Props) 
 
   return (
     <div
-      className="flex items-center gap-2 px-3 py-2.5 relative z-50"
-      style={{
-        background: isLight ? "#ffffff" : "#0a1726",
-        borderBottom: `1px solid ${ts.cardBorder}`,
-      }}
+      className="pro-header flex items-center gap-2 px-3 py-2.5 z-50"
     >
       {/* Ortga */}
       <button
@@ -48,10 +44,10 @@ export default function GameHeader({ title, icon, subtitle, hideTheme }: Props) 
           sfx.back();
           nav("/");
         }}
-        className="w-9 h-9 rounded-lg flex items-center justify-center shrink-0 active:scale-90 transition-transform tap-glow"
-        style={{ background: GOLD.soft, border: `1px solid ${GOLD.border}` }}
+        className="pro-back w-9 h-9 rounded-xl flex items-center justify-center shrink-0"
+        style={{ color: "#1a1204" }}
       >
-        <ArrowLeft className="w-4 h-4" style={{ color: isLight ? "#0b3f8f" : "#ffffff" }} />
+        <ArrowLeft className="w-4 h-4 relative" strokeWidth={3} />
       </button>
 
       {/* Sarlavha */}

@@ -220,7 +220,7 @@ export default function Duel({ gameKey }: { gameKey: string }) {
 
             <p className="mt-2 font-bold" style={{ fontSize: 10, color: ts.textSub }}>{cfg.rules}</p>
             {err && (
-              <p className="mt-2 rounded-xl px-3 py-2 font-black" style={{ fontSize: 11, color: "#ff9b9b", background: "rgba(239,68,68,0.12)", border: "1px solid rgba(239,68,68,0.4)" }}>⚠️ {err}</p>
+              <p className="mt-2 rounded-xl px-3 py-2 font-black" style={{ fontSize: 11, color: "#ff9b9b", background: "rgba(239,68,68,0.12)", border: "1px solid rgba(239,68,68,0.4)" }}>{err}</p>
             )}
 
             <div className="flex gap-2 mt-3">
@@ -566,7 +566,7 @@ function TilesArena({ def, locked, onSubmit }: any) {
                 style={{
                   background: sel[levels - 1 - lv] === i ? GOLD.grad : "rgba(255,255,255,0.07)",
                   color: sel[levels - 1 - lv] === i ? "#1a1200" : "#fff",
-                }}>🚪</button>
+                }}>{i + 1}</button>
             ))}
           </div>
         ))}

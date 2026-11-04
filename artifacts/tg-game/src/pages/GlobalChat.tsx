@@ -111,7 +111,7 @@ export default function GlobalChat() {
       <div ref={boxRef} className="flex-1 overflow-y-auto px-3 py-4 flex flex-col gap-2.5">
         {msgs.length === 0 && (
           <div className="text-center mt-16 text-sm" style={{ color: "rgba(255,255,255,0.45)" }}>
-            Hozircha xabar yo'q — birinchi bo'lib yozing 👋
+            Hozircha xabar yo'q — birinchi bo'lib yozing 
           </div>
         )}
         {msgs.map((m) => (
@@ -131,7 +131,7 @@ export default function GlobalChat() {
               <div className="flex items-center gap-1.5 mb-0.5">
                 <span className="text-[11px] font-black"
                   style={{ color: m.admin ? "#f7c948" : m.mine ? "#fcd34d" : "#7dd3fc" }}>
-                  {m.admin ? "👑 ADMIN" : m.username ? `@${m.username}` : m.name}
+                  {m.admin ? "ADMIN" : m.username ? `@${m.username}` : m.name}
                 </span>
                 <span className="text-[10px]" style={{ color: "rgba(255,255,255,0.35)" }}>
                   {hhmm(m.at)}

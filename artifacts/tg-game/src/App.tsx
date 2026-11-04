@@ -1,4 +1,6 @@
-import { Switch, Route, Router as WouterRouter } from "wouter";
+import { Switch, Route, Router as WouterRouter, useLocation } from "wouter";
+import { useEffect } from "react";
+import { setTelegramBack } from "@/lib/telegram";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { Toaster } from "@/components/ui/toaster";
 import { PlayerProvider } from "@/lib/player-context";
@@ -125,6 +127,12 @@ function Router() {
   );
 }
 
+function TgBack() {
+  const [loc, nav] = useLocation();
+  useEffect(() => { setTelegramBack(loc !== "/", () => nav("/")); }, [loc]);
+  return null;
+}
+
 function AppBody() {
   const { player } = usePlayer();
   // Ban qilingan foydalanuvchi o'yinga ham kira olmaydi
@@ -133,6 +141,7 @@ function AppBody() {
     <>
       <WouterRouter base={import.meta.env.BASE_URL.replace(/\/$/, "")}>
         <LiveBg />
+        <TgBack />
         <PageTransition><Router /></PageTransition>
       </WouterRouter>
       <RoundBreakdown />

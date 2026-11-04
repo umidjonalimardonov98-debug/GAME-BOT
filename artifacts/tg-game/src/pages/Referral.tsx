@@ -87,7 +87,7 @@ export default function Referral() {
   };
 
   const share = () => {
-    const text = `🎁 1X GAME PRO — o'yna va yut! Mening havolam orqali kir:`;
+    const text = `1X GAME PRO — o'yna va yut! Mening havolam orqali kir:`;
     const url = `https://t.me/share/url?url=${encodeURIComponent(link)}&text=${encodeURIComponent(text)}`;
     const tg = (window as any).Telegram?.WebApp;
     if (tg?.openTelegramLink) tg.openTelegramLink(url);
@@ -239,11 +239,11 @@ export default function Referral() {
               </div>
               <p className="font-bold leading-snug" style={{ fontSize: 12, color: "rgba(255,255,255,.9)" }}>
                 {completedTiers > 0
-                  ? <>✅ {completedTiers * step} ta do'st to'ldi! Admin sizga <span style={{ color: GREEN.main }}>{completedTiers} ta promokod</span> yuboradi. Keyingi bosqich: {stageStart}-{stageEnd}.</>
+                  ? <>{completedTiers * step} ta do'st to'ldi! Admin sizga <span style={{ color: GREEN.main }}>{completedTiers} ta promokod</span> yuboradi. Keyingi bosqich: {stageStart}-{stageEnd}.</>
                   : <>{step} ta do'st taklif qiling va <span style={{ color: G.main }}>NOMALUM</span> summali promokod oling!</>}
                 {" "}
                 <span style={{ color: remaining === 1 ? "#ffd166" : "rgba(255,255,255,.7)" }}>
-                  {remaining === 1 ? "Yana atigi 1 ta do'st qoldi! 🔥" : `Yana ${remaining} ta do'st qoldi.`}
+                  {remaining === 1 ? "Yana atigi 1 ta do'st qoldi! " : `Yana ${remaining} ta do'st qoldi.`}
                 </span>
               </p>
             </div>
@@ -300,7 +300,7 @@ export default function Referral() {
 
             {friends.length === 0 ? (
               <p className="text-center py-4 font-bold" style={{ fontSize: 12, color: "rgba(255,255,255,.55)" }}>
-                Hozircha do'st yo'q — havolangizni ulashing 👆
+                Hozircha do'st yo'q — havolangizni ulashing 
               </p>
             ) : (
               <div className="space-y-2">
@@ -356,7 +356,7 @@ export default function Referral() {
                   "Promokod summasi nomalum bo'ladi.",
                 ].map((r, i) => (
                   <li key={i} className="flex gap-2" style={{ fontSize: 11.5, color: "rgba(255,255,255,.82)" }}>
-                    <span style={{ color: "#39c46f" }}>✅</span><span className="min-w-0">{r}</span>
+                    <span style={{ color: "#39c46f" }}></span><span className="min-w-0">{r}</span>
                   </li>
                 ))}
               </ul>

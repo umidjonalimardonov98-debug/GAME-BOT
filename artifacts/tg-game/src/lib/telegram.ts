@@ -68,6 +68,27 @@ function applyViewportHeight() {
   document.documentElement.style.setProperty("--app-vh", `${Math.round(h)}px`);
 }
 
+function applySafeArea() {
+  const wa: any = window.Telegram?.WebApp;
+  const sa = wa?.safeAreaInset?.top ?? 0;
+  const ca = wa?.contentSafeAreaInset?.top ?? 0;
+  let top = sa + ca;
+  // Fullscreen rejimida Telegram tugmalari (Yopish, ...) ustida qolmasligi uchun zaxira
+  if (wa?.isFullscreen && top < 40) top = Math.max(top, 92);
+  const r = document.documentElement.style;
+  r.setProperty("--tg-top", `${Math.round(top)}px`);
+}
+
+/** Telegram'ning o'z "Orqaga" tugmasi - bosh sahifadan boshqa joyda ko'rinadi */
+let backCb: (() => void) | null = null;
+export function setTelegramBack(show: boolean, onBack: () => void) {
+  const bb: any = window.Telegram?.WebApp?.BackButton;
+  if (!bb) return;
+  if (backCb) { try { bb.offClick?.(backCb); } catch {} }
+  backCb = onBack;
+  if (show) { bb.onClick(onBack); bb.show(); } else bb.hide();
+}
+
 export function initTelegramApp() {
   const wa = window.Telegram?.WebApp;
   wa?.ready?.();
@@ -77,6 +98,9 @@ export function initTelegramApp() {
   // Pastga/tepaga surganda mini app yopilib/qimirlab ketmasin
   wa?.disableVerticalSwipes?.();
   applyViewportHeight();
+  applySafeArea();
+  ["safeAreaChanged", "contentSafeAreaChanged", "fullscreenChanged"].forEach((e) => wa?.onEvent?.(e, applySafeArea));
+  setTimeout(applySafeArea, 300);
   wa?.onEvent?.("viewportChanged", applyViewportHeight);
   window.addEventListener("resize", applyViewportHeight);
   window.addEventListener("orientationchange", applyViewportHeight);

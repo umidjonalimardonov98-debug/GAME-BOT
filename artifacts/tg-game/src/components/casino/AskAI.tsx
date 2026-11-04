@@ -42,7 +42,7 @@ export default function AskAI() {
           <div onClick={(e) => e.stopPropagation()} className="w-full rounded-t-3xl p-4 flex flex-col gap-3 ai-sheet"
             style={{ background: "linear-gradient(180deg,#141a2a,#06080f)", borderTop: "1px solid rgba(247,201,72,.5)" }}>
             <div className="flex items-center justify-between">
-              <b style={{ color: "#f7c948" }}>🤖 AI yordamchi</b>
+              <b style={{ color: "#f7c948" }}>AI yordamchi</b>
               <button onClick={() => setOpen(false)} className="text-white/70 text-xl">✕</button>
             </div>
             <div className="flex flex-wrap gap-2">

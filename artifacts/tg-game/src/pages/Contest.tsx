@@ -28,7 +28,7 @@ const G = {
 };
 
 const fmt = (n: number) => new Intl.NumberFormat("ru-RU").format(Math.round(n || 0));
-const MEDAL = ["🥇", "🥈", "🥉"];
+const MEDAL = ["1", "2", "3"];
 
 export default function Contest() {
   const [, nav] = useLocation();
@@ -80,7 +80,7 @@ export default function Contest() {
   };
 
   const share = () => {
-    const text = `🏆 KONKURS! 1X GAME PRO — do'st taklif qil va pul yut! Havolam:`;
+    const text = `KONKURS! 1X GAME PRO — do'st taklif qil va pul yut! Havolam:`;
     const url = `https://t.me/share/url?url=${encodeURIComponent(link)}&text=${encodeURIComponent(text)}`;
     const tg = (window as any).Telegram?.WebApp;
     if (tg?.openTelegramLink) tg.openTelegramLink(url);
@@ -174,7 +174,7 @@ export default function Contest() {
               background: "linear-gradient(160deg, rgba(38,25,6,.86), rgba(12,9,4,.92))",
               border: `1px solid ${G.border}`,
             }}>
-              <p style={{ fontSize: 34 }}>🏁</p>
+              
               <p className="font-black mt-2" style={{ fontSize: 15, color: G.light }}>Konkurs yakunlandi</p>
               <p className="mt-1.5" style={{ fontSize: 12, color: "rgba(255,255,255,.65)" }}>
                 Hozircha faol konkurs yo'q. Yangi konkurs e'lon qilinishini kuting!
