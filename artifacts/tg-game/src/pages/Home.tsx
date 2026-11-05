@@ -10,7 +10,7 @@ import ThemeSwitcher from "@/components/ThemeSwitcher";
 import LangSwitcher from "@/components/LangSwitcher";
 import SoundToggle from "@/components/SoundToggle";
 import Odometer from "@/components/casino/Odometer";
-import { Wallet, Banknote, Gift, Ticket, Home as HomeIcon, History, MessageCircle, BookOpen, Trophy, Swords, SlidersHorizontal, RotateCcw, ArrowUpRight, Search, Users, X } from "lucide-react";
+import { Wallet, Banknote, Gift, Ticket, Home as HomeIcon, History, MessageCircle, BookOpen, Trophy, Swords, SlidersHorizontal, RotateCcw, ArrowUpRight, Search, Users, X, Star, BarChart3 } from "lucide-react";
 
 const BASE = "/api";
 
@@ -35,6 +35,7 @@ import ContestBanner from "@/components/casino/ContestBanner";
 import { Button } from "@/components/ui/button";
 import { GAMES, CATS, LIVE_GAMES } from "@/lib/game-catalog";
 import { mostRecentGame, type HistoryGame } from "@/lib/recent-game";
+import { useFavorites } from "@/lib/favorites";
 import "@/game-navigation.css";
 
 export default function Home() {
@@ -67,6 +68,9 @@ export default function Home() {
     getPlayerHistory(player.telegramId).then(data => { if (current) setRecentRows(data.games ?? []); }).catch(() => {});
     return () => { current = false; };
   }, [player?.telegramId, player?.gamesPlayed]);
+  const favCatalog = [...GAMES, ...LIVE_GAMES, ...arenaGames] as { key: string; path: string; img?: string; name?: string }[];
+  const { favs, toggle: toggleFav, isFav } = useFavorites(favCatalog.map(g => g.key));
+  const favGames = favs.map(k => favCatalog.find(g => g.key === k)).filter((g): g is (typeof favCatalog)[number] => !!g && enabledGames[g.key] !== false);
   const recent = mostRecentGame(recentRows, [...GAMES, ...LIVE_GAMES, ...arenaGames], enabledGames);
   const [menu, setMenu] = useState(false);
   useEffect(() => {
@@ -166,9 +170,17 @@ export default function Home() {
         <span><small>{lang === "ru" ? "Последняя игра" : lang === "en" ? "Last played" : "Oxirgi o‘yin"}</small><strong>{GAME_NAMES[recent.key]?.[lang] ?? ("name" in recent ? recent.name : recent.key)}</strong></span>
         <span className="replay-label"><RotateCcw size={16} />{lang === "ru" ? "Ещё раз" : lang === "en" ? "Play again" : "Qayta o‘ynash"}</span>
       </Button>}
+      {favGames.length > 0 && <section className="fav-strip" aria-label="Sevimlilar">
+        <div className="fav-head"><Star size={14} /><span>{lang === "ru" ? "Избранное" : lang === "en" ? "Favorites" : "Sevimlilar"}</span></div>
+        <div className="fav-row">{favGames.map(g => <Button variant="ghost" key={g.key} className="fav-item" onClick={() => nav(g.path)}>
+          {g.img ? <img src={g.img} alt="" width={52} height={52} loading="lazy" /> : <span className="fav-ph" />}
+          <span>{GAME_NAMES[g.key]?.[lang] ?? g.name ?? g.key}</span>
+        </Button>)}</div>
+      </section>}
       <div className="home-entry-row">
         <Button variant="ghost" className="home-entry" onClick={() => nav("/spin")}><img src="/symbols/wheel.png" alt="" width={36} height={36} /><span>{u("freeGame")}</span><ArrowUpRight size={16} /></Button>
         <Button variant="ghost" className="home-entry live-entry" onClick={() => nav("/live")}><Users size={22} /><span>LIVE PvP</span><ArrowUpRight size={16} /></Button>
+        <Button variant="ghost" className="home-entry stats-entry" onClick={() => nav("/stats")}><BarChart3 size={20} /><span>{lang === "ru" ? "Статистика" : lang === "en" ? "Statistics" : "Statistika"}</span><ArrowUpRight size={16} /></Button>
       </div>
       <div className="home-actions">
         <Button variant="ghost" onClick={() => nav("/deposit")}><Wallet size={18} /><span>{t.deposit}</span></Button>
@@ -299,7 +311,8 @@ export default function Home() {
                 </div>
                 <div className="grid gap-2" style={{ gridTemplateColumns: `repeat(${cols}, minmax(0, 1fr))` }}>
             {list.map((g, idx) => (
-              <Button variant="ghost" key={g.path} onClick={() => nav(g.path)}
+              <div key={g.path} className="tile-wrap">
+              <Button variant="ghost" onClick={() => nav(g.path)}
                 className="relative overflow-hidden active:scale-[0.93] pro-tile pro-rise"
                 style={{
                   animationDelay: `${Math.min(idx, 12) * 35}ms`,
@@ -373,6 +386,8 @@ export default function Home() {
 
 
               </Button>
+              <Button variant="ghost" className="fav-toggle" data-on={isFav(g.key) ? "1" : "0"} aria-pressed={isFav(g.key)} aria-label={isFav(g.key) ? "Sevimlilardan olib tashlash" : "Sevimlilarga qo‘shish"} onClick={() => toggleFav(g.key)}><Star size={13} /></Button>
+              </div>
             ))}
                 </div>
               </section>

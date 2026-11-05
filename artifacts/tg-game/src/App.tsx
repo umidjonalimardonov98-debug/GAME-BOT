@@ -22,6 +22,7 @@ import Spin from "@/pages/Spin";
 import Mines from "@/pages/Mines";
 import Roulette from "@/pages/Roulette";
 import History from "@/pages/History";
+import Stats from "@/pages/Stats";
 import Support from "@/pages/Support";
 import Plinko from "@/pages/Plinko";
 import Towers from "@/pages/Towers";
@@ -95,6 +96,7 @@ function Router() {
       <Route path="/mines" component={Mines} />
       <Route path="/roulette" component={Roulette} />
       <Route path="/history" component={History} />
+      <Route path="/stats" component={Stats} />
       <Route path="/support" component={Support} />
       <Route path="/referral" component={Referral} />
       <Route path="/contest" component={Contest} />

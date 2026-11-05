@@ -79,3 +79,47 @@
 @media (min-width: 700px) { .home-page { max-width: 900px; margin: auto; } .live-arena-grid { grid-template-columns: repeat(5,minmax(0,1fr)); } }
 @media (max-width: 360px) { .summary-balance > strong { font-size: 22px; } .game-nav-main { gap: 5px; padding-inline: 8px; } }
 @media (prefers-reduced-motion: reduce) { .home-page *, .game-nav-header *, .live-arena-grid * { animation: none !important; transition: none !important; } }
+/* Favorites */
+#root .tile-wrap { position: relative; min-width: 0; }
+#root .tile-wrap > .pro-tile { width: 100%; }
+#root .fav-toggle { position: absolute; top: 4px; left: 4px; z-index: 3; width: 26px; height: 26px; padding: 0; border-radius: 6px; background: oklch(.12 0 0 / .55); color: var(--nav-text); transition: transform .18s ease, background .18s ease; }
+#root .fav-toggle[data-on="1"] { color: var(--nav-gold); background: oklch(.12 0 0 / .75); }
+#root .fav-toggle[data-on="1"] svg { fill: currentColor; }
+#root .fav-toggle:active { transform: scale(.85); }
+#root .fav-strip { margin: 0 16px 12px; }
+#root .fav-head { display: flex; align-items: center; gap: 6px; font-size: 11px; color: var(--nav-gold); margin-bottom: 6px; }
+#root .fav-row { display: flex; gap: 8px; overflow-x: auto; scrollbar-width: none; }
+#root .fav-item { flex: 0 0 68px; height: auto; flex-direction: column; gap: 4px; padding: 0; white-space: normal; animation: fav-in .3s ease both; }
+#root .fav-item img, #root .fav-ph { width: 60px; height: 60px; border-radius: 10px; object-fit: cover; border: 1px solid var(--nav-line); background: var(--nav-surface); }
+#root .fav-item > span:last-child { font-size: 10px; color: var(--nav-muted); line-height: 1.2; text-align: center; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
+@keyframes fav-in { from { opacity: 0; transform: translateY(6px); } }
+#root .home-entry-row { grid-template-columns: repeat(3,minmax(0,1fr)); }
+#root .stats-entry { color: var(--nav-blue); }
+/* Stats page */
+#root .stats-page { min-height: 100vh; background: var(--nav-base); color: var(--nav-text); }
+#root .stats-page main { padding: 14px 16px 32px; max-width: 640px; margin: auto; }
+#root .stats-grid { display: grid; grid-template-columns: repeat(2,minmax(0,1fr)); gap: 8px; }
+#root .stats-grid > div { padding: 12px; border-radius: 10px; background: var(--nav-surface); border: 1px solid var(--nav-line); display: flex; flex-direction: column; gap: 4px; animation: fav-in .35s ease both; }
+#root .stats-grid span { font-size: 10px; color: var(--nav-muted); }
+#root .stats-grid strong { font-size: 22px; font-variant-numeric: tabular-nums; color: var(--nav-accent); }
+#root .stats-grid strong[data-neg="1"] { color: var(--destructive, oklch(.65 .2 25)); }
+#root .stats-h { font-size: 13px; margin: 18px 0 8px; color: var(--nav-text); }
+#root .stats-note { font-size: 12px; color: var(--nav-muted); padding: 20px 0; text-align: center; }
+#root .stats-list { display: flex; flex-direction: column; gap: 6px; }
+#root .stats-list li { display: flex; align-items: center; gap: 10px; padding: 8px; border-radius: 10px; background: var(--nav-surface); border: 1px solid var(--nav-line); animation: fav-in .35s ease both; }
+#root .stats-list b { width: 18px; font-size: 12px; color: var(--nav-gold); text-align: center; }
+#root .stats-list img, #root .stats-list i { width: 40px; height: 40px; border-radius: 8px; object-fit: cover; background: var(--nav-raised); flex-shrink: 0; }
+#root .stats-list div { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 3px; }
+#root .stats-list strong { font-size: 13px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+#root .stats-list small { font-size: 10px; color: var(--nav-muted); }
+#root .stats-list em { display: block; height: 3px; border-radius: 2px; background: var(--nav-accent); transition: width .5s ease; }
+#root .stats-list button { height: 30px; padding: 0 10px; font-size: 11px; border-radius: 6px; background: var(--nav-raised); color: var(--nav-accent); }
+
+/* Performance: huge rotating/blurred background layers overload phone GPUs
+   (screen tiles stop painting and the WebView freezes). Keep them static and light. */
+.ga-root { contain: strict; }
+.ga-root *, .ga-live .ga-vignette { animation: none !important; }
+.ga-rays { width: 140vmax !important; height: 140vmax !important; margin: -70vmax 0 0 -70vmax !important; -webkit-mask: none !important; mask: none !important; opacity: .28 !important; }
+.ga-float { display: none !important; }
+.sfx-anim[style*="blur"] { filter: none !important; }
+#root .game-nav-header { contain: layout paint; transform: translateZ(0); }
