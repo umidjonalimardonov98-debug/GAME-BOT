@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
 import { useLocation } from "wouter";
+import { Button } from "@/components/ui/button";
 import SmartImage from "@/components/SmartImage";
 import { sfx } from "@/lib/sound";
 import { loadArenaList, type ArenaDef } from "@/pages/Arena";
@@ -22,9 +23,9 @@ export default function ArenaGrid() {
         </div>
         <span className="ar-online"><span className="ar-online-dot" />{online} onlayn</span>
       </div>
-      <div className="grid grid-cols-2 gap-2.5">
+      <div className="live-arena-grid">
         {games.map((g, i) => (
-          <button key={g.key} type="button" className="ar-tile-card" style={{ ["--c" as any]: g.color, animationDelay: `${Math.min(i, 10) * 40}ms` }}
+          <Button variant="ghost" key={g.key} type="button" className="ar-tile-card" style={{ ["--c" as any]: g.color, animationDelay: `${Math.min(i, 10) * 40}ms` }}
             onClick={() => { sfx.select(); nav(`/arena/${g.key}`); }}>
             <SmartImage src={g.img} alt={g.title} sizes="(max-width: 480px) 50vw, 240px" className="ar-tile-img" />
             <span className="ar-tile-shade" />
@@ -34,7 +35,7 @@ export default function ArenaGrid() {
               <span className="ar-tile-title">{g.title}</span>
               <span className="ar-tile-sub">{g.sub}</span>
             </span>
-          </button>
+          </Button>
         ))}
       </div>
     </section>

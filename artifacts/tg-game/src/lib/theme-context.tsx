@@ -1,3 +1,4 @@
+import "@/game-navigation.css";
 import { createContext, useContext, useEffect, useState, type ReactNode } from "react";
 
 export type Theme = "dark" | "light" | "black";
@@ -14,42 +15,12 @@ export interface ThemeStyle {
   btnSecondaryText: string;
 }
 
-export const THEMES: Record<Theme, ThemeStyle> = {
-  dark: {
-    bg: "linear-gradient(180deg, #0b1a2b 0%, #0e2136 50%, #0a1626 100%)",
-    card: "#122a42",
-    cardBorder: "rgba(255,255,255,0.08)",
-    text: "#ffffff",
-    textSub: "rgba(255,255,255,0.58)",
-    input: "#0e2135",
-    inputBorder: "rgba(255,255,255,0.12)",
-    btnSecondary: "#193a59",
-    btnSecondaryText: "#9fc5ef",
-  },
-  light: {
-    // "Qirollik" mavzusi — to'q siyoh-binafsha + zumrad urg'u (yorug' emas)
-    bg: "linear-gradient(180deg, #1a0f2b 0%, #241040 52%, #12071f 100%)",
-    card: "#2a1547",
-    cardBorder: "rgba(212,175,55,0.22)",
-    text: "#ffffff",
-    textSub: "rgba(255,255,255,0.6)",
-    input: "#1d0e33",
-    inputBorder: "rgba(255,255,255,0.14)",
-    btnSecondary: "#3a1e60",
-    btnSecondaryText: "#e3c8ff",
-  },
-  black: {
-    bg: "linear-gradient(180deg, #05080c 0%, #070c12 100%)",
-    card: "#0d141c",
-    cardBorder: "rgba(255,255,255,0.08)",
-    text: "#ffffff",
-    textSub: "rgba(255,255,255,0.55)",
-    input: "#0a1017",
-    inputBorder: "rgba(255,255,255,0.1)",
-    btnSecondary: "#131c26",
-    btnSecondaryText: "#8fb6d8",
-  },
+const NAV_THEME: ThemeStyle = {
+  bg: "var(--nav-base)", card: "var(--nav-surface)", cardBorder: "var(--nav-line)",
+  text: "var(--nav-text)", textSub: "var(--nav-muted)", input: "var(--nav-base)",
+  inputBorder: "var(--nav-line)", btnSecondary: "var(--nav-raised)", btnSecondaryText: "var(--nav-blue)",
 };
+export const THEMES: Record<Theme, ThemeStyle> = { dark: NAV_THEME, light: { ...NAV_THEME }, black: { ...NAV_THEME } };
 
 interface ThemeCtx { theme: Theme; ts: ThemeStyle; setTheme: (t: Theme) => void; }
 const ThemeContext = createContext<ThemeCtx>({ theme: "dark", ts: THEMES.dark, setTheme: () => {} });
@@ -142,11 +113,10 @@ export const GAME_BG = {
 let remoteBackgroundStyle: "gold" | "classic" = "gold";
 
 const OVERLAY: Record<Theme, string> = {
-  dark: "linear-gradient(180deg, rgba(14,10,4,0.80) 0%, rgba(20,13,4,0.72) 45%, rgba(8,6,2,0.88) 100%)",
-  black: "linear-gradient(180deg, rgba(0,0,0,0.88) 0%, rgba(6,4,0,0.84) 45%, rgba(0,0,0,0.93) 100%)",
-  light: "linear-gradient(180deg, rgba(26,15,43,0.86) 0%, rgba(36,16,64,0.80) 45%, rgba(12,7,31,0.92) 100%)",
+  dark: "linear-gradient(var(--nav-base), color-mix(in oklch, var(--nav-base) 92%, transparent))",
+  black: "linear-gradient(var(--nav-base), color-mix(in oklch, var(--nav-base) 96%, transparent))",
+  light: "linear-gradient(var(--nav-base), color-mix(in oklch, var(--nav-base) 88%, transparent))",
 };
-
 
 /** Sahifa foni: surat + tema overlay (matn o'qilishi saqlanadi) */
 export function pageBg(theme: Theme, img?: string) {

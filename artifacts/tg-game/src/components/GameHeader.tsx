@@ -1,93 +1,70 @@
-import { useEffect } from "react";
+import { useEffect, useState, useRef } from "react";
 import { useLocation } from "wouter";
-import { ArrowLeft } from "lucide-react";
+import { ArrowLeft, SlidersHorizontal, CircleHelp, Users } from "lucide-react";
 import { usePlayer } from "@/lib/player-context";
-import { useTheme, GOLD } from "@/lib/theme-context";
 import { useLang } from "@/lib/lang-context";
+import { getGameConfig } from "@/lib/api";
+import { GAMES, LIVE_GAMES } from "@/lib/game-catalog";
+import { GAME_NAMES } from "@/lib/game-i18n";
 import SoundToggle from "@/components/SoundToggle";
 import ThemeSwitcher from "@/components/ThemeSwitcher";
 import LangSwitcher from "@/components/LangSwitcher";
 import Odometer from "@/components/casino/Odometer";
-import Sym from "@/components/casino/Sym";
+import { Button } from "@/components/ui/button";
 import { sfx } from "@/lib/sound";
+import "@/game-navigation.css";
 
-interface Props {
-  title: string;
-  /** sarlavha yonidagi rasmli belgi (emoji o'rniga) */
-  icon?: string;
-  subtitle?: string;
-  hideTheme?: boolean;
-}
-
-export default function GameHeader({ title, icon, subtitle, hideTheme }: Props) {
-  const [, nav] = useLocation();
+interface Props { title: string; icon?: string; subtitle?: string; hideTheme?: boolean; }
+export default function GameHeader({ title, subtitle, hideTheme }: Props) {
+  const [location, nav] = useLocation();
   const { player } = usePlayer();
-  const { theme, ts } = useTheme();
-  const { t } = useLang();
-
-  const isLight = false;
-
-  // Sarlavhada yordam tugmasi bor — ekrandagi suzuvchi "?" yashiriladi (banner/maydon ustiga tushmasin)
+  const { lang } = useLang();
+  const [menu, setMenu] = useState(false);
+  const [pendingPath, setPendingPath] = useState<string | null>(null);
+  const [enabled, setEnabled] = useState<Record<string, boolean>>({});
+  const menuRef = useRef<HTMLDivElement>(null);
+  const currentPath = location.split("?")[0];
+  const isLive = currentPath === "/live" || currentPath.startsWith("/pvp") || currentPath.startsWith("/arena/");
+  const isGame = isLive || GAMES.some(game => game.path === currentPath);
   useEffect(() => {
     document.body.dataset.gh = "1";
+    getGameConfig().then(config => {
+      if (config?.games) setEnabled(Object.fromEntries(Object.entries(config.games).map(([key, value]) => [key, (value as { enabled?: boolean }).enabled !== false])));
+    }).catch(() => {});
     return () => { delete document.body.dataset.gh; };
   }, []);
-
+  useEffect(() => {
+    const close = (event: PointerEvent) => { if (menuRef.current && !menuRef.current.contains(event.target as Node)) setMenu(false); };
+    const escape = (event: KeyboardEvent) => { if (event.key === "Escape") { setMenu(false); setPendingPath(null); } };
+    document.addEventListener("pointerdown", close); document.addEventListener("keydown", escape);
+    return () => { document.removeEventListener("pointerdown", close); document.removeEventListener("keydown", escape); };
+  }, []);
+  const go = (path: string) => {
+    if (path === currentPath) return;
+    // Never silently leave an in-progress round or a live room.
+    if (isGame && currentPath !== "/live") { setPendingPath(path); return; }
+    sfx.select(); nav(path);
+  };
   return (
-    <div
-      className="pro-header flex items-center gap-2 px-3 py-2.5 z-50"
-    >
-      {/* Ortga */}
-      <button
-        aria-label="back"
-        onClick={() => {
-          sfx.back();
-          nav("/");
-        }}
-        className="pro-back w-9 h-9 rounded-xl flex items-center justify-center shrink-0"
-        style={{ color: "#1a1204" }}
-      >
-        <ArrowLeft className="w-4 h-4 relative" strokeWidth={3} />
-      </button>
-
-      {/* Sarlavha */}
-      {icon && <Sym n={icon} s={22} className="idle-float shrink-0 gh-icon" />}
-      <div className="flex-1 min-w-0">
-        <p className="font-black text-base leading-tight truncate" style={{ color: ts.text }}>
-          {title.trim()}
-        </p>
-        {subtitle && (
-          <p className="text-xs truncate" style={{ color: ts.textSub }}>
-            {subtitle}
-          </p>
-        )}
+    <header className="game-nav-header">
+      <div className="game-nav-main">
+        <Button variant="ghost" className="nav-icon" aria-label="back" title="Orqaga" onClick={() => go(isLive && currentPath !== "/live" ? "/live" : "/")}><ArrowLeft size={18} /></Button>
+        <div className="game-nav-title"><strong>{title.trim()}</strong>{subtitle && <small>{subtitle}</small>}</div>
+        <Button variant="ghost" className="game-nav-balance" title="Balans" onClick={() => go("/deposit")}><Odometer value={player?.balance ?? 0} compact /></Button>
+        <Button variant="ghost" className="nav-icon" aria-label="AI yordamchi" title="Yordam" onClick={() => window.dispatchEvent(new Event("askai:open"))}><CircleHelp size={18} /></Button>
+        <div ref={menuRef}>
+          <Button variant="ghost" className="nav-icon" aria-label="settings" aria-expanded={menu} title="Sozlamalar" onClick={() => setMenu(value => !value)}><SlidersHorizontal size={17} /></Button>
+          {menu && <div className="game-settings">{!hideTheme && <div><span>Mavzu</span><ThemeSwitcher compact /></div>}<div><span>Ovoz</span><SoundToggle /></div><div><span>Til</span><LangSwitcher /></div></div>}
+        </div>
       </div>
-
-      {/* Balans */}
-      <div className="text-right shrink-0 mr-1 max-w-[92px] overflow-hidden">
-        <p className="text-[9px] font-bold tracking-wider" style={{ color: ts.textSub }}>
-          {t.balanceLabel.toUpperCase()}
-        </p>
-        <Odometer
-          value={player?.balance ?? 0}
-          compact
-          className="font-black text-xs whitespace-nowrap"
-          style={{ color: "#ffcf4a" }}
-        />
-      </div>
-
-      {/* Mavzu (kichik suratcha bilan) */}
-      {!hideTheme && <ThemeSwitcher compact />}
-
-      {/* Ovoz */}
-      <button type="button" aria-label="AI yordamchi" onClick={() => window.dispatchEvent(new Event("askai:open"))}
-        className="w-9 h-9 rounded-lg shrink-0 font-black text-base active:scale-90 transition-transform"
-        style={{ background: "linear-gradient(145deg,#f7c948,#b45309)", color: "#1a1204", border: "1px solid rgba(255,243,176,.6)" }}>?</button>
-
-      <SoundToggle light={isLight} />
-
-      {/* Til */}
-      <LangSwitcher />
-    </div>
+      {isGame && <nav className="game-switcher" aria-label="O‘yinlar">
+        <Button variant="ghost" onClick={() => go(isLive ? "/" : "/live")}><Users size={16} />{isLive ? "Barcha o‘yinlar" : "LIVE PvP"}</Button>
+        {(isLive ? LIVE_GAMES : GAMES.filter(game => enabled[game.key] !== false)).map(game => <Button variant="ghost" key={game.path} aria-pressed={currentPath === game.path} onClick={() => go(game.path)}><img src={game.img} alt="" loading="lazy" />{"name" in game ? game.name : GAME_NAMES[game.key]?.[lang] ?? game.key}</Button>)}
+      </nav>}
+      {pendingPath && <div className="game-switch-dialog" role="dialog" aria-modal="true" aria-label="O‘yindan chiqish"><div>
+        <p>{lang === "ru" ? "Перейти в другую игру? Текущий раунд может ещё продолжаться." : lang === "en" ? "Switch games? Your current round may still be in progress." : "Boshqa o‘yinga o‘tasizmi? Joriy raund hali davom etayotgan bo‘lishi mumkin."}</p>
+        <footer><Button variant="ghost" autoFocus onClick={() => setPendingPath(null)}>{lang === "ru" ? "Остаться" : lang === "en" ? "Stay" : "Qolish"}</Button><Button variant="ghost" onClick={() => { const path = pendingPath; setPendingPath(null); sfx.back(); nav(path); }}>{lang === "ru" ? "Перейти" : lang === "en" ? "Switch" : "O‘tish"}</Button></footer>
+      </div></div>}
+    </header>
   );
 }

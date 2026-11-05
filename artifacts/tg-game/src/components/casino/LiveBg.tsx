@@ -78,6 +78,8 @@ export default function LiveBg() {
     });
   }, [path]);
 
+  if (path === "/" || path === "/live") return null;
+
   return (
     <div className="live-bg" aria-hidden>
       <span className="live-blob" style={{ background: v.glow[0], left: "-18%", top: "4%" }} />

@@ -3,14 +3,14 @@ import { useLocation } from "wouter";
 import { usePlayer } from "@/lib/player-context";
 import { useLang } from "@/lib/lang-context";
 import { useTheme, pageBg, GAME_BG, GOLD, XGREEN } from "@/lib/theme-context";
-import { getGameConfig } from "@/lib/api";
+import { getGameConfig, getPlayerHistory } from "@/lib/api";
 import { GAME_NAMES } from "@/lib/game-i18n";
 import { useU } from "@/lib/ui-i18n";
 import ThemeSwitcher from "@/components/ThemeSwitcher";
 import LangSwitcher from "@/components/LangSwitcher";
 import SoundToggle from "@/components/SoundToggle";
 import Odometer from "@/components/casino/Odometer";
-import { Wallet, Banknote, Gift, Ticket, Home as HomeIcon, History, MessageCircle, BookOpen, Trophy, Swords, SlidersHorizontal } from "lucide-react";
+import { Wallet, Banknote, Gift, Ticket, Home as HomeIcon, History, MessageCircle, BookOpen, Trophy, Swords, SlidersHorizontal, RotateCcw, ArrowUpRight, Search, Users, X } from "lucide-react";
 
 const BASE = "/api";
 
@@ -30,65 +30,18 @@ async function redeemPromo(telegramId: string, code: string) {
 import { NEW_GAMES, NEW_GAME_MAP, coverOf } from "@/lib/new-games";
 import GameArt from "@/components/casino/GameArt";
 import SmartImage from "@/components/SmartImage";
+import { loadArenaList } from "@/pages/Arena";
 import ContestBanner from "@/components/casino/ContestBanner";
-
-const GAMES = [
-  { key: "apple",       path: "/apple",       img: "/games/apple.jpg",       tag: "HOT",   tagColor: "#ef4444", bg: "linear-gradient(145deg,#064e3b,#1a7d43)", glow: "#1a7d4355" },
-  { key: "dice",        path: "/dice",        img: "/games/dice.jpg",        tag: "x5.8",  tagColor: "#f59e0b", bg: "linear-gradient(145deg,#78350f,#d97706)", glow: "#d9770655" },
-  { key: "aviator",     path: "/aviator",     img: "/games/aviator.jpg",     tag: "∞x",    tagColor: "#5aa2f0", bg: "linear-gradient(145deg,#0b1a2b,#0d4fb0)", glow: "#0d4fb055" },
-  { key: "spin",        path: "/spin",        img: "/games/spin.jpg",        tag: "FREE",  tagColor: "#34d399", bg: "linear-gradient(145deg,#0d4fb0,#1668e3)", glow: "#1668e355" },
-  { key: "blackjack",   path: "/blackjack",   img: "/games/blackjack.jpg",   tag: "x2.5",  tagColor: "#2dd4bf", bg: "linear-gradient(145deg,#134e4a,#0d9488)", glow: "#0d948855" },
-  { key: "slots",       path: "/slots",       img: "/games/slots.jpg",       tag: "x10",   tagColor: "#f0abfc", bg: "linear-gradient(145deg,#0b3f8f,#1668e3)", glow: "#1668e355" },
-  { key: "parity",      path: "/parity",      img: "/games/parity.jpg",      tag: "50/50", tagColor: "#7dd3fc", bg: "linear-gradient(145deg,#0c4a6e,#0284c7)", glow: "#0284c755" },
-  { key: "mines",       path: "/mines",       img: "/games/mines.jpg",       tag: "x24",   tagColor: "#f87171", bg: "linear-gradient(145deg,#7f1d1d,#dc2626)", glow: "#dc262655" },
-  { key: "roulette",    path: "/roulette",    img: "/games/roulette.jpg",    tag: "x36",   tagColor: "#fcd34d", bg: "linear-gradient(145deg,#78350f,#b45309)", glow: "#b4530955" },
-  { key: "plinko",      path: "/plinko",      img: "/games/plinko.jpg",      tag: "NEW",   tagColor: "#39c46f", bg: "linear-gradient(145deg,#312e81,#1668e3)", glow: "#1668e355" },
-  { key: "towers",      path: "/towers",      img: "/games/towers.jpg",      tag: "NEW",   tagColor: "#39c46f", bg: "linear-gradient(145deg,#164e63,#0891b2)", glow: "#0891b255" },
-  { key: "limbo",       path: "/limbo",       img: "/games/limbo.jpg",       tag: "x100",  tagColor: "#78b6ff", bg: "linear-gradient(145deg,#0b3f8f,#2f8fff)", glow: "#2f8fff55" },
-  { key: "keno",        path: "/keno",        img: "/games/keno.jpg",        tag: "x60",   tagColor: "#fbbf24", bg: "linear-gradient(145deg,#7c2d12,#ea580c)", glow: "#ea580c55" },
-  { key: "hilo",        path: "/hilo",        img: "/games/hilo.jpg",        tag: "NEW",   tagColor: "#39c46f", bg: "linear-gradient(145deg,#14532d,#25a55a)", glow: "#25a55a55" },
-  { key: "coinflip",    path: "/coinflip",    img: "/games/coinflip.jpg",    tag: "x1.9",  tagColor: "#fcd34d", bg: "linear-gradient(145deg,#713f12,#ca8a04)", glow: "#ca8a0455" },
-  { key: "baccarat",    path: "/baccarat",    img: "/games/baccarat.jpg",    tag: "x8",    tagColor: "#f472b6", bg: "linear-gradient(145deg,#4c0519,#be123c)", glow: "#be123c55" },
-  { key: "case",        path: "/case",        img: "/games/case.jpg",        tag: "x25",   tagColor: "#22d3ee", bg: "linear-gradient(145deg,#083344,#0e7490)", glow: "#0e749055" },
-  { key: "scratch",     path: "/scratch",     img: "/games/scratch.jpg",     tag: "x10",   tagColor: "#fda4af", bg: "linear-gradient(145deg,#500724,#9d174d)", glow: "#9d174d55" },
-  { key: "dragontiger", path: "/dragontiger", img: "/games/dragontiger.jpg", tag: "x9",    tagColor: "#fb923c", bg: "linear-gradient(145deg,#450a0a,#b91c1c)", glow: "#b91c1c55" },
-  { key: "rps",         path: "/rps",         img: "/games/rps.jpg",         tag: "x1.9",  tagColor: "#93c5fd", bg: "linear-gradient(145deg,#1e3a8a,#2563eb)", glow: "#2563eb55" },
-  { key: "thimbles",    path: "/thimbles",    img: "/games/thimbles.jpg",    tag: "NEW",   tagColor: "#39c46f", bg: "linear-gradient(145deg,#7f1d1d,#dc2626)", glow: "#dc262655" },
-  { key: "luckycard",   path: "/luckycard",   img: "/games/luckycard.jpg",   tag: "x3.5",  tagColor: "#fcd34d", bg: "linear-gradient(145deg,#0b1f3d,#123a6b)", glow: "#123a6b55" },
-  { key: "hands",       path: "/hands",       img: "/games/hands.jpg",       tag: "NEW",   tagColor: "#39c46f", bg: "linear-gradient(145deg,#713f12,#ca8a04)", glow: "#ca8a0455" },
-  { key: "fruitblast",  path: "/fruitblast",  img: "/games/fruitblast.jpg",  tag: "x2.9",  tagColor: "#f472b6", bg: "linear-gradient(145deg,#500724,#be123c)", glow: "#be123c55" },
-  { key: "derby",       path: "/derby",       img: "/games/derby.jpg",       tag: "x12",  tagColor: "#34d399", bg: "linear-gradient(145deg,#064e3b,#059669)", glow: "#05966955" },
-  { key: "moneywheel",  path: "/moneywheel",  img: "/games/moneywheel.jpg",  tag: "x40",   tagColor: "#fbbf24", bg: "linear-gradient(145deg,#0d4fb0,#1668e3)", glow: "#1668e355" },
-  ...NEW_GAMES.map((g) => ({
-    key: g.key,
-    path: g.path,
-    img: coverOf(g.key),
-    sym: g.syms[0],
-    tag: g.tag,
-    tagColor: g.c1,
-    bg: `linear-gradient(145deg,${g.c2},${g.c1})`,
-    glow: `${g.c1}55`,
-  })),
-];
-
-
-/* ─── O'yin bo'limlari ─── */
-const CATS: { id: string; uz: string; ru: string; en: string; keys: string[] }[] = [
-  { id: "top",    uz: "Mashhur",          ru: "Популярные",      en: "Popular",         keys: ["apple","aviator","mines","slots","roulette","dice","plinko","spin"] },
-  { id: "crash",  uz: "Kresh va tezkor",  ru: "Краш и быстрые",  en: "Crash & Instant", keys: ["aviator","limbo","rocketcrash","jetx","coinflip","rps","parity","hands","thimbles"] },
-  { id: "cards",  uz: "Karta o'yinlari",  ru: "Карточные",       en: "Card games",      keys: ["blackjack","baccarat","hilo","dragontiger","luckycard","hilostreak","kingsroad","casinowar","dragoncard"] },
-  { id: "table",  uz: "Ruletka va zar",   ru: "Рулетка и кости", en: "Roulette & Dice", keys: ["roulette","dice","moneywheel","euroroulette","goldroulette","sicbo","dicetriple","vipwheel","neonwheel","nardgold"] },
-  { id: "slots",  uz: "Slotlar",          ru: "Слоты",           en: "Slots",           keys: ["slots","fruitblast","goldenpharaoh","diamondbonanza","crystalblast","royalcascade"] },
-  { id: "risk",   uz: "Mina va minora",   ru: "Мины и башни",    en: "Mines & Towers",  keys: ["mines","towers","minesfield","diamondmine","goldtower","plinko","plinkogold","plinkoneon"] },
-  { id: "lotto",  uz: "Lotereya va keno", ru: "Лотерея и кено",  en: "Lottery & Keno",  keys: ["keno","scratch","case","keno40","turbokeno","silvercard","goldcard","bingo75","speedbingo","lottodrum","megalotto"] },
-  { id: "arcade", uz: "Arkada",           ru: "Аркада",          en: "Arcade",          keys: ["derby","camelrace","fishhunt","pearlhunt","memorypairs","secretpairs"] },
-];
+import { Button } from "@/components/ui/button";
+import { GAMES, CATS, LIVE_GAMES } from "@/lib/game-catalog";
+import { mostRecentGame, type HistoryGame } from "@/lib/recent-game";
+import "@/game-navigation.css";
 
 export default function Home() {
   const [, nav] = useLocation();
   const { player, loading, refresh } = usePlayer();
   const { lang, t } = useLang();
-  const { theme } = useTheme();
+  const { theme, ts } = useTheme();
   const u = useU();
   const [tab, setTab] = useState<"games"|"promo">("games");
   const [showPromo, setShowPromo] = useState(false);
@@ -102,7 +55,19 @@ export default function Home() {
   }, []);
   const [enabledGames, setEnabledGames] = useState<Record<string, boolean>>({});
   const [cols, setCols] = useState<number>(3);
-  const [cat, setCat] = useState<string>("all");
+  const [cat, setCat] = useState<string>("top");
+  const [search, setSearch] = useState("");
+  const [arenaGames, setArenaGames] = useState<{ key: string; path: string; img: string; name: string }[]>([]);
+  useEffect(() => { loadArenaList().then(data => setArenaGames((data.games ?? []).map(game => ({ key: `arena-${game.key}`, path: `/arena/${game.key}`, img: game.img, name: game.title })))).catch(() => {}); }, []);
+  const [recentRows, setRecentRows] = useState<HistoryGame[]>([]);
+  useEffect(() => {
+    setRecentRows([]);
+    if (!player?.telegramId) return;
+    let current = true;
+    getPlayerHistory(player.telegramId).then(data => { if (current) setRecentRows(data.games ?? []); }).catch(() => {});
+    return () => { current = false; };
+  }, [player?.telegramId, player?.gamesPlayed]);
+  const recent = mostRecentGame(recentRows, [...GAMES, ...LIVE_GAMES, ...arenaGames], enabledGames);
   const [menu, setMenu] = useState(false);
   useEffect(() => {
     const saved = Number(localStorage.getItem("gridCols") || 0);
@@ -117,15 +82,15 @@ export default function Home() {
     setEnabledGames(Object.fromEntries(Object.entries(config.games).map(([key, value]) => [key, (value as { enabled?: boolean }).enabled !== false])));
   }).catch(() =>{}); }, []);
 
-  const isDark = theme === "dark"|| theme ==="black";
+  const isDark = true;
 
   const BG = pageBg(theme);
 
-  const CARD_BG = false ? "#ffffff" : theme === "black" ? "#0d141c" : "#122a42";
-  const CARD_BORDER = false ? "rgba(14,33,53,0.12)" : "rgba(255,255,255,0.08)";
-  const TEXT = isDark ? "#fff" : "#0b1a2b";
-  const TEXT_SUB = isDark ? "rgba(255,255,255,0.58)" : "rgba(11,26,43,0.6)";
-  const ACCENT = isDark ? "#2f8fff" : "#1668e3";
+  const CARD_BG = ts.card;
+  const CARD_BORDER = ts.cardBorder;
+  const TEXT = ts.text;
+  const TEXT_SUB = ts.textSub;
+  const ACCENT = "var(--nav-accent)";
 
   const handleDailyBonus = async () =>{
     if (!player || claiming) return;
@@ -155,7 +120,7 @@ export default function Home() {
   const initials = (player?.firstName ?? "O")[0].toUpperCase();
 
   return (
-    <div className="min-h-screen flex flex-col"style={{ background: pageBg(theme, GAME_BG.home), fontFamily:"'Inter', system-ui, sans-serif" }}>
+    <div className="home-page min-h-screen flex flex-col">
 
       {/* ─── TOP HEADER (pro) ─── */}
       <div className="pro-header home-top z-50 px-3 py-2 flex items-center gap-2.5">
@@ -170,15 +135,15 @@ export default function Home() {
           <p className="text-[11px] leading-tight truncate" style={{ color: TEXT_SUB }}>@{player?.username ?? "player"}</p>
         </div>
 
-        <button onClick={() => nav("/deposit")} className="ht-bal active:scale-95" aria-label="balance">
+        <Button variant="ghost" onClick={() => nav("/deposit")} className="ht-bal active:scale-95" aria-label="balance">
           <img src="/symbols/coin.png" alt="" width={18} height={18} />
           {loading ? <span>...</span> : <Odometer value={player?.balance ?? 0} compact className="whitespace-nowrap" />}
           <span className="ht-plus">+</span>
-        </button>
+        </Button>
 
-        <button onClick={() => setMenu((v) => !v)} className="ht-icon active:scale-90" aria-label="settings" data-on={menu ? "1" : "0"}>
+        <Button variant="ghost" onClick={() => setMenu((v) => !v)} className="ht-icon active:scale-90" aria-label="settings" data-on={menu ? "1" : "0"}>
           <SlidersHorizontal size={17} />
-        </button>
+        </Button>
 
         {menu && (
           <>
@@ -191,147 +156,25 @@ export default function Home() {
           </>
         )}
       </div>
-      <div className="h-3" />
-
-      {/* ─── BALANCE CARD (birinchi o'rinda) ─── */}
-      <div className="mx-4 rounded-3xl px-4 py-3.5 mb-3 relative overflow-hidden pro-sheen"
-        style={{
-          background: "linear-gradient(135deg,#0b3f8f 0%,#1668e3 55%,#2f8fff 100%)",
-          border: "1px solid rgba(255,255,255,0.16)",
-          boxShadow: "0 12px 32px rgba(13,79,176,0.42)",
-        }}>
-        <div className="absolute inset-x-0 top-0 h-px" style={{ background: "linear-gradient(90deg,transparent,rgba(255,255,255,0.55),transparent)" }} />
-        <div className="absolute -right-12 -top-12 w-44 h-44 rounded-full pointer-events-none" style={{ background: "radial-gradient(circle,rgba(255,255,255,0.16) 0%,transparent 70%)" }} />
-        <img src="/symbols/coin.png" alt="" width={64} height={64}
-          className="idle-float absolute right-3 top-3 pointer-events-none"
-          style={{ opacity: 0.9, filter: "drop-shadow(0 8px 20px rgba(0,0,0,0.45))" }} />
-
-        <div className="relative flex items-center justify-between gap-3">
-          <p className="text-[10px] font-black tracking-[0.22em] uppercase" style={{ color: "rgba(255,255,255,0.72)" }}>
-            {t.balance}
-          </p>
-          <span className="text-[9px] font-black px-2 py-0.5 rounded-full"
-            style={{ background: GOLD.grad, color: "#1a1204", letterSpacing: "0.12em" }}>UZS</span>
-        </div>
-
-        {loading ? (
-          <div className="h-9 w-40 rounded-xl animate-pulse mt-1.5 mb-2" style={{ background: "rgba(255,255,255,0.14)" }} />
-        ) : (
-          <p className="relative font-black text-3xl text-white mt-1 mb-2 leading-none" style={{ textShadow: "0 2px 10px rgba(0,0,0,0.4)" }}>
-            <Odometer value={player?.balance ?? 0} />
-          </p>
-        )}
-
-        <div className="relative grid grid-cols-2 gap-2 pt-2" style={{ borderTop: "1px solid rgba(255,255,255,0.18)" }}>
-          <div className="min-w-0">
-            <p className="text-[9px] font-bold uppercase tracking-wider truncate" style={{ color: "rgba(255,255,255,0.6)" }}>{t.won}</p>
-            <p className="font-black text-white text-sm truncate">{(player?.totalWon ?? 0).toLocaleString()}</p>
-          </div>
-          <div className="min-w-0">
-            <p className="text-[9px] font-bold uppercase tracking-wider truncate" style={{ color: "rgba(255,255,255,0.6)" }}>{t.games_played}</p>
-            <p className="font-black text-white text-sm truncate">{player?.gamesPlayed ?? 0}</p>
-          </div>
-        </div>
+      <section className="home-summary">
+        <div className="summary-balance"><span>{t.balance} · UZS</span><strong><Odometer value={player?.balance ?? 0} /></strong></div>
+        <div className="summary-stat"><span>{t.won}</span><strong>{(player?.totalWon ?? 0).toLocaleString()}</strong></div>
+        <div className="summary-stat"><span>{t.games_played}</span><strong>{player?.gamesPlayed ?? 0}</strong></div>
+      </section>
+      {recent && <Button variant="ghost" className="replay-game" onClick={() => nav(recent.path)}>
+        <img src={recent.img} alt="" width={46} height={46} />
+        <span><small>{lang === "ru" ? "Последняя игра" : lang === "en" ? "Last played" : "Oxirgi o‘yin"}</small><strong>{GAME_NAMES[recent.key]?.[lang] ?? ("name" in recent ? recent.name : recent.key)}</strong></span>
+        <span className="replay-label"><RotateCcw size={16} />{lang === "ru" ? "Ещё раз" : lang === "en" ? "Play again" : "Qayta o‘ynash"}</span>
+      </Button>}
+      <div className="home-entry-row">
+        <Button variant="ghost" className="home-entry" onClick={() => nav("/spin")}><img src="/symbols/wheel.png" alt="" width={36} height={36} /><span>{u("freeGame")}</span><ArrowUpRight size={16} /></Button>
+        <Button variant="ghost" className="home-entry live-entry" onClick={() => nav("/live")}><Users size={22} /><span>LIVE PvP</span><ArrowUpRight size={16} /></Button>
       </div>
-
-      {/* ─── REFERAL KONKURSI BANNERI ─── */}
-      <div className="mx-4 mb-3">
-        <ContestBanner />
-      </div>
-
-      {/* ─── IKKI IXCHAM BANNER: TEKIN O'YIN + LIVE PvP ─── */}
-      <div className="grid grid-cols-2 gap-2.5 mx-4 mb-3">
-        {/* VIP / tekin o'yin */}
-        <button onClick={() => nav("/spin")}
-          className="relative overflow-hidden rounded-3xl text-left active:scale-[0.97] transition-transform pro-sheen"
-          style={{ minHeight: 118, border: `1px solid ${GOLD.border}`, boxShadow: "0 12px 30px rgba(0,0,0,0.45)" }}>
-          <SmartImage src="/banner-main.jpg" alt="" loading="eager" fetchPriority="high"
-            sizes="200px" className="absolute inset-0 w-full h-full object-cover" />
-          <div className="absolute inset-0" style={{ background: "linear-gradient(160deg,rgba(3,2,12,0.9) 10%,rgba(3,2,12,0.45) 100%)" }} />
-          <img src="/symbols/wheel.png" alt="" width={62} height={62}
-            className="absolute spin-slow" style={{ right: -8, bottom: -8, opacity: 0.9, filter: "drop-shadow(0 6px 18px rgba(255,207,74,0.45))" }} />
-          <div className="relative p-3 flex flex-col h-full">
-            <span className="font-black gold-text" style={{ fontSize: 8, letterSpacing: "0.24em" }}>VIP CASINO</span>
-            <p className="font-black leading-none mt-1" style={{ fontSize: 15, color: "#fff", textShadow: "0 2px 10px rgba(0,0,0,0.7)" }}>
-              1X GAME <span className="gold-text">PRO</span>
-            </p>
-            <span className="mt-auto self-start inline-flex items-center gap-1 px-2.5 py-1.5 rounded-xl font-black pro-sheen"
-              style={{ fontSize: 9.5, background: XGREEN.grad, color: "#fff", border: "1px solid rgba(255,255,255,0.22)", boxShadow: XGREEN.shadow }}>
-              <img src="/symbols/gift.png" alt="" width={12} height={12} />
-              {u("freeGame").toUpperCase()}
-            </span>
-          </div>
-        </button>
-
-        {/* LIVE PvP */}
-        <button onClick={() => nav("/live")}
-          className="relative overflow-hidden rounded-3xl text-left active:scale-[0.97] transition-transform"
-          style={{
-            minHeight: 118,
-            border: `1px solid ${GOLD.border}`,
-            boxShadow: "0 12px 30px rgba(0,0,0,0.45)",
-            background: "linear-gradient(140deg,#12060b,#3a0d16 45%,#0a3b26)",
-          }}>
-          <div className="lfx lfx-panx absolute inset-0" style={{ opacity: 0.4 }}>
-            <img src="/games/pvppoker.jpg" alt="" loading="lazy" decoding="async" />
-          </div>
-          <div className="absolute inset-0" style={{ background: "linear-gradient(150deg,rgba(6,4,10,0.9) 20%,rgba(6,4,10,0.35))" }} />
-          <img src="/symbols/cardback.png" alt="" className="fx-spin absolute right-1 bottom-1" style={{ width: 30, height: 30, objectFit: "contain", opacity: 0.85 }} />
-          <div className="relative p-3 flex flex-col h-full">
-            <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded-full font-black self-start"
-              style={{ fontSize: 8, background: "rgba(239,68,68,0.92)", color: "#fff", letterSpacing: "0.14em" }}>
-              <span className="live-dot" style={{ width: 5, height: 5, borderRadius: 99, background: "#fff" }} /> LIVE
-            </span>
-            <p className="font-black leading-none mt-1" style={{ fontSize: 17, color: "#fff" }}>
-              LIVE <span className="gold-text">PvP</span>
-            </p>
-            <span className="mt-auto self-start inline-flex items-center gap-1 px-2.5 py-1.5 rounded-xl font-black pvp-pulse"
-              style={{ fontSize: 9.5, background: GOLD.grad, color: "#1a1204", border: "1px solid rgba(255,246,207,0.8)" }}>
-              <Swords size={12} color="#1a1204" /> ARENAGA KIRISH
-            </span>
-          </div>
-        </button>
-      </div>
-
-
-      {/* ─── 4 ACTION BUTTONS ─── */}
-      <div className={`grid ${dailyOn ? "grid-cols-4" : "grid-cols-3"} gap-2 mx-4 mb-4`}>
-        <button onClick={() => nav("/deposit")}
-          className="flex flex-col items-center gap-1.5 py-3 rounded-2xl active:scale-95 transition-transform"
-          style={{ background: CARD_BG, border: `1px solid ${CARD_BORDER}`, boxShadow: "0 2px 12px rgba(0,0,0,0.08)" }}>
-          <span className="w-9 h-9 rounded-xl flex items-center justify-center text-lg"
-            style={{ background: "linear-gradient(135deg,#1d4ed8,#3b82f6)" }}><Wallet size={18} color="#fff" /></span>
-          <span className="text-xs font-bold text-center leading-tight" style={{ color: TEXT, fontSize: 10 }}>
-            {t.deposit}
-          </span>
-        </button>
-        <button onClick={() => nav("/withdraw")}
-          className="flex flex-col items-center gap-1.5 py-3 rounded-2xl active:scale-95 transition-transform"
-          style={{ background: CARD_BG, border: `1px solid ${CARD_BORDER}`, boxShadow: "0 2px 12px rgba(0,0,0,0.08)" }}>
-          <span className="w-9 h-9 rounded-xl flex items-center justify-center"
-            style={{ background: "linear-gradient(135deg,#7a5a10,#d4af37)" }}><Banknote size={18} color="#fff" /></span>
-          <span className="text-xs font-bold text-center leading-tight" style={{ color: TEXT, fontSize: 10 }}>
-            {u("withdrawShort")}
-          </span>
-        </button>
-        {dailyOn && <button onClick={handleDailyBonus} disabled={claiming}
-          className="flex flex-col items-center gap-1.5 py-3 rounded-2xl active:scale-95 transition-transform disabled:opacity-60"
-          style={{ background: CARD_BG, border: `1px solid ${CARD_BORDER}`, boxShadow: "0 2px 12px rgba(0,0,0,0.08)" }}>
-          <span className="w-9 h-9 rounded-xl flex items-center justify-center text-lg"
-            style={{ background: "linear-gradient(135deg,#d97706,#f59e0b)" }}><Gift size={18} color="#fff" /></span>
-          <span className="text-xs font-bold text-center leading-tight" style={{ color: TEXT, fontSize: 10 }}>
-            {claiming ? t.claiming : t.dailyBonus}
-          </span>
-        </button>}
-        <button onClick={() =>{ setTab("promo"); setShowPromo(true); }}
-          className="flex flex-col items-center gap-1.5 py-3 rounded-2xl active:scale-95 transition-transform"
-          style={{ background: CARD_BG, border: `1px solid ${CARD_BORDER}`, boxShadow: "0 2px 12px rgba(0,0,0,0.08)" }}>
-          <span className="w-9 h-9 rounded-xl flex items-center justify-center text-lg"
-            style={{ background: "linear-gradient(180deg,#39c46f,#25a55a)" }}><Ticket size={18} color="#fff" /></span>
-          <span className="text-xs font-bold text-center leading-tight" style={{ color: TEXT, fontSize: 10 }}>
-            {t.promoCode}
-          </span>
-        </button>
+      <div className="home-actions">
+        <Button variant="ghost" onClick={() => nav("/deposit")}><Wallet size={18} /><span>{t.deposit}</span></Button>
+        <Button variant="ghost" onClick={() => nav("/withdraw")}><Banknote size={18} /><span>{u("withdrawShort")}</span></Button>
+        {dailyOn && <Button variant="ghost" onClick={handleDailyBonus} disabled={claiming}><Gift size={18} /><span>{claiming ? t.claiming : t.dailyBonus}</span></Button>}
+        <Button variant="ghost" onClick={() => { setTab("promo"); setShowPromo(true); }}><Ticket size={18} /><span>{t.promoCode}</span></Button>
       </div>
 
       {/* Claim message */}
@@ -345,31 +188,6 @@ export default function Home() {
           {claimMsg}
         </div>
       )}
-
-      {/* ─── TABS ─── */}
-      <div className="mx-4 mb-4">
-        <div className="flex rounded-2xl p-1 gap-1"
-          style={{ background: CARD_BG, border: `1px solid ${CARD_BORDER}` }}>
-          <button onClick={() => setTab("games")}
-            className="flex-1 py-2.5 rounded-xl text-sm font-black transition-all active:scale-98"
-            style={{
-              background: tab === "games"?"linear-gradient(135deg,#1668e3,#2f8fff)":"transparent",
-              color: tab === "games"?"#fff" : TEXT_SUB,
-              boxShadow: tab === "games"?"0 4px 12px #1668e344":"none",
-            }}>
-             {t.games}
-          </button>
-          <button onClick={() =>{ setTab("promo"); setShowPromo(true); }}
-            className="flex-1 py-2.5 rounded-xl text-sm font-black transition-all active:scale-98"
-            style={{
-              background: tab === "promo"?"linear-gradient(135deg,#1a7d43,#25a55a)":"transparent",
-              color: tab === "promo"?"#fff" : TEXT_SUB,
-              boxShadow: tab === "promo"?"0 4px 12px #25a55a44":"none",
-            }}>
-            {u("promoCodes")}
-          </button>
-        </div>
-      </div>
 
       {/* ─── PROMO INPUT (to'liq ekran modal) ─── */}
       {tab === "promo" && showPromo && (
@@ -394,13 +212,13 @@ export default function Home() {
           >
             <div className="flex items-center justify-between mb-3">
               <p className="text-sm font-black" style={{ color: "#34d399" }}>{t.enterPromo}</p>
-              <button
+              <Button variant="ghost"
                 onClick={() => { setShowPromo(false); setTab("games"); setPromoMsg(""); }}
                 className="w-8 h-8 rounded-full font-black active:scale-95"
                 style={{ background: "rgba(255,255,255,0.10)", color: TEXT_SUB }}
               >
-                ✕
-              </button>
+                <X size={16} />
+              </Button>
             </div>
             <input
               autoFocus
@@ -417,13 +235,13 @@ export default function Home() {
                 color: TEXT,
               }}
             />
-            <button
+            <Button variant="ghost"
               onClick={handlePromo}
               className="w-full mt-3 py-3.5 rounded-2xl font-black text-base active:scale-95"
               style={{ background: "linear-gradient(180deg,#39c46f,#25a55a)", color: "white" }}
             >
               {u("apply")}
-            </button>
+            </Button>
             {promoMsg && (
               <p className="text-sm mt-3 font-bold text-center" style={{ color: promoMsg.startsWith("") ? "#39c46f" : "#f87171" }}>{promoMsg}</p>
             )}
@@ -441,7 +259,7 @@ export default function Home() {
               <div className="flex items-center gap-0.5 p-0.5 rounded-xl"
                 style={{ background: CARD_BG, border: `1px solid ${CARD_BORDER}` }}>
                 {[3, 4, 5].map((n) => (
-                  <button key={n} onClick={() => setColsSaved(n)}
+                  <Button variant="ghost" key={n} onClick={() => setColsSaved(n)}
                     className="px-2 py-1 rounded-lg font-black transition-all active:scale-90"
                     style={{
                       fontSize: 10,
@@ -449,26 +267,27 @@ export default function Home() {
                       color: cols === n ? "#1a1204" : TEXT_SUB,
                     }}>
                     {n}
-                  </button>
+                  </Button>
                 ))}
               </div>
-              <button onClick={() => nav("/leaderboard")}
+              <Button variant="ghost" onClick={() => nav("/leaderboard")}
                 className="text-xs px-2.5 py-1 rounded-xl font-bold flex items-center gap-1"
                 style={{ background: "rgba(251,191,36,0.12)", color: "#f59e0b", border: "1px solid rgba(251,191,36,0.3)" }}>
                 <Trophy size={12} color="#f59e0b" /> {t.leaderboard}
-              </button>
+              </Button>
             </div>
           </div>
 
+          <label className="game-search"><Search size={17} /><input value={search} onChange={e => setSearch(e.target.value)} placeholder={lang === "ru" ? "Поиск игр" : lang === "en" ? "Search games" : "O‘yin qidirish"} /></label>
           <div className="cat-chips">
             {[{ id: "all", uz: "Barchasi", ru: "Все", en: "All" }, ...CATS].map((c) => (
-              <button key={c.id} data-on={cat === c.id ? "1" : "0"} onClick={() => setCat(c.id)} className="cat-chip active:scale-95">
+              <Button variant="ghost" key={c.id} data-on={cat === c.id ? "1" : "0"} onClick={() => setCat(c.id)} className="cat-chip active:scale-95">
                 {(c as any)[lang] ?? c.uz}
-              </button>
+              </Button>
             ))}
           </div>
-          {CATS.filter((c) => cat === "all" || c.id === cat).map((c) => {
-            const list = c.keys.map((k) => GAMES.find((g) => g.key === k)).filter((g): g is (typeof GAMES)[number] => !!g && enabledGames[g.key] !== false);
+          {CATS.filter((c) => search ? c.id !== "top" : cat === "all" || c.id === cat).map((c) => {
+            const list = c.keys.map((k) => GAMES.find((g) => g.key === k)).filter((g): g is (typeof GAMES)[number] => !!g && enabledGames[g.key] !== false && (!search || (GAME_NAMES[g.key]?.[lang] ?? g.key).toLocaleLowerCase().includes(search.toLocaleLowerCase())));
             if (!list.length) return null;
             return (
               <section key={c.id + cat} className="pro-rise">
@@ -480,7 +299,7 @@ export default function Home() {
                 </div>
                 <div className="grid gap-2" style={{ gridTemplateColumns: `repeat(${cols}, minmax(0, 1fr))` }}>
             {list.map((g, idx) => (
-              <button key={g.path} onClick={() => nav(g.path)}
+              <Button variant="ghost" key={g.path} onClick={() => nav(g.path)}
                 className="relative overflow-hidden active:scale-[0.93] pro-tile pro-rise"
                 style={{
                   animationDelay: `${Math.min(idx, 12) * 35}ms`,
@@ -497,7 +316,7 @@ export default function Home() {
                 }}>
                 {/* Haqiqiy o'yin surati fon sifatida */}
                 {g.img ? (
-                  <SmartImage src={g.img} alt={GAME_NAMES[g.key][lang]} loading="lazy" decoding="async"
+                  <SmartImage src={g.img} alt={GAME_NAMES[g.key]?.[lang] ?? g.key} loading="lazy" decoding="async"
                     sizes="(max-width: 480px) 30vw, 160px"
                     className="absolute inset-0 w-full h-full object-cover pointer-events-none crisp-img"
                     style={{ opacity: 1, borderRadius: 12 }} />
@@ -549,11 +368,11 @@ export default function Home() {
                     WebkitBoxOrient: "vertical",
                     overflow: "hidden",
                   }}>
-                  {GAME_NAMES[g.key][lang]}
+                  {GAME_NAMES[g.key]?.[lang] ?? g.key}
                 </p>
 
 
-              </button>
+              </Button>
             ))}
                 </div>
               </section>
@@ -561,6 +380,8 @@ export default function Home() {
           })}
         </div>
       )}
+
+      <div className="mx-4 mb-3"><ContestBanner /></div>
 
       {/* ─── BRAND FOOTER (pastdagi havola) ─── */}
       {tab === "games" && (
@@ -599,45 +420,11 @@ export default function Home() {
 
       {/* ─── BOTTOM DOCK (doim ko'rinadi, qimirlamaydi) ─── */}
       <div className="sticky bottom-0 z-50 mt-auto">
-      {/* Referal — oltin tugma */}
-      <button onClick={() => nav("/referral")}
-        className="absolute left-4 z-40 flex items-center gap-1.5 px-3.5 py-2.5 rounded-2xl active:scale-95 transition-all"
-        style={{
-          bottom: "calc(100% + 10px)",
-          background: "linear-gradient(145deg,#f7c948,#b45309)",
-          border: "1px solid rgba(255,246,207,0.7)",
-          boxShadow: "0 10px 28px rgba(247,201,72,0.45)",
-        }}>
-        <Gift size={16} color="#1a1204" />
-        <span className="text-xs font-black" style={{ color: "#1a1204" }}>REFERAL</span>
-      </button>
-
-      {/* LIVE PVP — qizil-oltin tugma */}
-      <button onClick={() => nav("/live")}
-        className="absolute left-1/2 z-40 flex items-center gap-1.5 px-4 py-2.5 rounded-2xl active:scale-95 transition-all pvp-pulse"
-        style={{
-          bottom: "calc(100% + 10px)",
-          transform: "translateX(-50%)",
-          background: "linear-gradient(145deg,#ff4d4d,#8b0f0f)",
-          border: "1px solid rgba(255,214,140,0.85)",
-          boxShadow: "0 10px 28px rgba(255,77,77,0.45)",
-        }}>
-        <Swords size={16} color="#fff6cf" />
-        <span className="text-xs font-black" style={{ color: "#fff6cf" }}>LIVE PVP</span>
-      </button>
-
-      {/* Ommaviy chat — oltin tugma */}
-      <button onClick={() => nav("/chat")}
-        className="absolute right-4 z-40 flex items-center gap-1.5 px-3.5 py-2.5 rounded-2xl active:scale-95 transition-all"
-        style={{
-          bottom: "calc(100% + 10px)",
-          background: "linear-gradient(145deg,#f7c948,#b45309)",
-          border: "1px solid rgba(255,246,207,0.7)",
-          boxShadow: "0 10px 28px rgba(247,201,72,0.45)",
-        }}>
-        <MessageCircle size={16} color="#1a1204" />
-        <span className="text-xs font-black" style={{ color: "#1a1204" }}>CHAT</span>
-      </button>
+      <div className="home-social-row">
+        <Button variant="ghost" onClick={() => nav("/referral")}><Gift size={15} />REFERAL</Button>
+        <Button variant="ghost" onClick={() => nav("/live")}><Swords size={15} />LIVE PvP</Button>
+        <Button variant="ghost" onClick={() => nav("/chat")}><MessageCircle size={15} />CHAT</Button>
+      </div>
         <div className="inset-x-0"
         style={{
           background: isDark ? "rgba(10,23,38,0.97)" : "rgba(255,255,255,0.97)",
@@ -646,18 +433,18 @@ export default function Home() {
           paddingBottom: "env(safe-area-inset-bottom,0px)",
         }}>
         <div className="grid grid-cols-6 items-end px-1 py-2">
-          <button onClick={() => setTab("games")}
+          <Button variant="ghost" onClick={() => setTab("games")}
             className="flex flex-col items-center gap-1 px-0 py-2 rounded-2xl active:scale-95 transition-all"
             style={{ background: tab === "games"?"rgba(22,104,227,0.12)":"transparent" }}>
             <HomeIcon size={20} color={tab === "games" ? ACCENT : TEXT_SUB} />
             <span className="text-xs font-bold"style={{ color: tab ==="games" ? ACCENT : TEXT_SUB, fontSize: 9 }}>{u("navHome")}</span>
-          </button>
-          <button onClick={() => nav("/history")}
+          </Button>
+          <Button variant="ghost" onClick={() => nav("/history")}
             className="flex flex-col items-center gap-1 px-0 py-2 rounded-2xl active:scale-95 transition-all">
             <History size={20} color={TEXT_SUB} />
             <span className="text-xs font-bold" style={{ color: TEXT_SUB, fontSize: 9 }}>{u("navHistory")}</span>
-          </button>
-          <button onClick={() => nav("/deposit")}
+          </Button>
+          <Button variant="ghost" onClick={() => nav("/deposit")}
             className="flex flex-col items-center gap-1 px-1 py-1.5 rounded-2xl active:scale-95 transition-all"
             style={{
               background: "linear-gradient(180deg,#2f8fff,#1668e3)",
@@ -667,23 +454,23 @@ export default function Home() {
             }}>
             <Wallet size={22} color="#fff" />
             <span className="text-xs font-black text-white" style={{ fontSize: 9 }}>{t.deposit}</span>
-          </button>
-          <button onClick={() =>{ setTab("promo"); setShowPromo(true); }}
+          </Button>
+          <Button variant="ghost" onClick={() =>{ setTab("promo"); setShowPromo(true); }}
             className="flex flex-col items-center gap-1 px-0 py-2 rounded-2xl active:scale-95 transition-all"
             style={{ background: tab === "promo"?"rgba(22,104,227,0.12)":"transparent" }}>
             <Ticket size={20} color={tab === "promo" ? ACCENT : TEXT_SUB} />
             <span className="text-xs font-bold"style={{ color: tab ==="promo" ? ACCENT : TEXT_SUB, fontSize: 9 }}>{u("navPromo")}</span>
-          </button>
-          <button onClick={() => nav("/support")}
+          </Button>
+          <Button variant="ghost" onClick={() => nav("/support")}
             className="flex flex-col items-center gap-1 px-0 py-2 rounded-2xl active:scale-95 transition-all">
             <MessageCircle size={20} color={TEXT_SUB} />
             <span className="text-xs font-bold" style={{ color: TEXT_SUB, fontSize: 9 }}>{u("navChat")}</span>
-          </button>
-          <button onClick={() => nav("/howtoplay")}
+          </Button>
+          <Button variant="ghost" onClick={() => nav("/howtoplay")}
             className="flex flex-col items-center gap-1 px-0 py-2 rounded-2xl active:scale-95 transition-all">
             <BookOpen size={20} color={TEXT_SUB} />
             <span className="text-xs font-bold" style={{ color: TEXT_SUB, fontSize: 9 }}>{u("navRules")}</span>
-          </button>
+          </Button>
         </div>
       </div>
       </div>

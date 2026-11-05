@@ -95,7 +95,7 @@ export default function PvpHub() {
   const [busy, setBusy] = useState(false);
   const [err, setErr] = useState("");
 
-  const game = GAMES.find((g) => g.key === tab)!;
+  const game = GAMES.find((g) => g.key === tab) ?? GAMES[0];
 
   useEffect(() => {
     let alive = true;
@@ -152,7 +152,7 @@ export default function PvpHub() {
   };
 
   return (
-    <div className="min-h-screen pb-24" style={{ background: pageBg(theme) }}>
+    <div className="live-hub min-h-screen pb-24" style={{ background: pageBg(theme) }}>
       <GameHeader icon="cardback" title="LIVE O'YINLAR" subtitle={`Onlayn: ${cfg?.online ?? 0}`} />
 
       <ArenaGrid />
