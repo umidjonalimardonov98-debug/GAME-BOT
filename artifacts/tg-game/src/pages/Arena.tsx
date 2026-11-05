@@ -9,6 +9,7 @@ import Dice3D from "@/components/casino/Dice3D";
 import PlayingCard, { type Suit } from "@/components/casino/PlayingCard";
 import StageFx from "@/components/casino/StageFx";
 import { Ambient } from "@/components/casino/GameAtmosphere";
+import { AimPanel, FightPanel, FightReplay } from "@/components/casino/LiveSport";
 
 /**
  * ARENA — 2–4 kishilik LIVE o'yinlar.
@@ -395,9 +396,14 @@ function Reveal({ def, st }: { def: ArenaDef; st: AState }) {
       rows = (r.idx as number[]).map((x, i) => row(i, <span className="ar-tag"><Sym n="wheel" s={18} /> {r.sectors[x]}</span>));
       break;
     case "kurash":
-    case "boxing":
-      rows = (r.picks as number[]).map((p, i) => row(i, <span className="ar-tag">{def.picks?.[p]}</span>));
+    case "boxing": {
+      const pk = r.picks as number[];
+      const mi = Math.max(0, st.players.findIndex((p) => p.seat === st.mySeat));
+      const oi = mi === 0 ? 1 : 0;
+      if (pk.length > 1) hero = <FightReplay key={st.round} kind={def.key as "boxing" | "kurash"} a={pk[mi]!} b={pk[oi]!} aWon={L.scores[mi]! > L.scores[oi]!} bWon={L.scores[oi]! > L.scores[mi]!} color={def.color} />;
+      rows = pk.map((p, i) => row(i, <span className="ar-tag">{def.picks?.[p]}</span>));
       break;
+    }
     case "reaction":
       rows = (r.ms as number[]).map((m, i) => row(i, <span className="ar-tag">{m < 120 ? "erta bosdi" : m >= 2000 ? "kech qoldi" : `${m} ms`}</span>));
       break;
@@ -642,9 +648,11 @@ export default function Arena({ gameKey }: { gameKey: string }) {
                 )}
                 {st.phase === "play" && (
                   <div key={st.round}>
-                    {def.kind === "pick" && <PickPanel def={def} done={iDone} onSubmit={(v) => submit(v)} />}
+                    {(def.key === "boxing" || def.key === "kurash") && <FightPanel kind={def.key as "boxing" | "kurash"} picks={def.picks ?? []} color={def.color} done={iDone} onSubmit={(v) => submit(v)} />}
+                    {(def.key === "archery" || def.key === "dartsarena" || def.key === "basketball") && <AimPanel kind={def.key as "archery" | "dartsarena" | "basketball"} color={def.color} done={iDone} onSubmit={(v) => submit(v)} />}
+                    {def.kind === "pick" && def.key !== "boxing" && def.key !== "kurash" && <PickPanel def={def} done={iDone} onSubmit={(v) => submit(v)} />}
                     {def.kind === "roll" && <RollPanel def={def} done={iDone} onSubmit={(v) => submit(v)} />}
-                    {def.kind === "skill" && <SkillPanel def={def} done={iDone} onSubmit={(v) => submit(v)} />}
+                    {def.kind === "skill" && !["archery", "dartsarena", "basketball"].includes(def.key) && <SkillPanel def={def} done={iDone} onSubmit={(v) => submit(v)} />}
                     {def.kind === "tap" && <TapPanel def={def} done={iDone} onSubmit={(v) => submit(v)} />}
                     {def.kind === "reaction" && <ReactionPanel def={def} done={iDone} onSubmit={(v) => submit(v)} />}
                     {def.kind === "tiles" && <TilesPanel def={def} done={iDone} onSubmit={(v, p) => submit(v, p)} />}
