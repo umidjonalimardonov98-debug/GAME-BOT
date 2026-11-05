@@ -9,6 +9,7 @@ import Dice3D from "@/components/casino/Dice3D";
 import PlayingCard, { type Suit } from "@/components/casino/PlayingCard";
 import StageFx from "@/components/casino/StageFx";
 import { Ambient } from "@/components/casino/GameAtmosphere";
+import { Horse, ArmWrestle } from "@/components/casino/LiveSport2";
 import { AimPanel, FightPanel, FightReplay } from "@/components/casino/LiveSport";
 
 /**
@@ -241,11 +242,11 @@ function TapPanel({ def, done, onSubmit }: { def: ArenaDef; done: boolean; onSub
     <div className="flex flex-col gap-3 items-center">
       {def.key === "kopkari" ? (
         <div className="ar-track">
-          <img src="/symbols/rider.png" alt="" className={`ar-rider-img ${left !== null ? "run" : ""}`} style={{ left: `${2 + prog * 72}%` }} />
+          <span className="ar-rider-img ls-rider" style={{ left: `${2 + prog * 72}%` }}><Horse speed={left !== null ? Math.min(1, 0.4 + taps / 40) : 0} silk={def.color} size={78} /></span>
           <span className="ar-finish"><Sym n="trophy" s={30} glow /></span>
         </div>
       ) : (
-        <div className="ar-arm"><span className="ar-arm-bar" style={{ transform: `rotate(${-60 + prog * 120}deg)` }} /></div>
+        <div className="ls-touch"><ArmWrestle angle={left === null ? 0 : -0.35 + prog * 1.35} color={def.color} strain={left !== null && !sent.current} /></div>
       )}
       <p className="ar-note">{left === null ? "Birinchi bosish bilan vaqt boshlanadi" : `${(Math.max(0, left) / 1000).toFixed(1)} s · ${taps} marta`}</p>
       <button type="button" className="ar-tap" disabled={done || sent.current} style={{ ["--c" as any]: def.color }}
@@ -355,7 +356,7 @@ function Reveal({ def, st }: { def: ArenaDef; st: AState }) {
         <div className="ar-race">
           {(r.order as number[]).map((h, pos) => (
             <div key={h} className="ar-lane">
-              <img src="/symbols/rider.png" alt="" className="ar-lane-rider" style={{ ["--to" as any]: `${76 - pos * 11}%`, animationDelay: `${pos * 0.08}s`, filter: `hue-rotate(${h * 60}deg)` }} />
+              <span className="ar-lane-rider ls-rider" style={{ ["--to" as any]: `${76 - pos * 11}%`, animationDelay: `${pos * 0.08}s` }}><Horse silk={HORSE[h]} color={["#7c2d12", "#3f2a1d", "#a16207", "#1c1917", "#78350f", "#57534e"][h]} size={56} /></span>
               <span className="ar-silk xs" style={{ background: HORSE[h] }}>{h + 1}</span>
             </div>
           ))}
@@ -413,7 +414,7 @@ function Reveal({ def, st }: { def: ArenaDef; st: AState }) {
         <div className="ar-race">
           {(r.taps as number[]).map((t, i) => (
             <div key={i} className="ar-lane">
-              <img src="/symbols/rider.png" alt="" className="ar-lane-rider" style={{ ["--to" as any]: `${(t / mx) * 78}%`, filter: `hue-rotate(${i * 80}deg)` }} />
+              <span className="ar-lane-rider ls-rider" style={{ ["--to" as any]: `${(t / mx) * 78}%` }}><Horse silk={SEAT_COL[i % 4]} size={56} /></span>
               {t === mx && <span className="ar-lane-win"><Sym n="trophy" s={20} glow /></span>}
             </div>
           ))}

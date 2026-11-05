@@ -1241,3 +1241,13 @@ picture:has(> .ar-bg) { position: fixed; inset: 0; z-index: -2; }
 .ls-power > span { display: block; height: 100%; background: linear-gradient(90deg, var(--c), #fff3b0); }
 .ls-aim .ls-hint { bottom: auto; top: 22px; }
 @media (prefers-reduced-motion: reduce) { .ls-proj, .ls-impact { animation-duration: .01s; } }
+.ls-rider { display: block; }
+.ls-rider img, .ls-rider svg { display: block; }
+.ls-horse.run .ls-horse-body { animation: ls-gallop var(--gd) ease-in-out infinite; }
+.ls-horse.run .ls-leg { animation: ls-leg var(--gd) ease-in-out infinite; }
+.ls-horse.run .l2, .ls-horse.run .l3 { animation-delay: calc(var(--gd) * -.5); }
+@keyframes ls-gallop { 0%,100% { transform: translateY(0) rotate(0deg); } 50% { transform: translateY(-4px) rotate(-2deg); } }
+@keyframes ls-leg { 0%,100% { transform: rotate(28deg); } 50% { transform: rotate(-30deg); } }
+.ls-strain { animation: ls-shake .09s linear infinite; transform-box: view-box; }
+@keyframes ls-shake { 50% { translate: .8px -.6px; } }
+@media (prefers-reduced-motion: reduce) { .ls-horse.run .ls-leg, .ls-horse.run .ls-horse-body, .ls-strain { animation: none; } }
