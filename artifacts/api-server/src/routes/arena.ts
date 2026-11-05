@@ -18,6 +18,7 @@ const RAKE = 0.08;
 const REVEAL_MS = 3600;
 const WAIT_MS = 30_000;
 const START_DELAY_MS = 3000;
+const GROUP_TTL_MS = 5 * 60_000; // bitta odam ochgan guruh 5 daqiqa ochiq turadi
 const STICKERS = new Set(["laugh", "fire", "clap", "angry", "cry", "win"]);
 
 type AP = { telegramId: string; name: string; seat: number; score: number; left: boolean };
@@ -32,7 +33,7 @@ type Room = {
   winners: number[] | null; payouts: number[] | null; refund: boolean;
   createdAt: number; paid: boolean;
 };
-type Lobby = { players: { telegramId: string; name: string; at: number }[]; openedAt: number; starting: boolean };
+type Lobby = { players: { telegramId: string; name: string; at: number }[]; openedAt: number; createdAt: number; starting: boolean };
 
 const rooms = new Map<string, Room>();
 const byPlayer = new Map<string, string>();
@@ -88,7 +89,8 @@ function cleanup() {
   }
   for (const [k, l] of lobbies) {
     l.players = l.players.filter((p) => now - p.at < 20_000); // 20 s so'rov yubormagan — chiqib ketgan
-    if (!l.players.length) lobbies.delete(k);
+    // kimdir qo'shilmagan bo'lsa, guruh 5 daqiqadan keyin yopiladi
+    if (!l.players.length || (l.players.length < ARENA_MIN && now - l.createdAt > GROUP_TTL_MS)) lobbies.delete(k);
   }
 }
 
@@ -162,7 +164,7 @@ async function tryStart(key: string) {
     for (const s of ok) byPlayer.set(s.telegramId, id);
   } finally {
     lobby.starting = false;
-    lobby.openedAt = Date.now();
+    lobby.openedAt = Date.now(); lobby.createdAt = Date.now();
     if (!lobby.players.length) lobbies.delete(key);
   }
 }
@@ -179,6 +181,25 @@ router.get("/arena/list", (_req, res) => {
     online: [...live.values()].reduce((a, b) => a + b, 0),
     games: ARENAS.map((d) => ({ ...d, live: live.get(d.key) ?? 0 })),
   });
+});
+
+/** O'yin ostida ko'rinadigan ochiq guruhlar */
+router.get("/arena/rooms", (req, res) => {
+  cleanup();
+  const game = String(req.query.game ?? "");
+  const now = Date.now();
+  const groups = [...lobbies.entries()]
+    .filter(([k, l]) => k.split(":")[0] === game && l.players.length > 0 && l.players.length < ARENA_MAX)
+    .map(([k, l]) => ({
+      stake: Number(k.split(":")[1]), count: l.players.length, max: ARENA_MAX,
+      names: l.players.map((p) => p.name),
+      expiresIn: l.players.length < ARENA_MIN ? Math.max(0, GROUP_TTL_MS - (now - l.createdAt)) : null,
+      startsIn: l.players.length >= ARENA_MIN ? Math.max(0, WAIT_MS - (now - l.openedAt)) : null,
+    }))
+    .sort((a, b) => b.count - a.count || a.stake - b.stake);
+  const playing = [...rooms.values()].filter((r) => r.game === game && r.phase !== "done")
+    .map((r) => ({ stake: r.stake, names: r.players.map((p) => p.name), round: r.round + 1 }));
+  res.json({ groups, playing, ttlMs: GROUP_TTL_MS });
 });
 
 router.post("/arena/queue", async (req, res) => {
@@ -208,9 +229,17 @@ router.post("/arena/queue", async (req, res) => {
       const [me] = await db.select().from(playersTable).where(eq(playersTable.telegramId, telegramId));
       if (!me) { res.status(404).json({ error: "O'yinchi topilmadi" }); return; }
       if (me.balance < stake) { res.status(400).json({ error: "Balans yetarli emas" }); return; }
-      if (!lobby) { lobby = { players: [], openedAt: Date.now(), starting: false }; lobbies.set(key, lobby); }
+      if (!lobby) { lobby = { players: [], openedAt: Date.now(), createdAt: Date.now(), starting: false }; lobbies.set(key, lobby); }
       lobby.players.push({ telegramId, name, at: Date.now() });
-    } else inLobby.at = Date.now();
+      // ikkinchi o'yinchi kelganda boshlanish taymeri shu paytdan hisoblanadi
+      if (lobby.players.length === ARENA_MIN) lobby.openedAt = Date.now();
+    } else {
+      inLobby.at = Date.now();
+      if (lobby && lobby.players.length < ARENA_MIN && Date.now() - lobby.createdAt > GROUP_TTL_MS) {
+        lobbies.delete(key);
+        res.json({ status: "expired" }); return;
+      }
+    }
 
     await tryStart(key);
     const now2 = byPlayer.get(telegramId);
@@ -220,6 +249,7 @@ router.post("/arena/queue", async (req, res) => {
     res.json({
       status: "waiting", count, max: ARENA_MAX, min: ARENA_MIN,
       names: (l?.players ?? []).map((p) => p.name),
+      expiresIn: l && count < ARENA_MIN ? Math.max(0, GROUP_TTL_MS - (Date.now() - l.createdAt)) : null,
       startsIn: count >= ARENA_MIN && l ? Math.max(0, WAIT_MS - (Date.now() - l.openedAt)) : null,
     });
   } catch (e: any) {

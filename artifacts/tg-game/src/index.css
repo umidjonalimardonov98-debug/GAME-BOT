@@ -1251,3 +1251,24 @@ picture:has(> .ar-bg) { position: fixed; inset: 0; z-index: -2; }
 .ls-strain { animation: ls-shake .09s linear infinite; transform-box: view-box; }
 @keyframes ls-shake { 50% { translate: .8px -.6px; } }
 @media (prefers-reduced-motion: reduce) { .ls-horse.run .ls-leg, .ls-horse.run .ls-horse-body, .ls-strain { animation: none; } }
+/* Ochiq guruhlar */
+.og-wrap { border-radius: 18px; padding: 12px; background: linear-gradient(180deg, #ffffff0d, #ffffff05); border: 1px solid #ffffff14; display: flex; flex-direction: column; gap: 8px; }
+.og-head { display: flex; align-items: center; justify-content: space-between; font-size: 11px; font-weight: 900; letter-spacing: .12em; color: #cbd5e1; }
+.og-count { min-width: 22px; height: 22px; display: grid; place-items: center; border-radius: 999px; background: var(--c); color: #fff; font-size: 11px; }
+.og-empty { font-size: 12px; color: #94a3b8; line-height: 1.45; }
+.og-skel { height: 56px; border-radius: 14px; background: linear-gradient(90deg, #ffffff08, #ffffff14, #ffffff08); background-size: 200% 100%; animation: og-sh 1.2s linear infinite; }
+@keyframes og-sh { to { background-position: -200% 0; } }
+.og-row { display: flex; align-items: center; gap: 10px; padding: 10px; border-radius: 14px; background: #0b1220; border: 1px solid #ffffff12; }
+.og-avatars { display: flex; }
+.og-avatars > * { margin-left: -6px; box-shadow: 0 0 0 2px #0b1220; } .og-avatars > *:first-child { margin-left: 0; }
+.og-free { width: 28px; height: 28px; border-radius: 50%; border: 1.5px dashed #ffffff40; background: #ffffff06; display: inline-block; }
+.og-info { flex: 1; min-width: 0; display: flex; flex-direction: column; }
+.og-info strong { font-size: 14px; color: #fff; font-weight: 900; } .og-info span { font-size: 11px; color: #94a3b8; }
+.og-join { padding: 9px 12px; border-radius: 12px; font-size: 12px; font-weight: 900; color: #fff; background: var(--c); box-shadow: 0 4px 0 color-mix(in srgb, var(--c) 45%, #000); transition: transform .1s; }
+.og-join:active { transform: translateY(3px); box-shadow: none; }
+.og-playing { display: flex; flex-direction: column; gap: 4px; padding-top: 4px; border-top: 1px solid #ffffff10; }
+.og-sub { font-size: 10px; font-weight: 900; letter-spacing: .12em; color: #64748b; }
+.og-live { display: flex; align-items: center; gap: 6px; font-size: 12px; color: #e2e8f0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.og-live em { margin-left: auto; font-style: normal; color: #94a3b8; font-size: 11px; }
+.og-dot { width: 7px; height: 7px; border-radius: 50%; background: #ef4444; box-shadow: 0 0 8px #ef4444; animation: og-pulse 1.2s ease-in-out infinite; flex: none; }
+@keyframes og-pulse { 50% { opacity: .35; } }

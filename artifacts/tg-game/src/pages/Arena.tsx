@@ -115,6 +115,54 @@ function StickerLayer({ items }: { items: { id: number; seat: number; name: stri
   );
 }
 
+const mmss = (ms: number) => { const t = Math.ceil(ms / 1000); return `${Math.floor(t / 60)}:${String(t % 60).padStart(2, "0")}`; };
+
+type Group = { stake: number; count: number; max: number; names: string[]; expiresIn: number | null; startsIn: number | null };
+
+/** O'yin ostidagi ochiq guruhlar — har 3 s yangilanadi */
+function OpenGroups({ game, color, onJoin }: { game: string; color: string; onJoin: (stake: number) => void }) {
+  const [data, setData] = useState<{ groups: Group[]; playing: { stake: number; names: string[]; round: number }[] } | null>(null);
+  const [, force] = useState(0);
+  useEffect(() => {
+    let alive = true;
+    const load = () => api(`/arena/rooms?game=${encodeURIComponent(game)}`).then((d) => alive && setData(d)).catch(() => {});
+    load();
+    const iv = setInterval(load, 3000);
+    const tk = setInterval(() => force((n) => n + 1), 1000);
+    return () => { alive = false; clearInterval(iv); clearInterval(tk); };
+  }, [game]);
+  const groups = data?.groups ?? [];
+  return (
+    <section className="og-wrap" style={{ ["--c" as any]: color }}>
+      <header className="og-head"><span>OCHIQ GURUHLAR</span><span className="og-count">{groups.length}</span></header>
+      {!data && <div className="og-skel" />}
+      {data && !groups.length && <p className="og-empty">Hozir ochiq guruh yo'q. Yangi guruh oching — u 5 daqiqa shu yerda ko'rinib turadi.</p>}
+      {groups.map((g, i) => (
+        <div key={`${g.stake}-${i}`} className="og-row ar-pop" style={{ animationDelay: `${i * 40}ms` }}>
+          <div className="og-avatars">
+            {Array.from({ length: g.max }, (_, k) => g.names[k]
+              ? <Avatar key={k} name={g.names[k]!} seat={k} size={28} />
+              : <span key={k} className="og-free" />)}
+          </div>
+          <div className="og-info">
+            <strong>{fmt(g.stake)} UZS</strong>
+            <span>{g.count}/{g.max} · {g.startsIn != null ? `${Math.ceil(g.startsIn / 1000)} s da start` : g.expiresIn != null ? `${mmss(g.expiresIn)} ochiq` : ""}</span>
+          </div>
+          <button type="button" className="og-join" onClick={() => { sfx.select(); haptic(); onJoin(g.stake); }}>QO'SHILISH</button>
+        </div>
+      ))}
+      {!!data?.playing.length && (
+        <div className="og-playing">
+          <span className="og-sub">HOZIR O'YNALMOQDA</span>
+          {data.playing.slice(0, 4).map((r, i) => (
+            <div key={i} className="og-live"><span className="og-dot" />{r.names.join(" · ")}<em>{fmt(r.stake)} · {r.round}-raund</em></div>
+          ))}
+        </div>
+      )}
+    </section>
+  );
+}
+
 /* ════════════════ Harakat panellari (har tur o'zgacha) ════════════════ */
 
 const HORSE = ["#ef4444", "#3b82f6", "#22c55e", "#f59e0b", "#a855f7", "#f8fafc"];
@@ -459,7 +507,7 @@ export default function Arena({ gameKey }: { gameKey: string }) {
   const def = useMemo(() => list?.games.find((g) => g.key === gameKey) ?? null, [list, gameKey]);
   const [stake, setStake] = useState(5000);
   const [mode, setMode] = useState<"lobby" | "waiting" | "room">("lobby");
-  const [wait, setWait] = useState<{ count: number; max: number; names: string[]; startsIn: number | null } | null>(null);
+  const [wait, setWait] = useState<{ count: number; max: number; names: string[]; startsIn: number | null; expiresIn?: number | null } | null>(null);
   const [roomId, setRoomId] = useState<string | null>(null);
   const [st, setSt] = useState<AState | null>(null);
   const [err, setErr] = useState("");
@@ -485,8 +533,9 @@ export default function Arena({ gameKey }: { gameKey: string }) {
       try {
         const r = await api("/arena/queue", { telegramId: player.telegramId, name: player.firstName ?? "O'yinchi", game: gameKey, stake });
         if (!alive) return;
+        if (r.status === "expired") { setMode("lobby"); setWait(null); setErr("5 daqiqada hech kim qo'shilmadi — guruh yopildi. Ochiq guruhga qo'shiling yoki yangisini oching."); return; }
         if (r.status === "matched") { setRoomId(r.roomId); setMode("room"); sfx.select(); haptic("heavy"); }
-        else setWait({ count: r.count, max: r.max, names: r.names ?? [], startsIn: r.startsIn });
+        else setWait({ count: r.count, max: r.max, names: r.names ?? [], startsIn: r.startsIn, expiresIn: r.expiresIn });
       } catch (e) { if (alive) setErr((e as Error).message); }
     };
     poll();
@@ -523,9 +572,10 @@ export default function Arena({ gameKey }: { gameKey: string }) {
     return () => { alive = false; clearInterval(iv); };
   }, [mode, roomId, player, refresh, pushSticker]);
 
-  const join = async () => {
+  const join = async (at: number = stake) => {
     if (!player) { setErr("Profil yuklanmadi"); return; }
-    if ((player.balance ?? 0) < stake) { setErr(`Balans yetarli emas. Kerak: ${fmt(stake)} UZS`); return; }
+    if ((player.balance ?? 0) < at) { setErr(`Balans yetarli emas. Kerak: ${fmt(at)} UZS`); return; }
+    setStake(at);
     setErr(""); doneOnce.current = false; chatSince.current = 0; setSt(null); setSubmittedRound(-1);
     sfx.bet?.(); setMode("waiting");
   };
@@ -587,7 +637,7 @@ export default function Arena({ gameKey }: { gameKey: string }) {
             <div className="ar-card">
               <p className="ar-card-title">QOIDA</p>
               <p className="ar-rule">{def.rule}</p>
-              <p className="ar-rule mt-2">2–4 o'yinchi. Stol to'lsa darhol, aks holda 30 soniyadan keyin kamida 2 kishi bilan boshlanadi. G'olib hammasini oladi, teng bo'lsa bo'linadi. Komissiya {Math.round((list?.rake ?? 0.08) * 100)}%.</p>
+              <p className="ar-rule mt-2">2–4 o'yinchi. Guruh oching yoki ochiq guruhga qo'shiling. Ikkinchi o'yinchi kelgach 30 soniyada (4 kishi bo'lsa darhol) boshlanadi; hech kim kelmasa guruh 5 daqiqadan keyin yopiladi. G'olib hammasini oladi, teng bo'lsa bo'linadi. Komissiya {Math.round((list?.rake ?? 0.08) * 100)}%.</p>
             </div>
             <div className="ar-card">
               <p className="ar-card-title">TIKISH</p>
@@ -601,7 +651,8 @@ export default function Arena({ gameKey }: { gameKey: string }) {
               <p className="ar-note mt-2">4 kishilik stolda yutuq: {fmt(Math.floor(stake * 4 * (1 - (list?.rake ?? 0.08))))} UZS gacha</p>
             </div>
             {err && <p className="ar-err">{err}</p>}
-            <button type="button" className="ar-cta big" onClick={join}>STOLGA O'TIRISH · {fmt(stake)} UZS</button>
+            <button type="button" className="ar-cta big" onClick={() => join()}>YANGI GURUH OCHISH · {fmt(stake)} UZS</button>
+            <OpenGroups game={def.key} color={def.color} onJoin={(s) => join(s)} />
           </>
         )}
 
@@ -620,6 +671,9 @@ export default function Arena({ gameKey }: { gameKey: string }) {
             <p className="ar-note">
               {(wait?.count ?? 1)}/{wait?.max ?? 4} o'yinchi
               {wait?.startsIn != null ? ` · ${Math.ceil(wait.startsIn / 1000)} s da boshlanadi` : " · kamida yana 1 kishi kerak"}
+            </p>
+            <p className="ar-note">
+              {wait?.expiresIn != null ? `Guruhingiz ro'yxatda ko'rinib turibdi · ${mmss(wait.expiresIn)} qoldi` : "Raqib topildi"}
             </p>
             {err && <p className="ar-err">{err}</p>}
             <button type="button" className="ar-ghost" onClick={cancel}>BEKOR QILISH</button>
