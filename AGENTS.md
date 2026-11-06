@@ -1,4 +1,6 @@
 # GAME-BOT frontend rules
+- Keep LIVE lobby lifetime separate from heartbeat eligibility; disconnected owners may remain visible but only fresh players enter wagered matches.
+- Open-group sorting and countdowns use pure helpers shared with focused tests so polling cannot change sort selection.
 - Use a shared allowlisted game catalog for home replay and cross-game navigation so history values cannot create arbitrary destinations.
 - Replay uses existing player transaction history and opens the fresh game screen without placing a wager or restoring a previous room.
 - Keep navigation palette tokens in game-navigation.css independent of per-game table artwork and mechanics.

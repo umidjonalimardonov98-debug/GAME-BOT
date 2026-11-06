@@ -6,6 +6,7 @@ import {
   type ArenaSub,
 } from "../lib/arena";
 import { getLiveSettings } from "../lib/live-settings";
+import { activePlayers, cleanLobby, GROUP_TTL_MS, type Lobby } from "../lib/arena-lobby";
 
 /**
  * ARENA API — 2–4 kishilik LIVE o'yinlar.
@@ -18,7 +19,6 @@ const RAKE = 0.08;
 const REVEAL_MS = 3600;
 const WAIT_MS = 30_000;
 const START_DELAY_MS = 3000;
-const GROUP_TTL_MS = 5 * 60_000; // bitta odam ochgan guruh 5 daqiqa ochiq turadi
 const STICKERS = new Set(["laugh", "fire", "clap", "angry", "cry", "win"]);
 
 type AP = { telegramId: string; name: string; seat: number; score: number; left: boolean };
@@ -33,7 +33,6 @@ type Room = {
   winners: number[] | null; payouts: number[] | null; refund: boolean;
   createdAt: number; paid: boolean;
 };
-type Lobby = { players: { telegramId: string; name: string; at: number }[]; openedAt: number; createdAt: number; starting: boolean };
 
 const rooms = new Map<string, Room>();
 const byPlayer = new Map<string, string>();
@@ -88,9 +87,7 @@ function cleanup() {
     }
   }
   for (const [k, l] of lobbies) {
-    l.players = l.players.filter((p) => now - p.at < 20_000); // 20 s so'rov yubormagan — chiqib ketgan
-    // kimdir qo'shilmagan bo'lsa, guruh 5 daqiqadan keyin yopiladi
-    if (!l.players.length || (l.players.length < ARENA_MIN && now - l.createdAt > GROUP_TTL_MS)) lobbies.delete(k);
+    if (cleanLobby(l, now, ARENA_MIN)) lobbies.delete(k);
   }
 }
 
@@ -133,15 +130,17 @@ async function tryStart(key: string) {
   const lobby = lobbies.get(key);
   if (!lobby || lobby.starting) return;
   const now = Date.now();
-  const full = lobby.players.length >= ARENA_MAX;
-  const timed = lobby.players.length >= ARENA_MIN && now - lobby.openedAt >= WAIT_MS;
+  const active = activePlayers(lobby, now);
+  const full = active.length >= ARENA_MAX;
+  const timed = active.length >= ARENA_MIN && now - lobby.openedAt >= WAIT_MS;
   if (!full && !timed) return;
   lobby.starting = true;
   const [game, stakeS] = key.split(":");
   const stake = Number(stakeS);
   const def = ARENA_MAP.get(game!)!;
-  const seats = lobby.players.slice(0, ARENA_MAX);
-  lobby.players = lobby.players.slice(ARENA_MAX);
+  const seats = active.slice(0, ARENA_MAX);
+  const selected = new Set(seats.map((p) => p.telegramId));
+  lobby.players = lobby.players.filter((p) => !selected.has(p.telegramId));
   try {
     // balansni qayta tekshiramiz — yetmaganlar o'ynamaydi
     const ok: typeof seats = [];
@@ -189,12 +188,14 @@ router.get("/arena/rooms", (req, res) => {
   const game = String(req.query.game ?? "");
   const now = Date.now();
   const groups = [...lobbies.entries()]
-    .filter(([k, l]) => k.split(":")[0] === game && l.players.length > 0 && l.players.length < ARENA_MAX)
+    .filter(([k, l]) => k.split(":")[0] === game && !l.starting && l.players.length < ARENA_MAX)
     .map(([k, l]) => ({
       stake: Number(k.split(":")[1]), count: l.players.length, max: ARENA_MAX,
       names: l.players.map((p) => p.name),
-      expiresIn: l.players.length < ARENA_MIN ? Math.max(0, GROUP_TTL_MS - (now - l.createdAt)) : null,
-      startsIn: l.players.length >= ARENA_MIN ? Math.max(0, WAIT_MS - (now - l.openedAt)) : null,
+      ownerOnline: activePlayers(l, now).some((p) => p.telegramId === l.ownerId),
+      onlineCount: activePlayers(l, now).length,
+      expiresIn: Math.max(0, GROUP_TTL_MS - (now - l.createdAt)),
+      startsIn: activePlayers(l, now).length >= ARENA_MIN ? Math.max(0, WAIT_MS - (now - l.openedAt)) : null,
     }))
     .sort((a, b) => b.count - a.count || a.stake - b.stake);
   const playing = [...rooms.values()].filter((r) => r.game === game && r.phase !== "done")
@@ -220,8 +221,14 @@ router.post("/arena/queue", async (req, res) => {
     if (cur) byPlayer.delete(telegramId);
 
     const key = `${game}:${stake}`;
+    if (req.body?.poll && !lobbies.get(key)?.players.some((p) => p.telegramId === telegramId)) {
+      res.json({ status: "expired" }); return;
+    }
     // boshqa lobbilardan chiqaramiz — bir vaqtda bitta lobbi
-    for (const [k, l] of lobbies) if (k !== key) l.players = l.players.filter((p) => p.telegramId !== telegramId);
+    for (const [k, l] of lobbies) if (k !== key) {
+      l.players = l.players.filter((p) => p.telegramId !== telegramId);
+      if (!l.players.length) lobbies.delete(k);
+    }
 
     let lobby = lobbies.get(key);
     const inLobby = lobby?.players.find((p) => p.telegramId === telegramId);
@@ -229,16 +236,16 @@ router.post("/arena/queue", async (req, res) => {
       const [me] = await db.select().from(playersTable).where(eq(playersTable.telegramId, telegramId));
       if (!me) { res.status(404).json({ error: "O'yinchi topilmadi" }); return; }
       if (me.balance < stake) { res.status(400).json({ error: "Balans yetarli emas" }); return; }
-      if (!lobby) { lobby = { players: [], openedAt: Date.now(), createdAt: Date.now(), starting: false }; lobbies.set(key, lobby); }
+      if (!lobby) { lobby = { ownerId: telegramId, players: [], openedAt: Date.now(), createdAt: Date.now(), starting: false }; lobbies.set(key, lobby); }
+      if (lobby.starting || lobby.players.length >= ARENA_MAX) { res.status(409).json({ error: "Guruh to'ldi. Boshqa guruhni tanlang." }); return; }
+      const wasActive = activePlayers(lobby, Date.now()).length;
       lobby.players.push({ telegramId, name, at: Date.now() });
       // ikkinchi o'yinchi kelganda boshlanish taymeri shu paytdan hisoblanadi
-      if (lobby.players.length === ARENA_MIN) lobby.openedAt = Date.now();
+      if (wasActive < ARENA_MIN && activePlayers(lobby, Date.now()).length >= ARENA_MIN) lobby.openedAt = Date.now();
     } else {
+      const wasActive = lobby ? activePlayers(lobby, Date.now()).length : 0;
       inLobby.at = Date.now();
-      if (lobby && lobby.players.length < ARENA_MIN && Date.now() - lobby.createdAt > GROUP_TTL_MS) {
-        lobbies.delete(key);
-        res.json({ status: "expired" }); return;
-      }
+      if (lobby && wasActive < ARENA_MIN && activePlayers(lobby, Date.now()).length >= ARENA_MIN) lobby.openedAt = Date.now();
     }
 
     await tryStart(key);
@@ -249,8 +256,8 @@ router.post("/arena/queue", async (req, res) => {
     res.json({
       status: "waiting", count, max: ARENA_MAX, min: ARENA_MIN,
       names: (l?.players ?? []).map((p) => p.name),
-      expiresIn: l && count < ARENA_MIN ? Math.max(0, GROUP_TTL_MS - (Date.now() - l.createdAt)) : null,
-      startsIn: count >= ARENA_MIN && l ? Math.max(0, WAIT_MS - (Date.now() - l.openedAt)) : null,
+      expiresIn: l ? Math.max(0, GROUP_TTL_MS - (Date.now() - l.createdAt)) : null,
+      startsIn: l && activePlayers(l, Date.now()).length >= ARENA_MIN ? Math.max(0, WAIT_MS - (Date.now() - l.openedAt)) : null,
     });
   } catch (e: any) {
     res.status(500).json({ error: e?.message || "Xatolik" });
@@ -259,7 +266,10 @@ router.post("/arena/queue", async (req, res) => {
 
 router.post("/arena/cancel", (req, res) => {
   const telegramId = String(req.body?.telegramId ?? "");
-  for (const l of lobbies.values()) l.players = l.players.filter((p) => p.telegramId !== telegramId);
+  for (const [key, l] of lobbies) {
+    l.players = l.players.filter((p) => p.telegramId !== telegramId);
+    if (!l.players.length) lobbies.delete(key);
+  }
   cleanup();
   res.json({ ok: true });
 });

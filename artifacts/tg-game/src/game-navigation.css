@@ -123,3 +123,31 @@
 .ga-float { display: none !important; }
 .sfx-anim[style*="blur"] { filter: none !important; }
 #root .game-nav-header { contain: layout paint; transform: translateZ(0); }
+
+/* Open groups use the navigation palette and lightweight, stable rows. */
+#root .og-wrap { padding: 12px 0; border: 0; border-top: 1px solid var(--nav-line); border-radius: 0; background: none; gap: 8px; color: var(--nav-text); }
+#root .og-head { color: var(--nav-text); letter-spacing: 0; font-size: 12px; }
+#root .og-head > span { display: flex; align-items: center; gap: 8px; }
+#root .og-count { background: var(--nav-raised); color: var(--nav-muted); font-variant-numeric: tabular-nums; }
+#root .og-toolbar { display: flex; align-items: center; gap: 6px; }
+#root .og-sort { flex: 1; display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 3px; background: var(--nav-surface); border: 1px solid var(--nav-line); padding: 3px; border-radius: 8px; min-width: 0; }
+#root .og-sort-option { height: 36px; padding: 0 4px; min-width: 0; font-size: 11px; gap: 4px; background: none; color: var(--nav-muted); letter-spacing: 0; }
+#root .og-sort-option[aria-pressed="true"] { background: var(--nav-raised); color: var(--nav-accent); }
+#root .og-direction, #root .og-refresh { height: 40px; width: 40px; flex-shrink: 0; border-radius: 8px; background: var(--nav-surface); color: var(--nav-muted); border: 1px solid var(--nav-line); }
+#root .og-refresh { width: 32px; height: 32px; }
+#root .og-row { display: grid; grid-template-columns: minmax(0,1fr) auto; gap: 7px 8px; background: var(--nav-surface); border: 1px solid var(--nav-line); border-radius: 8px; padding: 12px; }
+#root .og-avatars { grid-column: 1; grid-row: 2; }
+#root .og-avatars > * { box-shadow: 0 0 0 2px var(--nav-surface); }
+#root .og-free { border-color: var(--nav-line); background: var(--nav-raised); }
+#root .og-info { grid-row: 1; gap: 3px; }
+#root .og-info strong { color: var(--nav-text); font-size: 15px; font-variant-numeric: tabular-nums; }
+#root .og-info span, #root .og-info small { color: var(--nav-muted); font-size: 11px; overflow-wrap: anywhere; font-variant-numeric: tabular-nums; }
+#root .og-info small { overflow: hidden; white-space: nowrap; text-overflow: ellipsis; }
+#root .og-join { grid-column: 2; grid-row: 1 / span 2; align-self: center; height: 40px; padding: 0 12px; border-radius: 6px; color: var(--nav-accent-ink); background: var(--nav-accent); box-shadow: none; font-size: 12px; letter-spacing: 0; }
+#root .og-empty { color: var(--nav-muted); padding: 12px 0; }
+#root .og-skel { background: var(--nav-surface); border-radius: 8px; height: 100px; animation: none; }
+#root .og-playing { border-color: var(--nav-line); }
+#root .og-sub { color: var(--nav-muted); letter-spacing: 0; }
+#root .og-live { color: var(--nav-text); white-space: normal; flex-wrap: wrap; }
+#root .og-live em { color: var(--nav-muted); }
+#root .og-dot { background: var(--nav-accent); box-shadow: none; animation: none; }

@@ -11,6 +11,9 @@ import StageFx from "@/components/casino/StageFx";
 import { Ambient } from "@/components/casino/GameAtmosphere";
 import { Horse, ArmWrestle } from "@/components/casino/LiveSport2";
 import { AimPanel, FightPanel, FightReplay } from "@/components/casino/LiveSport";
+import { Button } from "@/components/ui/button";
+import { ArrowUp, ArrowDown, RefreshCw, Users, Clock3, Coins } from "lucide-react";
+import { countdownGroups, sortGroups, type Group, type GroupSort } from "@/lib/arena-groups";
 
 /**
  * ARENA — 2–4 kishilik LIVE o'yinlar.
@@ -117,38 +120,65 @@ function StickerLayer({ items }: { items: { id: number; seat: number; name: stri
 
 const mmss = (ms: number) => { const t = Math.ceil(ms / 1000); return `${Math.floor(t / 60)}:${String(t % 60).padStart(2, "0")}`; };
 
-type Group = { stake: number; count: number; max: number; names: string[]; expiresIn: number | null; startsIn: number | null };
 
 /** O'yin ostidagi ochiq guruhlar — har 3 s yangilanadi */
-function OpenGroups({ game, color, onJoin }: { game: string; color: string; onJoin: (stake: number) => void }) {
+function OpenGroups({ game, onJoin }: { game: string; color: string; onJoin: (stake: number) => void }) {
   const [data, setData] = useState<{ groups: Group[]; playing: { stake: number; names: string[]; round: number }[] } | null>(null);
-  const [, force] = useState(0);
+  const [sort, setSort] = useState<GroupSort>("time");
+  const [descending, setDescending] = useState(false);
+  const [error, setError] = useState(false);
+  const [now, setNow] = useState(Date.now());
+  const fetchedAt = useRef(Date.now());
+  const reload = useRef<() => void>(() => {});
   useEffect(() => {
     let alive = true;
-    const load = () => api(`/arena/rooms?game=${encodeURIComponent(game)}`).then((d) => alive && setData(d)).catch(() => {});
+    let loading = false;
+    setData(null); setError(false);
+    const load = async () => {
+      if (loading) return;
+      loading = true;
+      try {
+        const d = await api(`/arena/rooms?game=${encodeURIComponent(game)}`);
+        if (alive) { fetchedAt.current = Date.now(); setNow(Date.now()); setData(d); setError(false); }
+      } catch { if (alive) setError(true); }
+      finally { loading = false; }
+    };
+    reload.current = () => void load();
     load();
-    const iv = setInterval(load, 3000);
-    const tk = setInterval(() => force((n) => n + 1), 1000);
+    const iv = setInterval(() => { if (!document.hidden) void load(); }, 3000);
+    const tk = setInterval(() => { if (!document.hidden) setNow(Date.now()); }, 1000);
     return () => { alive = false; clearInterval(iv); clearInterval(tk); };
   }, [game]);
-  const groups = data?.groups ?? [];
+  const groups = sortGroups(countdownGroups(data?.groups ?? [], Math.max(0, now - fetchedAt.current)), sort, descending);
+  const labels = { stake: "Tikish", seats: "Bo'sh joy", time: "Vaqt" };
   return (
-    <section className="og-wrap" style={{ ["--c" as any]: color }}>
-      <header className="og-head"><span>OCHIQ GURUHLAR</span><span className="og-count">{groups.length}</span></header>
-      {!data && <div className="og-skel" />}
-      {data && !groups.length && <p className="og-empty">Hozir ochiq guruh yo'q. Yangi guruh oching — u 5 daqiqa shu yerda ko'rinib turadi.</p>}
-      {groups.map((g, i) => (
-        <div key={`${g.stake}-${i}`} className="og-row ar-pop" style={{ animationDelay: `${i * 40}ms` }}>
+    <section className="og-wrap" aria-label="Ochiq guruhlar">
+      <header className="og-head"><span>OCHIQ GURUHLAR <span className="og-count">{groups.length}</span></span><Button type="button" variant="ghost" size="icon" className="og-refresh" aria-label="Guruhlarni yangilash" title="Yangilash" onClick={() => reload.current()}><RefreshCw /></Button></header>
+      <div className="og-toolbar">
+        <div className="og-sort" role="group" aria-label="Guruhlarni saralash">
+          {(["stake", "seats", "time"] as const).map((key) => {
+            const Icon = key === "stake" ? Coins : key === "seats" ? Users : Clock3;
+            return <Button key={key} variant="ghost" size="sm" className="og-sort-option" aria-pressed={sort === key} onClick={() => { setSort(key); setDescending(key === "seats"); }}><Icon />{labels[key]}</Button>;
+          })}
+        </div>
+        <Button variant="ghost" size="icon" className="og-direction" aria-label={descending ? "O'sish tartibida" : "Kamayish tartibida"} title={descending ? "O'sish tartibida" : "Kamayish tartibida"} onClick={() => setDescending((d) => !d)}>{descending ? <ArrowDown /> : <ArrowUp />}</Button>
+      </div>
+      {error && <p className="og-empty" role="status">Guruhlar yangilanmadi. Qayta urinib ko'ring.</p>}
+      {!data && !error && <div className="og-skel" />}
+      {data && !groups.length && <p className="og-empty">Hozir ochiq guruh yo'q.</p>}
+      {groups.map((g) => (
+        <div key={g.stake} className="og-row">
           <div className="og-avatars">
             {Array.from({ length: g.max }, (_, k) => g.names[k]
-              ? <Avatar key={k} name={g.names[k]!} seat={k} size={28} />
+              ? <Avatar key={k} name={g.names[k] ?? ""} seat={k} size={28} />
               : <span key={k} className="og-free" />)}
           </div>
           <div className="og-info">
             <strong>{fmt(g.stake)} UZS</strong>
-            <span>{g.count}/{g.max} · {g.startsIn != null ? `${Math.ceil(g.startsIn / 1000)} s da start` : g.expiresIn != null ? `${mmss(g.expiresIn)} ochiq` : ""}</span>
+            <span>{g.max - g.count} bo'sh joy · {g.startsIn != null ? `${Math.ceil(g.startsIn / 1000)} s da start` : g.expiresIn != null ? `${mmss(g.expiresIn)} qoldi` : ""}</span>
+            <small>{g.names[0] ?? "Ochiq guruh"}{g.ownerOnline === false ? " · egasi offline" : ""}</small>
           </div>
-          <button type="button" className="og-join" onClick={() => { sfx.select(); haptic(); onJoin(g.stake); }}>QO'SHILISH</button>
+          <Button type="button" variant="ghost" size="sm" className="og-join" onClick={() => { sfx.select(); haptic(); onJoin(g.stake); }}>Qo'shilish</Button>
         </div>
       ))}
       {!!data?.playing.length && (
@@ -531,7 +561,7 @@ export default function Arena({ gameKey }: { gameKey: string }) {
     let alive = true;
     const poll = async () => {
       try {
-        const r = await api("/arena/queue", { telegramId: player.telegramId, name: player.firstName ?? "O'yinchi", game: gameKey, stake });
+        const r = await api("/arena/queue", { telegramId: player.telegramId, name: player.firstName ?? "O'yinchi", game: gameKey, stake, poll: true });
         if (!alive) return;
         if (r.status === "expired") { setMode("lobby"); setWait(null); setErr("5 daqiqada hech kim qo'shilmadi — guruh yopildi. Ochiq guruhga qo'shiling yoki yangisini oching."); return; }
         if (r.status === "matched") { setRoomId(r.roomId); setMode("room"); sfx.select(); haptic("heavy"); }
@@ -577,7 +607,11 @@ export default function Arena({ gameKey }: { gameKey: string }) {
     if ((player.balance ?? 0) < at) { setErr(`Balans yetarli emas. Kerak: ${fmt(at)} UZS`); return; }
     setStake(at);
     setErr(""); doneOnce.current = false; chatSince.current = 0; setSt(null); setSubmittedRound(-1);
-    sfx.bet?.(); setMode("waiting");
+    try {
+      const r = await api("/arena/queue", { telegramId: player.telegramId, name: player.firstName ?? "O'yinchi", game: gameKey, stake: at });
+      if (r.status === "matched") { setRoomId(r.roomId); setMode("room"); }
+      else { setWait(r); sfx.bet?.(); setMode("waiting"); }
+    } catch (e) { setErr((e as Error).message); }
   };
   const cancel = async () => {
     if (player) await api("/arena/cancel", { telegramId: player.telegramId }).catch(() => {});
