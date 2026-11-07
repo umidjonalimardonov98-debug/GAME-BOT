@@ -8,7 +8,7 @@ import { logger } from "./lib/logger";
 import { ALL_GAMES, GAME_LABELS, DIFFICULTIES, DIFFICULTY_WIN_SUGGEST, nextDifficulty, type Difficulty } from "./lib/games-catalog";
 import {
   canSync, isAdminSync, getRoleSync, permForCallback, addAdmin, removeAdmin,
-  listAdmins, isRole, ROLE_LABEL, startAdminCacheRefresh, type AdminRole,
+  listAdmins, getRole, ROOT_ADMIN_IDS, isRole, ROLE_LABEL, startAdminCacheRefresh, type AdminRole,
 } from "./lib/admins";
 
 const TOKEN = process.env.TELEGRAM_BOT_TOKEN || process.env.BOT_TOKEN || "";
@@ -133,6 +133,21 @@ export async function notifyAdminsReferralGoal(referrerId: string) {
 
 let bot: TelegramBot | null = null;
 let processGuardsInstalled = false;
+
+/** Monitoring sends plain text only to existing owner-role administrators. */
+export async function notifyArenaMonitoring(text: string): Promise<void> {
+  const client = bot;
+  if (!client) throw new Error("Monitoring bot unavailable");
+  const ids = new Set<number>(ROOT_ADMIN_IDS);
+  for (const admin of await listAdmins()) if (admin.active && admin.role === "owner") ids.add(Number(admin.telegramId));
+  const recipients = [...ids].filter(id => Number.isFinite(id) && id > 0);
+  if (!recipients.length) throw new Error("No monitoring administrators");
+  const outcomes = await Promise.allSettled(recipients.map(id => client.sendMessage(id, text)));
+  if (outcomes.some(result => result.status === "rejected")) {
+    logger.error({ recipients: recipients.length, failures: outcomes.filter(r => r.status === "rejected").length }, "LIVE monitor notification delivery failed");
+    throw new Error("Monitoring administrator delivery failed");
+  }
+}
 
 function isAdminId(id?: number) {
   return !!id && (ADMIN_IDS.has(id) || DYNAMIC_ADMIN_IDS.has(id) || isAdminSync(id));
@@ -1057,6 +1072,14 @@ export async function startBot() {
     _textHandlers.push({ re, fn });
     bot!.onText(re, fn);
   }
+
+  regText(/^\/live_monitor(?:@\w+)?$/, async (msg) => {
+    if (!msg.from || msg.chat.type !== "private" || await getRole(msg.from.id) !== "owner") return;
+    const client = bot;
+    if (!client) return;
+    const { getArenaMonitorStatus } = await import("./routes/arena");
+    await client.sendMessage(msg.chat.id, getArenaMonitorStatus().slice(0, 3800));
+  });
 
   // /start command (with referral support)
   regText(/^\/start(?:@\w+)?(.*)/, async (msg, match) => {

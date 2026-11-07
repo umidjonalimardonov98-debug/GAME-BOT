@@ -5,3 +5,5 @@
 - Replay uses existing player transaction history and opens the fresh game screen without placing a wager or restoring a previous room.
 - Keep navigation palette tokens in game-navigation.css independent of per-game table artwork and mechanics.
 - Run recent-game.test.ts when changing replay selection.
+
+- LIVE monitoring observes in-process lobbies and room heartbeats without starting games or changing wagers; owner-only Telegram commands expose status and batched alerts report anomalies and recovery.

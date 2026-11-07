@@ -6,6 +6,8 @@ import {
   type ArenaSub,
 } from "../lib/arena";
 import { getLiveSettings } from "../lib/live-settings";
+import { ArenaMonitor, MONITOR_INTERVAL_MS, formatMonitor } from "../lib/arena-monitor";
+import { logger } from "../lib/logger";
 import { activePlayers, cleanLobby, GROUP_TTL_MS, type Lobby } from "../lib/arena-lobby";
 
 /**
@@ -21,7 +23,7 @@ const WAIT_MS = 30_000;
 const START_DELAY_MS = 3000;
 const STICKERS = new Set(["laugh", "fire", "clap", "angry", "cry", "win"]);
 
-type AP = { telegramId: string; name: string; seat: number; score: number; left: boolean };
+type AP = { telegramId: string; name: string; seat: number; score: number; left: boolean; lastSeenAt?: number };
 type ChatMsg = { n: number; seat: number; name: string; text: string; sticker: boolean; at: number };
 type Room = {
   id: string; game: string; stake: number; players: AP[];
@@ -37,6 +39,35 @@ type Room = {
 const rooms = new Map<string, Room>();
 const byPlayer = new Map<string, string>();
 const lobbies = new Map<string, Lobby>();
+const monitor = new ArenaMonitor();
+let monitorTimer: ReturnType<typeof setInterval> | undefined;
+export function getArenaMonitorStatus() { return formatMonitor(monitor.snapshot); }
+export function startArenaMonitoring(send: (text: string) => Promise<void>) {
+  if (monitorTimer) return;
+  let running = false;
+  let lastLog = 0;
+  const check = async () => {
+    if (running) return;
+    running = true;
+    const now = Date.now();
+    try {
+      // Inspect before cleanup so expired/stuck groups are not hidden.
+      const snapshot = monitor.inspect(lobbies, rooms, now, ARENA_MIN, ARENA_MAX, WAIT_MS);
+      cleanup();
+      if (now - lastLog >= 60_000) {
+        logger.info({ checkedAt: snapshot.checkedAt, ttlMs: snapshot.ttlMs, groups: snapshot.groups, rooms: snapshot.rooms, issues: snapshot.issues }, "LIVE monitor heartbeat");
+        lastLog = now;
+      }
+      await monitor.notify(send, now);
+    } catch {
+      logger.error("LIVE monitor check or administrator delivery failed; retrying next interval");
+    } finally { running = false; }
+  };
+  monitorTimer = setInterval(() => void check(), MONITOR_INTERVAL_MS);
+  monitorTimer.unref?.();
+  void check();
+  logger.info({ intervalMs: MONITOR_INTERVAL_MS, ttlMs: GROUP_TTL_MS }, "LIVE monitoring started");
+}
 const rid = () => Math.random().toString(36).slice(2, 9);
 
 let cfgEnabled = true;
@@ -153,7 +184,7 @@ async function tryStart(key: string) {
     const id = rid();
     const room: Room = {
       id, game: game!, stake,
-      players: ok.map((s, i) => ({ telegramId: s.telegramId, name: s.name, seat: i, score: 0, left: false })),
+      players: ok.map((s, i) => ({ telegramId: s.telegramId, name: s.name, seat: i, score: 0, left: false, lastSeenAt: s.at })),
       round: 0, phase: "intro", deadline: Date.now() + START_DELAY_MS, revealUntil: 0,
       subs: ok.map(() => null), last: null, history: [], chat: [], chatN: 0,
       winners: null, payouts: null, refund: false, createdAt: Date.now(), paid: false,
@@ -279,6 +310,7 @@ function ctx(req: any) {
   const roomId = String(req.body?.roomId ?? req.query?.roomId ?? "");
   const room = rooms.get(roomId);
   const me = room?.players.find((p) => p.telegramId === telegramId);
+  if (me) me.lastSeenAt = Date.now();
   return { room, me };
 }
 

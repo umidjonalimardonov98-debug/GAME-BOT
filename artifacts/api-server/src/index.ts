@@ -1,6 +1,7 @@
 import app from "./app";
 import { logger } from "./lib/logger";
-import { startBot } from "./bot";
+import { startBot, notifyArenaMonitoring } from "./bot";
+import { startArenaMonitoring } from "./routes/arena";
 import { execSync } from "child_process";
 import { db } from "@workspace/db";
 import { sql } from "drizzle-orm";
@@ -67,6 +68,7 @@ async function main() {
       process.exit(1);
     }
     logger.info({ port }, "Server listening");
+    if (isProduction) startArenaMonitoring(notifyArenaMonitoring);
   });
 }
 
