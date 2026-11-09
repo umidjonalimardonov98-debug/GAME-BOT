@@ -2879,11 +2879,13 @@ Miqdorni tanlang yoki o'zingiz kiriting:`,
             `⚠️ <b>Hisobingiz tekshiruvdan o'tkazildi</b>\n` +
             `━━━━━━━━━━━━━━━━━━\n\n` +
             `🛡 Xavfsizlik tizimimiz hisobingizda <b>shubhali o'yin faolligini</b> aniqladi.\n\n` +
-            `💰 Olib tashlangan summa: <b>${fmt(amount)} UZS</b>\n` +
+            `💸 Balansdan yechildi: <b>-${fmt(amount)} UZS</b>\n` +
             `📉 Joriy balans: <b>0 UZS</b>\n\n` +
             `Qoidalarga zid o'yinlar tufayli balansingiz <b>0 ga tushirildi</b>.\n\n` +
             `<i>Agar bu xato deb hisoblasangiz, qo'llab-quvvatlash xizmatiga murojaat qiling.</i>\n` +
-            `━━━━━━━━━━━━━━━━━━\n🎰 <b>Adolatli o'yin — barchamiz uchun!</b>`,
+            `━━━━━━━━━━━━━━━━━━\n🎰 <b>O'yinni davom ettiring!</b>\nHisobingiz faol — yangi depozit bilan halol o'ynab, katta yutuqlarga erishing. Biz siz bilanmiz! 🍀`,
+            { parse_mode: "HTML", reply_markup: { inline_keyboard: [[{ text: "🎮 O'ynashni davom etish", callback_data: "main_menu" }]] } });
+          if (false) await bot!.sendMessage(0, "",
             { parse_mode: "HTML" });
         } catch {}
       };
