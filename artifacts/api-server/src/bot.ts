@@ -1182,6 +1182,7 @@ export async function startBot() {
         const dbOn = await isDailyBonusEnabled();
         push([{ text: dbOn ? "🎁 Kunlik bonus: ✅ YOQIQ (o'chirish)" : "🎁 Kunlik bonus: ❌ O'CHIQ (yoqish)", callback_data: "admin_daily_toggle" }]);
       }
+      if (p("finance") || p("admins")) push([{ text: "🚨 Shubhali balanslar (500K+)", callback_data: "admin_rich" }]);
       if (p("finance") || p("admins")) push([{ text: "💳 Karta raqamini o'zgartirish", callback_data: "admin_card" }]);
       if (p("finance") || p("admins")) push([{ text: "🤝 Referal narxi", callback_data: "admin_ref_price" }]);
       if (p("finance") || p("admins")) push([{ text: "🏆 KONKURS (referal)", callback_data: "admin_contest" }]);
@@ -2866,6 +2867,70 @@ Miqdorni tanlang yoki o'zingiz kiriting:`,
       await bot!.answerCallbackQuery(q.id, { text: "✅ Dizayn yangilandi" });
       await sendAdminMenu(chatId, q.from.id);
       return;
+    }
+
+    if (data === "admin_rich" || data.startsWith("admin_zero")) {
+      if (!(hasPerm(q.from.id, "finance") || hasPerm(q.from.id, "admins"))) { await bot!.answerCallbackQuery(q.id, { text: "❌ Ruxsat yo'q" }); return; }
+      const LIMIT = 500000;
+      const esc = (t: any) => String(t ?? "").replace(/[<>&]/g, (c) => ({ "<": "&lt;", ">": "&gt;", "&": "&amp;" } as any)[c]);
+      const notifyZero = async (tid: string, amount: number) => {
+        try {
+          await bot!.sendMessage(Number(tid),
+            `⚠️ <b>Hisobingiz tekshiruvdan o'tkazildi</b>\n` +
+            `━━━━━━━━━━━━━━━━━━\n\n` +
+            `🛡 Xavfsizlik tizimimiz hisobingizda <b>shubhali o'yin faolligini</b> aniqladi.\n\n` +
+            `💰 Olib tashlangan summa: <b>${fmt(amount)} UZS</b>\n` +
+            `📉 Joriy balans: <b>0 UZS</b>\n\n` +
+            `Qoidalarga zid o'yinlar tufayli balansingiz <b>0 ga tushirildi</b>.\n\n` +
+            `<i>Agar bu xato deb hisoblasangiz, qo'llab-quvvatlash xizmatiga murojaat qiling.</i>\n` +
+            `━━━━━━━━━━━━━━━━━━\n🎰 <b>Adolatli o'yin — barchamiz uchun!</b>`,
+            { parse_mode: "HTML" });
+        } catch {}
+      };
+      const zero = async (tid: string) => {
+        const r: any = await db.execute(sql`UPDATE players SET balance = 0, updated_at = now() WHERE telegram_id = ${tid} AND balance > 0 RETURNING (SELECT balance FROM players WHERE telegram_id = ${tid}) AS old`);
+        const row = (r.rows ?? r)[0];
+        if (row) await notifyZero(tid, Number(row.old) || 0);
+        return row ? Number(row.old) || 0 : -1;
+      };
+      if (data === "admin_rich") {
+        await bot!.answerCallbackQuery(q.id);
+        const r: any = await db.execute(sql`SELECT telegram_id, username, first_name, balance FROM players WHERE balance > ${LIMIT} ORDER BY balance DESC LIMIT 30`);
+        const rowsR = (r.rows ?? r) as any[];
+        if (!rowsR.length) { await bot!.sendMessage(chatId, `✅ <b>Shubhali balans yo'q</b>\n\n500 000 UZS dan ortiq balansli o'yinchi topilmadi.`, { parse_mode: "HTML", reply_markup: { inline_keyboard: [[{ text: "🔙 Admin panel", callback_data: "admin_panel" }]] } }); return; }
+        const total = rowsR.reduce((a, x) => a + Number(x.balance), 0);
+        const lines = rowsR.map((x, i) => `${i + 1}. <b>${esc(x.first_name) || "—"}</b>${x.username ? " @" + esc(x.username) : ""}\n    🆔 <code>${x.telegram_id}</code> · 💰 <b>${fmt(Number(x.balance))}</b>`);
+        const kb: any[] = rowsR.map((x) => [{ text: `🧹 0 qilish — ${String(x.first_name || x.telegram_id).slice(0, 14)} (${fmt(Number(x.balance))})`, callback_data: `admin_zero_${x.telegram_id}` }]);
+        kb.push([{ text: `⛔ HAMMASINI 0 qilish (${rowsR.length})`, callback_data: "admin_zeroall" }]);
+        kb.push([{ text: "🔙 Admin panel", callback_data: "admin_panel" }]);
+        await bot!.sendMessage(chatId, `🚨 <b>Shubhali balanslar</b> (500K+)\n━━━━━━━━━━━━━━━━━━\n👥 O'yinchilar: <b>${rowsR.length}</b>\n💵 Jami: <b>${fmt(total)} UZS</b>\n\n${lines.join("\n")}`.slice(0, 4000), { parse_mode: "HTML", reply_markup: { inline_keyboard: kb } });
+        return;
+      }
+      if (data === "admin_zeroall") {
+        await bot!.answerCallbackQuery(q.id);
+        await bot!.sendMessage(chatId, `⚠️ <b>Tasdiqlang</b>\n\n500 000 UZS dan ortiq balansli <b>barcha</b> o'yinchilar balansi 0 qilinadi va ularga ogohlantirish yuboriladi.`, { parse_mode: "HTML", reply_markup: { inline_keyboard: [[{ text: "✅ Ha, 0 qilish", callback_data: "admin_zeroallyes" }, { text: "❌ Bekor", callback_data: "admin_rich" }]] } });
+        return;
+      }
+      if (data === "admin_zeroallyes") {
+        await bot!.answerCallbackQuery(q.id, { text: "⏳ Bajarilmoqda..." });
+        const r: any = await db.execute(sql`SELECT telegram_id FROM players WHERE balance > ${LIMIT}`);
+        let n = 0; for (const x of (r.rows ?? r) as any[]) { if ((await zero(String(x.telegram_id))) >= 0) n++; }
+        await bot!.sendMessage(chatId, `✅ <b>${n} ta</b> o'yinchi balansi 0 qilindi va xabar yuborildi.`, { parse_mode: "HTML", reply_markup: { inline_keyboard: [[{ text: "🔙 Admin panel", callback_data: "admin_panel" }]] } });
+        return;
+      }
+      if (data.startsWith("admin_zeroyes_")) {
+        const tid = data.slice("admin_zeroyes_".length);
+        const old = await zero(tid);
+        await bot!.answerCallbackQuery(q.id, { text: old >= 0 ? "✅ 0 qilindi" : "Balans allaqachon 0" });
+        await bot!.sendMessage(chatId, old >= 0 ? `✅ <code>${tid}</code> balansi <b>${fmt(old)}</b> → <b>0</b>. Foydalanuvchiga xabar yuborildi.` : `ℹ️ Balans allaqachon 0.`, { parse_mode: "HTML", reply_markup: { inline_keyboard: [[{ text: "🚨 Ro'yxatga qaytish", callback_data: "admin_rich" }]] } });
+        return;
+      }
+      if (data.startsWith("admin_zero_")) {
+        const tid = data.slice("admin_zero_".length);
+        await bot!.answerCallbackQuery(q.id);
+        await bot!.sendMessage(chatId, `⚠️ <b>Tasdiqlang</b>\n\n🆔 <code>${tid}</code> balansi 0 qilinsinmi?`, { parse_mode: "HTML", reply_markup: { inline_keyboard: [[{ text: "✅ Ha, 0 qilish", callback_data: `admin_zeroyes_${tid}` }, { text: "❌ Bekor", callback_data: "admin_rich" }]] } });
+        return;
+      }
     }
 
     if (data === "admin_card") {
