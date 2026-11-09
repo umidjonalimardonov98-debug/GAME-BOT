@@ -11,6 +11,7 @@ import ThemeSwitcher from "@/components/ThemeSwitcher";
 import LangSwitcher from "@/components/LangSwitcher";
 import Odometer from "@/components/casino/Odometer";
 import { Button } from "@/components/ui/button";
+import { Dialog, DialogContent, DialogTitle, DialogDescription } from "@/components/ui/dialog";
 import { sfx } from "@/lib/sound";
 import "@/game-navigation.css";
 
@@ -45,6 +46,7 @@ export default function GameHeader({ title, subtitle, hideTheme }: Props) {
     if (isGame && currentPath !== "/live") { setPendingPath(path); return; }
     sfx.select(); nav(path);
   };
+  useEffect(() => { const back = () => go(isLive && currentPath !== "/live" ? "/live" : "/"); window.addEventListener("game:back", back); return () => window.removeEventListener("game:back", back); }, [currentPath]);
   return (
     <header className="game-nav-header">
       <div className="game-nav-main">
@@ -61,10 +63,10 @@ export default function GameHeader({ title, subtitle, hideTheme }: Props) {
         <Button variant="ghost" onClick={() => go(isLive ? "/" : "/live")}><Users size={16} />{isLive ? "Barcha o‘yinlar" : "LIVE PvP"}</Button>
         {(isLive ? LIVE_GAMES : GAMES.filter(game => enabled[game.key] !== false)).map(game => <Button variant="ghost" key={game.path} aria-pressed={currentPath === game.path} onClick={() => go(game.path)}><img src={game.img} alt="" loading="lazy" />{"name" in game ? game.name : GAME_NAMES[game.key]?.[lang] ?? game.key}</Button>)}
       </nav>}
-      {pendingPath && <div className="game-switch-dialog" role="dialog" aria-modal="true" aria-label="O‘yindan chiqish"><div>
-        <p>{lang === "ru" ? "Перейти в другую игру? Текущий раунд может ещё продолжаться." : lang === "en" ? "Switch games? Your current round may still be in progress." : "Boshqa o‘yinga o‘tasizmi? Joriy raund hali davom etayotgan bo‘lishi mumkin."}</p>
-        <footer><Button variant="ghost" autoFocus onClick={() => setPendingPath(null)}>{lang === "ru" ? "Остаться" : lang === "en" ? "Stay" : "Qolish"}</Button><Button variant="ghost" onClick={() => { const path = pendingPath; setPendingPath(null); sfx.back(); nav(path); }}>{lang === "ru" ? "Перейти" : lang === "en" ? "Switch" : "O‘tish"}</Button></footer>
-      </div></div>}
+      <Dialog open={Boolean(pendingPath)} onOpenChange={open => { if (!open) setPendingPath(null); }}><DialogContent className="game-switch-dialog"><DialogTitle className="sr-only">O‘yindan chiqish</DialogTitle>
+        <DialogDescription>{lang === "ru" ? "Перейти в другую игру? Текущий раунд может ещё продолжаться." : lang === "en" ? "Switch games? Your current round may still be in progress." : "Boshqa o‘yinga o‘tasizmi? Joriy raund hali davom etayotgan bo‘lishi mumkin."}</DialogDescription>
+        <footer><Button variant="ghost" autoFocus onClick={() => setPendingPath(null)}>{lang === "ru" ? "Остаться" : lang === "en" ? "Stay" : "Qolish"}</Button><Button variant="ghost" onClick={() => { const path = pendingPath; if (!path) return; setPendingPath(null); sfx.back(); nav(path); }}>{lang === "ru" ? "Перейти" : lang === "en" ? "Switch" : "O‘tish"}</Button></footer>
+      </DialogContent></Dialog>
     </header>
   );
 }

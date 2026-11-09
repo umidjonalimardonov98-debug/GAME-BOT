@@ -6,6 +6,8 @@ import { useTheme, pageBg } from "@/lib/theme-context";
 import { sfx } from "@/lib/sound";
 import GameHeader from "@/components/GameHeader";
 import PlayingCard from "@/components/casino/PlayingCard";
+import { Button } from "@/components/ui/button";
+import { cardMove } from "@/lib/durak-moves";
 
 /**
  * LIVE DURAK STOLI — 2, 3 yoki 4 kishi. Kartalar yirik va to'liq ko'rinadi.
@@ -102,7 +104,8 @@ export default function PvpDurak() {
 
   const roomId = new URLSearchParams(typeof window !== "undefined" ? window.location.search : "").get("room") ?? "";
   const [view, setView] = useState<View | null>(null);
-  const [pick, setPick] = useState<Card | null>(null);
+  const [moving,setMoving]=useState(false);
+  const moveLock=useRef(false);
   const [err, setErr] = useState("");
   const poll = useRef<ReturnType<typeof setInterval> | null>(null);
   const done = useRef(false);
@@ -123,24 +126,18 @@ export default function PvpDurak() {
   }, [roomId, player?.telegramId]);
 
   const move = async (action: string, card?: Card, target?: number) => {
-    if (!player) return;
+    if (!player || moveLock.current) return;
+    moveLock.current=true; setMoving(true);
     setErr("");
     try {
       await api("/pvp/move", { roomId, telegramId: player.telegramId, action, card, target });
       sfx.select();
-      setPick(null);
+      setView(await api(`/pvp/state?roomId=${roomId}&telegramId=${player.telegramId}`));
     } catch (e: any) { setErr(e?.message || "Xatolik"); }
+    finally {moveLock.current=false;setMoving(false);}
   };
 
-  const onCard = (c: Card) => {
-    if (!view?.started) return;
-    if (view.iAmDefender) {
-      const idx = (view.table ?? []).findIndex((p) => !p.d);
-      if (idx >= 0) void move("defend", c, idx);
-      return;
-    }
-    if (view.iAmAttacker) void move("attack", c);
-  };
+  const onCard=(c:Card)=>{const action=cardMove(view,c);if(action)void move(action.action,c,action.target);};
 
   const leave = async () => {
     if (player) await api("/pvp/leave", { telegramId: player.telegramId }).catch(() => {});
@@ -234,30 +231,14 @@ export default function PvpDurak() {
                 ? view.result === "win" ? "SIZ YUTDINGIZ" : "SIZ DURAK"
                 : view.myTurn ? (view.iAmDefender ? "HIMOYA QILING" : "HUJUM QILING") : "RAQIB O'YLAYAPTI"}
             </div>
-            <div style={{ display: "flex", gap: 6, overflowX: "auto", paddingBottom: 8 }}>
-              {(view.myHand ?? []).map((c, i) => (
-                <button
-                  key={`${c.r}${c.s}`}
-                  onClick={() => { setPick(c); onCard(c); }}
-                  disabled={!view.myTurn || view.finished}
-                  style={{
-                    flex: "0 0 auto",
-                    transform: pick && pick.r === c.r && pick.s === c.s ? "translateY(-10px)" : "none",
-                    transition: "transform .15s",
-                    opacity: view.myTurn ? 1 : 0.7,
-                  }}
-                >
-                  <PlayingCard suit={c.s} value={RANK[c.r]} w={72} delay={i * 40} />
-                </button>
-              ))}
-            </div>
+            <div className="durak-hand">{(view.myHand??[]).map((c,i)=>{const legal=Boolean(cardMove(view,c));return <Button variant="ghost" className="durak-card-button" key={`${c.r}${c.s}`} aria-label={`${RANK[c.r]} ${c.s}`} onClick={()=>onCard(c)} disabled={!legal||moving}><PlayingCard suit={c.s} value={RANK[c.r]} w={72} delay={i*40} dim={!legal&&!view.finished}/></Button>;})}</div>
           </div>
 
           {/* boshqaruv */}
           <div style={{ display: "flex", gap: 8, padding: "4px 12px" }}>
             {view.iAmDefender && !view.finished && (
               <button
-                onClick={() => move("take")}
+                disabled={moving} onClick={() => move("take")}
                 style={{ flex: 1, padding: "13px 0", borderRadius: 14, fontWeight: 900, color: "#08120c", background: "linear-gradient(135deg,#ffd85e,#f2a52a)" }}
               >
                 OLAMAN
@@ -265,7 +246,7 @@ export default function PvpDurak() {
             )}
             {view.canPass && !view.finished && (
               <button
-                onClick={() => move("pass")}
+                disabled={moving} onClick={() => move("pass")}
                 style={{ flex: 1, padding: "13px 0", borderRadius: 14, fontWeight: 900, color: "#08120c", background: "linear-gradient(135deg,#4ce38a,#19b45f)" }}
               >
                 BITA

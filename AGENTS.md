@@ -7,3 +7,8 @@
 - Run recent-game.test.ts when changing replay selection.
 
 - LIVE monitoring observes in-process lobbies and room heartbeats without starting games or changing wagers; owner-only Telegram commands expose status and batched alerts report anomalies and recovery.
+
+- Use shared PlayingCard artwork and tokens across solo/LIVE games, retaining its source license and attribution.
+- Navigation dialogs use body portals; never paint-contain a header that holds overlays.
+- Reset root scroll on navigation and offset sticky headers by Telegram safe insets to avoid obscured controls.
+- Durak taps use the tested legal-move affordance helper, submission lock and immediate state readback; the server remains authoritative.

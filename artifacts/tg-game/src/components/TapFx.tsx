@@ -38,5 +38,6 @@ export function TapFx() {
 /** Sahifa almashganda silliq kirish animatsiyasi */
 export function PageTransition({ children }: { children: React.ReactNode }) {
   const [loc] = useLocation();
+  useEffect(() => { document.getElementById("root")?.scrollTo({top:0,left:0,behavior:"instant"}); }, [loc]);
   return <div key={loc} className="page-enter">{children}</div>;
 }

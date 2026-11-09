@@ -1,0 +1,13 @@
+
+:root { --playing-paper:oklch(.985 .003 95); --playing-back:oklch(.35 .12 25); --playing-gold:oklch(.81 .12 85); --playing-shadow:0 5px 12px oklch(.08 0 0 / .3); }
+.playing-card { position:relative; flex:0 0 auto; border-radius:6px; overflow:hidden; background-color:var(--playing-paper); box-shadow:var(--playing-shadow); aspect-ratio:169.075/244.64; }
+.playing-face { background-size:1300% 400%; background-repeat:no-repeat; }
+.playing-card[data-dim="true"] { opacity:.45; }
+.playing-back { border:3px solid var(--playing-paper); background-color:var(--playing-back); }
+.playing-back::before { content:""; position:absolute; inset:5px; border:1px solid var(--playing-gold); background:repeating-linear-gradient(45deg,transparent 0 3px,var(--playing-gold) 3px 4px); opacity:.35; }
+.playing-back > svg { position:absolute; inset:0; margin:auto; color:var(--playing-gold); }
+.durak-hand { display:flex; gap:6px; overflow-x:auto; padding:6px 2px 12px; }
+.durak-card-button { display:block; flex:0 0 auto; height:auto; padding:0; background:transparent; border-radius:6px; touch-action:manipulation; }
+.durak-card-button:disabled { opacity:1; }
+.durak-card-button:focus-visible { outline:3px solid var(--playing-gold); outline-offset:2px; }
+@media(prefers-reduced-motion:reduce) { .playing-card { animation:none !important; } }

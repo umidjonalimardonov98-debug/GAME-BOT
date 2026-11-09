@@ -46,7 +46,7 @@
 #root .cat-head .ttl { font-size: 13px; letter-spacing: 0; color: var(--nav-text); }
 #root .cat-head .bar { background: var(--nav-accent); box-shadow: none; }
 #root .pro-tile::after { animation: none; background: none; border-color: var(--nav-line); }
-#root .game-nav-header { position: sticky; top: 0; z-index: 50; background: var(--nav-base); color: var(--nav-text); border-bottom: 1px solid var(--nav-line); }
+#root .game-nav-header { position: sticky; top: var(--tg-top, 0px); z-index: 50; background: var(--nav-base); color: var(--nav-text); border-bottom: 1px solid var(--nav-line); }
 #root .game-nav-main { display: flex; align-items: center; gap: 8px; padding: 8px 12px; height: 56px; }
 #root .game-nav-title { flex: 1; min-width: 0; }
 #root .game-nav-title strong { display: block; font-size: 14px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
@@ -59,11 +59,11 @@
 #root .game-switcher button[aria-pressed="true"] { border-color: var(--nav-accent); color: var(--nav-accent); }
 #root .game-settings { position: absolute; right: 12px; top: 52px; z-index: 60; background: var(--nav-surface); padding: 8px; border: 1px solid var(--nav-line); border-radius: 8px; min-width: 220px; box-shadow: var(--nav-shadow); }
 #root .game-settings > div { display: flex; justify-content: space-between; align-items: center; gap: 8px; padding: 6px; font-size: 12px; }
-#root .game-switch-dialog { position: fixed; z-index: 1000; inset: 0; background: oklch(.08 0 0 / .7); display: grid; place-items: center; padding: 16px; }
-#root .game-switch-dialog > div { max-width: 340px; padding: 20px; background: var(--nav-surface); border: 1px solid var(--nav-line); border-radius: 8px; }
-#root .game-switch-dialog p { font-size: 13px; line-height: 1.5; margin-bottom: 14px; }
-#root .game-switch-dialog footer { display: flex; justify-content: flex-end; gap: 8px; }
-#root .game-switch-dialog button { background: var(--nav-raised); color: var(--nav-text); }
+.game-switch-dialog { position: fixed; z-index: 1000; background: var(--nav-surface); color: var(--nav-text); width: calc(100% - 32px); max-width: 340px; max-height: calc(100dvh - var(--tg-top, 0px) - 32px); overflow-y: auto; border-radius: 8px; }
+.game-switch-dialog > div { max-width: 340px; padding: 20px; background: var(--nav-surface); border: 1px solid var(--nav-line); border-radius: 8px; }
+.game-switch-dialog p { font-size: 13px; line-height: 1.5; margin-bottom: 14px; }
+.game-switch-dialog footer { display: flex; justify-content: flex-end; gap: 8px; }
+.game-switch-dialog button { background: var(--nav-raised); color: var(--nav-text); }
 #root .live-hub { background: var(--nav-base) !important; }
 #root .live-arena-grid { display: grid; grid-template-columns: repeat(3,minmax(0,1fr)); gap: 8px; }
 #root .live-arena-grid .ar-tile-card { height: 112px; border-radius: 8px; border-color: var(--nav-line); box-shadow: none; }
@@ -122,7 +122,8 @@
 .ga-rays { width: 140vmax !important; height: 140vmax !important; margin: -70vmax 0 0 -70vmax !important; -webkit-mask: none !important; mask: none !important; opacity: .28 !important; }
 .ga-float { display: none !important; }
 .sfx-anim[style*="blur"] { filter: none !important; }
-#root .game-nav-header { contain: layout paint; transform: translateZ(0); }
+#root .game-nav-header { isolation: isolate; }
+#root .pro-header { top: var(--tg-top, 0px); }
 
 /* Open groups use the navigation palette and lightweight, stable rows. */
 #root .og-wrap { padding: 12px 0; border: 0; border-top: 1px solid var(--nav-line); border-radius: 0; background: none; gap: 8px; color: var(--nav-text); }
@@ -151,3 +152,4 @@
 #root .og-live { color: var(--nav-text); white-space: normal; flex-wrap: wrap; }
 #root .og-live em { color: var(--nav-muted); }
 #root .og-dot { background: var(--nav-accent); box-shadow: none; animation: none; }
+.game-switch-dialog [id] { color: var(--nav-text); }

@@ -131,7 +131,7 @@ function Router() {
 
 function TgBack() {
   const [loc, nav] = useLocation();
-  useEffect(() => { setTelegramBack(loc !== "/", () => nav("/")); }, [loc]);
+  useEffect(() => { setTelegramBack(loc !== "/", () => { if (document.querySelector(".game-nav-header")) window.dispatchEvent(new Event("game:back")); else nav("/"); }); }, [loc]);
   return null;
 }
 

@@ -400,7 +400,7 @@ export default function Home() {
 
       {/* ─── BRAND FOOTER (pastdagi havola) ─── */}
       {tab === "games" && (
-        <div className="px-4 pb-20 -mt-20">
+        <div className="px-4 pb-6 mt-3">
           <div className="rounded-3xl px-4 py-4 relative overflow-hidden pro-sheen"
             style={{
               background: isDark
