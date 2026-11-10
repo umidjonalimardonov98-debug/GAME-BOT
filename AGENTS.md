@@ -12,3 +12,5 @@
 - Navigation dialogs use body portals; never paint-contain a header that holds overlays.
 - Reset root scroll on navigation and offset sticky headers by Telegram safe insets to avoid obscured controls.
 - Durak taps use the tested legal-move affordance helper, submission lock and immediate state readback; the server remains authoritative.
+
+- Daily Telegram reminders use UTC+5 settings, a PostgreSQL advisory lock and per-day recipient claims to prevent duplicates across Railway restarts and replicas; admin actions require the existing broadcast permission.

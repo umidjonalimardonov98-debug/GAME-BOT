@@ -1,4 +1,5 @@
 import TelegramBot from "node-telegram-bot-api";
+import { DEFAULT_DAILY_HOUR, DEFAULT_DAILY_TEXT, tashkentClock, parseDailyHour, dailyDue, dailyVariant, personalizeDaily, deliverDaily } from "./lib/daily-message";
 import { eq, and, isNull, sql, desc } from "drizzle-orm";
 import { getLiveSettings, setLiveSetting, RULE_PRESETS } from "./lib/live-settings";
 import { answerRulesQuestion, splitAnswer, RulesAiError } from "./lib/ai/rules-assistant";
@@ -94,6 +95,80 @@ export async function isDailyBonusEnabled(): Promise<boolean> {
 async function setDailyBonusEnabled(on: boolean) {
   await db.insert(appSettingsTable).values({ key: "daily_bonus_enabled", value: on ? "1" : "0" })
     .onConflictDoUpdate({ target: appSettingsTable.key, set: { value: on ? "1" : "0", updatedAt: new Date() } });
+}
+
+async function getDailyMsgSetting(key: string, fallback: string): Promise<string> {
+  const [row] = await db.select().from(appSettingsTable).where(eq(appSettingsTable.key, key));
+  return row?.value ?? fallback;
+}
+async function setDailyMsgSetting(key: string, value: string) {
+  await db.insert(appSettingsTable).values({ key, value })
+    .onConflictDoUpdate({ target: appSettingsTable.key, set: { value, updatedAt: new Date() } });
+}
+async function dailyMsgSettings() {
+  const [enabled, text, hour, last] = await Promise.all([
+    getDailyMsgSetting("daily_msg_enabled", "1"), getDailyMsgSetting("daily_msg_text", DEFAULT_DAILY_TEXT),
+    getDailyMsgSetting("daily_msg_hour", String(DEFAULT_DAILY_HOUR)), getDailyMsgSetting("daily_msg_last", ""),
+  ]);
+  return { enabled: enabled !== "0", text, hour: parseDailyHour(hour) ?? DEFAULT_DAILY_HOUR, last };
+}
+function dailyMsgKeyboard(): TelegramBot.InlineKeyboardMarkup {
+  return { inline_keyboard: [[{ text: "O'yinlarni ochish", web_app: { url: APP_URL } }]] };
+}
+function renderDailyMsg(text: string, date: string, name: string) {
+  return `<b>${escHtml(personalizeDaily(dailyVariant(text, date), name.slice(0, 100)))}</b>`;
+}
+let dailyMsgTimer: ReturnType<typeof setInterval> | undefined;
+let dailyMsgBusy = false;
+async function sendDailyBroadcast(manual = false) {
+  const client = bot;
+  if (!client || dailyMsgBusy) return null;
+  dailyMsgBusy = true;
+  let lock: Awaited<ReturnType<typeof pool.connect>> | undefined;
+  let locked = false;
+  try {
+    const connection = await pool.connect();
+    lock = connection;
+    const result = await connection.query("SELECT pg_try_advisory_lock(78420319) AS acquired");
+    locked = result.rows[0]?.acquired === true;
+    if (!locked) return null;
+    const settings = await dailyMsgSettings();
+    const now = new Date();
+    if (!manual && !dailyDue(settings.enabled, settings.hour, settings.last, now)) return null;
+    const date = tashkentClock(now).date;
+    const recipients = await db.select({ telegramId: playersTable.telegramId, firstName: playersTable.firstName })
+      .from(playersTable).where(eq(playersTable.banned, false));
+    const key = (id: string) => `daily_msg_delivery_${date}_${id}`;
+    const summary = await deliverDaily(recipients, {
+      claim: async id => {
+        const result = await connection.query("INSERT INTO app_settings (key, value) VALUES ($1, 'claimed') ON CONFLICT DO NOTHING RETURNING key", [key(id)]);
+        return result.rowCount === 1;
+      },
+      send: async recipient => (await forceSendOne(Number(recipient.telegramId), id => client.sendMessage(id,
+        renderDailyMsg(settings.text, date, recipient.firstName), { parse_mode: "HTML", reply_markup: dailyMsgKeyboard() }))).ok,
+      release: async id => { await connection.query("DELETE FROM app_settings WHERE key=$1", [key(id)]); },
+      pause: () => bcSleep(40),
+    });
+    await setDailyMsgSetting("daily_msg_last", date);
+    // Keep today's delivery claims only; they protect against restarts and concurrent Railway replicas.
+    await connection.query("DELETE FROM app_settings WHERE key LIKE 'daily_msg_delivery_%' AND updated_at < now() - interval '2 days'");
+    const admins = new Set<number>(ADMIN_IDS);
+    for (const admin of await listAdmins()) if (admin.active && canSync(admin.telegramId, "broadcast")) admins.add(Number(admin.telegramId));
+    for (const id of admins) {
+      try { await client.sendMessage(id, `<b>Kunlik xabar yuborildi</b>\n\nYetib bordi: ${summary.sent}\nYetib bormadi: ${summary.failed}\nBugun oldin yuborilgan: ${summary.skipped}`, { parse_mode: "HTML" }); }
+      catch (err) { logger.warn({ err, id }, "Daily message summary failed"); }
+    }
+    return summary;
+  } finally {
+    if (locked && lock) await lock.query("SELECT pg_advisory_unlock(78420319)").catch(err => logger.error({ err }, "Daily message unlock failed"));
+    lock?.release(); dailyMsgBusy = false;
+  }
+}
+function startDailyMsgScheduler() {
+  if (dailyMsgTimer) return;
+  const tick = () => { void sendDailyBroadcast().catch(err => logger.error({ err }, "Daily broadcast failed")); };
+  dailyMsgTimer = setInterval(tick, 60_000);
+  dailyMsgTimer.unref(); tick();
 }
 
 /** 5 ta referal to'lganda — adminlarga avtomatik so'rov (promokod berish uchun) */
@@ -475,6 +550,9 @@ const waitingForContestDesc = new Set<number>();
 const waitingForContestEnd = new Set<number>();                  // admin waiting to type contest end time
 const waitingForCard = new Set<number>();                       // admin waiting to type new payment card
 const waitingForRefPrice = new Set<number>();                  // admin waiting to type new referral bonus
+const waitingForDailyMsgText = new Set<number>();
+const waitingForDailyMsgHour = new Set<number>();
+const dailyMsgConfirm = new Map<number, number>();
 const waitingForBroadcast = new Set<number>();                  // adminId waiting to type broadcast message
 const waitingForSendId = new Set<number>();                    // admin waiting to type target userId
 const waitingForSendMsg = new Map<number, string>();           // admin -> targetId (waiting for message text)
@@ -1027,6 +1105,7 @@ export async function startBot() {
   bot = new TelegramBot(TOKEN, { polling: false });
   patchBotRequest(bot);
   startAdminCacheRefresh();
+  startDailyMsgScheduler();
 
   const isProduction = process.env.NODE_ENV === "production";
   if (isProduction && APP_URL) {
@@ -1147,6 +1226,7 @@ export async function startBot() {
       const rows: any[][] = [];
       const push = (btns: any[]) => { if (btns.length) rows.push(btns); };
 
+      if (p("broadcast")) push([{ text: "Kunlik avtomatik xabarlar", callback_data: "admin_dmsg" }]);
       if (p("broadcast")) push([
         { text: "📢 Barchaga xabar", callback_data: "admin_broadcast" },
         { text: "💌 Bitta kishiga", callback_data: "admin_send_user" },
@@ -1618,6 +1698,9 @@ export async function startBot() {
 
     // /cancel — clears all waiting states
     if (text === "/cancel") {
+      waitingForDailyMsgText.delete(userId);
+      waitingForDailyMsgHour.delete(userId);
+      dailyMsgConfirm.delete(userId);
       waitingForBroadcast.delete(userId);
       waitingForHelp.delete(userId);
       rulesQuestions.delete(userId);
@@ -1641,6 +1724,27 @@ export async function startBot() {
       waitingForMaxWin.delete(userId);
       waitingForLiveText.delete(userId);
       await bot!.sendMessage(chatId, "❌ Bekor qilindi.", { parse_mode: "HTML" });
+      return;
+    }
+
+    if (waitingForDailyMsgText.has(userId) || waitingForDailyMsgHour.has(userId)) {
+      if (!hasPerm(userId, "broadcast")) {
+        waitingForDailyMsgText.delete(userId); waitingForDailyMsgHour.delete(userId);
+        await bot?.sendMessage(chatId, "Bu bo'limga ruxsat yo'q."); return;
+      }
+      if (waitingForDailyMsgHour.has(userId)) {
+        const hour = parseDailyHour(text);
+        if (hour === null) { await bot?.sendMessage(chatId, "Soatni 0 dan 23 gacha butun raqam bilan yozing."); return; }
+        await setDailyMsgSetting("daily_msg_hour", String(hour));
+        waitingForDailyMsgHour.delete(userId);
+      } else {
+        if (text.length > 3000 || !text.split("||").some(v => v.trim())) {
+          await bot?.sendMessage(chatId, "Xabar 1–3000 belgi bo'lishi kerak."); return;
+        }
+        await setDailyMsgSetting("daily_msg_text", text);
+        waitingForDailyMsgText.delete(userId);
+      }
+      await bot?.sendMessage(chatId, "Kunlik xabar sozlamasi saqlandi.", { reply_markup: { inline_keyboard: [[{ text: "Kunlik xabarlar", callback_data: "admin_dmsg" }]] } });
       return;
     }
 
@@ -2670,6 +2774,48 @@ Miqdorni tanlang yoki o'zingiz kiriting:`,
       await bot!.answerCallbackQuery(q.id);
       await sendAdminMenu(chatId, q.from.id);
       return;
+    }
+
+    if (data === "admin_dmsg" || data.startsWith("admin_dmsg_")) {
+      const client = bot;
+      if (!client) return;
+      if (!hasPerm(q.from.id, "broadcast")) { await client.answerCallbackQuery(q.id, { text: "Ruxsat yo'q" }); return; }
+      await client.answerCallbackQuery(q.id);
+      if (data === "admin_dmsg_toggle") {
+        const settings = await dailyMsgSettings();
+        await setDailyMsgSetting("daily_msg_enabled", settings.enabled ? "0" : "1");
+      } else if (data === "admin_dmsg_text") {
+        waitingForDailyMsgHour.delete(q.from.id); waitingForBroadcast.delete(q.from.id); waitingForDailyMsgText.add(q.from.id);
+        const settings = await dailyMsgSettings();
+        await client.sendMessage(chatId, `Yangi xabarni yozing. {ism} o'rniga foydalanuvchi ismi qo'yiladi. Variantlarni || bilan ajrating.\n\nHozirgi matn:\n${settings.text}\n\nBekor qilish: /cancel`); return;
+      } else if (data === "admin_dmsg_hour") {
+        waitingForDailyMsgText.delete(q.from.id); waitingForBroadcast.delete(q.from.id); waitingForDailyMsgHour.add(q.from.id);
+        await client.sendMessage(chatId, "Toshkent vaqti bo'yicha soatni yozing (0–23). Masalan: 20.\nBekor qilish: /cancel"); return;
+      } else if (data === "admin_dmsg_preview") {
+        const settings = await dailyMsgSettings();
+        await client.sendMessage(chatId, renderDailyMsg(settings.text, tashkentClock().date, q.from.first_name || "Do'stimiz"), { parse_mode: "HTML", reply_markup: dailyMsgKeyboard() }); return;
+      } else if (data === "admin_dmsg_now") {
+        dailyMsgConfirm.set(q.from.id, Date.now());
+        await client.sendMessage(chatId, "Bugun xabar olmagan barcha faol foydalanuvchilarga hozir yuborilsinmi?", { reply_markup: { inline_keyboard: [[{ text: "Yuborish", callback_data: "admin_dmsg_now_yes" }, { text: "Bekor qilish", callback_data: "admin_dmsg_now_no" }]] } }); return;
+      } else if (data === "admin_dmsg_now_yes") {
+        const confirmedAt = dailyMsgConfirm.get(q.from.id); dailyMsgConfirm.delete(q.from.id);
+        if (!confirmedAt || Date.now() - confirmedAt > 300000) { await client.sendMessage(chatId, "Tasdiqlash muddati tugadi. Qayta urinib ko'ring."); return; }
+        await client.sendMessage(chatId, "Kunlik xabarlarni yuborish boshlandi.");
+        const result = await sendDailyBroadcast(true);
+        if (!result) await client.sendMessage(chatId, "Xabar yuborish allaqachon davom etmoqda.");
+        return;
+      } else if (data === "admin_dmsg_now_no") {
+        dailyMsgConfirm.delete(q.from.id);
+      }
+      const settings = await dailyMsgSettings();
+      await client.sendMessage(chatId, `<b>Kunlik avtomatik xabarlar</b>\n\nHolat: ${settings.enabled ? "Yoqilgan" : "O'chirilgan"}\nVaqt: ${String(settings.hour).padStart(2, "0")}:00 (Toshkent)\nOxirgi yuborish: ${escHtml(settings.last || "Hali yuborilmagan")}`, {
+        parse_mode: "HTML", reply_markup: { inline_keyboard: [
+          [{ text: settings.enabled ? "O'chirish" : "Yoqish", callback_data: "admin_dmsg_toggle" }],
+          [{ text: "Xabar matni", callback_data: "admin_dmsg_text" }, { text: "Yuborish vaqti", callback_data: "admin_dmsg_hour" }],
+          [{ text: "Namunani ko'rish", callback_data: "admin_dmsg_preview" }, { text: "Hozir yuborish", callback_data: "admin_dmsg_now" }],
+          [{ text: "Admin panel", callback_data: "admin_panel" }],
+        ] },
+      }); return;
     }
 
     if (data === "admin_daily_toggle") {
@@ -3788,6 +3934,8 @@ Miqdorni tanlang yoki o'zingiz kiriting:`,
       if (!isAdminId(q.from.id)) { await bot!.answerCallbackQuery(q.id, { text: "❌ Ruxsat yo'q" }); return; }
       const targetUserId = Number(data.split("_")[2]);
       // Boshqa kutish holatlarini tozalash — javob matni ularga adashib ketmasligi uchun
+      waitingForDailyMsgText.delete(q.from.id);
+      waitingForDailyMsgHour.delete(q.from.id);
       waitingForRefPrice.delete(q.from.id);
       waitingForCard.delete(q.from.id);
       waitingForBroadcast.delete(q.from.id);
