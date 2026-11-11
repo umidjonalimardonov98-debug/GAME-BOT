@@ -1,3 +1,4 @@
+import { MAX_BET, MIN_BET } from "@/lib/bet-amount";
 import { Ambient } from "@/components/casino/GameAtmosphere";
 import StageFx from "@/components/casino/StageFx";
 import { useState, useCallback, useMemo, useRef, useEffect } from "react";
@@ -42,7 +43,7 @@ export default function Slots() {
 
   const totalBet = betPerLine * lines;
   const balance = player?.balance ?? 0;
-  const canSpin = !!player && balance >= totalBet && !spinning;
+  const canSpin = !!player && balance >= totalBet && totalBet >= MIN_BET && totalBet <= MAX_BET && !spinning && !saving;
 
   /** yonadigan kataklar */
   const highlight = useMemo(() => {
@@ -57,31 +58,31 @@ export default function Slots() {
   }, [result, spinning]);
 
   const doSpin = useCallback(() => {
-    if (!player || player.balance < totalBet || spinning) return;
+    if (!player || player.balance < totalBet || totalBet < MIN_BET || totalBet > MAX_BET || spinning || saving) return;
+    const stake = totalBet; // aylanish davomida qulflangan
     setSpinning(true);
     setResult(null);
     setLever(true);
     setTimeout(() => setLever(false), 400);
-    sfx?.click?.();
+    sfx.spin();
+    for (let i = 0; i < REELS; i++) setTimeout(() => sfx.reel(), 900 + i * 260);
 
     const res = spinEngine(lines, betPerLine, winRateFor("slots"));
     setGrid(res.grid);
-    const stopTick = startTicker(70);
+    const stopTick = startTicker(140);
 
     const total = 900 + (REELS - 1) * 260 + 260;
     setTimeout(() => {
       stopTick();
-      setSpinning(false);
-      setResult(res);
-      if (res.totalWin > 0) sfx?.win?.(); else sfx?.lose?.();
-
       setSaving(true);
       placeBet(player.telegramId, {
-        amount: totalBet, game: "slots",
-        won: res.totalWin > 0, winAmount: res.totalWin,
-      }).then(() => refresh()).catch(() => {}).finally(() => setSaving(false));
+        amount: stake, game: "slots",
+        won: res.totalWin > 0, winAmount: Math.floor(res.totalWin),
+      }).then(() => setResult(res))
+        .catch(() => { setResult(null); setAuto(0); })
+        .finally(() => { setSpinning(false); void refresh(); setSaving(false); });
     }, total);
-  }, [player, totalBet, lines, betPerLine, spinning, refresh]);
+  }, [player, totalBet, lines, betPerLine, spinning, saving, refresh]);
 
   // AVTO-SPIN
   useEffect(() => {
@@ -257,7 +258,7 @@ export default function Slots() {
           <div className="grid grid-cols-3 gap-2">
             {CHIPS.map((c) => {
               const active = betPerLine === c;
-              const disabled = c * lines > balance;
+              const disabled = c * lines > balance || c * lines < MIN_BET || c * lines > MAX_BET;
               return (
                 <button key={c} onClick={() => setBetPerLine(c)} disabled={disabled || spinning}
                   className="py-2.5 rounded-xl font-black text-[13px] active:scale-95 transition-all disabled:opacity-35"

@@ -19,7 +19,7 @@ const SEGMENTS = [
   { label: "money", prize: 2000, from: "#064e3b", to: "#25a55a" },
   { label: "skull", prize: 0, from: "#7f1d1d", to: "#b91c1c" },
   { label: "skull", prize: 0, from: "#111827", to: "#374151" },
-  { label: "chest", prize: 5000, from: "#312e81", to: "#1668e3" },
+  { label: "chest", prize: 5000, from: "#3b0a10", to: "#b3121f" },
   { label: "skull", prize: 0, from: "#7f1d1d", to: "#b91c1c" },
 ];
 
@@ -343,8 +343,8 @@ export default function Spin() {
             disabled={!canFree || spinning || loading}
             className="w-full py-4 rounded-2xl font-black text-base text-white active:scale-95 transition-all pro-sheen overflow-hidden disabled:opacity-45"
             style={{
-              background: "linear-gradient(145deg,#1668e3,#c026d3)",
-              boxShadow: "0 7px 0 #0d4fb0, 0 12px 28px rgba(192,38,211,0.5)",
+              background: "linear-gradient(145deg,#b3121f,#c026d3)",
+              boxShadow: "0 7px 0 #7a0c16, 0 12px 28px rgba(192,38,211,0.5)",
             }}>
             {loading ? "Yuklanmoqda...": canFree ?" TEKIN AYLANTIRISH": `${countdown ||"Kutilmoqda..."}`}
           </button>

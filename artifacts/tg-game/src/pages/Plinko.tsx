@@ -151,7 +151,7 @@ export default function Plinko() {
               className="py-2.5 rounded-xl text-xs font-black active:scale-95 disabled:opacity-40 transition-all"
               style={{
                 background: risk === r
-                  ? "linear-gradient(180deg,#5fb0ec 0%,#1668e3 55%,#0b3f8f 100%)"
+                  ? "linear-gradient(180deg,#5fb0ec 0%,#b3121f 55%,#4f0810 100%)"
                   : "linear-gradient(180deg,rgba(20,50,90,0.85),rgba(6,20,40,0.9))",
                 color: risk === r ? "#fff" : "#9fc5ef",
                 border: `1px solid ${risk === r ? "#bfe3ff" : "rgba(120,190,255,0.3)"}`,

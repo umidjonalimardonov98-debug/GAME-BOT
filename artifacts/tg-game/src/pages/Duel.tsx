@@ -440,7 +440,7 @@ function Side({ name, score, ok, mine }: { name: string; score: number; ok: bool
   return (
     <div className="text-center" style={{ width: 92 }}>
       <div className="w-11 h-11 mx-auto rounded-full flex items-center justify-center font-black"
-        style={{ background: mine ? "linear-gradient(135deg,#0d4fb0,#1668e3)" : "linear-gradient(135deg,#7a1010,#c62828)", color: "#fff" }}>
+        style={{ background: mine ? "linear-gradient(135deg,#7a0c16,#b3121f)" : "linear-gradient(135deg,#7a1010,#c62828)", color: "#fff" }}>
         {(name || "?").slice(0, 2).toUpperCase()}
       </div>
       <p className="font-black truncate mt-1" style={{ fontSize: 11, color: "#fff" }}>{name}</p>

@@ -72,8 +72,8 @@ export const GOLD = {
 /** 1XBET yashil (asosiy CTA) */
 export const XGREEN = {
   main: "#25a55a",
-  grad: "linear-gradient(180deg,#39c46f 0%,#25a55a 55%,#1a7d43 100%)",
-  shadow: "0 6px 0 #14653a, 0 10px 24px rgba(37,165,90,0.35)",
+  grad: "linear-gradient(180deg,#34c873 0%,#17904f 52%,#0b5c32 100%)",
+  shadow: "inset 0 0 0 1.5px rgba(255,226,140,0.55), inset 0 1px 0 rgba(255,255,255,0.35), 0 5px 0 #073d21, 0 12px 28px rgba(23,144,79,0.38)",
 };
 
 export const GAME_BG = {

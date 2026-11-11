@@ -58,7 +58,7 @@ function MiniPreview({ th, size = 34 }: { th: Theme; size?: number }) {
           right: size * 0.12,
           height: size * 0.18,
           borderRadius: 99,
-          background: "linear-gradient(180deg,#2f8fff,#1668e3)",
+          background: "linear-gradient(180deg,#e5484d,#b3121f)",
         }}
       />
     </div>
@@ -121,7 +121,7 @@ export default function ThemeSwitcher({ compact }: { compact?: boolean }) {
                     className="flex items-center gap-2.5 rounded-xl p-1.5 pr-3 active:scale-[0.97] transition-all"
                     style={{
                       background: active
-                        ? "linear-gradient(135deg,rgba(47,143,255,0.28),rgba(22,104,227,0.16))"
+                        ? "linear-gradient(135deg,rgba(47,143,255,0.28),rgba(229,72,77,0.16))"
                         : "transparent",
                       border: `1px solid ${active ? "rgba(47,143,255,0.55)" : "transparent"}`,
                     }}

@@ -157,10 +157,10 @@ export default function Deposit() {
                 className="flex flex-col items-start px-3 py-3 rounded-2xl active:scale-95 transition-all"
                 style={{
                   background: isSel
-                    ? "linear-gradient(145deg, rgba(22,104,227,0.5), rgba(59,130,246,0.4))"
+                    ? "linear-gradient(145deg, rgba(229,72,77,0.5), rgba(59,130,246,0.4))"
                     : ts.card,
                   border: `1px solid ${isSel ? "rgba(47,143,255,0.6)" : ts.cardBorder}`,
-                  boxShadow: isSel ? "0 4px 0 rgba(0,0,0,0.2), 0 6px 16px rgba(22,104,227,0.3)":"0 2px 0 rgba(0,0,0,0.1)",
+                  boxShadow: isSel ? "0 4px 0 rgba(0,0,0,0.2), 0 6px 16px rgba(229,72,77,0.3)":"0 2px 0 rgba(0,0,0,0.1)",
                 }}>
                 <span className="font-black text-base" style={{ color: ts.text }}>{fmtShort(p.base)}</span>
                 <span className="text-xs font-bold"style={{ color:"#34d399" }}>+{fmtShort(p.bonus)}</span>
@@ -172,7 +172,7 @@ export default function Deposit() {
         {/* Summary */}
         {amount && amount >= MIN_DEPOSIT && (
           <div className="rounded-2xl px-4 py-3.5"
-            style={{ background: isLight ? "rgba(22,104,227,0.08)":"rgba(22,104,227,0.1)", border: "1px solid rgba(22,104,227,0.25)" }}>
+            style={{ background: isLight ? "rgba(229,72,77,0.08)":"rgba(229,72,77,0.1)", border: "1px solid rgba(229,72,77,0.25)" }}>
             <div className="flex justify-between text-sm mb-1.5">
               <span style={{ color: ts.textSub }}>To'lov:</span>
               <span className="font-bold" style={{ color: ts.text }}>{fmtFull(amount)} UZS</span>
@@ -190,14 +190,14 @@ export default function Deposit() {
 
         {/* Steps */}
         <div className="rounded-2xl p-4"
-          style={{ background: isLight ? "rgba(22,104,227,0.06)":"rgba(22,104,227,0.07)", border: `1px solid ${isLight ? "rgba(22,104,227,0.2)":"rgba(22,104,227,0.2)"}` }}>
-          <p className="font-bold text-sm mb-3 flex items-center gap-2"style={{ color: isLight ?"#0b3f8f":"#9fc5ef" }}>
+          style={{ background: isLight ? "rgba(229,72,77,0.06)":"rgba(229,72,77,0.07)", border: `1px solid ${isLight ? "rgba(229,72,77,0.2)":"rgba(229,72,77,0.2)"}` }}>
+          <p className="font-bold text-sm mb-3 flex items-center gap-2"style={{ color: isLight ?"#4f0810":"#9fc5ef" }}>
              Qanday qilish kerak?
           </p>
           {[u("transferToCard"),"To'lov cheki (screenshot) oling","Botga borib chekni yuboring",u("adminConfirm")].map((step, i) => (
             <div key={i} className="flex items-start gap-3 mb-2.5 last:mb-0">
               <span className="w-6 h-6 rounded-full flex items-center justify-center text-xs font-black shrink-0 mt-0.5"
-                style={{ background: isLight ? "rgba(22,104,227,0.15)":"rgba(22,104,227,0.3)", color: isLight ? "#0b3f8f":"#9fc5ef" }}>
+                style={{ background: isLight ? "rgba(229,72,77,0.15)":"rgba(229,72,77,0.3)", color: isLight ? "#4f0810":"#9fc5ef" }}>
                 {i + 1}
               </span>
               <span className="text-sm" style={{ color: ts.textSub }}>{step}</span>
@@ -224,8 +224,8 @@ export default function Deposit() {
             disabled={loading || !amount || amount < MIN_DEPOSIT}
             className="w-full rounded-2xl font-black text-base flex items-center justify-center gap-2 active:scale-95 transition-all disabled:opacity-40"
             style={{
-              background: "linear-gradient(145deg, #2563eb, #1668e3)",
-              boxShadow: "0 8px 0 #1e3a8a, 0 10px 28px rgba(22,104,227,0.5)",
+              background: "linear-gradient(145deg, #2563eb, #b3121f)",
+              boxShadow: "0 8px 0 #1e3a8a, 0 10px 28px rgba(229,72,77,0.5)",
               color: "white", padding: "18px 0",
             }}>
             {loading

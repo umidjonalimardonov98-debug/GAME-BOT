@@ -1,9 +1,12 @@
+import { sfx } from "@/lib/sound";
+import { effectiveBet, MAX_BET, MIN_BET } from "@/lib/bet-amount";
+import { notify } from "@/lib/notify";
 import { Ambient } from "@/components/casino/GameAtmosphere";
 import BetPanel from "@/components/casino/BetPanel";
 import StageFx from "@/components/casino/StageFx";
 import { useState, useEffect, useRef } from "react";
 import { usePlayer } from "@/lib/player-context";
-import { useTheme, pageBg, GAME_BG } from "@/lib/theme-context";
+import { useTheme, pageBg, GAME_BG, XGREEN } from "@/lib/theme-context";
 import { placeBet } from "@/lib/api";
 import { riggedLose } from "@/lib/odds";
 import GameHeader from "@/components/GameHeader";
@@ -33,8 +36,9 @@ export default function Aviator() {
   const [phase, setPhase] = useState<Phase>("idle");
   const [multiplier, setMultiplier] = useState(1.00);
   const [countdown, setCountdown] = useState(3);
-  const [betAmt, setBetAmt] = useState(2000);
-  const [betInput, setBetInput] = useState("2000");
+  const [betInput, setBetInput] = useState(String(MIN_BET));
+  const eff = effectiveBet(betInput, player?.balance ?? 0);
+  const betAmt = eff.amount;
   const [result, setResult] = useState<{ won: boolean; mult: number; amount: number } | null>(null);
   const [history, setHistory] = useState<{ val: number; won: boolean }[]>([
     { val: 5.32, won: true }, { val: 1.84, won: false }, { val: 12.5, won: true },
@@ -47,7 +51,8 @@ export default function Aviator() {
   const multRef = useRef(1.00);
   const crashRef = useRef(1.10);
   const flyingRef = useRef(false);
-  const betRef = useRef(2000);
+  const betRef = useRef(String(MIN_BET)); // kiritilgan qiymat
+  const stakeRef = useRef(MIN_BET);        // raund boshida qulflangan tikish
   const playerRef = useRef(player);
   const autoCashOutRef = useRef(false);
   const autoCashOutAtRef = useRef(2.00);
@@ -61,7 +66,7 @@ export default function Aviator() {
   const isLight = false;
 
   useEffect(() =>{ playerRef.current = player; }, [player]);
-  useEffect(() =>{ betRef.current = betAmt; }, [betAmt]);
+  useEffect(() =>{ betRef.current = betInput; }, [betInput]);
   useEffect(() =>{ autoCashOutRef.current = autoCashOut; }, [autoCashOut]);
   useEffect(() =>{ autoCashOutAtRef.current = parseFloat(autoCashOutAt) || 2.0; }, [autoCashOutAt]);
   useEffect(() =>{ autoBetRef.current = autoBet; }, [autoBet]);
@@ -78,16 +83,18 @@ export default function Aviator() {
     clearInterval(loopRef.current);
     flyingRef.current = false;
     const m = multRef.current;
-    const prize = Math.floor(betRef.current * m);
-    setResult({ won: true, mult: m, amount: prize });
+    const prize = Math.floor(stakeRef.current * m);
     setHistory(h => [{ val: m, won: true }, ...h].slice(0, 10));
     setPhaseSync("done");
-    if (playerRef.current && !savingRef.current) {
+    let ok = true;
+    if (playerRef.current) {
       savingRef.current = true;
-      await placeBet(playerRef.current.telegramId, { amount: betRef.current, game: "aviator", won: true, winAmount: prize }).catch(() =>{});
-      await refresh();
+      await placeBet(playerRef.current.telegramId, { amount: stakeRef.current, game: "aviator", won: true, winAmount: prize }).catch(() => { ok = false; });
+      await refresh().catch(() => {});
       savingRef.current = false;
     }
+    if (!ok) { setResult(null); setAutoBet(false); autoBetRef.current = false; return; }
+    setResult({ won: true, mult: m, amount: prize });
     if (autoBetRef.current) autoRef.current = setTimeout(startRound, 2500);
   }
 
@@ -105,11 +112,7 @@ export default function Aviator() {
       const cur = multRef.current;
       setMultiplier(cur);
 
-      if (autoCashOutRef.current && cur >= autoCashOutAtRef.current && !savingRef.current) {
-        await doCashOut();
-        return;
-      }
-
+      // avval qulash tekshiriladi — qulash nuqtasidan keyin avto-olish to'lanmaydi
       if (cur >= crash) {
         clearInterval(loopRef.current);
         flyingRef.current = false;
@@ -118,17 +121,32 @@ export default function Aviator() {
         setHistory(h => [{ val: crash, won: false }, ...h].slice(0, 10));
         setPhaseSync("done");
         if (playerRef.current) {
-          placeBet(playerRef.current.telegramId, { amount: betRef.current, game: "aviator", won: false, winAmount: 0 })
-            .then(() => refresh()).catch(() =>{});
+          savingRef.current = true;
+          await placeBet(playerRef.current.telegramId, { amount: stakeRef.current, game: "aviator", won: false, winAmount: 0 }).catch(() => {});
+          await refresh().catch(() => {});
+          savingRef.current = false;
         }
         if (autoBetRef.current) autoRef.current = setTimeout(startRound, 2500);
+        return;
+      }
+
+      if (autoCashOutRef.current && cur >= autoCashOutAtRef.current && !savingRef.current) {
+        await doCashOut();
       }
     }, 80);
   }
 
   function startRound() {
+    if (savingRef.current || phaseRef.current === "flying" || phaseRef.current === "countdown") return;
+    const e = effectiveBet(betRef.current, playerRef.current?.balance ?? 0);
+    if (!playerRef.current || !e.playable) {
+      if (autoBetRef.current) notify("Avto tikish to'xtadi — balans yetarli emas");
+      setAutoBet(false); autoBetRef.current = false;
+      return;
+    }
+    stakeRef.current = e.amount;
     clearInterval(loopRef.current); clearInterval(countdownRef.current); clearTimeout(autoRef.current);
-    flyingRef.current = false; savingRef.current = false;
+    flyingRef.current = false;
     crashRef.current = randomCrash();
     multRef.current = 1.00;
     setMultiplier(1.00); setResult(null); setCountdown(3);
@@ -142,8 +160,8 @@ export default function Aviator() {
 
   function handleReset() {
     clearInterval(loopRef.current); clearInterval(countdownRef.current); clearTimeout(autoRef.current);
-    flyingRef.current = false; savingRef.current = false;
-    setAutoBet(false);
+    flyingRef.current = false;
+    setAutoBet(false); autoBetRef.current = false;
     setPhaseSync("idle"); setMultiplier(1.00); setResult(null);
   }
 
@@ -213,14 +231,14 @@ export default function Aviator() {
         {(phase === "idle"|| phase ==="done") && (
           <>
             <BetPanel value={betInput}
-              onChange={(s) => { setBetInput(s); const v = Number(s) || 2000; setBetAmt(v); betRef.current = v; }}
+              onChange={(s) => { setBetInput(s); betRef.current = s; }}
               onQuick={(a) => {
                 const bal = player?.balance ?? 0;
                 let v = betAmt;
-                if (a === "MAX") v = Math.min(bal, 500000);
-                else if (a === "X2") v = Math.min(betAmt * 2, bal, 500000);
-                else v = Math.max(Math.floor(betAmt / 2), 2000);
-                setBetAmt(v); setBetInput(String(v)); betRef.current = v;
+                if (a === "MAX") v = Math.max(MIN_BET, Math.min(bal, MAX_BET));
+                else if (a === "X2") v = Math.max(MIN_BET, Math.min(betAmt * 2, bal, MAX_BET));
+                else v = Math.max(Math.floor(betAmt / 2), MIN_BET);
+                setBetInput(String(v)); betRef.current = String(v);
               }} />
 
             {/* Auto cash out */}
@@ -244,7 +262,7 @@ export default function Aviator() {
               style={{ background: ts.card, border: `1px solid ${ts.cardBorder}` }}>
               <button onClick={() =>{ const nv = !autoBet; setAutoBet(nv); autoBetRef.current = nv; }}
                 className="w-11 h-6 rounded-full flex items-center px-0.5 shrink-0 transition-all"
-                style={{ background: autoBet ? "#0b3f8f":"rgba(255,255,255,0.15)" }}>
+                style={{ background: autoBet ? "#4f0810":"rgba(255,255,255,0.15)" }}>
                 <div className="w-5 h-5 rounded-full bg-white shadow transition-transform"
                   style={{ transform: autoBet ? "translateX(20px)":"translateX(0)" }} />
               </button>
@@ -253,10 +271,11 @@ export default function Aviator() {
             </div>
 
             {phase === "idle" ? (
-              <button onClick={() =>{ if (!player || player.balance < betAmt || betAmt < 2000) return; startRound(); }}
-                disabled={!player || player.balance < betAmt || betAmt < 2000}
-                className="w-full py-4 rounded-2xl font-black text-base active:scale-95 transition-all disabled:opacity-40"
-                style={{ background: "linear-gradient(145deg, #0b3f8f, #1668e3)", boxShadow: "0 6px 0 #2e1065, 0 8px 24px rgba(22,104,227,0.5)", color: "white" }}>
+              <button onClick={() =>{ if (!player || !eff.playable) return; sfx.fly(); startRound(); }}
+                disabled={!player || !eff.playable}
+                data-sfx="none"
+                className="pro-btn w-full py-4 rounded-2xl font-black text-base active:scale-95 transition-all disabled:opacity-40"
+                style={{ background: XGREEN.grad, boxShadow: XGREEN.shadow, color: "white" }}>
                  BOSHLASH — {betAmt.toLocaleString()} UZS
               </button>
             ) : (
@@ -272,7 +291,7 @@ export default function Aviator() {
         {phase === "countdown" && (
           <div className="w-full py-4 rounded-2xl text-center font-bold"
             style={{ background: ts.card, border: `1px solid ${ts.cardBorder}`, color: ts.textSub }}>
-             Tikish: {betAmt.toLocaleString()} UZS • Tayyor bo'ling!
+             Tikish: {stakeRef.current.toLocaleString()} UZS • Tayyor bo'ling!
           </div>
         )}
       </div>

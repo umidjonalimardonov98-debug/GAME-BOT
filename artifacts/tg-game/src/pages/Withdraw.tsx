@@ -56,7 +56,7 @@ export default function Withdraw() {
       </p>
       <button onClick={() => nav("/")}
         className="px-10 py-4 rounded-2xl font-black text-white active:scale-95"
-        style={{ background: "linear-gradient(135deg, #1668e3, #3b82f6)", boxShadow: "0 8px 24px rgba(22,104,227,0.4)" }}>
+        style={{ background: "linear-gradient(135deg, #b3121f, #3b82f6)", boxShadow: "0 8px 24px rgba(229,72,77,0.4)" }}>
          Bosh Sahifa
       </button>
     </div>
@@ -75,9 +75,9 @@ export default function Withdraw() {
       <div className="px-4 flex-1">
         {/* Balance */}
         <div className="rounded-2xl p-4 mb-4 relative overflow-hidden"
-          style={{ background: "linear-gradient(135deg, rgba(22,104,227,0.2), rgba(59,130,246,0.1))", border: "1px solid rgba(22,104,227,0.3)" }}>
+          style={{ background: "linear-gradient(135deg, rgba(229,72,77,0.2), rgba(59,130,246,0.1))", border: "1px solid rgba(229,72,77,0.3)" }}>
           <div className="absolute -right-6 -top-6 w-24 h-24 rounded-full"
-            style={{ background: "radial-gradient(circle, rgba(22,104,227,0.2), transparent 70%)" }} />
+            style={{ background: "radial-gradient(circle, rgba(229,72,77,0.2), transparent 70%)" }} />
           <div className="flex items-center gap-2 mb-1">
             <Wallet className="w-3.5 h-3.5"style={{ color:"rgba(47,143,255,0.6)" }} />
             <span className="text-xs font-semibold"style={{ color:"rgba(47,143,255,0.6)" }}>BALANS</span>
@@ -189,7 +189,7 @@ export default function Withdraw() {
             <button onClick={submit}
               disabled={!amount || amount < MIN_WITHDRAW_AMOUNT || amount > balance || !card || !holder || loading}
               className="w-full py-4 rounded-2xl font-black text-base mb-6 active:scale-95 transition-all disabled:opacity-40"
-              style={{ background: "linear-gradient(135deg, #1668e3, #3b82f6)", boxShadow: "0 8px 24px rgba(22,104,227,0.4)", color: "white" }}>
+              style={{ background: "linear-gradient(135deg, #b3121f, #3b82f6)", boxShadow: "0 8px 24px rgba(229,72,77,0.4)", color: "white" }}>
               {loading ? "Yuborilmoqda...":" So'rov Yuborish"}
             </button>
           </>

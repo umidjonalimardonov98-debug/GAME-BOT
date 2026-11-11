@@ -442,15 +442,15 @@ export default function Home() {
       </div>
         <div className="inset-x-0"
         style={{
-          background: isDark ? "rgba(10,23,38,0.97)" : "rgba(255,255,255,0.97)",
-          borderTop: `1px solid ${isDark ? "rgba(255,255,255,0.08)":"rgba(22,104,227,0.15)"}`,
+          background: "linear-gradient(180deg,rgba(18,14,10,0.97),rgba(8,6,4,0.99))",
+          borderTop: "1px solid rgba(232,193,106,0.22)",
           backdropFilter: "blur(20px)",
           paddingBottom: "env(safe-area-inset-bottom,0px)",
         }}>
         <div className="grid grid-cols-6 items-end px-1 py-2">
           <Button variant="ghost" onClick={() => setTab("games")}
             className="flex flex-col items-center gap-1 px-0 py-2 rounded-2xl active:scale-95 transition-all"
-            style={{ background: tab === "games"?"rgba(22,104,227,0.12)":"transparent" }}>
+            style={{ background: tab === "games"?"rgba(232,193,106,0.12)":"transparent" }}>
             <HomeIcon size={20} color={tab === "games" ? ACCENT : TEXT_SUB} />
             <span className="text-xs font-bold"style={{ color: tab ==="games" ? ACCENT : TEXT_SUB, fontSize: 9 }}>{u("navHome")}</span>
           </Button>
@@ -462,17 +462,17 @@ export default function Home() {
           <Button variant="ghost" onClick={() => nav("/deposit")}
             className="flex flex-col items-center gap-1 px-1 py-1.5 rounded-2xl active:scale-95 transition-all"
             style={{
-              background: "linear-gradient(180deg,#2f8fff,#1668e3)",
-              boxShadow: "0 4px 16px #1d4ed844",
+              background: "linear-gradient(180deg,#f7dc8c,#c8962e 60%,#8a5f14)",
+              boxShadow: "0 6px 18px rgba(232,193,106,0.35), inset 0 1px 0 rgba(255,255,255,0.5)",
               marginTop: -16,
-              border: "3px solid "+ (isDark ? "#0a1726" : "#fff"),
+              border: "3px solid #0b0806",
             }}>
-            <Wallet size={22} color="#fff" />
-            <span className="text-xs font-black text-white" style={{ fontSize: 9 }}>{t.deposit}</span>
+            <Wallet size={22} color="#1a1205" />
+            <span className="text-xs font-black" style={{ fontSize: 9, color: "#1a1205" }}>{t.deposit}</span>
           </Button>
           <Button variant="ghost" onClick={() =>{ setTab("promo"); setShowPromo(true); }}
             className="flex flex-col items-center gap-1 px-0 py-2 rounded-2xl active:scale-95 transition-all"
-            style={{ background: tab === "promo"?"rgba(22,104,227,0.12)":"transparent" }}>
+            style={{ background: tab === "promo"?"rgba(232,193,106,0.12)":"transparent" }}>
             <Ticket size={20} color={tab === "promo" ? ACCENT : TEXT_SUB} />
             <span className="text-xs font-bold"style={{ color: tab ==="promo" ? ACCENT : TEXT_SUB, fontSize: 9 }}>{u("navPromo")}</span>
           </Button>

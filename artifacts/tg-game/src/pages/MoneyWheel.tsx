@@ -14,7 +14,7 @@ import ResultBanner from "@/components/casino/ResultBanner";
 
 /** Money Wheel — 12 sektor, tanlagan sektoringiz tushsa yutuq */
 const SECTORS = [2, 5, 2, 10, 2, 5, 2, 20, 2, 5, 2, 40];
-const COLORS = ["#1668e3", "#0b3f8f"];
+const COLORS = ["#b3121f", "#4f0810"];
 const SECT_COL: Record<number, string> = { 2: "#1f6fe0", 5: "#16a34a", 10: "#9333ea", 20: "#ea580c", 40: "#dc2626" };
 
 export default function MoneyWheel() {

@@ -1,7 +1,9 @@
 import { Ambient } from "@/components/casino/GameAtmosphere";
 import StageFx from "@/components/casino/StageFx";
 import BetPanel from "@/components/casino/BetPanel";
-import { useState, useCallback } from "react";
+import { useState, useCallback, useRef } from "react";
+import { effectiveBet, MAX_BET, MIN_BET } from "@/lib/bet-amount";
+import { XGREEN } from "@/lib/theme-context";
 import { usePlayer } from "@/lib/player-context";
 import { useTheme, pageBg, GAME_BG } from "@/lib/theme-context";
 import { placeBet } from "@/lib/api";
@@ -52,7 +54,11 @@ export default function Mines() {
   const [shown, setShown] = useState<number[]>([]);   // ketma-ket ochiladigan bombalar
   const [shake, setShake] = useState(0);
 
-  const bet = Math.max(Number(betInput) || 0, 0);
+  const eff = effectiveBet(betInput, player?.balance ?? 0);
+  // raund davomida tikish qulflanadi — hisob va ko'rsatilgan summa bir xil
+  const stakeRef = useRef(0);
+  const settledRef = useRef(false);
+  const bet = state === "playing" || state === "over" ? (stakeRef.current || eff.amount) : eff.amount;
   const mult = multiplier(mines, opened.length);
   const cashout = Math.floor(bet * mult);
   const nextMult = multiplier(mines, opened.length + 1);
@@ -60,15 +66,17 @@ export default function Mines() {
   function quick(action: string) {
     const bal = player?.balance ?? 0;
     let v = bet;
-    if (action === "MIN") v = 2000;
-    else if (action === "MAX") v = Math.min(bal, 500000);
-    else if (action === "X2") v = Math.min(bet * 2, bal, 500000);
-    else if (action === "X/2") v = Math.max(Math.floor(bet / 2), 2000);
+    if (action === "MIN") v = MIN_BET;
+    else if (action === "MAX") v = Math.max(MIN_BET, Math.min(bal, MAX_BET));
+    else if (action === "X2") v = Math.max(MIN_BET, Math.min(bet * 2, bal, MAX_BET));
+    else if (action === "X/2") v = Math.max(Math.floor(bet / 2), MIN_BET);
     setBetInput(String(v));
   }
 
   const start = useCallback(() =>{
-    if (!player || bet < 2000 || player.balance < bet || busy) return;
+    if (!player || !eff.playable || busy || state === "playing") return;
+    stakeRef.current = eff.amount;
+    settledRef.current = false;
     setBombs(pickMines(mines));
     setLoseAt(riggedLose("mines") ? 1 + Math.floor(Math.random() * 3) : Number.POSITIVE_INFINITY);
     setOpened([]);
@@ -79,32 +87,42 @@ export default function Mines() {
     setShake(0);
     sfx.spin();
     setState("playing");
-  }, [player, bet, mines, busy]);
+  }, [player, eff.playable, eff.amount, mines, busy, state]);
 
   const finish = useCallback(
     async (win: boolean, amount: number) =>{
+      if (settledRef.current) return; // bir raund — bitta hisob-kitob
+      settledRef.current = true;
       setBusy(true);
       setState("over");
       if (player) {
+        let ok = true;
         await placeBet(player.telegramId, {
-          amount: bet,
+          amount: stakeRef.current,
           game: "mines",
           won: win,
           winAmount: win ? amount : 0,
-        }).catch(() =>{});
-        await refresh();
+        }).catch(() => { ok = false; });
+        await refresh().catch(() => {});
+        if (!ok) { setPrize(0); setMsg(""); }
       }
       setBusy(false);
     },
-    [player, bet, refresh],
+    [player, refresh],
   );
 
   const openCell = (i: number) =>{
     if (state !== "playing" || opened.includes(i) || busy) return;
     const forcedBoom = opened.length + 1 === loseAt;
     if (forcedBoom || bombs.has(i)) {
-      const allBombs = forcedBoom ? new Set([...bombs, i]) : bombs;
-      if (forcedBoom) setBombs(allBombs);
+      let allBombs = bombs;
+      if (!bombs.has(i)) {
+        // mina soni o'zgarmasin: bitta yopiq minani bosilgan katakka ko'chiramiz
+        const arr = [...bombs];
+        arr.splice(0, 1, i);
+        allBombs = new Set(arr);
+        setBombs(allBombs);
+      }
       setBoom(i);
       sfx.lose();
       setShake(1);
@@ -119,8 +137,7 @@ export default function Mines() {
       return;
     }
     const next = [...opened, i];
-    sfx.reveal();
-    sfx.select();
+    sfx.tile();
     setOpened(next);
     if (next.length === SIZE - mines) {
       const all = Math.floor(bet * multiplier(mines, next.length));
@@ -336,12 +353,13 @@ export default function Mines() {
         ) : (
           <button
             onClick={start}
-            disabled={!player || bet < 2000 || (player?.balance ?? 0) < bet || busy}
-            className="w-full py-4 rounded-2xl font-black text-lg text-white active:scale-95 transition-all"
+            disabled={!player || !eff.playable || busy}
+            data-sfx="none"
+            className="pro-btn w-full py-4 rounded-2xl font-black text-lg text-white active:scale-95 transition-all"
             style={{
-              background: "linear-gradient(135deg,#1668e3,#a855f7)",
-              boxShadow: "0 8px 0 #0b3f8f, 0 10px 30px rgba(22,104,227,0.5)",
-              opacity: !player || bet < 2000 || (player?.balance ?? 0) < bet ? 0.5 : 1,
+              background: XGREEN.grad,
+              boxShadow: XGREEN.shadow,
+              opacity: !player || !eff.playable ? 0.5 : 1,
             }}
           >
              BOSHLASH

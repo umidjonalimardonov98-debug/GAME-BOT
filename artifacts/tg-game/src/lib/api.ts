@@ -1,4 +1,5 @@
 import { recordRound } from "./round-log";
+import { notify } from "./notify";
 
 const BASE = "/api";
 
@@ -63,17 +64,27 @@ export async function placeBet(telegramId: string, data: {
   won: boolean;
   winAmount: number;
 }) {
-  // Har bir raund natijasini shaffof ko'rsatish + ovoz effekti uchun yozib qo'yamiz
-  recordRound({ game: data.game, bet: data.amount, won: data.won, winAmount: data.winAmount });
-  const res = await fetch(`${BASE}/players/${telegramId}/bet`, {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify(data),
-  });
+  const amount = Math.floor(Number(data.amount) || 0);
+  const winAmount = data.won ? Math.max(0, Math.floor(Number(data.winAmount) || 0)) : 0;
+  const body = { amount, game: data.game, won: data.won && winAmount > 0, winAmount };
+  let res: Response;
+  try {
+    res = await fetch(`${BASE}/players/${telegramId}/bet`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(body),
+    });
+  } catch (e) {
+    notify("Internet bilan aloqa yo'q — tikish qabul qilinmadi");
+    throw e;
+  }
   if (!res.ok) {
-    const err = await res.json();
+    const err = await res.json().catch(() => ({}));
+    notify(err.error || "Tikish qabul qilinmadi");
     throw new Error(err.error || "Bet failed");
   }
+  // Natija faqat server qabul qilgandan keyin yoziladi (ovoz + tarix)
+  recordRound({ game: body.game, bet: amount, won: body.won, winAmount });
   return res.json();
 }
 

@@ -1,3 +1,4 @@
+import { effectiveBet, MAX_BET, MIN_BET } from "@/lib/bet-amount";
 import { Ambient } from "@/components/casino/GameAtmosphere";
 import StageFx from "@/components/casino/StageFx";
 import BetPanel from "@/components/casino/BetPanel";
@@ -52,16 +53,17 @@ export default function Parity() {
   const lockedExact = useRef(1);
   const lastResultRef = useRef<number | null>(null);
 
-  const activeBet = Math.max(Number(betInput) || 2000, 2000);
+  const eff = effectiveBet(betInput, player?.balance ?? 0);
+  const activeBet = eff.amount;
   const isLight = false;
 
   function setQuickBet(a: string) {
     const bal = player?.balance ?? 0;
     let v = activeBet;
-    if (a === "MIN") v = 2000;
-    else if (a === "MAX") v = Math.min(bal, 500000);
-    else if (a === "X2") v = Math.min(activeBet * 2, bal, 500000);
-    else if (a === "1/2") v = Math.max(2000, Math.floor(activeBet / 2));
+    if (a === "MIN") v = MIN_BET;
+    else if (a === "MAX") v = Math.max(MIN_BET, Math.min(bal, MAX_BET));
+    else if (a === "X2") v = Math.max(MIN_BET, Math.min(activeBet * 2, bal, MAX_BET));
+    else if (a === "1/2") v = Math.max(MIN_BET, Math.floor(activeBet / 2));
     setBetInput(String(v));
   }
 
@@ -81,7 +83,7 @@ export default function Parity() {
   }
 
   const startGame = useCallback(() =>{
-    if (!player || player.balance < activeBet || phase !== "idle") return;
+    if (!player || !eff.playable || phase !== "idle" || saving) return;
 
     lockedBet.current = activeBet;
     lockedType.current = betType;
@@ -109,18 +111,17 @@ export default function Parity() {
                               final === picked;
 
         const mult = type === "exact" ? 24 : 2.15;
-        const winAmt = isWin ? lockedBet.current * mult : 0;
-        setWon(isWin);
-        setPrize(winAmt);
+        const winAmt = isWin ? Math.floor(lockedBet.current * mult) : 0;
         lastResultRef.current = final;
-        setPhase("result");
         setSaving(true);
         placeBet(player!.telegramId, {
           amount: lockedBet.current, game: "parity", won: isWin, winAmount: winAmt,
-        }).then(() => refresh()).catch(() =>{}).finally(() => setSaving(false));
+        }).then(() => { setWon(isWin); setPrize(winAmt); setPhase("result"); })
+          .catch(() => { setWon(false); setPrize(0); setPhase("idle"); })
+          .finally(() => { void refresh(); setSaving(false); });
       }, 300);
     });
-  }, [player, activeBet, betType, exactNum, phase]);
+  }, [player, activeBet, eff.playable, betType, exactNum, phase, saving]);
 
   function playAgain() {
     clearTimer();
@@ -137,14 +138,14 @@ export default function Parity() {
   const numIsBig = finalNum !== null && finalNum >= 47;
 
   const numBg =
-    isSpinning       ? "linear-gradient(145deg,#312e81,#0d4fb0)" :
-    phase === "idle"? (isLight ?"rgba(22,104,227,0.1)":"rgba(255,255,255,0.06)") :
+    isSpinning       ? "linear-gradient(145deg,#3b0a10,#7a0c16)" :
+    phase === "idle"? (isLight ?"rgba(229,72,77,0.1)":"rgba(255,255,255,0.06)") :
     numIsBig         ? "linear-gradient(145deg,#78350f,#d97706)" :
                        "linear-gradient(145deg,#064e3b,#1a7d43)";
 
   const numBorder =
     isSpinning       ? "#78b6ff88" :
-    phase === "idle"? (isLight ?"rgba(22,104,227,0.2)":"rgba(255,255,255,0.1)") :
+    phase === "idle"? (isLight ?"rgba(229,72,77,0.2)":"rgba(255,255,255,0.1)") :
     numIsBig         ? "#fbbf24aa":"#39c46faa";
 
   const numShadow =
@@ -172,7 +173,7 @@ export default function Parity() {
             background: isLight
               ? "linear-gradient(145deg,#e0e7ff,#c7d2fe)"
               : theme === "black"?"rgba(255,255,255,0.03)":"rgba(255,255,255,0.05)",
-            border: `1.5px solid ${isLight ? "rgba(22,104,227,0.3)" : ts.cardBorder}`,
+            border: `1.5px solid ${isLight ? "rgba(229,72,77,0.3)" : ts.cardBorder}`,
           }}>
           <div className="absolute inset-0 pointer-events-none rounded-3xl"
             style={{ background: "linear-gradient(135deg,rgba(255,255,255,0.06) 0%,transparent 50%)" }} />
@@ -240,7 +241,7 @@ export default function Parity() {
 
               <button onClick={() => setBetType("exact")}
                 className="rounded-2xl py-4 text-center active:scale-95 transition-all relative overflow-hidden"
-                style={{ background: "linear-gradient(145deg,#1a0533,#0b3f8f)", border: "2px solid #c084fc99",
+                style={{ background: "linear-gradient(145deg,#1a0533,#4f0810)", border: "2px solid #c084fc99",
                   boxShadow: "0 5px 0 rgba(0,0,0,0.3), 0 6px 20px rgba(168,85,247,0.5)", ...selectedBtnStyle("exact") }}>
                 <div className="absolute inset-0 pointer-events-none"
                   style={{ background: "linear-gradient(135deg,rgba(255,255,255,0.1) 0%,transparent 50%)" }} />
@@ -264,7 +265,7 @@ export default function Parity() {
             {/* Exact number picker (only if exact selected) */}
             {betType === "exact" && (
               <div className="rounded-2xl p-4 relative overflow-hidden"
-                style={{ background: "linear-gradient(145deg,#1a0533,#0b3f8f)", border: "2px solid #c084fc55" }}>
+                style={{ background: "linear-gradient(145deg,#1a0533,#4f0810)", border: "2px solid #c084fc55" }}>
                 <p className="font-black text-sm mb-3 relative"style={{ color:"#c084fc" }}>
                    Aniq son tanlang
                 </p>
@@ -305,12 +306,12 @@ export default function Parity() {
             </div>
 
             <button onClick={startGame}
-              disabled={!player || player.balance < activeBet}
+              disabled={!player || !eff.playable || saving}
               className="w-full py-5 rounded-2xl font-black text-xl active:scale-95 transition-all disabled:opacity-40"
               style={{
                 background: betType === "small"?"linear-gradient(145deg,#064e3b,#1a7d43)" :
                              betType === "big"?"linear-gradient(145deg,#78350f,#d97706)" :
-                                                    "linear-gradient(145deg,#312e81,#0d4fb0)",
+                                                    "linear-gradient(145deg,#3b0a10,#7a0c16)",
                 color: betType === "small"?"#39c46f": betType ==="big"?"#fbbf24":"#78b6ff",
                 boxShadow: "0 5px 0 rgba(0,0,0,0.3), 0 6px 20px rgba(47,143,255,0.5)",
               }}>
@@ -354,7 +355,7 @@ export default function Parity() {
             <button onClick={playAgain}
               className="w-full py-4 rounded-2xl font-black text-lg active:scale-95 transition-all"
               style={{
-                background: "linear-gradient(145deg,#312e81,#0d4fb0)",
+                background: "linear-gradient(145deg,#3b0a10,#7a0c16)",
                 color: "#78b6ff",
                 boxShadow: "0 5px 0 rgba(0,0,0,0.3), 0 6px 20px rgba(47,143,255,0.5)",
               }}>
@@ -363,7 +364,7 @@ export default function Parity() {
             <button onClick={() => nav("/")}
               className="w-full py-4 rounded-2xl font-black text-lg active:scale-95 transition-all"
               style={{
-                background: isLight ? "rgba(22,104,227,0.08)":"rgba(255,255,255,0.07)",
+                background: isLight ? "rgba(229,72,77,0.08)":"rgba(255,255,255,0.07)",
                 color: ts.textSub,
                 border: `1px solid ${ts.cardBorder}`,
               }}>

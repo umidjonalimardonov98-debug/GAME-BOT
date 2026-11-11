@@ -1,7 +1,8 @@
+import { effectiveBet, MAX_BET, MIN_BET } from "@/lib/bet-amount";
 import { Ambient } from "@/components/casino/GameAtmosphere";
 import StageFx from "@/components/casino/StageFx";
 import BetPanel from "@/components/casino/BetPanel";
-import { useState, useCallback } from "react";
+import { useRef, useState, useCallback } from "react";
 import { usePlayer } from "@/lib/player-context";
 import { useLang } from "@/lib/lang-context";
 import { useTheme, pageBg, GAME_BG } from "@/lib/theme-context";
@@ -54,7 +55,11 @@ export default function Blackjack() {
   const [saving, setSaving] = useState(false);
   const [dealerRevealed, setDealerRevealed] = useState(false);
 
-  const activeBet = Math.max(Number(betInput) || 2000, 2000);
+  const eff = effectiveBet(betInput, player?.balance ?? 0);
+  const activeBet = eff.amount;
+  // raund boshida qulflangan tikish + bitta yakun
+  const stakeRef = useRef(0);
+  const doneRef = useRef(true);
   const isLight = false;
   const playerTotal = calcHand(playerCards);
   const dealerTotal = calcHand(dealerCards);
@@ -62,15 +67,17 @@ export default function Blackjack() {
   function setQuickBet(action: string) {
     const bal = player?.balance ?? 0;
     let v = activeBet;
-    if (action === "MIN") v = 2000;
-    else if (action === "MAX") v = Math.min(bal, 500000);
-    else if (action === "X2") v = Math.min(activeBet * 2, bal, 500000);
-    else if (action === "1/2") v = Math.max(2000, Math.floor(activeBet / 2));
+    if (action === "MIN") v = MIN_BET;
+    else if (action === "MAX") v = Math.max(MIN_BET, Math.min(bal, MAX_BET));
+    else if (action === "X2") v = Math.max(MIN_BET, Math.min(activeBet * 2, bal, MAX_BET));
+    else if (action === "1/2") v = Math.max(MIN_BET, Math.floor(activeBet / 2));
     setBetInput(String(v));
   }
 
   const deal = useCallback(() =>{
-    if (!player || player.balance < activeBet) return;
+    if (!player || !eff.playable || saving || (gameState !== "idle" && gameState !== "result")) return;
+    stakeRef.current = activeBet;
+    doneRef.current = false;
     const d = buildDeck();
     const p = [d[0], d[2]];
     const dealer = [d[1], d[3]];
@@ -80,18 +87,18 @@ export default function Blackjack() {
     setDealerRevealed(false);
     setResult(null);
     setPrize(0);
-    setGameState("playing");
-    if (calcHand(p) === 21) setTimeout(() => endGame(p, dealer, d.slice(4), "blackjack"), 600);
-  }, [player, activeBet]);
+    if (calcHand(p) === 21) { setGameState("dealer"); setTimeout(() => endGame(p, dealer, d.slice(4), "blackjack"), 600); }
+    else setGameState("playing");
+  }, [player, activeBet, eff.playable, saving, gameState]);
 
   const hit = useCallback(() =>{
-    if (gameState !== "playing") return;
+    if (gameState !== "playing" || !deck.length) return;
     const newCard = deck[0];
     const newDeck = deck.slice(1);
     const newP = [...playerCards, newCard];
     setDeck(newDeck);
     setPlayerCards(newP);
-    if (calcHand(newP) > 21) setTimeout(() => endGame(newP, dealerCards, newDeck, "bust"), 400);
+    if (calcHand(newP) > 21) { setGameState("dealer"); setTimeout(() => endGame(newP, dealerCards, newDeck, "bust"), 400); }
   }, [gameState, deck, playerCards, dealerCards]);
 
   const stand = useCallback(() =>{
@@ -125,20 +132,25 @@ export default function Blackjack() {
   }, [gameState, dealerCards, deck, playerCards]);
 
   const endGame = async (pCards: Card[], dCards: Card[], _dk: Card[], res: Result) =>{
+    if (doneRef.current) return;
+    doneRef.current = true;
+    const stake = stakeRef.current;
     setDealerRevealed(true);
     setDealerCards(dCards);
     setResult(res);
     setGameState("result");
     let winAmt = 0, won = false;
-    if (res === "blackjack") { winAmt = Math.floor(activeBet * 2.5); won = true; }
-    else if (res === "win") { winAmt = activeBet * 2; won = true; }
-    else if (res === "push") { winAmt = activeBet; }
+    if (res === "blackjack") { winAmt = Math.floor(stake * 2.5); won = true; }
+    else if (res === "win") { winAmt = stake * 2; won = true; }
+    else if (res === "push") { winAmt = stake; }
     setPrize(winAmt);
     setSaving(true);
     try {
-      await placeBet(player!.telegramId, { amount: activeBet, game: "blackjack", won: won || res === "push", winAmount: winAmt });
-      await refresh();
-    } catch {}
+      await placeBet(player!.telegramId, { amount: stake, game: "blackjack", won: won || res === "push", winAmount: winAmt });
+    } catch {
+      setPrize(0); setResult(null); setGameState("idle");
+    }
+    await refresh().catch(() => {});
     setSaving(false);
   };
 
@@ -169,13 +181,13 @@ export default function Blackjack() {
           style={{
             background: "radial-gradient(ellipse at 50% 20%,#1d7a4c 0%,#0e4a2e 60%,#06261a 100%)",
             border: "2px solid #b8892a",
-            boxShadow: isLight ? "0 4px 0 rgba(22,104,227,0.1), 0 6px 20px rgba(22,104,227,0.08), inset 0 1px 0 rgba(255,255,255,0.8)":"0 4px 0 rgba(0,0,0,0.2)",
+            boxShadow: isLight ? "0 4px 0 rgba(229,72,77,0.1), 0 6px 20px rgba(229,72,77,0.08), inset 0 1px 0 rgba(255,255,255,0.8)":"0 4px 0 rgba(0,0,0,0.2)",
           }}>
           <div className="flex items-center justify-between mb-3">
             <p className="text-xs font-bold tracking-widest" style={{ color: "#f7e59b" }}>{t.dealer}</p>
             {gameState !== "idle" && (
               <span className="text-sm font-black px-2.5 py-1 rounded-xl"
-                style={{ background: isLight ? "rgba(22,104,227,0.12)":"rgba(255,255,255,0.1)", color: ts.text }}>
+                style={{ background: isLight ? "rgba(229,72,77,0.12)":"rgba(255,255,255,0.1)", color: ts.text }}>
                 {dealerRevealed ? dealerTotal : "?"}
               </span>
             )}
@@ -203,13 +215,13 @@ export default function Blackjack() {
           style={{
             background: "radial-gradient(ellipse at 50% 20%,#1d7a4c 0%,#0e4a2e 60%,#06261a 100%)",
             border: "2px solid #b8892a",
-            boxShadow: isLight ? "0 4px 0 rgba(22,104,227,0.1), 0 6px 20px rgba(22,104,227,0.08), inset 0 1px 0 rgba(255,255,255,0.8)":"0 4px 0 rgba(0,0,0,0.2)",
+            boxShadow: isLight ? "0 4px 0 rgba(229,72,77,0.1), 0 6px 20px rgba(229,72,77,0.08), inset 0 1px 0 rgba(255,255,255,0.8)":"0 4px 0 rgba(0,0,0,0.2)",
           }}>
           <div className="flex items-center justify-between mb-3">
             <p className="text-xs font-bold tracking-widest" style={{ color: ts.textSub }}>{t.yourHand}</p>
             {gameState !== "idle" && (
               <span className="text-sm font-black px-2.5 py-1 rounded-xl"
-                style={{ background: isLight ? "rgba(22,104,227,0.12)":"rgba(255,255,255,0.1)", color: playerTotal > 21 ? "#f87171" : ts.text }}>
+                style={{ background: isLight ? "rgba(229,72,77,0.12)":"rgba(255,255,255,0.1)", color: playerTotal > 21 ? "#f87171" : ts.text }}>
                 {playerTotal}
               </span>
             )}
@@ -224,7 +236,7 @@ export default function Blackjack() {
         {/* Bet input */}
         {(gameState === "idle"|| gameState ==="result") && (
           <div className="rounded-2xl p-4"
-            style={{ background: ts.card, border: `1px solid ${ts.cardBorder}`, boxShadow: isLight ? "0 4px 16px rgba(22,104,227,0.08)":"none" }}>
+            style={{ background: ts.card, border: `1px solid ${ts.cardBorder}`, boxShadow: isLight ? "0 4px 16px rgba(229,72,77,0.08)":"none" }}>
             <p className="text-xs font-bold mb-3 tracking-widest" style={{ color: ts.textSub }}>{t.betAmount}</p>
             <BetPanel value={betInput} onChange={setBetInput} onQuick={setQuickBet} />
             <p className="text-xs mt-2 text-center" style={{ color: ts.textSub }}>{t.bjPayout}</p>
@@ -234,7 +246,7 @@ export default function Blackjack() {
         {/* Action buttons */}
         <div className="flex flex-col gap-3 mt-auto">
           {(gameState === "idle"|| gameState ==="result") ? (
-            <button onClick={deal} disabled={!player || player.balance < activeBet}
+            <button onClick={deal} disabled={!player || !eff.playable || saving}
               className="w-full py-4 rounded-2xl font-black text-lg active:scale-95 transition-all disabled:opacity-40"
               style={{
                 background: "linear-gradient(145deg, #1a7d43, #25a55a)",

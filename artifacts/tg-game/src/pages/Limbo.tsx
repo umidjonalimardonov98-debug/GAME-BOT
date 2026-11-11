@@ -119,7 +119,7 @@ export default function Limbo() {
             {["1.50", "2.00", "5.00", "10.00"].map(v => (
               <button key={v} disabled={busy} onClick={() =>{ setTarget(v); sfx.select(); }}
                 className="py-2 rounded-xl text-xs font-bold active:scale-95 disabled:opacity-40"
-                style={{ background: target === v ? "linear-gradient(135deg,#1668e3,#0d4fb0)": ts.btnSecondary, color: target === v ?"#fff" : ts.btnSecondaryText }}>
+                style={{ background: target === v ? "linear-gradient(135deg,#b3121f,#7a0c16)": ts.btnSecondary, color: target === v ?"#fff" : ts.btnSecondaryText }}>
                 x{v}
               </button>
             ))}

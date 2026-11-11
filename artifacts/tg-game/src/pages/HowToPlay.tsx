@@ -244,9 +244,9 @@ export default function HowToPlay() {
             <button key={k} onClick={() => { setActive(k); sfx.select(); }}
               className="shrink-0 flex items-center gap-1.5 rounded-2xl px-2.5 py-1.5 active:scale-95 transition-all"
               style={{
-                background: on ? "linear-gradient(135deg,#1668e3,#0d4fb0)" : ts.card,
+                background: on ? "linear-gradient(135deg,#b3121f,#7a0c16)" : ts.card,
                 border: `1px solid ${on ? "rgba(47,143,255,0.6)" : ts.cardBorder}`,
-                boxShadow: on ? "0 6px 18px rgba(22,104,227,0.35)" : "none",
+                boxShadow: on ? "0 6px 18px rgba(229,72,77,0.35)" : "none",
               }}>
               <span style={{ fontSize: 14 }}>{GAME_RULES[k].emoji}</span>
               <span className="font-black whitespace-nowrap"

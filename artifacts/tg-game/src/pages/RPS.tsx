@@ -93,7 +93,7 @@ export default function RPS() {
             <button key={i} disabled={busy} onClick={() =>{ setPick(i); sfx.select(); }}
               className="py-3 rounded-xl font-black active:scale-95 disabled:opacity-40"
               style={{
-                background: pick === i ? "linear-gradient(135deg,#1668e3,#0d4fb0)" : ts.btnSecondary, boxShadow: pick === i ? "0 0 16px rgba(22,104,227,.6)" : undefined, transform: pick === i ? "translateY(-3px)" : undefined, transition: "all .2s",
+                background: pick === i ? "linear-gradient(135deg,#b3121f,#7a0c16)" : ts.btnSecondary, boxShadow: pick === i ? "0 0 16px rgba(229,72,77,.6)" : undefined, transform: pick === i ? "translateY(-3px)" : undefined, transition: "all .2s",
                 color: pick === i ? "#fff" : ts.btnSecondaryText, border: `1px solid ${ts.cardBorder}`,
               }}>
               <Sym n={ic} s={34} /><br />

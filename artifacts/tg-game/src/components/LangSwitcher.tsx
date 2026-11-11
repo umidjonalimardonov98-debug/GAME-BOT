@@ -27,14 +27,14 @@ export default function LangSwitcher() {
         }}
         className="flex items-center gap-1 px-2 h-9 rounded-xl active:scale-90 transition-transform tap-glow"
         style={{
-          background: isLight ? "rgba(22,104,227,0.1)" : "rgba(255,255,255,0.08)",
-          border: `1px solid ${isLight ? "rgba(22,104,227,0.22)" : "rgba(255,255,255,0.14)"}`,
+          background: isLight ? "rgba(229,72,77,0.1)" : "rgba(255,255,255,0.08)",
+          border: `1px solid ${isLight ? "rgba(229,72,77,0.22)" : "rgba(255,255,255,0.14)"}`,
         }}
       >
         <Flag code={cur.flag} w={20} />
         <span
           className="font-black"
-          style={{ fontSize: 11, color: isLight ? "#0b3f8f" : "#bcdcff" }}
+          style={{ fontSize: 11, color: isLight ? "#4f0810" : "#bcdcff" }}
         >
           {cur.label}
         </span>
@@ -66,8 +66,8 @@ export default function LangSwitcher() {
                   style={{
                     background: active
                       ? isLight
-                        ? "rgba(22,104,227,0.1)"
-                        : "rgba(22,104,227,0.28)"
+                        ? "rgba(229,72,77,0.1)"
+                        : "rgba(229,72,77,0.28)"
                       : "transparent",
                   }}
                 >
@@ -77,7 +77,7 @@ export default function LangSwitcher() {
                     style={{
                       color: active
                         ? isLight
-                          ? "#0b3f8f"
+                          ? "#4f0810"
                           : "#bcdcff"
                         : isLight
                           ? "#334155"

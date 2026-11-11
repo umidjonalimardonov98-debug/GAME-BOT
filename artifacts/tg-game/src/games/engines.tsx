@@ -34,17 +34,25 @@ function useGame(cfg: GameCfg) {
   const alive = useRef(true);
   useEffect(() => () => { alive.current = false; }, []);
 
+  // bir raund — bitta yakun (takroriy bosish ikki marta hisoblamaydi)
+  const finished = useRef(false);
   const finish = useCallback(async (mult: number) => {
+    if (finished.current) return;
+    finished.current = true;
     await sleep(RESULT_DELAY);
     const w = await b.settle(mult);
     if (!alive.current) return;
-    setAmount(w);
-    setRefund(mult === 1);
-    setWon(mult > 0);
+    // server rad etsa — yutuq ko'rsatilmaydi
+    const failed = mult > 0 && w <= 0;
+    setAmount(failed ? 0 : w);
+    setRefund(!failed && mult === 1);
+    setWon(failed ? null : mult > 0);
     b.setBusy(false);
   }, [b]);
 
   const begin = useCallback(() => {
+    finished.current = false;
+    b.lock();
     setWon(null); setAmount(0); setRefund(false); b.setBusy(true);
   }, [b]);
 
@@ -141,15 +149,24 @@ function MinesGame({ cfg }: EProps) {
 
   const tap = (i: number) => {
     if (!live || open.includes(i)) return;
-    const safe = riggedWin() || open.length < 1;
+    const safe = riggedWin(cfg.key) || open.length < 1;
     if (!safe || board[i] === 1) {
+      // ko'rinish natijaga mos bo'lsin: mina aynan bosilgan katakda
+      if (board[i] !== 1) {
+        const nb = [...board];
+        const j = nb.findIndex((v, k) => v === 1 && !open.includes(k));
+        if (j >= 0) nb[j] = 0;
+        nb[i] = 1;
+        setBoard(nb);
+      }
       setDead(i); setLive(false);
       g.finish(0);
       return;
     }
     const next = [...open, i];
     setOpen(next);
-    if (next.length >= SIZE - bombs) { setLive(false); g.finish(mult); }
+    // oxirgi xavfsiz katak — YANGI ochilganlar soni bo'yicha koeffitsiyent
+    if (next.length >= SIZE - bombs) { setLive(false); g.finish(Number((1 + next.length * (cfg.mult - 1)).toFixed(2))); }
   };
 
   const cash = () => { if (!live || !open.length) return; setLive(false); g.finish(mult); };
@@ -420,15 +437,20 @@ function HiLoGame({ cfg }: EProps) {
     setNext(null); setStreak(0); setLive(true);
   };
 
+  const pending = useRef(false);
   const guess = (hi: boolean) => {
-    if (!live) return;
-    const win = riggedWin();
+    if (!live || pending.current) return;
+    pending.current = true;
+    const want = riggedWin(cfg.key);
     const cur = vIdx(card.v);
-    const pool = VALS.filter((v, i) => (hi ? i > cur : i < cur) === win && i !== cur);
-    const nv = pool.length ? pool[rnd(pool.length)] : VALS[rnd(VALS.length)];
+    const pool = VALS.filter((v, i) => (hi ? i > cur : i < cur) === want && i !== cur);
+    const nv = pool.length ? pool[rnd(pool.length)] : VALS.filter((_, i) => i !== cur)[rnd(VALS.length - 1)];
+    // natija — haqiqiy ochilgan karta bo'yicha (ko'rinish bilan bir xil)
+    const win = hi ? vIdx(nv) > cur : vIdx(nv) < cur;
     const nc = { s: SUITS[rnd(4)], v: nv };
     setNext(nc);
     window.setTimeout(() => {
+      pending.current = false;
       setCard(nc); setNext(null);
       if (!win) { setLive(false); g.finish(0); return; }
       const s = streak + 1;
@@ -437,7 +459,7 @@ function HiLoGame({ cfg }: EProps) {
     }, 650);
   };
 
-  const cash = () => { if (!live || !streak) return; setLive(false); g.finish(mult); };
+  const cash = () => { if (!live || !streak || pending.current) return; setLive(false); g.finish(mult); };
 
   return (
     <Shell cfg={cfg} busy={g.busy} won={g.won} amount={g.amount} refund={g.refund}

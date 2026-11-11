@@ -6,6 +6,8 @@ import { usePlayer } from "@/lib/player-context";
 import { useTheme, pageBg, GAME_BG } from "@/lib/theme-context";
 import { placeBet } from "@/lib/api";
 import { riggedLose } from "@/lib/odds";
+import { effectiveBet, MAX_BET, MIN_BET } from "@/lib/bet-amount";
+import { sfx } from "@/lib/sound";
 import GameHeader from "@/components/GameHeader";
 import TableFrame from "@/components/casino/TableFrame";
 import Sym from "@/components/casino/Sym";
@@ -40,7 +42,8 @@ export default function Dice() {
   const [saving, setSaving] = useState(false);
 
   const isLight = false;
-  const activeBet = Math.max(Number(betInput) || 2000, 0);
+  const eff = effectiveBet(betInput, player?.balance ?? 0);
+  const activeBet = eff.amount;
   const potential = betType ? Math.floor(activeBet * ODDS[betType].mult) : 0;
   const sum = dice[0] + dice[1];
 
@@ -48,15 +51,18 @@ export default function Dice() {
     const bal = player?.balance ?? 0;
     let v = activeBet;
     if (action === "MIN") v = 2000;
-    else if (action === "MAX") v = Math.min(bal, 500000);
-    else if (action === "X2") v = Math.min(activeBet * 2, bal, 500000);
-    else if (action === "X/2") v = Math.max(Math.floor(activeBet / 2), 2000);
+    else if (action === "MAX") v = Math.max(MIN_BET, Math.min(bal, MAX_BET));
+    else if (action === "X2") v = Math.max(MIN_BET, Math.min(activeBet * 2, bal, MAX_BET));
+    else if (action === "X/2") v = Math.max(Math.floor(activeBet / 2), MIN_BET);
     setBetInput(String(v));
   }
 
   const roll = useCallback(async () =>{
-    if (!betType || !player || player.balance < activeBet || activeBet < 2000) return;
+    if (!betType || !player || !eff.playable || gameState === "rolling" || saving) return;
+    const stake = activeBet; // raund davomida qulflangan tikish
+    const type = betType;
     setGameState("rolling");
+    sfx.dice();
 
     // Uy foydasi: 69% yutqazish — natija oldindan aniqlanadi, zarlar shu yuzda to'xtaydi
     const mustLose = riggedLose("dice");
@@ -73,15 +79,18 @@ export default function Dice() {
 
     setTimeout(async () =>{
       const s = d1 + d2;
-      setGameState("result");
-      const win = isWinSum(s);
-      const winPrize = win ? Math.floor(activeBet * ODDS[betType].mult) : 0;
-      setWon(win); setPrize(winPrize);
+      const win = (type === "more" && s > 7) || (type === "equal" && s === 7) || (type === "less" && s < 7);
+      const winPrize = win ? Math.floor(stake * ODDS[type].mult) : 0;
       setSaving(true);
-      await placeBet(player.telegramId, { amount: activeBet, game: "dice", won: win, winAmount: winPrize }).catch(() =>{});
-      await refresh(); setSaving(false);
+      let ok = true;
+      await placeBet(player.telegramId, { amount: stake, game: "dice", won: win, winAmount: winPrize }).catch(() => { ok = false; });
+      await refresh().catch(() => {});
+      setSaving(false);
+      if (!ok) { setWon(false); setPrize(0); setGameState("idle"); return; }
+      setWon(win); setPrize(winPrize);
+      setGameState("result");
     }, 3000);
-  }, [betType, activeBet, player, refresh]);
+  }, [betType, activeBet, eff.playable, player, refresh, gameState, saving]);
 
 
   const accentGradient = "linear-gradient(180deg,#f7e59b 0%,#d4af37 45%,#8d6512 100%)";
@@ -187,7 +196,7 @@ export default function Dice() {
           <p className="text-xs font-bold mb-3 tracking-widest" style={{ color: ts.textSub }}> TIKISH MIQDORI</p>
           <BetPanel value={betInput} onChange={setBetInput} disabled={gameState === "rolling"}
             onQuick={(a) => setQuickBet(a === "1/2" ? "X/2" : a)} />
-          {betType && activeBet >= 2000 && (
+          {betType && eff.playable && (
             <p className="text-center text-xs font-black mt-1.5" style={{ color: "#39c46f" }}>Yutuq: {potential.toLocaleString()} UZS</p>
           )}
         </div>
@@ -200,7 +209,8 @@ export default function Dice() {
             
           </button>
           <button onClick={roll}
-            disabled={gameState === "rolling" || !betType || !player || player.balance < activeBet || activeBet < 2000 || saving}
+            disabled={gameState === "rolling" || !betType || !player || !eff.playable || saving}
+            data-sfx="none"
             className="col-span-3 py-4 rounded-2xl font-black text-base flex items-center justify-center gap-2 active:scale-95 transition-all disabled:opacity-40"
             style={{ background: accentGradient, boxShadow: accentShadow, color: "white" }}>
             {gameState === "rolling"?" Aylanmoqda...":" ZAR TASHLASH"}

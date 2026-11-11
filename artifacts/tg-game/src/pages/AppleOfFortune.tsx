@@ -1,7 +1,8 @@
+import { effectiveBet, MAX_BET, MIN_BET } from "@/lib/bet-amount";
 import { Ambient } from "@/components/casino/GameAtmosphere";
 import StageFx from "@/components/casino/StageFx";
 import BetPanel from "@/components/casino/BetPanel";
-import { useState, useEffect, type ReactNode } from "react";
+import { useState, useEffect, useRef, type ReactNode } from "react";
 import { useLocation } from "wouter";
 import { ArrowLeft } from "lucide-react";
 import { usePlayer } from "@/lib/player-context";
@@ -37,8 +38,7 @@ export default function AppleOfFortune() {
   const [, nav] = useLocation();
   const { player, refresh } = usePlayer();
 
-  const [bet, setBet] = useState(2000);
-  const [customBet, setCustomBet] = useState("");
+  const [betInput, setBetInput] = useState(String(MIN_BET));
   const [gameState, setGameState] = useState<GameState>("idle");
   const [grid, setGrid] = useState<Cell[][]>([]);
   const [revealed, setRevealed] = useState<boolean[][]>([]);
@@ -49,7 +49,31 @@ export default function AppleOfFortune() {
   // Uy foydasi: 69% raundda bomba oldindan belgilangan qatorda chiqadi
   const [loseRow, setLoseRow] = useState<number>(-1);
 
-  const activeBet = customBet ? Math.max(2000, Number(customBet)) : bet;
+  const eff = effectiveBet(betInput, player?.balance ?? 0);
+  // raund davomida tikish qulflanadi; bitta raund — bitta hisob-kitob
+  const stakeRef = useRef(0);
+  const doneRef = useRef(true);
+  const activeBet = gameState === "idle" ? eff.amount : (stakeRef.current || eff.amount);
+  const quickBet = (a: string) => {
+    const bal = player?.balance ?? 0;
+    let v = eff.amount;
+    if (a === "MAX") v = Math.max(MIN_BET, Math.min(bal, MAX_BET));
+    else if (a === "X2") v = Math.max(MIN_BET, Math.min(eff.amount * 2, bal, MAX_BET));
+    else v = Math.max(Math.floor(eff.amount / 2), MIN_BET);
+    setBetInput(String(v));
+  };
+  const settleRound = async (won: boolean, prize: number) => {
+    if (doneRef.current) return false;
+    doneRef.current = true;
+    setSaving(true);
+    let ok = true;
+    if (player) {
+      await placeBet(player.telegramId, { amount: stakeRef.current, game: "apple", won, winAmount: won ? prize : 0 }).catch(() => { ok = false; });
+      await refresh().catch(() => {});
+    }
+    setSaving(false);
+    return ok;
+  };
   const currentMult = activeRow > 0 ? MULTIPLIERS[activeRow - 1] : null;
   const potential = Math.floor(activeBet * (currentMult ?? MULTIPLIERS[0]));
 
@@ -65,7 +89,9 @@ export default function AppleOfFortune() {
   }, [gameState]);
 
   const start = () =>{
-    if (!player || player.balance < activeBet || activeBet < 2000) return;
+    if (!player || !eff.playable || saving) return;
+    stakeRef.current = eff.amount;
+    doneRef.current = false;
     setGrid(generateGrid());
     setRevealed(Array.from({ length: ROWS }, () => Array(COLS).fill(false)));
     setLoseRow(riggedLose("apple") ? Math.floor(Math.random() * 3) : -1);
@@ -73,7 +99,7 @@ export default function AppleOfFortune() {
   };
 
   const pickCell = async (row: number, col: number) =>{
-    if (gameState !== "playing" || row !== activeRow || revealed[row]?.[col]) return;
+    if (gameState !== "playing" || doneRef.current || row !== activeRow || revealed[row]?.[col]) return;
     const newRev = revealed.map(r => [...r]);
     newRev[row][col] = true;
     setRevealed(newRev);
@@ -87,32 +113,25 @@ export default function AppleOfFortune() {
         setRevealed(newRev.map((r, ri) => ri <= row ? Array(COLS).fill(true) : r));
         setGameState("lost");
       }, 400);
-      setSaving(true);
-      if (player) { await placeBet(player.telegramId, { amount: activeBet, game: "apple", won: false, winAmount: 0 }).catch(() =>{}); await refresh(); }
-      setSaving(false);
+      await settleRound(false, 0);
       return;
     }
 
     const newActive = row + 1;
     setActiveRow(newActive);
     if (newActive === ROWS) {
-      const prize = Math.floor(activeBet * MULTIPLIERS[ROWS - 1]);
-      setCashOutAmount(prize); setGameState("won");
-      setSaving(true);
-      if (player) { await placeBet(player.telegramId, { amount: activeBet, game: "apple", won: true, winAmount: prize }).catch(() =>{}); await refresh(); }
-      setSaving(false);
+      const prize = Math.floor(stakeRef.current * MULTIPLIERS[ROWS - 1]);
+      const ok = await settleRound(true, prize);
+      if (ok) { setCashOutAmount(prize); setGameState("won"); } else reset();
     }
   };
 
   const doCashOut = async () =>{
-    if (activeRow === 0 || gameState !== "playing") return;
-    const prize = Math.floor(activeBet * MULTIPLIERS[activeRow - 1]);
-    setCashOutAmount(prize);
+    if (activeRow === 0 || gameState !== "playing" || doneRef.current) return;
+    const prize = Math.floor(stakeRef.current * MULTIPLIERS[activeRow - 1]);
     setRevealed(grid.map((_, ri) => ri < activeRow ? Array(COLS).fill(true) : Array(COLS).fill(false)));
-    setGameState("won");
-    setSaving(true);
-    if (player) { await placeBet(player.telegramId, { amount: activeBet, game: "apple", won: true, winAmount: prize }).catch(() =>{}); await refresh(); }
-    setSaving(false);
+    const ok = await settleRound(true, prize);
+    if (ok) { setCashOutAmount(prize); setGameState("won"); } else reset();
   };
 
   const reset = () =>{ setGameState("idle"); setGrid([]); setRevealed([]); setActiveRow(0); setShowResult(false); };
@@ -258,12 +277,10 @@ export default function AppleOfFortune() {
       {/* Controls (idle) */}
       {gameState === "idle" && (
         <div className="px-4 pb-5 shrink-0">
-          <div className="mb-2"><BetPanel value={customBet || String(bet)} onChange={(v) => { setCustomBet(v); const n = Number(v); if (n >= 2000) setBet(n); }}
-            onQuick={(a) => { const bal = player?.balance ?? 0; let v = activeBet;
-              if (a === "MAX") v = Math.min(bal, 500000); else if (a === "X2") v = Math.min(activeBet * 2, bal, 500000); else v = Math.max(Math.floor(activeBet / 2), 2000);
-              setCustomBet(String(v)); setBet(v); }} /></div>
+          <div className="mb-2"><BetPanel value={betInput} onChange={setBetInput}
+              onQuick={quickBet} /></div>
           <button onClick={start}
-            disabled={!player || player.balance < activeBet || activeBet < 2000}
+            disabled={!player || !eff.playable || saving}
             className="w-full py-3.5 rounded-2xl font-black text-base active:scale-95 transition-all disabled:opacity-40"
             style={{ background: "linear-gradient(135deg, #25a55a, #15803d)", boxShadow: "0 8px 28px rgba(22,163,74,0.5)", color: "white" }}>
              O'YINNI BOSHLASH
@@ -297,13 +314,11 @@ export default function AppleOfFortune() {
             </p>
 
             {/* Controls inside overlay */}
-            <div className="mb-3"><BetPanel value={customBet || String(bet)} onChange={(v) => { setCustomBet(v); const n = Number(v); if (n >= 2000) setBet(n); }}
-              onQuick={(a) => { const bal = player?.balance ?? 0; let v = activeBet;
-                if (a === "MAX") v = Math.min(bal, 500000); else if (a === "X2") v = Math.min(activeBet * 2, bal, 500000); else v = Math.max(Math.floor(activeBet / 2), 2000);
-                setCustomBet(String(v)); setBet(v); }} /></div>
+            <div className="mb-3"><BetPanel value={betInput} onChange={setBetInput}
+              onQuick={quickBet} /></div>
 
             <button onClick={start}
-              disabled={!player || player.balance < activeBet || activeBet < 2000}
+              disabled={!player || !eff.playable || saving}
               className="w-full py-3.5 rounded-2xl font-black text-base active:scale-95 transition-all disabled:opacity-40"
               style={{ background: "linear-gradient(135deg, #25a55a, #15803d)", boxShadow: "0 8px 28px rgba(22,163,74,0.4)", color: "white" }}>
                QAYTA O'YNASH

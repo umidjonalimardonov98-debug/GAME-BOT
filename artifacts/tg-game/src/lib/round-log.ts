@@ -44,8 +44,9 @@ export function recordRound(data: { game: string; bet: number; won: boolean; win
   };
   rounds = [round, ...rounds].slice(0, 20);
   listeners.forEach((l) => l(rounds));
-  if (round.won) sfx.win(round.mult >= 5);
-  else sfx.lose();
+  if (round.won && round.mult <= 1.0001) sfx.refund();
+  else if (round.won) sfx.win(round.mult >= 5, round.game);
+  else sfx.lose(round.game);
   return round;
 }
 

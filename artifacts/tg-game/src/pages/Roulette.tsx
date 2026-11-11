@@ -1,3 +1,4 @@
+import { effectiveBet, MAX_BET, MIN_BET } from "@/lib/bet-amount";
 import { Ambient } from "@/components/casino/GameAtmosphere";
 import StageFx from "@/components/casino/StageFx";
 import BetPanel from "@/components/casino/BetPanel";
@@ -68,21 +69,25 @@ export default function Roulette() {
   const outcomeRef = useRef<"win" | "refund" | "lose">("lose");
   const tickRef = useRef(0);
 
-  const bet = Math.max(Number(betInput) || 0, 0);
+  const eff = effectiveBet(betInput, player?.balance ?? 0);
+  const bet = eff.amount;
+  // raund boshida qulflanadi: tikish, tanlov va bitta hisob-kitob
+  const roundRef = useRef<{ id: number; stake: number; pick: BetKey; settled: boolean } | null>(null);
+  const shownStake = roundRef.current?.stake ?? bet;
   const potential = pick ? Math.floor(bet * BETS[pick].mult) : 0;
 
   function quick(action: string) {
     const bal = player?.balance ?? 0;
     let v = bet;
-    if (action === "MIN") v = 2000;
-    else if (action === "MAX") v = Math.min(bal, 500000);
-    else if (action === "X2") v = Math.min(bet * 2, bal, 500000);
-    else if (action === "X/2") v = Math.max(Math.floor(bet / 2), 2000);
+    if (action === "MIN") v = MIN_BET;
+    else if (action === "MAX") v = Math.max(MIN_BET, Math.min(bal, MAX_BET));
+    else if (action === "X2") v = Math.max(MIN_BET, Math.min(bet * 2, bal, MAX_BET));
+    else if (action === "X/2") v = Math.max(Math.floor(bet / 2), MIN_BET);
     setBetInput(String(v));
   }
 
   const spin = useCallback(() => {
-    if (!pick || !player || spinning || bet < 2000 || player.balance < bet) return;
+    if (!pick || !player || spinning || !eff.playable) return;
     setSpinning(true);
     setResult(null);
     setPrize(0);
@@ -92,22 +97,28 @@ export default function Roulette() {
     const outcome = rollOutcome("roulette");
     outcomeRef.current = outcome;
     const num = randomWhere(WHEEL, (n) => (outcome === "win" ? BETS[pick].test(n) : !BETS[pick].test(n)));
-    setSpinCmd({ id: ++spinIdRef.current, num });
-  }, [pick, player, spinning, bet]);
+    const id = ++spinIdRef.current;
+    roundRef.current = { id, stake: bet, pick, settled: false };
+    setSpinCmd({ id, num });
+  }, [pick, player, spinning, bet, eff.playable]);
 
   const onSettled = useCallback(async (num: number) => {
-    if (!pick || !player) return;
-    const won = BETS[pick].test(num);
+    const round = roundRef.current;
+    if (!round || round.settled || !player) return;
+    round.settled = true; // g'ildirak va zaxira taymer ikki marta hisoblamasin
+    const { stake, pick: p } = round;
+    const won = BETS[p].test(num);
     // x1 — pul qaytarish rejimi (yutqazgan raundlarning bir qismi)
     const refund = !won && outcomeRef.current === "refund";
-    const win = won ? Math.floor(bet * BETS[pick].mult) : refund ? bet : 0;
-    setResult(num);
-    setPrize(win);
+    const win = won ? Math.floor(stake * BETS[p].mult) : refund ? stake : 0;
     setHistory((h) => [num, ...h].slice(0, 12));
+    let ok = true;
+    await placeBet(player.telegramId, { amount: stake, game: "roulette", won: win > 0, winAmount: win }).catch(() => { ok = false; });
+    await refresh().catch(() => {});
+    setResult(ok ? num : null);
+    setPrize(ok ? win : 0);
     setSpinning(false);
-    await placeBet(player.telegramId, { amount: bet, game: "roulette", won: win > 0, winAmount: win }).catch(() => {});
-    await refresh();
-  }, [pick, player, bet, refresh]);
+  }, [player, refresh]);
 
   // Xavfsizlik: g'ildirak biror sababdan to'xtamasa — natija majburiy yopiladi
   useEffect(() => {
@@ -118,7 +129,7 @@ export default function Roulette() {
 
   const onTick = useCallback(() => {
     const now = performance.now();
-    if (now - tickRef.current > 70) { tickRef.current = now; sfx.click(); }
+    if (now - tickRef.current > 70) { tickRef.current = now; sfx.tick(); }
   }, []);
 
   return (
@@ -128,7 +139,7 @@ export default function Roulette() {
 
       <div className="flex-1 px-4 pb-8 flex flex-col gap-4">
         {/* Wheel */}
-        <StageFx pattern="spiral" syms={["chip"]} color="#22c55e" result={result === null || spinning || prize === bet ? null : prize > bet} active={spinning} big>
+        <StageFx pattern="spiral" syms={["chip"]} color="#22c55e" result={result === null || spinning || prize === shownStake ? null : prize > shownStake} active={spinning} big>
         <TableFrame skin="green" title="ROULETTE" bulbs bulbsActive={spinning}>
         <div
           className="rounded-2xl p-4 flex flex-col items-center gap-4 relative overflow-hidden"
@@ -153,7 +164,7 @@ export default function Roulette() {
           {result !== null && !spinning && (
             <p className="font-black text-xl"style={{ color: prize > 0 ?"#39c46f":"#f87171" }}>
               {prize > 0
-                ? prize === bet
+                ? prize === shownStake
                   ? `Pul qaytarildi: ${prize.toLocaleString()} UZS`
                   : ` +${prize.toLocaleString()} UZS`
                 : u("youLose")}
@@ -236,7 +247,7 @@ export default function Roulette() {
 
         <button
           onClick={spin}
-          disabled={!pick || spinning || bet < 2000 || (player?.balance ?? 0) < bet}
+          disabled={!pick || spinning || !eff.playable}
           className="w-full py-4 rounded-2xl font-black text-lg text-white active:scale-95 transition-all"
           style={{
             background: "linear-gradient(135deg,#b45309,#f59e0b)",
