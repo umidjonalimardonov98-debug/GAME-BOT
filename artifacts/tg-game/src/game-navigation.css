@@ -46,7 +46,7 @@
 #root .cat-head .ttl { font-size: 13px; letter-spacing: 0; color: var(--nav-text); }
 #root .cat-head .bar { background: var(--nav-accent); box-shadow: none; }
 #root .pro-tile::after { animation: none; background: none; border-color: var(--nav-line); }
-#root .game-nav-header { position: sticky; top: var(--tg-top, 0px); z-index: 50; background: var(--nav-base); color: var(--nav-text); border-bottom: 1px solid var(--nav-line); }
+#root .game-nav-header { position: sticky; top: 0; z-index: 50; background: var(--nav-base); color: var(--nav-text); border-bottom: 1px solid var(--nav-line); }
 #root .game-nav-main { display: flex; align-items: center; gap: 8px; padding: 8px 12px; height: 56px; }
 #root .game-nav-title { flex: 1; min-width: 0; }
 #root .game-nav-title strong { display: block; font-size: 14px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
@@ -96,7 +96,7 @@
 #root .home-entry-row { grid-template-columns: repeat(3,minmax(0,1fr)); }
 #root .stats-entry { color: var(--nav-blue); }
 /* Stats page */
-#root .stats-page { min-height: 100vh; background: var(--nav-base); color: var(--nav-text); }
+#root .stats-page { min-height: var(--app-h); background: var(--nav-base); color: var(--nav-text); }
 #root .stats-page main { padding: 14px 16px 32px; max-width: 640px; margin: auto; }
 #root .stats-grid { display: grid; grid-template-columns: repeat(2,minmax(0,1fr)); gap: 8px; }
 #root .stats-grid > div { padding: 12px; border-radius: 10px; background: var(--nav-surface); border: 1px solid var(--nav-line); display: flex; flex-direction: column; gap: 4px; animation: fav-in .35s ease both; }
@@ -123,7 +123,7 @@
 .ga-float { display: none !important; }
 .sfx-anim[style*="blur"] { filter: none !important; }
 #root .game-nav-header { isolation: isolate; }
-#root .pro-header { top: var(--tg-top, 0px); }
+#root .pro-header { top: 0; }
 
 /* Open groups use the navigation palette and lightweight, stable rows. */
 #root .og-wrap { padding: 12px 0; border: 0; border-top: 1px solid var(--nav-line); border-radius: 0; background: none; gap: 8px; color: var(--nav-text); }
