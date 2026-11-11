@@ -14,6 +14,7 @@ import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogTitle, DialogDescription } from "@/components/ui/dialog";
 import { sfx } from "@/lib/sound";
 import "@/game-navigation.css";
+import { fitGameToScreen } from "@/lib/fit-screen";
 
 interface Props { title: string; icon?: string; subtitle?: string; hideTheme?: boolean; }
 export default function GameHeader({ title, subtitle, hideTheme }: Props) {
@@ -24,6 +25,7 @@ export default function GameHeader({ title, subtitle, hideTheme }: Props) {
   const [pendingPath, setPendingPath] = useState<string | null>(null);
   const [enabled, setEnabled] = useState<Record<string, boolean>>({});
   const menuRef = useRef<HTMLDivElement>(null);
+  const headerRef = useRef<HTMLElement>(null);
   const currentPath = location.split("?")[0];
   const isLive = currentPath === "/live" || currentPath.startsWith("/pvp") || currentPath.startsWith("/arena/");
   const isGame = isLive || GAMES.some(game => game.path === currentPath);
@@ -34,6 +36,11 @@ export default function GameHeader({ title, subtitle, hideTheme }: Props) {
     }).catch(() => {});
     return () => { delete document.body.dataset.gh; };
   }, []);
+  // Har bir o'yin ekranga to'liq sig'sin (scrollsiz)
+  useEffect(() => {
+    if (!isGame || currentPath === "/live" || !headerRef.current) return;
+    return fitGameToScreen(headerRef.current);
+  }, [isGame, currentPath]);
   useEffect(() => {
     const close = (event: PointerEvent) => { if (menuRef.current && !menuRef.current.contains(event.target as Node)) setMenu(false); };
     const escape = (event: KeyboardEvent) => { if (event.key === "Escape") { setMenu(false); setPendingPath(null); } };
@@ -48,7 +55,7 @@ export default function GameHeader({ title, subtitle, hideTheme }: Props) {
   };
   useEffect(() => { const back = () => go(isLive && currentPath !== "/live" ? "/live" : "/"); window.addEventListener("game:back", back); return () => window.removeEventListener("game:back", back); }, [currentPath]);
   return (
-    <header className="game-nav-header">
+    <header ref={headerRef} className="game-nav-header">
       <div className="game-nav-main">
         <Button variant="ghost" className="nav-icon" aria-label="back" title="Orqaga" onClick={() => go(isLive && currentPath !== "/live" ? "/live" : "/")}><ArrowLeft size={18} /></Button>
         <div className="game-nav-title"><strong>{title.trim()}</strong>{subtitle && <small>{subtitle}</small>}</div>

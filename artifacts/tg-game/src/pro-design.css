@@ -65,3 +65,10 @@
 #root .bp-quick { height: 46px; min-width: 40px; padding: 0 8px; border-radius: 14px; background: var(--pro-surface-2); border: 1px solid var(--pro-line); color: var(--pro-text); font-weight: 800; }
 #root .bp-quick:active { transform: scale(.95); }
 #root .bp-chip { width: 48px; height: 48px; }
+
+/* ── O'yin ekrani ekranga to'liq sig'sin ── */
+body[data-fit="1"] .page-enter > * { min-height: var(--app-h) !important; }
+/* h-screen sahifalar Telegram tugmalari ostida pastdan kesilmasin */
+#root .page-enter > .h-screen { height: var(--app-h); }
+/* Orqa fon bezaklari pastga chiqib, ekranni qimirlatmasin */
+body[data-fit="1"] .page-enter > * { overflow: clip; }
