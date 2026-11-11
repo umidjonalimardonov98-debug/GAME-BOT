@@ -1,4 +1,5 @@
 import "@/game-navigation.css";
+import "@/pro-design.css";
 import { createContext, useContext, useEffect, useState, type ReactNode } from "react";
 
 export type Theme = "dark" | "light" | "black";
