@@ -65,10 +65,13 @@
     height: var(--app-vh, 100dvh);
     overflow: hidden;
     touch-action: pan-y;
+    /* Telegram tugmalari uchun joy body'da — #root (scroll konteyner) aynan ulardan pastda boshlanadi */
+    padding-top: var(--tg-top, 0px);
+    box-sizing: border-box;
   }
   #root {
-    height: var(--app-vh, 100dvh);
-    padding-top: var(--tg-top, 0px);
+    height: var(--app-h);
+    padding-top: 0;
     box-sizing: border-box;
     width: 100%;
     overflow-y: auto;
@@ -267,6 +270,7 @@
 /* Silliq scroll va mobil tap kechikishini yo'qotish */
 html { scroll-behavior: smooth; }
 :root { --app-vh: 100dvh; }
+:root { --app-h: calc(var(--app-vh, 100dvh) - var(--tg-top, 0px)); }
 button, [role="button"], a {
   touch-action: manipulation;
   -webkit-tap-highlight-color: transparent;
@@ -650,7 +654,8 @@ button:not(:disabled):active { transform: scale(.955); }
 }
 
 /* Telegram viewport balandligi bo'yicha ekran balandligi */
-.min-h-screen { min-height: var(--app-vh, 100dvh); }
+.min-h-screen { min-height: var(--app-h); }
+#root .h-screen { height: var(--app-h); }
 
 /* LIVE PVP tugmasi pulsi */
 @keyframes pvpPulse {
