@@ -58,22 +58,23 @@ export function useTheme() { return useContext(ThemeContext); }
    ───────────────────────────────────────────── */
 
 export const GOLD = {
-  main: "#d4af37",
-  light: "#ffe9a8",
-  deep: "#7a5a10",
-  glow: "rgba(212,175,55,0.42)",
-  border: "rgba(255,214,102,0.35)",
-  /** Oltin gradient — tugma va ramkalar uchun */
-  grad: "linear-gradient(180deg,#ffe9a8 0%,#e8c257 32%,#c99a25 62%,#8d6512 100%)",
-  soft: "linear-gradient(180deg,rgba(212,175,55,0.26),rgba(212,175,55,0.08))",
-  frame: "linear-gradient(150deg,#fff3c4 0%,#e3bb52 18%,#a97c1c 42%,#f2d888 60%,#8a6314 82%,#e0c063 100%)",
+  /* Yorqin kazino: oltin-sariq + olovli to'q sariq (Mostbet uslubi) */
+  main: "#ffc61a",
+  light: "#ffe27a",
+  deep: "#c25400",
+  glow: "rgba(255,170,0,0.5)",
+  border: "rgba(255,198,26,0.5)",
+  /** Sariq-to'q sariq gradient — tugma va ramkalar uchun */
+  grad: "linear-gradient(180deg,#ffe066 0%,#ffb81a 38%,#ff8a00 72%,#f26a00 100%)",
+  soft: "linear-gradient(180deg,rgba(255,170,0,0.28),rgba(255,170,0,0.08))",
+  frame: "linear-gradient(150deg,#fff1a8 0%,#ffc21a 22%,#ff7a00 48%,#ffd84d 70%,#ff8a00 100%)",
 };
 
-/** 1XBET yashil (asosiy CTA) */
+/** Asosiy CTA — olovli to'q sariq (O'YNASH / BOSHLASH) */
 export const XGREEN = {
-  main: "#25a55a",
-  grad: "linear-gradient(180deg,#34c873 0%,#17904f 52%,#0b5c32 100%)",
-  shadow: "inset 0 0 0 1.5px rgba(255,226,140,0.55), inset 0 1px 0 rgba(255,255,255,0.35), 0 5px 0 #073d21, 0 12px 28px rgba(23,144,79,0.38)",
+  main: "#ff7a00",
+  grad: "linear-gradient(180deg,#ffb23d 0%,#ff7a00 50%,#e85d00 100%)",
+  shadow: "inset 0 0 0 1.5px rgba(255,236,170,0.6), inset 0 1px 0 rgba(255,255,255,0.45), 0 5px 0 #9c3a00, 0 12px 28px rgba(255,122,0,0.45)",
 };
 
 export const GAME_BG = {
@@ -114,9 +115,9 @@ export const GAME_BG = {
 let remoteBackgroundStyle: "gold" | "classic" = "gold";
 
 const OVERLAY: Record<Theme, string> = {
-  dark: "linear-gradient(var(--nav-base), color-mix(in oklch, var(--nav-base) 92%, transparent))",
-  black: "linear-gradient(var(--nav-base), color-mix(in oklch, var(--nav-base) 96%, transparent))",
-  light: "linear-gradient(var(--nav-base), color-mix(in oklch, var(--nav-base) 88%, transparent))",
+  dark: "linear-gradient(180deg, color-mix(in oklch, var(--nav-base) 78%, transparent), color-mix(in oklch, var(--nav-base) 90%, transparent))",
+  black: "linear-gradient(180deg, color-mix(in oklch, var(--nav-base) 84%, transparent), color-mix(in oklch, var(--nav-base) 94%, transparent))",
+  light: "linear-gradient(180deg, color-mix(in oklch, var(--nav-base) 70%, transparent), color-mix(in oklch, var(--nav-base) 86%, transparent))",
 };
 
 /** Sahifa foni: surat + tema overlay (matn o'qilishi saqlanadi) */

@@ -1,13 +1,13 @@
 /* Shared navigation palette, independent of each game's table artwork. */
 :root {
-  /* Kazino palitrasi: issiq qora + oltin + yoqut qizil */
-  --nav-base: oklch(.115 .008 50); --nav-surface: oklch(.165 .012 55);
-  --nav-raised: oklch(.215 .016 60); --nav-line: oklch(.33 .035 75);
-  --nav-text: oklch(.965 .012 85); --nav-muted: oklch(.74 .03 80);
-  --nav-accent: oklch(.82 .135 85); --nav-accent-ink: oklch(.2 .04 65);
-  --nav-gold: oklch(.84 .13 86); --nav-blue: oklch(.8 .09 75);
-  --nav-ruby: oklch(.6 .2 25);
-  --nav-shadow: 0 10px 28px oklch(.04 0 0 / .55);
+  /* Yorqin kazino palitrasi (Mostbet uslubi): chuqur ko'k + olovli to'q sariq + oltin sariq */
+  --nav-base: oklch(.27 .1 258); --nav-surface: oklch(.35 .13 256);
+  --nav-raised: oklch(.43 .15 254); --nav-line: oklch(.56 .14 248 / .55);
+  --nav-text: oklch(.99 0 0); --nav-muted: oklch(.84 .06 240);
+  --nav-accent: oklch(.72 .2 48); --nav-accent-ink: oklch(.99 0 0);
+  --nav-gold: oklch(.89 .17 95); --nav-blue: oklch(.82 .13 222);
+  --nav-ruby: oklch(.63 .23 22);
+  --nav-shadow: 0 10px 28px oklch(.12 .08 260 / .55);
 }
 #root .home-page { background: var(--nav-base); color: var(--nav-text); font-family: var(--app-font-sans); }
 #root .home-summary { display: grid; grid-template-columns: minmax(0,1fr) auto; gap: 6px 16px; margin: 10px 16px 12px; padding: 12px 0; border-bottom: 1px solid var(--nav-line); }

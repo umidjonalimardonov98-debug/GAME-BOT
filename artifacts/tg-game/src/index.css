@@ -28,24 +28,24 @@
 }
 
 :root {
-  --background: 255 100% 4%;
-  --foreground: 45 100% 95%;
-  --border: 260 30% 22%;
-  --input: 260 25% 16%;
-  --ring: 270 80% 60%;
-  --card: 260 25% 10%;
-  --card-foreground: 45 80% 92%;
-  --primary: 270 80% 60%;
+  --background: 214 78% 17%;
+  --foreground: 0 0% 100%;
+  --border: 212 60% 38%;
+  --input: 214 70% 24%;
+  --ring: 28 100% 52%;
+  --card: 213 72% 26%;
+  --card-foreground: 0 0% 100%;
+  --primary: 28 100% 52%;
   --primary-foreground: 0 0% 100%;
-  --secondary: 260 20% 16%;
-  --secondary-foreground: 45 60% 80%;
-  --muted: 260 20% 13%;
-  --muted-foreground: 260 15% 50%;
-  --accent: 152 80% 45%;
+  --secondary: 212 66% 32%;
+  --secondary-foreground: 0 0% 100%;
+  --muted: 213 66% 24%;
+  --muted-foreground: 210 50% 80%;
+  --accent: 45 100% 55%;
   --accent-foreground: 0 0% 100%;
   --destructive: 0 80% 55%;
   --destructive-foreground: 0 0% 100%;
-  --app-font-sans: 'Inter', sans-serif;
+  --app-font-sans: 'Manrope', 'Inter', sans-serif;
   --radius: 0.75rem;
 }
 
